@@ -2,10 +2,9 @@
 #define XCOMM #
 #endif
 
-XCOMM	Fig2dev : General Fig code translation program
-
-XCOMM TransFig: Facility for Translating Fig code
-XCOMM Copyright (c) 1985 Supoj Sutantavibul
+XCOMM Fig2dev : General Fig code translation program
+XCOMM Copyright (c) 1985-1988 Supoj Sutantavibul
+XCOMM Copyright (c) 1989-1998 by Brian V. Smith
 XCOMM Copyright (c) 1991 Micah Beck
 
 XCOMM THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
@@ -16,17 +15,14 @@ XCOMM DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 XCOMM TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 XCOMM PERFORMANCE OF THIS SOFTWARE.
 XCOMM
-XCOMM The X Consortium, and any party obtaining a copy of these files from
-XCOMM the X Consortium, directly or indirectly, is granted, free of charge, a
+XCOMM Any party obtaining a copy of these files is granted, free of charge, a
 XCOMM full and unrestricted irrevocable, world-wide, paid up, royalty-free,
 XCOMM nonexclusive right and license to deal in this software and
 XCOMM documentation files (the "Software"), including without limitation the
 XCOMM rights to use, copy, modify, merge, publish, distribute, sublicense,
 XCOMM and/or sell copies of the Software, and to permit persons who receive
 XCOMM copies from any such party to do so, with the only requirement being
-XCOMM that this copyright notice remain intact.  This license includes without
-XCOMM limitation a license to do the foregoing actions under any patents of
-XCOMM the party supplying this software to the X Consortium.
+XCOMM that this copyright notice remain intact.
 
 XCOMM You should point XFIGLIBDIR to the same directory you did when you compiled
 XCOMM and installed xfig.  This will be made automatic in the future.
@@ -76,22 +72,28 @@ XCOMM If don't want to use JPEG, comment out the following line
 
 XCOMM If you don't have the jpeg library in your system library area, comment
 XCOMM out the USEINSTALLEDJPEG variable (using XCOMM), change the JPEGLIBDIR
-XCOMM variable to the directory where your jpeg library resides and change
-XCOMM the JPEGINCDIR to the directory where your jpeg header files (include)
-XCOMM reside.
+XCOMM variable to the directory where your jpeg library resides. Do not change
+XCOMM JPEGINCDIR in this case because it must be defined relative to the
+XCOMM fig2dev/dev subdirectory.
 XCOMM You must have version 5b or newer of the jpeg library.
 
 #define USEINSTALLEDJPEG
+
+#ifdef USEJPEG
+#ifdef USEINSTALLEDJPEG
+JPEGLIBDIR = /usr/local/lib
+JPEGINCDIR = /usr/include/X11
+#else
+JPEGLIBDIR = ../jpeg
+JPEGINCDIR = $(JPEGLIBDIR)
+#endif
+#endif /* USEJPEG */
 
 XCOMM uncomment the following to set paper size to A4
 XCOMM DDA4 = -DA4
 
 XCOMM uncomment the following to set IBM Graphics Enhancement Cartridge
 XCOMM DDIBMGEC = -DIBMGEC
-
-XCOMM uncomment the following to set DVI-to-PostScript driver to dvip
-XCOMM DDDVIPS = -DDVIPS
-
 
 XCOMM comment out the DDNFSS = ... line if you don't want NFSS2 font selection
 XCOMM for LaTeX texts
@@ -103,6 +105,9 @@ XCOMM     options; users of LaTeX 2.09 will probably want to include neither.
 
 DDNFSS = -DNFSS
 DDEPSF = -DEPSF
+
+XCOMM comment out the DDDVIPS to NOT use dvips for the DVI-to-PostScript driver
+DDDVIPS = -DDVIPS
 
 XCOMM If your system doesn't have strcasecmp and/or strncasecmp
 XCOMM undefine the following two definitions
@@ -127,8 +132,6 @@ XCOMM #define NOSTRSTR
 
 XCOMM **************************************************************
 XCOMM *** You shouldn't have to change anything below this point ***
-XCOMM *** The one exception is to change JPEGLIBDIR if you have  ***
-XCOMM *** USEINSTALLEDJPEG commented out.                        ***
 XCOMM **************************************************************
 
 DIR_DEFS=	-DBITMAPDIR=\\\"$(XFIGLIBDIR)/bitmaps\\\"
@@ -154,19 +157,17 @@ DUSEJPEG = -DUSE_JPEG
 
 #ifdef USEINSTALLEDJPEG
 JPEGLIBDIR = /usr/local/lib
-JPEGINCDIR = /usr/include/X11
 JPEGLIB = -L$(JPEGLIBDIR) -ljpeg
 #else
 XCOMM this is relative to this directory (transfig/fig2dev)
 JPEGLIBDIR = ../../jpeg-6a
 JPEGCONF = configure
-XCOMM Don't change JPEGINCDIR.
-JPEGINCDIR = ../$(JPEGLIBDIR)
 JPEGLIB = $(JPEGLIBDIR)/libjpeg.a
 DEPLIBJPEG = $(JPEGLIBDIR)/libjpeg.a
 #endif	/* USEINSTALLEDJPEG */
 
 #endif /* USEJPEG */
+
 DEVDEFINES = $(DUSEJPEG) $(DUSEXPM) $(XPMINC) $(XPMDBM) \
 		$(DDNFSS) $(DDEPSF) $(DDA4) $(DDIBMGEC) $(DDDVIPS) $(I18N_DEV_DEFS)
 
@@ -227,11 +228,13 @@ all:: fig2dev.man fig2ps2tex.man pic2tpic.man
 
 XCOMM Install the tk bitmaps here
 install::
-	    @(cd bitmaps ; \
-	    if [ -d $(XFIGLIBDIR)/bitmaps ]; then set +x; \
-	    else (set -x; $(MKDIRHIER) $(XFIGLIBDIR)/bitmaps ); fi ; \
-	    echo Copying files for $$d library to $(XFIGLIBDIR)/bitmaps ; \
-	    $(INSTALL) -c * $(XFIGLIBDIR)/bitmaps ; )
+	@(cd bitmaps ; \
+	if [ -d $(XFIGLIBDIR)/bitmaps ]; then set +x; \
+	else (set -x; $(MKDIRHIER) $(XFIGLIBDIR)/bitmaps ); fi ; \
+	echo Copying bitmap files for tk to $(XFIGLIBDIR)/bitmaps ; \
+	for f in * ; do \
+	      $(INSTALL) -c $$f $(XFIGLIBDIR)/bitmaps ; \
+	done) ; 
 
 InstallScript(fig2ps2tex,$(BINDIR))
 InstallScript(fig2ps2tex.sh,$(BINDIR))

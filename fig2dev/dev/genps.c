@@ -474,7 +474,7 @@ F_compound	*objects;
 	fprintf(tfp, "10 setmiterlimit\n");	/* make like X server (11 degrees) */
 	/* set initial clipping area to size of the bounding box plus a margin
 	   (this is needed for later clipping by arrowheads */
-	fprintf(tfp, "n %d %d m %d %d l %d %d l %d %d l cp clip\n",
+	fprintf(tfp, "n %d %d m %d %d l %d %d l %d %d l cp clip n\n",
 			-1000,clipy+1000,-1000,-1000,clipx+1000,-1000,clipx+1000,clipy+1000);
 
  	if ( multi_page ) {

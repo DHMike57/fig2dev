@@ -141,6 +141,8 @@ int		include;
 	int		llx, lly, urx, ury;
 	int	        half_wd;
 
+    llx = lly =  1000000;
+    urx = ury = -1000000;
     while(compound != NULL) {
 	for (a = compound->arcs; a != NULL; a = a->next) {
 	    arc_bound(a, &sx, &sy, &bx, &by);

@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "fig2dev.h"
+#include "genps.h"
 #include "object.h"
 #include "texfonts.h"
 
@@ -55,6 +56,7 @@ extern void
 
 static char gscom[1000],*gsdev,tmpname[PATH_MAX];
 Boolean	direct;
+FILE	*saveofile;
 char	*ofile;
 int	width,height;
 int	jpeg_quality=75;
@@ -136,10 +138,12 @@ fscale = 14.0;
     }
     /* make up the command for gs */
     sprintf(gscom, "gs -q -dSAFER -sDEVICE=%s -r80 -g%dx%d -sOutputFile=%s %s -",
-		   gsdev,width,height,ofile,extra_options);
+		   gsdev,width,height,(ofile? ofile: "-"),extra_options);
     /* divert output from ps driver to the pipe into ghostscript */
     /* but first close the output file that main() opened */
-    fclose(tfp);
+    saveofile = tfp;
+    if (tfp != stdout)
+	fclose(tfp);
     if ((tfp = popen(gscom,"w" )) == 0) {
 	fprintf(stderr,"Can't open pipe to ghostscript\n");
 	exit(1);
@@ -150,7 +154,7 @@ fscale = 14.0;
 void
 genbitmaps_end()
 {
-	char com[200];
+	char com[500];
 	char *outfile;
 
 	/* wrap up the postscript output */
@@ -180,7 +184,7 @@ genbitmaps_end()
 	    } else if (strcmp(lang, "acad")==0) {
 		sprintf(com,"(ppmtoacad %s",tmpname);
 	    }
-	    if (tfp != stdout) {
+	    if (saveofile != stdout) {
 		/* finally, route output from ppmtoxxx to final output file, if
 		   not going to stdout */
 		strcat(com," > ");

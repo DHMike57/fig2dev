@@ -2,6 +2,19 @@
 Version 3.2
 ===============================================================================
 
+Patchlevel 1a  (September, 1999)
+
+BUGS FIXED
+	o Fixes the problem of uninitialized bounding box vars, which 
+	     only seem to manifest problems with Sun's native Solaris cc.
+	o Fixes problem where box appears in output
+	o Fixes the problem where output from fig2dev is to stdout, but 
+	     genbitmaps trys to close stdout.
+	     Also makes more room for command (com[500]) to export to bitmap
+	     formats.
+	o Fixes the difference between xfig and fig2dev splines
+
+----------------------------
 Patchlevel 1  (July 1, 1998)
 
 NEW FEATURES

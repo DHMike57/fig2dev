@@ -272,7 +272,7 @@ compute_closed_spline(spline, precision)
 
 
 
-#define Q(s)  (-(s)/2.0)
+#define Q(s)  (-(s))
 #define EQN_NUMERATOR(dim) \
   (A_blend[0]*p0->dim+A_blend[1]*p1->dim+A_blend[2]*p2->dim+A_blend[3]*p3->dim)
 
