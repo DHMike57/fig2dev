@@ -286,36 +286,8 @@ PICFLAGS = -pic
 # limitation a license to do the foregoing actions under any patents of
 # the party supplying this software to the X Consortium.
 
-# Uncomment the following section here AND the similar section in
-# ../Imakefile if you have the XPM (color pixmap) package and you
-# would like to allow XPM files.
-# Also change RGB_FILE if necessary, to point to your rgb.txt color
-# database file (for X11).  This is needed for those XPM flies which
-# have named colors (e.g. "white").
-# You need version 3.4c of the XPM package.
-
-# XPMDEFINES = -DUSE_XPM
-# XPMINCDIR = -I/usr/local/X11/include/xpm
-
-# Finally, if your system doesn't have ndbm (the 'new' database subroutines)
-# remove the -DNDBM from the XPMRGB definition.
-
-# XPMRGB = -DRGB_FILE=\"/usr/lib/X11/rgb\" -DNDBM
-
-# to set paper size to A4 			add -DA4	to DEFINES list
-# to set IBM Graphics Enhancement Cartridge	add -DIBMGEC	to DEFINES list
-# to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEFINES list
-
-# add -DNFSS to DEFINES list to use NFSS2 font selection for LaTeX texts
-# add -DEPSF to DEFINES list to use epsfig macros as distributed w/ LaTeX2e
-#
-#     Hint: Users of LaTeX2e will probably want to include both of these
-#     options; users of LaTeX 2.09 will probably want to include neither.
-
-DEFINES = -DDVIPS -DEPSF $(XPMDEFINES)
-
 INCLUDES = -I..
-EXTRA_INCLUDES = $(XPMINCDIR)
+EXTRA_INCLUDES = -I$(JPEGINCDIR)
 
 SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genmf.c genpic.c genpictex.c \
 	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c psencode.c \
@@ -325,6 +297,7 @@ LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genmf.o genpic.o genpictex.o 
 	readpics.o readgif.o readxbm.o readxpm.o readjpg.o
 
 LIB = transfig
+XPMRGBFILE = -DRGB_FILE=\"$(XPMRGB)\"
 
 all:: lib$(LIB).a
 
@@ -335,7 +308,7 @@ lib$(LIB).a: $(LIBOBJS)
 
 readxpm.o:
 	$(RM) $@
-	$(CC) -c $(CFLAGS)  $(XPMRGB) $*.c
+	$(CC) -c $(CFLAGS)  $(XPMRGBFILE) $*.c
 
 depend::
 	$(DEPEND) $(DEPENDFLAGS) -s "# DO NOT DELETE" -- $(ALLDEFINES) -- $(SRCS)

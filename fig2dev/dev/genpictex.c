@@ -44,18 +44,6 @@
 #define UNIT "cm"       /* dip */
 #define CONVUNIT 2.54   /* dip */
 
-#ifndef fabs
-extern double fabs();
-#endif
-#ifndef sin
-extern double sin();
-#endif
-#ifndef cos
-extern double cos();
-#endif
-#ifndef acos
-extern double acos();
-#endif
 extern char *ISOtoTeX[];
 
 static void genpictex_ctl_spline(), genpictex_itp_spline();

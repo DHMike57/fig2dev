@@ -31,7 +31,7 @@
 #include "object.h"
 #include "setjmp.h"
 #include <sys/types.h>
-#include <jpeglib.h>
+#include "jpeglib.h"
 
 static	Boolean	read_JPEG_file();
 extern	FILE	*open_picfile();
@@ -177,23 +177,8 @@ read_JPEG_file (file)
 		*bitmapptr++ = (unsigned char) buffer[0][i];
 	}
 
-	/* Step 7: Finish decompression */
-
-	(void) jpeg_finish_decompress(&cinfo);
-	/* We can ignore the return value since suspension is not possible
-	 * with the stdio data source.
-	 */
-
-	/* Step 8: Release JPEG decompression object */
-
-	/* This is an important step since it will release a good deal of memory. */
-	jpeg_destroy_decompress(&cinfo);
-
-	/* At this point you may want to check to see whether any corrupt-data
-	 * warnings occurred (test whether jerr.pub.num_warnings is nonzero).
-	 */
-
-	/* fill up the colortable in the pict object */
+	/* Step 7: fill up the colortable in the pict object */
+	/* (Must do this before jpeg_finish_decompress or jpeg_destroy_decompress) */
 
 	pict->numcols = cinfo.actual_number_of_colors;
 	for (i = 0; i < pict->numcols; i++) {
@@ -201,6 +186,22 @@ read_JPEG_file (file)
 	    pict->cmap[1][i] = cinfo.colormap[1][i];
 	    pict->cmap[2][i] = cinfo.colormap[2][i];
 	}
+
+	/* Step 8: Finish decompression */
+
+	(void) jpeg_finish_decompress(&cinfo);
+	/* We can ignore the return value since suspension is not possible
+	 * with the stdio data source.
+	 */
+
+	/* Step 9: Release JPEG decompression object */
+
+	/* This is an important step since it will release a good deal of memory. */
+	jpeg_destroy_decompress(&cinfo);
+
+	/* At this point you may want to check to see whether any corrupt-data
+	 * warnings occurred (test whether jerr.pub.num_warnings is nonzero).
+	 */
 
 	/* And we're done! */
 	return TRUE;
@@ -210,7 +211,7 @@ read_JPEG_file (file)
  * Here's the routine that will replace the standard error_exit method:
  */
 
-METHODDEF void
+static void
 error_exit ( cinfo )
 j_common_ptr cinfo;
 {

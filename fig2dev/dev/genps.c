@@ -47,7 +47,11 @@
 #include <math.h>
 #include <pwd.h>
 #include <errno.h>
+#ifndef __NetBSD__
+#if (! (defined(BSD) && (BSD >= 199306)))
 extern char *sys_errlist[];
+#endif
+#endif
 #include "pi.h"
 #include "fig2dev.h"
 #include "object.h"
@@ -57,7 +61,7 @@ extern char *sys_errlist[];
 
 /* for the xpm package */
 #ifdef USE_XPM
-#include <X11/xpm.h>
+#include <xpm.h>
 int	XpmReadFileToXpmImage();
 #endif
 
@@ -86,12 +90,16 @@ struct pagedef
 
 struct pagedef pagedef[] =
 {
-    {"A4", 595, 842}, 		/* 21cm x 29.7cm */
-    {"B5", 516, 729}, 		/* 18.2cm x 25.7cm */
     {"Letter", 612, 792}, 	/* 8.5" x 11" */
     {"Legal", 612, 1008}, 	/* 8.5" x 14" */
     {"Ledger", 1224, 792}, 	/*  17" x 11" */
     {"Tabloid", 792, 1224}, 	/*  11" x 17" */
+    {"B5", 516, 729}, 		/* 18.2cm x 25.7cm */
+    {"A4", 595, 842}, 		/* 21cm x 29.7cm */
+    {"A3", 842, 1190},		/* 29.7cm x 42cm*/
+    {"A2", 1190, 1684},		/* 42cm x 59.4 */
+    {"A1", 1684, 2380},		/* 59.4cm x 84cm */
+    {"A0", 2380, 3368},		/* 84cm x 118.8 */ 
     {NULL, 0, 0}
 };
 
@@ -112,7 +120,7 @@ int		xoff=0;
 int		yoff=0;
 static int	coord_system;
 static int	resolution;
-int		show_page = 0;
+Boolean		show_page = FALSE;
 static double	cur_thickness = 0.0;
 static int	cur_joinstyle = 0;
 static int	cur_capstyle = 0;
@@ -238,19 +246,21 @@ char *optarg;
 	    	break;
 
 	case 'c':			/* center figure */
-	    	center = 1;
+	    	center = TRUE;
+		centerspec = TRUE;	/* user-specified */
 		break;
 
 	case 'e':			/* don't center ('e' means edge) figure */
-	    	center = 0;
+	    	center = FALSE;
+		centerspec = TRUE;	/* user-specified */
 		break;
 
 	case 'M':			/* multi-page option */
-		multi_page = 1;
+		multi_page = TRUE;
 		break;
 
 	case 'P':			/* add showpage */
-		show_page = 1;
+		show_page = TRUE;
 		break;
 
       	case 'L':			/* language */
@@ -263,13 +273,13 @@ char *optarg;
 		break;
 
       	case 'l':			/* landscape mode */
-		landscape = 1;		/* override the figure file setting */
-		orientspec = 1;		/* user-specified */
+		landscape = TRUE;	/* override the figure file setting */
+		orientspec = TRUE;	/* user-specified */
 		break;
 
       	case 'p':			/* portrait mode */
-		landscape = 0;		/* override the figure file setting */
-		orientspec = 1;		/* user-specified */
+		landscape = FALSE;	/* override the figure file setting */
+		orientspec = TRUE;	/* user-specified */
 		break;
 
 	case 'x':			/* x offset on page */
@@ -286,7 +296,6 @@ char *optarg;
 		   (void) fprintf (stderr, "No memory\n");
 		   exit (1);
 		   }
-
 		(void) strcpy (pagesize, optarg);
 		break;
 
@@ -305,6 +314,7 @@ F_compound	*objects;
 	struct passwd	*who;
 	time_t		when;
 	int		itmp;
+	int		clipx, clipy;
 	struct pagedef	*pd;
 
 	resolution = objects->nwcorner.x;
@@ -312,14 +322,17 @@ F_compound	*objects;
 	scalex = scaley = mag * POINT_PER_INCH / (double)resolution;
 	/* convert to point unit */
 	llx = (int)floor(llx * scalex); lly = (int)floor(lly * scaley);
+	/* save upper bounds before scaling for clipping later */
+	clipx = urx;
+	clipy = ury;
 	urx = (int)ceil(urx * scalex); ury = (int)ceil(ury * scaley);
 
-
-        for (pd = pagedef; pd -> name != NULL; pd++)
-	   if (strcmp (pagesize, pd -> name) == 0)
+        for (pd = pagedef; pd->name != NULL; pd++)
+	   if (strcasecmp (pagesize, pd->name) == 0)
 	      {
-	      pagewidth = pd -> width;
-	      pageheight = pd -> height;
+	      pagewidth = pd->width;
+	      pageheight = pd->height;
+	      pagesize = pd->name;	/* use the "nice" form */
 	      }
 	
 	if (pagewidth < 0 || pageheight < 0)
@@ -329,9 +342,18 @@ F_compound	*objects;
 	   }
 
 	if (landscape) {
+	   if (strcasecmp(pagesize,"ledger")==0) {
+		fprintf(stderr, "'Ledger' page size specified with landscape, switching to 'Tabloid'\n");
+		pagesize = "Tabloid";
+	   }
 	   itmp = pageheight; pageheight = pagewidth; pagewidth = itmp;
 	   itmp = llx; llx = lly; lly = itmp;
 	   itmp = urx; urx = ury; ury = itmp;
+	} else {
+	   if (strcasecmp(pagesize,"tabloid")==0) {
+		fprintf(stderr, "'Tabloid' page size specified with portrait, switching to 'Ledger'\n");
+		pagesize = "Ledger";
+	   }
 	}
 	if (show_page) {
 	   if (center) {
@@ -377,10 +399,6 @@ F_compound	*objects;
 	   fprintf(tfp, "%%%%For: %s@%s (%s)\n",
 			who->pw_name, host, who->pw_gecos);
 
-	/* put in the magnification for information purposes */
-	/* This is not DSC so don't use two % */
-	fprintf(tfp, "%%Magnification: %.2f\n",mag);
-
 	if (!center) {
 	   if (landscape)
 		pages = (urx/pageheight+1)*(ury/pagewidth+1);
@@ -403,7 +421,11 @@ F_compound	*objects;
 	fprintf(tfp, "%%%%IncludeFeature: *PageSize %s\n", pagesize);
 	fprintf(tfp, "%%%%EndSetup\n");
 
+	/* put in the magnification for information purposes */
+	fprintf(tfp, "%%%%Magnification: %.2f\n",mag);
+
 	fprintf(tfp, "%%%%EndComments\n");
+
 	if (pats_used)
 		fprintf(tfp,"/MyAppDict 100 dict dup begin def\n");
 	fprintf(tfp, "%s", BEGIN_PROLOG1);
@@ -449,10 +471,10 @@ F_compound	*objects;
 	fprintf(tfp, "%s\n", END_PROLOG);
 	fprintf(tfp, "$F2psBegin\n");
 	fprintf(tfp, "10 setmiterlimit\n");	/* make like X server (11 degrees) */
-	/* set initial clipping area to size of page (this is needed for
-	   later clipping by arrowheads */
+	/* set initial clipping area to size of the bounding box plus a margin
+	   (this is needed for later clipping by arrowheads */
 	fprintf(tfp, "n %d %d m %d %d l %d %d l %d %d l cp clip\n",
-			0,pageheight,0,0,pagewidth,0,pagewidth,pageheight);
+			0,clipy+40,0,0,clipx+40,0,clipx+40,clipy+40);
 
  	if ( multi_page ) {
 	    fprintf(tfp, "initmatrix\n");
@@ -477,8 +499,7 @@ genps_end()
        for (dy=0; dy < (ury-h*0.1); dy += h*0.9) {
 	 for (dx=0; dx < (urx-w*0.1); dx += w*0.9) {
 	    fprintf(tfp, "%%%%Page: %d %d\n",page,page);
-	    fprintf(tfp,"%.1f %.1f tr",
-		-(origx+dx), (origy+(landscape?-dy:dy)));
+	    fprintf(tfp,"%.1f %.1f tr", dx, (landscape? -dy:dy));
 	    if (landscape) {
 	       fprintf(tfp, " 90 rot");
 	    }
@@ -488,7 +509,8 @@ genps_end()
 	    fprintf(tfp, " %.3f %.3f sc\n", scalex, scaley);
 	    for (i=0; i<no_obj; i++) {
 	       fprintf(tfp, "o%d ", i);
-	       if (!(i%20)) fprintf(tfp, "\n", i);
+	       if (!(i%20)) 
+		  fprintf(tfp, "\n");
 	    }
 	    fprintf(tfp, "showpage\n");
 	    page++;
@@ -510,13 +532,32 @@ set_style(s, v)
 int	s;
 double	v;
 {
-	v /= POINT_PER_INCH / (double)resolution;
+	v /= 80.0 / (double)resolution;
 	if (s == DASH_LINE) {
-	    if (v > 0.0) fprintf(tfp, " [%.1f] 0 sd\n", v);
+	    if (v > 0.0) fprintf(tfp, " [%d] 0 sd\n", round(v));
 	    }
 	else if (s == DOTTED_LINE) {
-	    if (v > 0.0) fprintf(tfp, " [%d %.1f] %.1f sd\n", 
-		round(resolution/80.0), v, v);
+	    if (v > 0.0) fprintf(tfp, " [%d %d] %d sd\n", 
+		round(resolution/80.0), round(v), round(v));
+	    }
+	else if (s == DASH_DOT_LINE) {
+	    if (v > 0.0) fprintf(tfp, " [%d %d %d %d] 0 sd\n", 
+		round(v), round(v*0.5),
+		round(resolution/80.0), round(v*0.5));
+	    }
+	else if (s == DASH_2_DOTS_LINE) {
+	    if (v > 0.0) fprintf(tfp, " [%d %d %d %d %d %d] 0 sd\n", 
+		round(v), round(v*0.45),
+		round(resolution/80.0), round(v*0.333),
+		round(resolution/80.0), round(v*0.45));
+	    }
+	else if (s == DASH_3_DOTS_LINE) {
+	    if (v > 0.0) fprintf(tfp, 
+                " [%d %d %d %d %d %d %d %d ] 0 sd\n", 
+		round(v), round(v*0.4),
+		round(resolution/80.0), round(v*0.3),
+		round(resolution/80.0), round(v*0.3),
+		round(resolution/80.0), round(v*0.4));
 	    }
 	}
 
@@ -531,6 +572,10 @@ double	v;
 	else if (s == DOTTED_LINE) {
 	    if (v > 0.0) fprintf(tfp, " [] 0 sd");
 	    }
+	else if (s == DASH_DOT_LINE || s == DASH_2_DOTS_LINE ||
+                 s == DASH_3_DOTS_LINE) {
+	    if (v > 0.0) fprintf(tfp, " [] 0 sd");
+	    }
 	fprintf(tfp, "\n");
 	}
 
@@ -538,8 +583,6 @@ static
 set_linejoin(j)
 int	j;
 {
-	extern int	cur_joinstyle;
-
 	if (j != cur_joinstyle) {
 	    cur_joinstyle = j;
 	    fprintf(tfp, "%d slj\n", cur_joinstyle);
@@ -550,8 +593,6 @@ static
 set_linecap(j)
 int	j;
 {
-	extern int	cur_capstyle;
-
 	if (j != cur_capstyle) {
 	    cur_capstyle = j;
 	    fprintf(tfp, "%d slc\n", cur_capstyle);
@@ -589,20 +630,28 @@ F_line	*l;
 	int		xmin,xmax,ymin,ymax;
 	int		pic_w, pic_h;
 	Boolean		namedcol;
+	float		hf_wid;
 	
 	if (multi_page)
 	   fprintf(tfp, "/o%d {", no_obj++);
+	fprintf(tfp, "%% Polyline\n");
 	if (l->type != T_PIC_BOX) {  /* pic object has no line thickness */
 		set_linejoin(l->join_style);
 		set_linecap(l->cap_style);
 		set_linewidth((double)l->thickness);
 	}
-	fprintf(tfp, "%% Polyline\n");
 	p = l->points;
 	q = p->next;
 	if (q == NULL) { /* A single point line */
+	    /*set_linecap(0);	/* make CAP_BUTT */
+	    if (l->cap_style > 0)
+		hf_wid = 1.0;
+	    else if (l->thickness <= THICK_SCALE)
+		hf_wid = l->thickness/4.0;
+	    else
+		hf_wid = (l->thickness-THICK_SCALE)/2.0;
 	    fprintf(tfp, "n %d %d m %d %d l gs col%d s gr\n",
-			p->x, p->y, p->x, p->y, l->pen_color);
+			round(p->x-hf_wid), p->y, round(p->x+hf_wid), p->y, l->pen_color);
 	    if (multi_page)
 	       fprintf(tfp, "} bind def\n");
 	    return;
@@ -643,8 +692,7 @@ F_line	*l;
 				xmax, ymax, xmax, ymin+radius, radius);
 	    fprintf(tfp, "  %d %d %d %d %d arcto 4 {pop} repeat\n", /* arc through tr to tl */
 				xmax, ymin, xmin+radius, ymin, radius);
-	}
-	else if (l->type == T_PIC_BOX) {  /* postscript (eps), XPM, X bitmap or GIF file */
+	} else if (l->type == T_PIC_BOX) {  /* postscript (eps), XPM, X bitmap or GIF file */
 	  /* PICTURE OBJECT */
 		int             dx, dy, rotation;
 		int		llx, lly, urx, ury;
@@ -713,7 +761,7 @@ F_line	*l;
 			fprintf(tfp, "%%\n");
 
 			if ((picf=open_picfile(l->pic->file, &filtype)) == NULL) {
-			    fprintf(stderr, "Unable to open EPS file: %s, error: (%d)\n",
+			    fprintf(stderr, "Unable to open EPS file '%s': error: %s (%d)\n",
 					l->pic->file, sys_errlist[errno],errno);
 			    return;
 			}
@@ -721,9 +769,10 @@ F_line	*l;
 			    char *c;
 
 			    if (!strncmp(buf, "%%BoundingBox:", 14)) {
-				switch (*(c=buf+14)) {
-				    case ' ':case '\t':c++;
-				}
+				c=buf+14;
+				/* skip past white space */
+				while (*c == ' ' || *c == '\t') 
+				    c++;
 				if (strncmp(c,"(atend)",7)) {	/* make sure not an (atend) */
 				    if (sscanf(c, "%lf %lf %lf %lf",
 						&fllx, &flly, &furx, &fury) < 4) {
@@ -866,12 +915,12 @@ F_line	*l;
 			fprintf(tfp, "%d %d sc\n", urx, ury);
 			/* modify colortable entries to make consistent */
 			coltabl = xpmimage.colorTable;
-			namedcol = False;
+			namedcol = FALSE;
 			/* convert the color defs to a consistent #rrggbb */
 			for (i=0; i<xpmimage.ncolors; i++) {
 				c = (coltabl + i)->c_color;
 				if (c[0] != '#') {		/* named color, set flag */
-					namedcol = True;
+					namedcol = TRUE;
 				/* want to make #RRGGBB from possibly other formats */
 				} else if (strlen(c) == 4) {	/* #rgb */
 					sprintf(tmpc,"#%.1s%.1s%.1s%.1s%.1s%.1s",
@@ -940,7 +989,7 @@ F_line	*l;
 		    int i;
 		    fprintf(tfp, "%% EPS file follows:\n");
 		    if ((picf=open_picfile(l->pic->file, &filtype)) == NULL) {
-			fprintf(stderr, "Unable to open EPS file: %s, error: (%d)\n",
+			fprintf(stderr, "Unable to open EPS file '%s': error: %s (%d)\n",
 				l->pic->file, sys_errlist[errno],errno);
 			fprintf(tfp, "gr\n");
 			return;
@@ -1000,12 +1049,17 @@ F_line	*l;
 			fprintf(tfp, "\n");
 		}
 	}
+
 	/* now fill it, draw the line and/or draw arrow heads */
 	if (l->type != T_PIC_BOX) {	/* make sure it isn't a picture object */
-		if (l->type == T_POLYLINE)
+		if (l->type == T_POLYLINE) {
 		    fprintf(tfp, " %d %d l ", q->x, q->y);
-		else
+		    if (fpntx1==lpntx1 && fpnty1==lpnty1)
+			fprintf(tfp, " cp ");	/* endpoints are coincident, close path 
+							so that line join is used */
+		} else {
 		    fprintf(tfp, " cp ");	/* polygon, close path */
+		}
 		/* fill it if there is a fill style */
 		if (l->fill_style != UNFILLED)
 		    fill_area(l->fill_style, l->pen_color, l->fill_color, xmin, ymin);
@@ -1039,6 +1093,8 @@ F_spline	*s;
 	} else {
 	    set_linecap(s->cap_style);	/* open splines can explicitely set capstyle */
 	}
+	/* set the line thickness */
+	set_linewidth((double)s->thickness);
 	if (int_spline(s))
 	    genps_itp_spline(s);
 	else
@@ -1054,7 +1110,6 @@ F_spline	*s;
 	F_control	*a, *b, *ar;
 	int		 xmin, ymin;
 
-	set_linewidth((double)s->thickness);
 	fprintf(tfp, "%% Interp Spline\n");
 	a = ar = s->controls;
 
@@ -1168,7 +1223,6 @@ F_spline	*s;
 	    clip_arrows(s, O_SPLINE);
 
 	/* now output the points */
-	set_linewidth((double)s->thickness);
 	set_style(s->style, s->style_val);
 	xmin = 999999;
 	ymin = 999999;
@@ -1237,6 +1291,9 @@ F_arc	*a;
 
 	if (multi_page)
 	   fprintf(tfp, "/o%d {", no_obj++);
+
+	fprintf(tfp, "%% Arc\n");
+
 	cx = a->center.x; cy = a->center.y;
 	sx = a->point[0].x; sy = a->point[0].y;
 	ex = a->point[2].x; ey = a->point[2].y;
@@ -1247,7 +1304,6 @@ F_arc	*a;
 	    direction = a->direction;
 	set_linewidth((double)a->thickness);
 	set_linecap(a->cap_style);
-	fprintf(tfp, "%% Arc\n");
 	dx = cx - sx;
 	dy = cy - sy;
 	radius = sqrt(dx*dx+dy*dy);
@@ -1616,16 +1672,17 @@ calc_arrow(x1, y1, x2, y2, c1x, c1y, c2x, c2y, objthick, arrow, points, npoints)
 
 static
 arc_tangent(x1, y1, x2, y2, direction, x, y)
-double	x1, y1, x2, y2, *x, *y;
+double	x1, y1, x2, y2;
+int	*x, *y;
 int	direction;
 {
-	if (direction) { /* counter clockwise  */
-	    *x = x2 + (y2 - y1);
-	    *y = y2 - (x2 - x1);
+	if (direction==0) { /* counter clockwise  */
+	    *x = round(x2 + (y2 - y1));
+	    *y = round(y2 - (x2 - x1));
 	    }
 	else {
-	    *x = x2 - (y2 - y1);
-	    *y = y2 + (x2 - x1);
+	    *x = round(x2 - (y2 - y1));
+	    *y = round(y2 + (x2 - x1));
 	    }
 	}
 
@@ -1648,16 +1705,17 @@ compute_arcarrow_angle(x1, y1, x2, y2, direction, arrow, x, y)
     dy=y2-y1;
     dx=x2-x1;
     r=sqrt(dx*dx+dy*dy);
-    if (arrow->ht>2*r) {
-	arc_tangent(x1,y1,x2,y2,direction,x,y);
-	return;
-    }
-
     h = (double) arrow->ht;
     /* lpt is the amount the arrowhead extends beyond the end of the line */
     lpt = arrow->thickness/2.0/(arrow->wid/h/2.0);
     /* add this to the length */
     h += lpt;
+
+    /* radius too small for this method, use normal method */
+    if (h > 2.0*r) {
+	arc_tangent(x1,y1,x2,y2,direction,x,y);
+	return;
+    }
 
     beta=atan2(dy,dx);
     if (direction) {
@@ -1680,7 +1738,7 @@ int fill, pen_color, fill_color, ulx, uly;
    float pen_r, pen_g, pen_b, fill_r, fill_g, fill_b;
 
    /* get the rgb values for the fill pattern (if necessary) */
-   if (fill_color <= NUM_STD_COLS) {
+   if (fill_color < NUM_STD_COLS) {
 	fill_r=rgbcols[fill_color>0? fill_color: 0].r;
 	fill_g=rgbcols[fill_color>0? fill_color: 0].g;
 	fill_b=rgbcols[fill_color>0? fill_color: 0].b;
@@ -1689,7 +1747,7 @@ int fill, pen_color, fill_color, ulx, uly;
 	fill_g=user_colors[fill_color-NUM_STD_COLS].g/255.0;
 	fill_b=user_colors[fill_color-NUM_STD_COLS].b/255.0;
    }
-   if (pen_color <= NUM_STD_COLS) {
+   if (pen_color < NUM_STD_COLS) {
 	pen_r=rgbcols[pen_color>0? pen_color: 0].r;
 	pen_g=rgbcols[pen_color>0? pen_color: 0].g;
 	pen_b=rgbcols[pen_color>0? pen_color: 0].b;

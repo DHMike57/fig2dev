@@ -45,8 +45,8 @@
 
             SHELL = /bin/sh
 
-              TOP = ../.
-      CURRENT_DIR = ./transfig
+              TOP = .
+      CURRENT_DIR = .
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
@@ -329,7 +329,7 @@ clean::
 all:: transfig.man fig2dev.man fig2ps2tex.man pic2tpic.man
 
 transfig.man: ../doc/transfig.1
-	ln -s ../doc/transfig.1 transfig.man
+	-ln -s ../doc/transfig.1 transfig.man
 
 install.man:: fig2ps2tex.man
 	@if [ -d $(DESTDIR)$(MANDIR) ]; then set +x; \
@@ -342,13 +342,16 @@ install.man:: pic2tpic.man
 	$(INSTALL) -c $(INSTMANFLAGS) pic2tpic.man $(DESTDIR)$(MANDIR)/pic2tpic.$(MANSUFFIX)
 
 fig2dev.man: ../doc/fig2dev.1
-	ln -s ../doc/fig2dev.1 fig2dev.man
+	-ln -s ../doc/fig2dev.1 fig2dev.man
 
 fig2ps2tex.man: ../doc/fig2ps2tex.1
-	ln -s ../doc/fig2ps2tex.1 fig2ps2tex.man
+	-ln -s ../doc/fig2ps2tex.1 fig2ps2tex.man
 
 pic2tpic.man: ../doc/pic2tpic.1
-	ln -s ../doc/pic2tpic.1 pic2tpic.man
+	-ln -s ../doc/pic2tpic.1 pic2tpic.man
+
+clean::
+	rm -f *.man
 
 # -------------------------------------------------------------------------
 # common rules for all Makefiles - do not edit

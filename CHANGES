@@ -1,8 +1,76 @@
 ===============================================================================
 Version 3.1
 ===============================================================================
+Patchlevel 3 (XXX XX, XXXX)
+
+NEW FEATURES
+
+o only need to change XPM defines in fig2dev/Imakefile
+o if your system has the strerror() function (doesn't have sys_errlist) then
+	comment out NEED_STRERROR with an XCOMM comment.
+o new option for PostScript output, "-e" to force figure to edge (flush-left).
+	Useful when the figure was saved with Centering on.
+o point objects (POLYLINE with only one point) have thickness now and will be
+	filled circles if cap style is rounded.  PostScript output only.
+o -A option to scale arrowhead sizes for epic driver
+o can rotate all text (not just left justified) in LaTeX now using \rotatebox.
+	The old restriction is not needed because the epsfig package is
+	required to include ps_tex_t files anyway.
+o new line types - Dash-dot (_.) Dash-dot-dot (_..) and Dash-dot-dot-dot (_...)
+
+BUGS FIXED
+
+o double colon (::) needed for .man installation in Imakefiles
+o linewidth wasn't working correctly in epic/eepic driver
+	from Andre Eickler (eickler@db.fmi.uni-passau.de)
+o some versions of imake don't like null parameters in SpecialObjectRule in
+	Imakefile - changed to "NullParameter"
+o the text alignment problem in LaTeX output has been fixed (genlatex.c)
+	From Francky Leyn (Francky.Leyn@esat.kuleuven.ac.be)
+o if the endpoints of a POLYLINE are coincident, the line join parameter will
+	be used to join them (xfig already showed this behavior)
+o redefined $(XPMINCDIR) to $(XPMINC) because some compilers have trouble with
+	header search path with empty "-I"
+o incorrect directory specified for xpm.h in fig2dev/dev/genps.c and readxpm.c
+o changed "ln -s" commands in Imakefiles to "-ln -s" so make will continue if
+	symlinks are already in place
+o back arrows incorrect for splines and lines in epic driver
+o figure was clipped to pagesize even in EPS mode
+o if paper size specified as "Ledger" in landscape mode fig2dev switches to
+	"Tabloid" paper size and vice versa (Tabloid in portrait mode switches
+	to Ledger)
+o colormap must be saved before jpeg_finish_decompress or
+	jpeg_destroy_decompress are called in read_JPEG_file()
+o #include <jpeglib.h> changed to #include "jpeglib.h" to ensure corrrect path
+	used to find header file
+o moved %Magnification information in PostScript output after %%BoundingBox
+	(caused problems for some programs interpreting DSC PostScript)
+o incorrect spline line thickness when multiple splines are used
+o arrowheads caused DOMAIN error for asin on very small arcs
+o include ctype.h in fig2dev.h for isascii() and isxdigit() macros
+o removed redundant #ifdef NOSTRSTR from strstr.c because that file is only
+	compiled if system has no strstr()
+o error when using first user-defined color (color 32)
+o fabs(), sin(), cos(), atan() and acos() redefined in genlatex.c, genpictex.c,
+	genpstex.c and gentextyl.c
+o error message about being unable to open eps file was mis-formatted
+o multiple whitespace following "(atend)" in EPS file parsed correctly now
+	from T. Sato (VEF00200@niftyserve.or.jp)
+o extraneous variable in fprintf in genps.c
+	from T. Sato
+o extraneous % in fprintf in genepic.c (set_pattern)
+o multi-page option shifted all pages incorrectly
+o error in scanf format string for reading text from old (Fig 1.3) files
+	from T. Sato
+o error in fprintf format string for virtual font in gentpic driver
+	from T. Sato
+o erroneous "extern" declarations for cur_capstyle and cur_joinstyle in two
+	dev/genps.c functions
+o bug in skip_comment() which prevented some machines from seeing the end of
+	file, giving erroneous "Incorrect format" error
+
+---------------------------------------------------------------------------
 Patchlevel 2 (Aug 16, 1995)
-Changes from patchlevel 1:
 
 New Features:
 
@@ -45,21 +113,20 @@ o cleared up confusion about -DNFSS and -DEPSF.  Here is the final word:
  	Hint: Users of LaTeX2e will probably want to include both of these
  	options; users of LaTeX 2.09 will probably want to include neither.
 
-o new tints added (fill values 21-40) for epic driver
+o new tints added (fill values 21-40) and arrowhead types for epic driver
      from Andre Eickler (eickler@db.fmi.uni-passau.de)
 o pattern fill seg faulted for epic/eepic output (only PostScript has patterns)
 o sanity check for font number
 o font name "Modern" changed to more correct "Sans Serif" in documentation
 o MetaFont driver only sent output to stdout
 o version information (fig2dev -V) said "TransFig" instead of "fig2dev"
-o getopt.c not needed for Solaris 2.x - #if (defined(...)) added in Imakefile
+o getopt.c not needed for Solaris - #if (defined(...)) added in Imakefile
 	for this
 o removed duplicate #define of FALSE, TRUE and DEFAULT_FONT_SIZE in various
 	drivers
 
 ---------------------------------------------------------------------------
 Patchlevel 1 (Jan 24, 1995)
-Changes from patchlevel 0:
 
 Bugs Fixed:
 
@@ -92,8 +159,6 @@ o variable in fig2dev/Imakefile and fig2dev/dev/Imakefile for include
 ---------------------------------------------------------------------------
 Patchlevel 0 (Jan 9, 1995)
 
-Changes from 3.0.0:
-
 o NOTE:	An error in xfig version 3.0.0 incorrectly positioned objects on the
 	canvas when reading older fig files.  New objects entered with 3.0 are
 	correctly positioned.  
@@ -113,8 +178,6 @@ o sys/types.h needed in dev/readpics.c for BSD machines
 Version 3.0
 ===============================================================================
 Transfig version 3.0.0 (Dec 22, 1994)
-
-Changes from 2.1.8:
 
 New Features:
 
@@ -205,7 +268,6 @@ Version 2.1
 ===============================================================================
 
 Transfig version 2.1.8 (Oct 1, 1993)
-Changes from 2.1.7:
 
 New Features:
 
@@ -231,7 +293,6 @@ o SUBDIR fig2dev/dev was missing from top-level Imakefile caused problems
 
 ---------------------------------------------------------------------------
 Transfig version 2.1.7
-Changes from 2.1.6:
 
 o no longer writes over input file if there is an error in the command line
 o added "%%Orientation: Landscape" comment for PostScript output in landscape
@@ -270,7 +331,6 @@ o -P flag dissappeared from eepic output language - reinstated
 
 ---------------------------------------------------------------------------
 Version 2.1.6
-Changes from 2.1.5:
 
 o Courier-BoldItalic changed to Courier-BoldOblique for PostScript fonts
 o "if" statement replaces copysign() call since some machines don't have it

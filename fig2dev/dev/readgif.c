@@ -95,7 +95,7 @@ read_gif(pic)
 	GifScreen.Width           = LM_to_uint(buf[0],buf[1]);
 	GifScreen.Height          = LM_to_uint(buf[2],buf[3]);
 	GifScreen.BitPixel        = 2<<(buf[4]&0x07);
-	GifScreen.ColorResolution = (((buf[4]&0x70)>>3)+1);
+	GifScreen.ColorResolution = (((unsigned int)(buf[4]&0x70)>>3)+1);
 	GifScreen.Background      = buf[5];
 	GifScreen.AspectRatio     = buf[6];
 

@@ -1,3 +1,5 @@
+/*	BSDI $Id$	*/
+
 /*
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1985 Supoj Sutantavibul
@@ -37,6 +39,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
+#include <sys/param.h>
+#include <string.h>
 #include "alloc.h"
 #include "fig2dev.h"
 #include "object.h"
@@ -44,6 +48,18 @@
 
 #if defined(hpux) || defined(SYSV) || defined(SVR4)
 #define bzero(s,n) memset((s),'\0',(n))
+#endif
+
+#ifdef NEED_STRERROR
+char *
+strerror(e)
+	int e;
+{
+#if (! (defined(BSD) && (BSD >= 199306)) && !defined(__NetBSD__))
+	extern char *sys_errlist[];
+#endif
+	return sys_errlist[e];
+	}
 #endif
 
 extern int            errno;
@@ -81,8 +97,6 @@ read_fail_message(file, err)
 char	*file;
 int	err;
 {
-	extern char	*sys_errlist[];
-
 	if (err == 0)		/* Successful read */
 	    return;
 #if !defined(hpux) && !defined(SYSV) && !defined(SVR4)
@@ -104,7 +118,7 @@ int	err;
 	    /* Format error; relevant error message is already delivered */
 	    }
 	else
-	    put_msg("File \"%s\" is not accessable; %s", file, sys_errlist[err]);
+	    put_msg("File \"%s\" is not accessable; %s", file, strerror(err));
 	}
 
 /**********************************************************
@@ -168,7 +182,7 @@ F_compound	*obj;
 
 	bzero((char*)obj, COMOBJ_SIZE);
 	(void)fgets(buf, BUF_SIZE, fp);	/* get the version line */
-	if (strlen(buf) > 0)
+	if (strlen(buf) > (size_t)0)
 	    buf[strlen(buf)-1] = '\0';	/* remove newline */
 
 	/* v2_flag is for version 2 or higher */
@@ -201,9 +215,12 @@ F_compound	*obj;
 		put_msg("File is truncated at metric/inches or centering specification.");
 		return(-1);
 	    }
+	    /* read justification spec */
 	    if ((strncasecmp(buf,"center",6) == 0) || 
 		(strncasecmp(buf,"flush",5) == 0)) {
-		center = strncasecmp(buf,"flush",5);
+		/* but set only if user didn't specify it */
+		if (!centerspec)
+		    center = strncasecmp(buf,"flush",5);
 		/* now read metric/inches spec */
 		line_no++;
 		if (get_line(fp) < 0) {
@@ -855,6 +872,54 @@ FILE	*fp;
 	return(s);
 	}
 
+/* strncasecmp and strcasecmp by Fred Appelman (Fred.Appelman@cv.ruu.nl) */
+
+#ifdef HAVE_NO_STRNCASECMP
+
+int strncasecmp(const char* s1, const char* s2, int n)
+{
+   char c1,c2;
+
+   while (--n>=0)
+   {
+          /* Check for end of string, if either of the strings
+           * is ended, we can terminate the test
+           */
+          if (*s1=='\0' && s2!='\0') return -1; /* s1 ended premature */
+          if (*s1!='\0' && s2=='\0') return +1; /* s2 ended premature */
+
+          c1=toupper(*s1++);
+          c2=toupper(*s2++);
+          if (c1<c2) return -1; /* s1 is "smaller" */
+          if (c1>c2) return +1; /* s2 is "smaller" */
+   }
+   return 0;
+}
+
+#endif
+
+#ifdef HAVE_NO_STRCASECMP
+int strcasecmp(const char* s1, const char* s2)
+{
+   char c1,c2;
+
+   while (*s1 && *s2)
+   {
+          c1=toupper(*s1++);
+          c2=toupper(*s2++);
+          if (c1<c2) return -1; /* s1 is "smaller" */
+          if (c1>c2) return +1; /* s2 is "smaller" */
+   }
+   /* Check for end of string, if not both the strings ended they are
+    * not the same.
+        */
+   if (*s1=='\0' && s2!='\0') return -1; /* s1 ended premature */
+   if (*s1!='\0' && s2=='\0') return +1; /* s2 ended premature */
+   return 0;
+}
+
+#endif
+ 
 static F_text *
 read_textobject(fp)
 FILE	*fp;
@@ -987,7 +1052,7 @@ FILE	*fp;
 		n = sscanf(buf, "%[^\1]%[\1]", s_temp, junk);
 	    }
 	    /* Safety check */
-	    if (strlen(s)+1 + strlen(s_temp)+1 > BUF_SIZE) {
+	    if (strlen(s)+1 + strlen(s_temp)+1 > (size_t)BUF_SIZE) {
 	      /* Too many characters.  Ignore the rest. */
 	      ignore = 1;
 	    }
@@ -1077,7 +1142,7 @@ FILE	*fp;
 skip_comment(fp)
 FILE	*fp;
 {
-	char c;
+	int c;
 
 	while ((c = fgetc(fp)) == '#') 
 		skip_line(fp);

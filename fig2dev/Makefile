@@ -295,14 +295,36 @@ PICFLAGS = -pic
 # limitation a license to do the foregoing actions under any patents of
 # the party supplying this software to the X Consortium.
 
-# Uncomment the XPM variables here AND in dev/Imakefile if you have
-# the XPM (color pixmap) package and you would like to allow XPM files.
+# Uncomment the XPM variables here  if you have the XPM (color pixmap)
+# package and you would like to allow XPM files.
+# You need version 3.4c or newer of the XPM package.
+#
+# Also change XPMRGB if necessary, to point to your rgb.txt color
+# database file (for X11).  This is needed for those XPM flies which
+# have named colors (e.g. "white").
 # You need version 3.4c of the XPM package.
+#
+# Finally, if your system doesn't have ndbm (the 'new' database subroutines)
+# remove the -DNDBM from the XPMDBM definition.
 
-# XPMDEFINES = -DUSE_XPM
-# XPMLIBDIR = -L/usr/local/X11/lib
-# XPMINCDIR = -I/usr/local/X11/include/xpm
-# XPMLIB = $(XPMLIBDIR) -lXpm -lX11
+XPMDEFINES = -DUSE_XPM
+XPMLIBDIR = -L/usr/local/X11/lib
+XPMINC = -I/usr/include/X11
+XPMLIB = $(XPMLIBDIR) -lXpm -lX11
+XPMRGB = XPMRGB=/usr/lib/X11/rgb
+XPMDBM = -DNDBM
+
+# to set paper size to A4 			add -DA4	to DEVDEFINES list
+# to set IBM Graphics Enhancement Cartridge	add -DIBMGEC	to DEVDEFINES list
+# to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEVDEFINES list
+
+# add -DNFSS to DEVDEFINES list to use NFSS2 font selection for LaTeX texts
+# add -DEPSF to DEVDEFINES list to use epsfig macros as distributed w/ LaTeX2e
+#
+#     Hint: Users of LaTeX2e will probably want to include both of these
+#     options; users of LaTeX 2.09 will probably want to include neither.
+
+DEVDEFINES = -DDVIPS -DEPSF $(XPMDEFINES) $(XPMINC) $(XPMDBM)
 
 # For Linux machines or any machines that have a separate library for
 # the database management routines, uncomment the following line
@@ -314,61 +336,76 @@ PICFLAGS = -pic
 # -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
 #
 
-DEFINES = $(XPMDEFINES) -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF
+DEFINES = -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF
 
-# If you have installed the jpeg libraries on your system, uncomment the
+# If you have installed the jpeg library on your system, uncomment the
 # USEINSTALLEDJPEG variable, change the JPEGLIBDIR variable to the directory
 # where your jpeg library resides and change the JPEGINCDIR to the
 # directory where your jpeg header files (include) reside.
-# If you want to use xfig's jpeg library leave the XCOMM comment in and
-# leave JPEGLIBDIR=../jpeg.
+# You must have version 5b or newer of the jpeg library.
+# If you haven't installed the jpeg library leave the XCOMM comment in and
+# set JPEGLIBDIR after the #else to the directory where you have the source
+# for jpeg.
 
 # #define USEINSTALLEDJPEG
-
-# *** You shouldn't have to change anything below this point ***
 
 DEVDIR = dev
 
 SUBDIRS = $(DEVDIR)
 
-JPEGLIBDIR = ../jpeg
-JPEGINCDIR = -I$(JPEGLIBDIR)
-LIBJPEG = $(JPEGLIBDIR)/libjpeg.a
-DEPLIBJPEG = $(LIBJPEG)
+JPEGLIBDIR = ../../jpeg
+# You shouldn't need to change JPEGINCDIR here.
+# AND it must be relative to the dev directory.
+JPEGINCDIR = ../$(JPEGLIBDIR)
+DEPLIBJPEG = $(JPEGLIBDIR)/libjpeg.a
+
+# *** You shouldn't have to change anything below this point ***
 
 LIBTRANSFIG = $(DEVDIR)/libtransfig.a
 
 INCLUDES = -I..
-EXTRA_INCLUDES = $(XPMINCDIR)
 
-LOCAL_LIBRARIES = $(LIBTRANSFIG) $(LIBJPEG)
+LOCAL_LIBRARIES = $(LIBTRANSFIG) -L$(JPEGLIBDIR) -ljpeg
 SYS_LIBRARIES = $(XPMLIB) $(DBMLIB) -lm
 DEPLIBS = $(LIBTRANSFIG)
 
-GETOPTC=   getopt.c
-GETOPTO=   getopt.c
-
 SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c\
-	free.c read.c read1_3.c latex_line.c $(STRSTRC) $(GETOPTC)
+	free.c read.c read1_3.c latex_line.c getopt.c $(STRSTRC)
 OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o\
-	free.o read.o read1_3.o latex_line.o $(STRSTRO) $(GETOPTO)
+	free.o read.o read1_3.o latex_line.o getopt.o $(STRSTRO)
 
 fig2dev: $(DEPLIBJPEG) $(DEPLIBS)
 
 # only compile our jpeg if the use doesn't have one installed
 
-$(LIBJPEG): $(JPEGLIBDIR)/jconfig.h
+$(JPEGLIBDIR)/libjpeg.a: $(JPEGLIBDIR)/jconfig.h
 	cd $(JPEGLIBDIR); $(MAKE) libjpeg.a
 
 $(JPEGLIBDIR)/jconfig.h:
 	cd $(JPEGLIBDIR) ; ./configure CC='$(CC)'
 
-$(LIBTRANSFIG):
-	cd $(DEVDIR); $(MAKE) libtransfig.a
+$(LIBTRANSFIG)::
+	cd $(DEVDIR); $(MAKE) JPEGINCDIR=$(JPEGINCDIR) DEFINES="$(DEVDEFINES)" $(XPMRGB) libtransfig.a
 
 PROGRAM = fig2dev
 
 all:: fig2dev
+
+all::
+	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
+	for i in $(SUBDIRS) ;\
+	do \
+	(cd $$i ; echo "making" all "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) $(MFLAGS) 'CDEBUGFLAGS=$(CDEBUGFLAGS)' all); \
+	done
+
+depend::
+	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
+	for i in $(SUBDIRS) ;\
+	do \
+	(cd $$i ; echo "depending" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) $(MFLAGS)  depend); \
+	done
 
  PROGRAM = fig2dev
 
@@ -433,13 +470,13 @@ install.man:: pic2tpic.man
 	$(INSTALL) -c $(INSTMANFLAGS) pic2tpic.man $(DESTDIR)$(MANDIR)/pic2tpic.$(MANSUFFIX)
 
 fig2dev.man: ../doc/fig2dev.1
-	ln -s ../doc/fig2dev.1 fig2dev.man
+	-ln -s ../doc/fig2dev.1 fig2dev.man
 
 fig2ps2tex.man: ../doc/fig2ps2tex.1
-	ln -s ../doc/fig2ps2tex.1 fig2ps2tex.man
+	-ln -s ../doc/fig2ps2tex.1 fig2ps2tex.man
 
 pic2tpic.man: ../doc/pic2tpic.1
-	ln -s ../doc/pic2tpic.1 pic2tpic.man
+	-ln -s ../doc/pic2tpic.1 pic2tpic.man
 
 # -------------------------------------------------------------------------
 # common rules for all Makefiles - do not edit

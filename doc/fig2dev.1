@@ -49,6 +49,13 @@ Valid languages are
 ps, pstex, pstex_t, textyl, mf (METAFONT)\fR
 and
 .B tpic.
+
+Note that
+.I dvips
+and
+.I xdvi
+must be compiled with the tpic support (-DTPIC) for epic, eepic and tpic to work.
+
 .TP
 .B \-m
 Set the magnification at which the figure is rendered to
@@ -91,6 +98,18 @@ Computer Science at University of California, Davis.
 .LP
 EEPIC-EMU is an EEPIC emulation package which does not use tpic specials.
 .TP
+.B \-A
+Scale arrowheads by
+.I factor.
+The width and height of arrowheads is
+.I divided
+by this factor.  This is because
+.I EPIC
+arrowheads are normally about
+double the size of
+.I TeX
+arrowheads.
+.TP
 .B \-l
 Use "\fB\\thicklines\fR" when width of the line is wider than 
 .I lwidth.
@@ -116,7 +135,9 @@ and size to
 respectively.
 .TP
 .B \-W
-Enable variable line width
+Enable variable line width.  By default, only two line widths are
+available: The normal line width (\thinlines), and thick
+lines (\thicklines), if a line width of more than one is selected in xfig. 
 .TP
 .B \-w
 Disable variable line width. Only "\fB\\thicklines\fR" and/or
@@ -366,6 +387,7 @@ Sets the pagesize. Available page sizes are
 "Letter" (8.5" x 11"),
 "Legal" (11" x 14")
 "Ledger" (11" x 17"),
+"Tabloid" (17" x 11", really Ledger in Landscape mode),
 "A4" (21cm x 29.7cm),
 and "B5" (18.2cm x 25.7cm).
 .LP

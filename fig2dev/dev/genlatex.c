@@ -43,21 +43,6 @@
 #include "texfonts.h"
 #include "pi.h"
 
-#ifndef fabs
-extern double fabs();
-#endif
-#ifndef sin
-extern double sin();
-#endif
-#ifndef cos
-extern double cos();
-#endif
-#ifndef acos
-extern double acos();
-#endif
-#ifndef atan
-extern double atan();
-#endif
 extern double rad2deg;
 extern void unpsfont();
 
@@ -269,8 +254,8 @@ F_compound	*objects;
 	if (lly > ury) SWAP(lly, ury)
 
 	/* LaTeX start */
-	fprintf(tfp, "\\setlength{\\unitlength}{%.8fin}%%\n",
-						round6(unitlength));
+	fprintf(tfp, "\\setlength{\\unitlength}{%lisp}%%\n",
+				(long) (round(4736286.72*unitlength)));
 	/* define the SetFigFont macro */
 	define_setfigfont(tfp);
 	fprintf(tfp, "\\begin{picture}(%d,%d)(%d,%d)\n",
@@ -704,14 +689,15 @@ F_text	*t;
 
 	/* smash is used to position text at baseline */
 	unpsfont(t);
-	fprintf(tfp, 
-	  "\\put(%3d,%3d){\\makebox(0,0)%s{\\smash{",
-	  x, y, tpos);
+
+	fprintf(tfp, "\\put(%3d,%3d){", x, y);
 
 #ifdef DVIPS
-        if(t->angle && t->type == T_LEFT_JUSTIFIED)
-          fprintf(tfp, "\\special{ps:gsave currentpoint currentpoint translate\n%.1f rotate neg exch neg exch translate}", -t->angle*180/M_PI);
+        if(t->angle)
+          fprintf(tfp, "\\rotatebox{%.1f}{", t->angle*180/M_PI);
 #endif
+
+	fprintf(tfp, "\\makebox(0,0)%s{\\smash{", tpos);
 
         { int texsize;
           double baselineskip;
@@ -755,12 +741,7 @@ F_text	*t;
 
 #ifdef DVIPS
         if(t->angle)
-	{
-	  if (t->type == T_LEFT_JUSTIFIED)
-             fprintf(tfp, "\\special{ps:currentpoint grestore moveto}");
-	  else
-	     fprintf(stderr, "Rotated Text only for left justified text\n");
-	}
+             fprintf(tfp, "}");
 #endif
  	fprintf(tfp, "}}}\n");
 	}

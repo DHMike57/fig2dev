@@ -30,7 +30,7 @@ SOFTWARE.
 /* lookup the named colors referenced in the colortable passed */
 /* total colors in the table are "ncols" */
 
-#include <X11/xpm.h>
+#include <xpm.h>
 #include <stdio.h>
 #include "fig2dev.h"
 #include "object.h"

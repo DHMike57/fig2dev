@@ -51,6 +51,7 @@
 	reasonable value (30, before it defaulted to 0, which made dashlines
 	look very sparse).
   3. Arc boxes are now implemented.
+  4. New arrow types implemented
 
   Known problems:
 	In the fig2dev documentation you should add a recommendation not to use
@@ -217,6 +218,7 @@ char *Preamble="\\documentstyle[epic,eepic]{article}\n\\begin{document}\n\\begin
 char *Postamble="\\end{center}\n\\end{document}\n";
 int VarWidth=FALSE;
 int DashStretch=30;
+double ArrowScale=1.0;
 
 void genepic_option(opt, optarg)
 char opt, *optarg;
@@ -224,6 +226,10 @@ char opt, *optarg;
   	int loop, i;
 
         switch (opt) {
+	case 'A':
+	  ArrowScale = atof(optarg);
+	  break;
+
 	case 'a':
 	    fprintf(stderr, "warning: genepic option -a obsolete");
 	    break;
@@ -421,14 +427,13 @@ int w;
     int old_width;
 
     if (w < 0) return;
-    w/= DashScale; /* Dashscale is also computed in 80th of an inch */
     old_width=CurWidth;
     CurWidth = (w >= LineThick) ? (VarWidth ? w : ThickLines) : ThinLines;
     if (old_width != CurWidth) {
 	if (CurWidth==ThinLines) {
 	    fprintf(tfp, "\\thinlines\n");
 	} else if (VarWidth) {
-	    fprintf(tfp, "\\allinethickness{%d}%%\n",w);
+	    fprintf(tfp, "\\allinethickness{%4.3fpt}%%\n",w*80/DPI);
 	} else {
 	    fprintf(tfp, "\\thicklines\n");
 	}
@@ -659,7 +664,7 @@ int type, color;
 	    if (--loop1 > 0)
 		fprintf(tfp, "\n\t");
 	    else
-		fprintf(tfp, "}%\n");
+		fprintf(tfp, "}\n");
 	}
     }
 }
@@ -677,6 +682,12 @@ F_line *line;
     set_style(line->style, line->style_val);
     p = line->points;
     q = p->next;
+    if (line->back_arrow) {
+	draw_arrow_head(q, p, line->back_arrow->ht, line->back_arrow->wid,
+			line->back_arrow->type, line->back_arrow->style, 
+			line->back_arrow->thickness);
+    	if (Verbose) fprintf(tfp, "%%\n");
+    }
     convertCS(p);
     if (q == NULL) {
 	fprintf(tfp, "\\drawline(%d,%d)(%d,%d)\n", p->x, p->y, p->x, p->y);
@@ -838,12 +849,6 @@ F_line *line;
 	fprintf(tfp, "(%d,%d)\n", q->x, q->y);
     }
 #endif
-    if (line->back_arrow) {
-	draw_arrow_head(q, p, line->back_arrow->ht, line->back_arrow->wid,
-			line->back_arrow->type, line->back_arrow->style, 
-			line->back_arrow->thickness);
-    	if (Verbose) fprintf(tfp, "%%\n");
-    }
     if (line->for_arrow) {
 	draw_arrow_head(p, q, line->for_arrow->ht, line->for_arrow->wid,
 			line->for_arrow->type,line->for_arrow->style,
@@ -906,6 +911,12 @@ F_spline *spl;
 
     p = spl->points;
     q = p->next;
+    if (spl->back_arrow) {
+      draw_arrow_head(q, p, spl->back_arrow->ht, spl->back_arrow->wid,
+                      spl->back_arrow->type,spl->back_arrow->style,
+                      spl->back_arrow->thickness);
+      if (Verbose) fprintf(tfp, "%%\n");
+    }
     convertCS(p);
     convertCS(q);
     if (q->next == NULL) {
@@ -948,12 +959,6 @@ F_spline *spl;
         p=q;
         q=r;
 	fprintf(tfp, "\n");
-    }
-    if (spl->back_arrow) {
-	draw_arrow_head(q, p, spl->back_arrow->ht, spl->back_arrow->wid,
-			spl->back_arrow->type,spl->back_arrow->style,
-			spl->back_arrow->thickness);
-    	if (Verbose) fprintf(tfp, "%%\n");
     }
     if (spl->for_arrow) {
 	draw_arrow_head(p, q, spl->for_arrow->ht, spl->for_arrow->wid,
@@ -1060,6 +1065,15 @@ F_spline *spl;
     pt1r.x = cp1->rx;
     pt1r.y = cp1->ry;
     fconvertCS(&pt1l);
+    if (spl->back_arrow) {
+      tmpfpt.x = p1->x;
+      tmpfpt.y = p1->y;
+      fdraw_arrow_head(&pt1r, &tmpfpt,
+                       spl->back_arrow->ht, spl->back_arrow->wid,
+                       spl->back_arrow->type, spl->back_arrow->style,
+                       spl->back_arrow->thickness);
+      if (Verbose) fprintf(tfp, "%%\n");
+    }
     fconvertCS(&pt1r);
 
     for (p2 = p1->next, cp2 = cp1->next; p2 != NULL;
@@ -1077,16 +1091,6 @@ F_spline *spl;
 		      pt2l.x, pt2l.y,
 		      (double) p2->x, (double) p2->y);
 	fprintf(tfp, "\n");
-    }
-
-    if (spl->back_arrow) {
-	tmpfpt.x = p1->x;
-	tmpfpt.y = p1->y;
-	fdraw_arrow_head(&pt1r, &tmpfpt, 
-			 spl->back_arrow->ht, spl->back_arrow->wid,
-			 spl->back_arrow->type, spl->back_arrow->style,
-			 spl->back_arrow->thickness);
-    	if (Verbose) fprintf(tfp, "%%\n");
     }
 
     if (spl->for_arrow) {
@@ -1472,6 +1476,9 @@ double arrowht, arrowwid, thickness;
     double x1, y1, x2, y2;
     double x,y, xb,yb,dx,dy,l,sina,cosa;
     double xc, yc, xd, yd;
+
+    arrowht/= ArrowScale;
+    arrowwid/= ArrowScale;
 
     x1 = pt1->x;
     y1 = pt1->y;

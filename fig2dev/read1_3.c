@@ -51,9 +51,11 @@
 
 extern F_arrow		*forward_arrow(), *backward_arrow();
 extern int		figure_modified;
+#ifndef __NetBSD__
 extern int		errno;
 extern char		*sys_errlist[];
 extern int		sys_nerr, errno;
+#endif
 
 static F_ellipse	*read_ellipseobject();
 static F_line		*read_lineobject();
@@ -456,7 +458,7 @@ FILE	*fp;
 	t->pen = 0;
 	t->angle = 0.0;
 	t->next = NULL;
-	n = fscanf(fp," %d %d %d %d %d %d %d %[^\n]", &t->font, 
+	n = fscanf(fp," %d %lf %d %lf %lf %d %d %[^\n]", &t->font, 
 		&t->size, &t->flags, &t->height, &t->length, 
 		&t->base_x, &t->base_y, buf);
 	if (n != 8) {

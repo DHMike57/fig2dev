@@ -33,7 +33,6 @@
 #endif
 #include <sys/file.h>
 #include <stdio.h>
-#include <ctype.h>
 #include "patchlevel.h"
 #include "fig2dev.h"
 #include "object.h"
@@ -57,9 +56,10 @@ int		font_size = 0;
 double		mag = 1.0;
 FILE		*tfp = NULL;
 int		llx = 0, lly = 0, urx = 0, ury = 0;
-int		landscape;
-int		center;
-int		orientspec=0;		/* set it the user-specifies the orientation */
+Boolean		landscape;
+Boolean		center;
+Boolean		orientspec=FALSE;	/* set if the user specifies the orientation */
+Boolean		centerspec=FALSE;	/* set if the user specifies the justification */
 Boolean		pats_used, pattern_used[NUMPATTERNS];
 
 struct obj_rec {
@@ -85,7 +85,7 @@ char	*argv[];
 	prog = *argv;
 /* add :? */
 	/* sum of all arguments */
-	while ((c = fig_getopt(argc, argv, "acC:d:ef:l:L:Mm:n:Pp:s:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "aAcC:d:ef:l:L:Mm:n:Pp:s:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
 
 	  /* generic option handling */
 	  switch (c) {
@@ -260,7 +260,7 @@ struct driver *dev;
 	/* dump object pointers to an array */
 	obj_count = compound_dump(objects, 0, 0, dev);
 	if (!obj_count) {
-	    fprintf(stderr, "No object");
+	    fprintf(stderr, "No object\n");
 	    return;
 	    }
 	rec_array = (struct obj_rec *)malloc(obj_count*sizeof(struct obj_rec));

@@ -278,6 +278,9 @@ typedef		struct f_compound {
 #define		SOLID_LINE		0
 #define		DASH_LINE		1
 #define		DOTTED_LINE		2
+#define		DASH_DOT_LINE		3
+#define		DASH_2_DOTS_LINE	4
+#define		DASH_3_DOTS_LINE	5
 
 #define		CLOSED_PATH		0
 #define		OPEN_PATH		1

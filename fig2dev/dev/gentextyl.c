@@ -45,19 +45,6 @@
 #include "object.h"
 #include "texfonts.h"
 
-#ifndef sin
-extern double sin();
-#endif
-#ifndef cos
-extern double cos();
-#endif
-#ifndef acos
-extern double acos();
-#endif
-#ifndef fabs
-extern double fabs();
-#endif
-
 static putline();
 
 #define rint(a) floor((a)+0.5)     /* close enough? */

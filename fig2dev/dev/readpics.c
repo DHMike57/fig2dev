@@ -68,12 +68,12 @@ open_picfile(name, type)
     compname = NULL;
     /* see if the filename ends with .Z */
     /* if so, generate uncompress command and use pipe (filetype = 1) */
-    if (strlen(name) > 2 && !strcmp(".Z", name + (strlen(name)-2))) {
+    if (strlen(name) > (size_t)2 && !strcmp(".Z", name + (strlen(name)-2))) {
 	sprintf(unc,"uncompress -c %s",name);
 	*type = 1;
     /* or with .z or .gz */
-    } else if ((strlen(name) > 3 && !strcmp(".gz", name + (strlen(name)-3))) ||
-	      ((strlen(name) > 2 && !strcmp(".z", name + (strlen(name)-2))))) {
+    } else if ((strlen(name) > (size_t)3 && !strcmp(".gz", name + (strlen(name)-3))) ||
+	      ((strlen(name) > (size_t)2 && !strcmp(".z", name + (strlen(name)-2))))) {
 	sprintf(unc,"gunzip -qc %s",name);
 	*type = 1;
     /* none of the above, see if the file with .Z or .gz or .z appended exists */

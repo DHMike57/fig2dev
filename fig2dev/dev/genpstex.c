@@ -54,21 +54,6 @@
 #include "object.h"
 #include "texfonts.h"
 
-#ifndef fabs
-extern double fabs();
-#endif
-#ifndef sin
-extern double sin();
-#endif
-#ifndef cos
-extern double cos();
-#endif
-#ifndef acos
-extern double acos();
-#endif
-#ifndef atan
-extern double atan();
-#endif
 extern double rad2deg;
 
 #ifdef hpux

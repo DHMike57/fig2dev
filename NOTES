@@ -27,26 +27,26 @@ a single tranlation program: fig2dev.
 As of October 1992, I have taken over the maintenence and distribution of 
 the TransFig package from Micah.
 
-***************************************************************************
-Please refer any questions/bug fixes/contributions etc. about TransFig or 
-xfig to me.
+*************************************************************************
+Please send email about any questions/bug fixes/contributions etc. about
+TransFig or xfig to xfig-bugs@epb1.lbl.gov.
 
-Brian Smith
-Lawrence Berkeley Laboratory
-bvsmith@lbl.gov
-October 1992
-***************************************************************************
+Brian V. Smith
+Lawrence Berkeley National Laboratory
+xfig-bugs@epb1.lbl.gov
+*************************************************************************
 
 Note that although I work at Lawrence Berkeley Laboratory (LBL) I don't speak 
 for LBL nor do I represent LBL with respect to my work on TransFig and xfig,
-nor does LBL make any representations about the suitability of this software 
+nor does LBNL make any representations about the suitability of this software 
 for any purpose.
 Here is the legal part:
 
-THE LAWRENCE BERKELEY LABORATORY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS 
-SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
-EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL 
-DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, 
-WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING 
-OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+THE LAWRENCE BERKELEY NATIONAL LABORATORY DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS, IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL,
+INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
 

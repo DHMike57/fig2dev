@@ -24,7 +24,6 @@
  * the party supplying this software to the X Consortium.
  */
 
-#ifdef NOSTRSTR
 /*
  * Find the first occurrence of s2 in s1.
  */
@@ -35,12 +34,11 @@ strstr(s1, s2)
 	register int i, len, n;
 
 	if (s2[0] == '\0')
-		return(s1);
+		return s1;
 	len = strlen(s2);
 	n = strlen(s1) - len;
 	for (i = 0; i <= n; i++)
 		if (strcmp(s1 + i, s2) == 0)
 			return(s1 + i);
-	return(NULL);
+	return (char *) 0;
 }
-#endif

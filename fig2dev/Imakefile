@@ -28,28 +28,80 @@ XCOMM that this copyright notice remain intact.  This license includes without
 XCOMM limitation a license to do the foregoing actions under any patents of
 XCOMM the party supplying this software to the X Consortium.
 
-XCOMM Uncomment the XPM variables here AND in dev/Imakefile if you have
-XCOMM the XPM (color pixmap) package and you would like to allow XPM files.
-XCOMM You need version 3.4c of the XPM package.
+XCOMM If your system has the strerror() function (doesn't have sys_errlist) then
+XCOMM comment out NEED_STRERROR with an XCOMM comment.
 
-XCOMM XPMDEFINES = -DUSE_XPM
-XCOMM XPMLIBDIR = -L/usr/local/X11/lib
-XCOMM XPMINCDIR = -I/usr/local/X11/include/xpm
-XCOMM XPMLIB = $(XPMLIBDIR) -lXpm -lX11
+NEED_STRERROR = -DNEED_STRERROR
+
+XCOMM Uncomment the XPM variables here  if you have the XPM (color pixmap)
+XCOMM package and you would like to allow XPM files.
+XCOMM You need version 3.4c or newer of the XPM package.
+XCOMM
+XCOMM Change XPMLIB if necessary to point to the xpm library (libXpm)
+XCOMM Change XPMINC if necessary to point to the include file for xpm (xpm.h)
+XCOMM
+XCOMM Also change XPMRGB if necessary, to point to your rgb.txt color
+XCOMM database file (for X11).  This is needed for those XPM flies which
+XCOMM have named colors (e.g. "white").
+XCOMM You need version 3.4c of the XPM package.
+XCOMM
+XCOMM Finally, if your system doesn't have ndbm (the 'new' database subroutines)
+XCOMM remove the -DNDBM from the XPMDBM definition.
+
+#define USEXPM true
+#define USEGIF true
+
+#ifdef USEXPM
+DUSEXPM = -DUSE_XPM
+XPMLIBDIR = /usr/lib
+XPMINC = -I/usr/include/X11
+XPMLIB = -L$(XPMLIBDIR) -lXpm -lX11
+XPMRGB = XPMRGB=/usr/lib/X11/rgb
+XPMDBM = -DNDBM
+#endif
+
+XCOMM uncomment the following to set paper size to A4
+XCOMM DDA4 = -DA4
+
+XCOMM uncomment the following to set IBM Graphics Enhancement Cartridge
+XCOMM DDIBMGEC = -DIBMGEC
+
+XCOMM uncomment the following to set DVI-to-PostScript driver to dvip
+XCOMM DDDVIPS = -DDVIPS
+
+
+XCOMM uncomment the DDNFSS = ... line to use NFSS2 font selection for LaTeX texts
+XCOMM uncomment the DDEPSF = ... line to use epsfig macros as distributed w/ LaTeX2e
+XCOMM
+XCOMM     Hint: Users of LaTeX2e will probably want to include both of these
+XCOMM     options; users of LaTeX 2.09 will probably want to include neither.
+
+XCOMM DDNFSS = -DNFSS
+XCOMM DDEPSF = -DEPSF
 
 XCOMM For Linux machines or any machines that have a separate library for
 XCOMM the database management routines, uncomment the following line
 XCOMM DBMLIB = -ldbm
 
-XCOMM To include drivers for the following languages, 
+XCOMM To include drivers for the following languages,
 XCOMM add the corresponding symbol to the DEFINES list:
 XCOMM
 XCOMM -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
 XCOMM
 
-DEFINES = $(XPMDEFINES) -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF
+XCOMM If your system doesn't have strcasecmp and/or strncasecmp
+XCOMM undefine the following two definitions
 
-#if (defined(VaxArchitecture) && !defined(UltrixArchitecture)) || \
+XCOMM HAVE_NO_STRCASECMP = -DHAVE_NO_STRCASECMP
+XCOMM HAVE_NO_STRNCASECMP = -DHAVE_NO_STRNCASECMP
+
+DEFINES = -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF $(NEED_STRERROR) $(HAVE_NO_STRCASECMP) $(HAVE_NO_STRNCASECMP)
+
+XCOMM If your system doesn't have strstr() then uncomment the following line
+XCOMM #define NOSTRSTR
+
+#if defined(NOSTRSTR) || \
+    (defined(VaxArchitecture) && !defined(UltrixArchitecture)) || \
     (defined(RtArchitecture) && !defined(AIXArchitecture)) || \
     (defined(MipsArchitecture)) || defined(SequentArchitecture) || \
     (defined(SunOSPlatform) && (OSMinorVersion==0))
@@ -60,14 +112,40 @@ STRSTRO=	strstr.o
 
 XCOMM If you have installed the jpeg library on your system, uncomment the
 XCOMM USEINSTALLEDJPEG variable, change the JPEGLIBDIR variable to the directory
-XCOMM where your jpeg library resides and change the JPEGINCDIR to the 
+XCOMM where your jpeg library resides and change the JPEGINCDIR to the
 XCOMM directory where your jpeg header files (include) reside.
 XCOMM You must have version 5b or newer of the jpeg library.
 XCOMM If you haven't installed the jpeg library leave the XCOMM comment in and
 XCOMM set JPEGLIBDIR after the #else to the directory where you have the source
 XCOMM for jpeg.
+XCOMM ** Important:  If you use a version earlier than 6a, you must change
+XCOMM the name of the configuration program from "configur" to "configure" in
+XCOMM the JPEGCONF variable.
 
-XCOMM #define USEINSTALLEDJPEG
+#define USEINSTALLEDJPEG
+
+#ifdef USEINSTALLEDJPEG
+JPEGLIBDIR = /usr/local/lib
+JPEGINCDIR = /usr/include/X11
+JPEGLIB = -L$(JPEGLIBDIR) -ljpeg
+#else
+JPEGLIBDIR = ../../jpeg
+JPEGCONF = configur
+XCOMM You shouldn't need to change JPEGINCDIR here.
+XCOMM AND it must be relative to the dev directory.
+JPEGINCDIR = ../$(JPEGLIBDIR)
+JPEGLIB = $(JPEGLIBDIR)/libjpeg.a
+DEPLIBJPEG = $(JPEGLIBDIR)/libjpeg.a
+#endif
+
+XCOMM *** You shouldn't have to change anything below this point ***
+
+#ifdef USEGIF
+DUSEGIF = -DUSE_GIF
+#endif
+
+DEVDEFINES = $(DUSEGIF) $(DUSEXPM) $(XPMINC) $(XPMDBM) $(DDNFSS) $(DDEPSF) \
+		$(DDA4) $(DDIBMGEC) $(DDDVIPS)
 
 #define IHaveSubdirs
 #define PassCDebugFlags 'CDEBUGFLAGS=$(CDEBUGFLAGS)'
@@ -76,32 +154,28 @@ DEVDIR = dev
 
 SUBDIRS = $(DEVDIR)
 
-#ifdef USEINSTALLEDJPEG
-JPEGLIBDIR = /usr/local/lib
-JPEGINCDIR = /usr/include/X11
-#else
-JPEGLIBDIR = ../../jpeg
-XCOMM You shouldn't need to change JPEGINCDIR here.
-XCOMM AND it must be relative to the dev directory.
-JPEGINCDIR = ../$(JPEGLIBDIR)
-DEPLIBJPEG = $(JPEGLIBDIR)/libjpeg.a
-#endif
-
-XCOMM *** You shouldn't have to change anything below this point ***
-
 LIBTRANSFIG = $(DEVDIR)/libtransfig.a
 
-INCLUDES = -I..
-EXTRA_INCLUDES = $(XPMINCDIR)
+INCLUDES = -I.. -I$(JPEGINCDIR)
 
-LOCAL_LIBRARIES = $(LIBTRANSFIG) -L$(JPEGLIBDIR) -ljpeg
+LOCAL_LIBRARIES = $(LIBTRANSFIG) $(JPEGLIB)
+#if defined(NetBSDArchitecture)
+SYS_LIBRARIES = $(XPMLIB) $(DBMLIB) -lm -lcompat
+#else
 SYS_LIBRARIES = $(XPMLIB) $(DBMLIB) -lm
+#endif
 DEPLIBS = $(LIBTRANSFIG)
 
+#if !(defined(SunOSPlatform) && (OSMajorVersion>=5))
+GETOPTC=   getopt.c
+GETOPTO=   getopt.c
+#endif
+
 SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c\
-	free.c read.c read1_3.c latex_line.c getopt.c $(STRSTRC)
+	free.c read.c read1_3.c latex_line.c $(STRSTRC) $(GETOPTC)
 OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o\
-	free.o read.o read1_3.o latex_line.o getopt.o $(STRSTRO)
+	free.o read.o read1_3.o latex_line.o $(STRSTRO) $(GETOPTO)
+
 
 fig2dev: $(DEPLIBJPEG) $(DEPLIBS)
 
@@ -112,14 +186,17 @@ $(JPEGLIBDIR)/libjpeg.a: $(JPEGLIBDIR)/jconfig.h
 	cd $(JPEGLIBDIR); $(MAKE) libjpeg.a
 
 $(JPEGLIBDIR)/jconfig.h:
-	cd $(JPEGLIBDIR) ; ./configure CC='$(CC)'
+	cd $(JPEGLIBDIR) ; ./$(JPEGCONF) CC='$(CC)'
 #endif
 
-$(LIBTRANSFIG): 
-	cd $(DEVDIR); $(MAKE) JPEGINCDIR=$(JPEGINCDIR) libtransfig.a
+$(LIBTRANSFIG)::
+	cd $(DEVDIR); $(MAKE) JPEGINCDIR=$(JPEGINCDIR) \
+		DEFINES="$(DEVDEFINES)" $(XPMRGB) libtransfig.a
 
 PROGRAM = fig2dev
 AllTarget(fig2dev)
+MakeSubdirs($(SUBDIRS))
+DependSubdirs($(SUBDIRS))
 
 ComplexProgramTarget(fig2dev)
 
@@ -132,11 +209,12 @@ InstallScript(pic2tpic,$(BINDIR))
 InstallManPage(fig2ps2tex,$(MANDIR))
 InstallManPage(pic2tpic,$(MANDIR))
 
-fig2dev.man: ../doc/fig2dev.1
-	ln -s ../doc/fig2dev.1 fig2dev.man
+fig2dev.man:: ../doc/fig2dev.1
+	-ln -s ../doc/fig2dev.1 fig2dev.man
 
-fig2ps2tex.man: ../doc/fig2ps2tex.1
-	ln -s ../doc/fig2ps2tex.1 fig2ps2tex.man
+fig2ps2tex.man:: ../doc/fig2ps2tex.1
+	-ln -s ../doc/fig2ps2tex.1 fig2ps2tex.man
 
-pic2tpic.man: ../doc/pic2tpic.1
-	ln -s ../doc/pic2tpic.1 pic2tpic.man
+pic2tpic.man:: ../doc/pic2tpic.1
+	-ln -s ../doc/pic2tpic.1 pic2tpic.man
+

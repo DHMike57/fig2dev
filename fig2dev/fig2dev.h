@@ -31,6 +31,9 @@ typedef char Boolean;
 
 #define DEFAULT_FONT_SIZE 11
 
+/* include ctype.h for isascii() and isxdigit() macros */
+#include <ctype.h>
+
 #if defined(SYSV) || defined(SVR4)
 #include <string.h>
 #else
@@ -38,7 +41,7 @@ typedef char Boolean;
 #ifndef strchr
 extern char *strchr();
 #endif
-#ifndef NeXT
+#if !defined(NeXT) && !defined(SYSV) && !defined(SVR4)
 #define	strchr	index
 #define	strrchr	rindex
 #endif
@@ -87,9 +90,10 @@ extern double	mag;
 extern FILE	*tfp;
 
 extern int	llx, lly, urx, ury;
-extern int	landscape;
-extern int	center;
-extern int	orientspec;	/* true of the command-line args specified land or port */
+extern Boolean	landscape;
+extern Boolean	center;
+extern Boolean	orientspec;	/* true of the command-line args specified land or port */
+extern Boolean	centerspec;	/* true of the command-line args specified -c or -e */
 
 /* user-defined colors */
 typedef		struct{

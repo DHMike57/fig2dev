@@ -564,7 +564,7 @@ F_text	*t;
 		 * TeX's font definition machinery.
 		 */
 		fprintf(tfp, "\"\\font\\fig%s=%s at %dpt \\fig%s ",
-			TEXFONT(t->font), TEXFONT(t->font), t->size,
+			TEXFONT(t->font), TEXFONT(t->font), (int)t->size,
 			TEXFONT(t->font));
 	else
 #ifdef FST
