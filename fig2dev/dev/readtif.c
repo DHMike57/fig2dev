@@ -58,6 +58,7 @@ read_tif(filename,filetype,pic,llx,lly)
 	}
 	/* now call _read_pcx to read the pcx file */
 	stat = _read_pcx(tiftopcx, pic);
+	pic->transp = -1;
 	/* close the temp file */
 	fclose(tiftopcx);
 	/* and remove it */

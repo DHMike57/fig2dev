@@ -3,9 +3,62 @@ Changes to Transfig/fig2dev
 Version 3.2
 ===============================================================================
 
-Patchlevel 3c  (July 25, 2000)
-
 NEW FEATURES
+
+Patchlevel 3d: (May 29, 2001)
+
+	o MetaPost driver (-L mp or -L mmp) ported from fig2MP by Klaus
+	  Guntermann (guntermann@iti.informatik.tu-darmstadt.de).  fig2MP was
+	  written by Dane Dwyer (dwyer@geisel.csl.uiuc.edu)
+	o Support for importing PNG image files added 
+	o Transparent color in imported GIF files now honored
+	o You may use "-M -" to send the Makefile output to standard output from
+	  TransFig, and "-T -" to send the Texfile to standard output.
+	o (The following feature was really added in 3.2.3, but I forgot to update
+	  this file): -S option added for smoothing bitmap output.
+	o (The following feature was really added in 3.2.3b, but ... you know...):
+	  eps added as a language for TransFig
+	o Support for Czech font encoding for PostScript (cs_CZ.ps)
+	  From Radim Gelner <gelnerr@suse.cz>
+
+BUGS FIXED
+
+	o #ifdef JPEG added in usage message for JPEG options
+	o Resolution variable (ppi) needed to be double.  This caused roundoff
+	  and overflow errors in several drivers.
+	o Comments longer than 200 characters in Fig files caused segfault.
+	  Comments may now be of unlimited length.
+	o some bitmap files for tk driver had double brackets "{"
+	o The CGM driver didn't check if the "from" input was from stdin or a
+	  file and segfaulted.
+	o Spline objects with trailing blanks (in file) made next object read
+	  incorrectly.
+	o Bounding box incorrectly counted line thickness in imported picture
+	  objects (they don't use the line thickness)
+	o The amount to shift a figure to 0,0 was rounded to integer, which
+	  caused some figures to be clipped by the bounding box.  This affected
+	  eps and bitmap output.
+	o The ibmgl driver output NaNs because of a double/int mixup with printf
+	o Certain punctuation characters with descenders weren't taken into
+	  account for text bounds.
+	o An extra page was generated for pdf output.
+	o Every object had 0.0000 coordinates when exporting to the MetaFont
+	  driver.
+	o fig2dev would crash when reading FIG 3.1 files that have splines. The
+	  problem was that the "points" component of the spline structure is in
+	  a different position than in the line structure, causing arrow_bound
+	  to use the wrong data.
+	o "%Page:" DSC comment is not generated generated for EPS now
+	o Trailing blank in spline object (after control points) caused problem
+	  when reading Fig file
+	o TransFig didn't check whether Texfile or Makefile could be opened for
+	  writing, causing segfault
+	o AutoRotatePages now set to None when using ghostscript to export PDF
+	o Changed explicit "ln -s" to use $(LN) for making symlinks during
+	  install (fig2dev/Imakefile)
+
+------------------------------
+Patchlevel 3c  (July 25, 2000)
 
 BUGS FIXED
 	o TransFig manual Makefile now calls ../../fig2dev/fig2dev preventing
@@ -18,7 +71,7 @@ BUGS FIXED
 	  values
 	o File ko_KR.ujis.ps removed because it is not needed
 
-----------------------------
+------------------------------
 Patchlevel 3b  (July 19, 2000)
 
 N.B. There was no transfig 3.2.3a - I want to keep the release number identical
@@ -34,6 +87,7 @@ NEW FEATURES
 	  (which are converted to PCX first) may also be 24-bit
 
 BUGS FIXED
+	o Exporting to PDF now sets bounding box to figure bounds instead of page
 	o Explicitely sets color to black before importing eps file in case that
 	  file doesn't select a color
 	o Changed error message in epic driver from "Unknown style" to "Only

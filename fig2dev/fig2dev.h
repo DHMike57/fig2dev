@@ -40,19 +40,21 @@ typedef char Boolean;
 /* include ctype.h for isascii() and isxdigit() macros */
 #include <ctype.h>
 
-#ifdef X_NOT_STDC_ENV
-#ifdef SYSV
-#include <string.h>
-#else  /* NOT SYSV */
-#include <strings.h>
-#ifndef strchr
-#define strchr index
-#endif
-#ifndef strrchr
-#define strrchr rindex
-#endif
-#endif  /* SYSV */
-#endif  /* X_NOT_STDC_ENV */
+#ifndef X_NOT_STDC_ENV
+#  include <string.h>
+#else
+#  ifdef SYSV
+#    include <string.h>
+#  else
+#    include <strings.h>
+#    ifndef strchr
+#      define strchr index
+#    endif
+#    ifndef strrchr
+#      define strrchr rindex
+#    endif
+#  endif  /* SYSV else */
+#endif  /* !X_NOT_STDC_ENV else */
 
 #if defined(hpux) || defined(SYSV) || defined(SVR4)
 #define bzero(s,n) memset((s),'\0',(n))
@@ -106,7 +108,7 @@ extern int	font_size;
 extern double	mag;
 extern FILE	*tfp;
 
-extern int	ppi;		/* Fig file resolution (e.g. 1200) */
+extern double	ppi;		/* Fig file resolution (e.g. 1200) */
 extern int	llx, lly, urx, ury;
 extern Boolean	landscape;
 extern Boolean	center;
@@ -126,6 +128,8 @@ extern char	*Fig_color_names[]; /* hex names for Fig colors */
 extern RGB	background;	/* background (if specified by -g) */
 extern Boolean	bgspec;		/* flag to say -g was specified */
 extern char	gscom[];	/* to build up a command for ghostscript */
+extern Boolean	psencode_header_done; /* if we have already emitted PSencode header */
+extern Boolean	transp_header_done;   /* if we have already emitted transparent image header */
 
 struct paperdef
 {

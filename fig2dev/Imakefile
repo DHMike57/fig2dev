@@ -58,6 +58,17 @@ XCOMM
 
 RGB = $(LIBDIR)/rgb.txt
 
+XCOMM Comment out the following #define USEPNG if you don't want PNG support
+XCOMM Uncomment the #define for USEPNG if you want to be able to import
+XCOMM PNG (Portable Network Graphics) files.
+
+#define USEPNG
+
+#ifdef USEPNG
+PNGLIBDIR = $(USRLIBDIR)
+PNGINC = -I/usr/include/X11
+#endif
+
 XCOMM ****************
 XCOMM Unomment the #define for USEXPM if you want to use the XPM
 XCOMM (color pixmap) package.
@@ -75,7 +86,9 @@ XPMINC = -I/usr/include/X11
 #endif
 
 XCOMM ****************
-XCOMM If don't want to use JPEG, comment out the following line
+XCOMM If don't want JPEG support, comment out the #define USEJPEG line
+XCOMM Uncomment the #define for USEJPEG if you want to be able to import
+XCOMM JPEG (Joint Photographic Experts Group) files.
 
 #define USEJPEG
 
@@ -139,9 +152,9 @@ XCOMM If your system doesn't have strstr() then uncomment the following line
 XCOMM #define NOSTRSTR
 
 XCOMM ****************
-XCOMM Uncomment the next line if you want use Japanese (i18n) on xfig.
+XCOMM Uncomment the next line if you want use Japanese (i18n) in transfig.
 
-XCOMM #define I18N
+#define I18N
 
 #ifdef I18N
 I18N_DEFS = -DI18N 
@@ -153,14 +166,15 @@ install::
 	$(INSTALL) -m 644 -c dev/japanese.ps $(DESTDIR)$(FIG2DEV_LIBDIR)
 	( cd $(DESTDIR)$(FIG2DEV_LIBDIR); \
 	  rm -f ja.ps ja_JP.ps ja_JP.ujis.ps ja_JP.eucJP.ps ja_JP.EUC.ps; \
-	  ln -s japanese.ps ja.ps; ln -s japanese.ps ja_JP.ps; \
-	  ln -s japanese.ps ja_JP.ujis.ps; ln -s japanese.ps ja_JP.eucJP.ps; \
-	  ln -s japanese.ps ja_JP.EUC.ps )
+	  $(LN) japanese.ps ja.ps; $(LN) japanese.ps ja_JP.ps; \
+	  $(LN) japanese.ps ja_JP.ujis.ps; $(LN) japanese.ps ja_JP.eucJP.ps; \
+	  $(LN) japanese.ps ja_JP.EUC.ps )
 	$(INSTALL) -m 644 -c  dev/korean.ps $(DESTDIR)$(FIG2DEV_LIBDIR)
 	( cd $(DESTDIR)$(FIG2DEV_LIBDIR); \
 	  rm -f ko.ps ko_KR.ps ko_KR.eucKR.ps ko_KR.EUC.ps; \
-	  ln -s korean.ps ko.ps; ln -s korean.ps ko_KR.ps; \
-	  ln -s korean.ps ko_KR.eucKR.ps; ln -s korean.ps ko_KR.EUC.ps )
+	  $(LN) korean.ps ko.ps; $(LN) korean.ps ko_KR.ps; \
+	  $(LN) korean.ps ko_KR.eucKR.ps; $(LN) korean.ps ko_KR.EUC.ps )
+	$(INSTALL) -m 644 -c  dev/cs_CZ.ps $(DESTDIR)$(FIG2DEV_LIBDIR)
 #endif
 
 DEFINES = $(NEED_STRERROR) $(HAVE_NO_STRCASECMP) $(HAVE_NO_STRNCASECMP) $(USEINLINE) \
@@ -172,6 +186,11 @@ XCOMM *** You shouldn't have to change anything below this point ***
 XCOMM **************************************************************
 
 DIR_DEFS=	-DBITMAPDIR=\\\"$(DESTDIR)$(XFIGLIBDIR)/bitmaps\\\"
+
+#ifdef USEPNG
+DUSEPNG = -DUSE_PNG
+PNGLIBS = -L$(PNGLIBDIR) -lpng -lz
+#endif /* USEPNG */
 
 #ifdef USEXPM
 DUSEXPM = -DUSE_XPM
@@ -197,9 +216,9 @@ DEPLIBJPEG = $(JPEGLIBDIR)/libjpeg.a
 
 #endif /* USEJPEG */
 
-IMAKE_DEFINES = $(DUSEJPEG) $(DUSEXPM)
+IMAKE_DEFINES = $(DUSEPNG) $(DUSEJPEG) $(DUSEXPM)
 
-DEVDEFINES = $(DUSEJPEG) $(DUSEXPM) $(XPMINC) $(JPEGINC) $(DDNFSS) $(DDA4) \
+DEVDEFINES = $(DUSEPNG) $(DUSEJPEG) $(DUSEXPM) $(XPMINC) $(JPEGINC) $(DDNFSS) $(DDA4) \
 		$(DDLATEX2E_GRAPHICS) $(DDEPSFIG) $(DDIBMGEC) $(DDDVIPS) $(I18N_DEV_DEFS)
 
 #define IHaveSubdirs
@@ -215,9 +234,9 @@ INCLUDES = -I..
 
 LOCAL_LIBRARIES = $(LIBTRANSFIG) $(JPEGLIB)
 #if defined(NetBSDArchitecture) || defined(FreeBSDArchitecture)
-SYS_LIBRARIES = $(XPMLIBS) -lm -lcompat
+SYS_LIBRARIES = $(PNGLIBS) $(XPMLIBS) -lm -lcompat
 #else
-SYS_LIBRARIES = $(XPMLIBS) -lm
+SYS_LIBRARIES = $(PNGLIBS) $(XPMLIBS) -lm
 #endif
 DEPLIBS = $(LIBTRANSFIG)
 
@@ -277,13 +296,13 @@ InstallManPage(pic2tpic,$(MANDIR))
 
 fig2dev.man:: ../doc/fig2dev.1
 	$(RM) fig2dev.man
-	-ln -s ../doc/fig2dev.1 fig2dev.man
+	-$(LN) ../doc/fig2dev.1 fig2dev.man
 
 fig2ps2tex.man:: ../doc/fig2ps2tex.1
 	$(RM) fig2ps2tex.man
-	-ln -s ../doc/fig2ps2tex.1 fig2ps2tex.man
+	-$(LN) ../doc/fig2ps2tex.1 fig2ps2tex.man
 
 pic2tpic.man:: ../doc/pic2tpic.1
 	$(RM) pic2tpic.man
-	-ln -s ../doc/pic2tpic.1 pic2tpic.man
+	-$(LN) ../doc/pic2tpic.1 pic2tpic.man
 

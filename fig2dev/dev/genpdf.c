@@ -42,8 +42,8 @@ char opt;
 char *optarg;
 {
 	/* just use the ps options */
-	pdfflag = 1;
-	epsflag = 0;
+	pdfflag = True;
+	epsflag = True;
 	gen_ps_eps_option(opt, optarg);
 }
 
@@ -51,22 +51,24 @@ void
 genpdf_start(objects)
 F_compound	*objects;
 {
-	/* divert output from ps driver to the pipe into ghostscript */
-	/* but first close the output file that main() opened */
-	saveofile = tfp;
-	if (tfp != stdout)
-	    fclose(tfp);
+    /* divert output from ps driver to the pipe into ghostscript */
+    /* but first close the output file that main() opened */
+    saveofile = tfp;
+    if (tfp != stdout)
+	fclose(tfp);
 
-	/* make up the command for gs */
-	ofile = (to == NULL? "-": to);
-	sprintf(gscom, "gs -q -dNOPAUSE -sDEVICE=pdfwrite -sOutputFile=%s - -c quit", ofile);
-	(void) signal(SIGPIPE, gs_broken_pipe);
-	if ((tfp = popen(gscom,"w" )) == 0) {
-	    fprintf(stderr,"fig2dev: Can't open pipe to ghostscript\n");
-	    fprintf(stderr,"command was: %s\n", gscom);
-	    exit(1);
-	}
-	genps_start(objects);
+    /* make up the command for gs */
+    ofile = (to == NULL? "-": to);
+    sprintf(gscom,
+	 "gs -q -dNOPAUSE -sAutoRotatePages=None -sDEVICE=pdfwrite -sOutputFile=%s - -c quit",
+		ofile);
+    (void) signal(SIGPIPE, gs_broken_pipe);
+    if ((tfp = popen(gscom,"w" )) == 0) {
+	fprintf(stderr,"fig2dev: Can't open pipe to ghostscript\n");
+	fprintf(stderr,"command was: %s\n", gscom);
+	exit(1);
+    }
+    genps_start(objects);
 }
 
 int

@@ -90,9 +90,10 @@ read_gif(file,filetype,pic,llx,lly)
 	FILE		*giftopcx;
 	int		i, stat, size;
 	int		useGlobalColormap;
-	unsigned int	bitPixel, red, green, blue;
+	unsigned int	bitPixel;
 	unsigned char	c;
 	char		version[4];
+	unsigned char   transp[3]; /* RGB of transparent color (if any) */
 
 	/* first read header to look for any transparent color extension */
 
@@ -176,6 +177,12 @@ read_gif(file,filetype,pic,llx,lly)
 
 	/* save transparent indicator */
 	pic->transp = Gif89.transparent;
+	/* and RGB values */
+	if (pic->transp != -1) {
+	    transp[RED]   = pic->cmap[RED][pic->transp];
+	    transp[GREEN] = pic->cmap[GREEN][pic->transp];
+	    transp[BLUE]  = pic->cmap[BLUE][pic->transp];
+	}
 
 	/* reposition the file at the beginning */
 	close_picfile(file,filetype);
@@ -211,13 +218,10 @@ read_gif(file,filetype,pic,llx,lly)
 	/* now match original transparent colortable index with possibly new 
 	   colortable from ppmtopcx */
 	if (pic->transp != -1) {
-	    red = pic->cmap[RED][pic->transp];
-	    green = pic->cmap[GREEN][pic->transp];
-	    blue = pic->cmap[BLUE][pic->transp];
 	    for (i=0; i<pic->numcols; i++) {
-		if (pic->cmap[RED][i] == red &&
-		    pic->cmap[GREEN][i] == green &&
-		    pic->cmap[BLUE][i] == blue)
+		if (pic->cmap[RED][i]   == transp[RED] &&
+		    pic->cmap[GREEN][i] == transp[GREEN] &&
+		    pic->cmap[BLUE][i]  == transp[BLUE])
 			break;
 	    }
 	    if (i < pic->numcols)
@@ -257,19 +261,19 @@ int	label;
 	char	    *str;
 
 	switch (label) {
-	case 0x01:		/* Plain Text Extension */
+	    case 0x01:		/* Plain Text Extension */
 		str = "Plain Text Extension";
 		break;
-	case 0xff:		/* Application Extension */
+	    case 0xff:		/* Application Extension */
 		str = "Application Extension";
 		break;
-	case 0xfe:		/* Comment Extension */
+	    case 0xfe:		/* Comment Extension */
 		str = "Comment Extension";
 		while (GetDataBlock(fd, buf) != 0) {
 			; /* GIF comment */
 		}
 		return False;
-	case 0xf9:		/* Graphic Control Extension */
+	    case 0xf9:		/* Graphic Control Extension */
 		str = "Graphic Control Extension";
 		(void) GetDataBlock(fd, (unsigned char*) buf);
 		Gif89.disposal    = (buf[0] >> 2) & 0x7;
@@ -281,7 +285,7 @@ int	label;
 		while (GetDataBlock(fd, buf) != 0)
 			;
 		return False;
-	default:
+	    default:
 		str = (char *) buf;
 		sprintf(str, "UNKNOWN (0x%02x)", label);
 		break;

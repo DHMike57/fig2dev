@@ -31,6 +31,7 @@ extern struct driver dev_textyl;
 extern struct driver dev_tk;
 extern struct driver dev_tpic;
 extern struct driver dev_mf;
+extern struct driver dev_mp;
 extern struct driver dev_ge;
 extern struct driver dev_bitmaps;
 extern struct driver dev_map;
@@ -51,6 +52,8 @@ struct
 		{"jpeg",	&dev_bitmaps},
 		{"latex",	&dev_latex},
 		{"mf",		&dev_mf},
+                {"mp",          &dev_mp},
+                {"mmp",         &dev_mp},
 		{"pcx",		&dev_bitmaps},
 		{"pic",		&dev_pic},
 		{"pictex",	&dev_pictex},

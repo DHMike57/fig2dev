@@ -86,7 +86,7 @@ argument *arg_list;
 		needps = 1;
                 break;
 
-	case eps:
+	case encps:
                 puttarget(mk, i, "tex", "eps");
                 fprintf(mk, "\tfig2ps2tex %s.eps >%s.tex\n", i, i);
 		needeps = 1;
@@ -152,7 +152,7 @@ argument *arg_list;
 		    fprintf(mk, "\t%s %s.%s > %s.eps\n", a->tops, i, iname[(int)a->type], i);
 		}
 		else {
-                    putfig(mk, (to == pstex ? pstex : eps), 
+                    putfig(mk, (to == pstex ? pstex : encps), 
 			   altfonts, a->f, a->s, a->m, a->o, i, "eps");
                     a->interm = mksuff(i, ".eps");
 		    needfig = 1;

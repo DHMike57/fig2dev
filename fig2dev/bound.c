@@ -250,7 +250,11 @@ compound_bound(compound, xmin, ymin, xmax, ymax, include)
 
 	for (l = compound->lines; l != NULL; l = l->next) {
 	    line_bound(l, &sx, &sy, &bx, &by);
-            half_wd = ceil((double)(l->thickness+1) / sqrt(2.0)); 
+	    /* pictures have no line thickness */
+	    if (l->type == T_PIC_BOX)
+		half_wd = 0;
+	    else
+		half_wd = ceil((double)(l->thickness+1) / sqrt(2.0)); 
             /* leave space for corners, better approach needs much more math! */
 	    if (first) {
 		first = 0;
@@ -520,7 +524,10 @@ text_bound(t, xmin, ymin, xmax, ymax, inc_text)
     Boolean include = (inc_text && ((t->flags & SPECIAL_TEXT)==0));
     descend = (strchr(t->cstring,'g') || strchr(t->cstring,'j') ||
 		  strchr(t->cstring,'p') || strchr(t->cstring,'q') ||
-		  strchr(t->cstring,'y'));
+		  strchr(t->cstring,'y') || strchr(t->cstring,'$') ||
+		  strchr(t->cstring,'(') || strchr(t->cstring,')') ||
+		  strchr(t->cstring,'{') || strchr(t->cstring,'}') ||
+		  strchr(t->cstring,',') || strchr(t->cstring,';'));
     /* characters have some extent downside */
     if (t->type == T_CENTER_JUSTIFIED) {
 	dx1 = (include?  (t->length/1.95) : 0.0);	dy1 =  0.0;

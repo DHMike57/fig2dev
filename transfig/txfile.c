@@ -80,7 +80,7 @@ argument *arg_list;
 		texfonts = 0;
 		break;
 
-	case eps:
+	case encps:
 		fprintf(tx, "\\typeout{TransFig: figures in EPS.}\n");
 		texfonts = 0;
 		break;

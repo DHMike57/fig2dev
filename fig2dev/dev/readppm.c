@@ -56,6 +56,7 @@ read_ppm(file,filetype,pic,llx,lly)
 	}
 	/* now call _read_pcx to read the pcx file */
 	stat = _read_pcx(giftopcx, pic);
+	pic->transp = -1;
 	/* close file */
 	fclose(giftopcx);
 	/* remove temp file */

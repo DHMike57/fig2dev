@@ -25,44 +25,16 @@
 #define PageWidth      612
 #define PageHeight     792
 
-#define put_string nc=strlen(s); for(i=0;i<nc;i++) (putc((s[i]),File)); Nbyte += nc
+#define put_string nc=strlen(s); for(i=0;i<nc;i++) (putc((s[i]),tfp)); Nbyte += nc
 
-typedef unsigned char byte;
+typedef unsigned char	byte;
+static	char		**str;
 
-/***********************************************************************
- *                                                                     *
- * Name: PSencode                                    Date:    13.01.93 *
- *                                                                     *
- * Function: Output image in PostScript format (runlength encoding)    *
- *                                                                     *
- * Input: File       - stream for output                               *
- *        Width      - image width                                     *
- *        Height     - image height                                    *
- *        Ncol       - number of colors                                *
- *        R[]        - red components                                  *
- *        G[]        - green components                                *
- *        B[]        - blue components                                 *
- *        data[]     - array for image data (byte per pixel)           *
- *                                                                     *
- * Return: size of PS                                                  *
- *                                                                     *
- ***********************************************************************/
-long
-PSencode(File, Width, Height, Ncol, R, G, B, data)
-	 FILE *File;
-         int  Width, Height, Ncol;
-         byte R[], G[], B[];
-	 unsigned char *data;
+/* output PSencode header */
+
+PSencode_header()
 {
-
-  long    Nbyte;
-  char    s[80], **q;
-  byte    *ptr, *end;
-  int     i, nc, k, current, previous, run, y;
-
-  static char h[] = "0123456789abcdef";
-
-  static char *PostScript[] = {
+  static char *PSencodeheader[] = {
     "%***********************************************************************",
     "%*                                                                     *",
     "%* Object: Image decoding PS-routine                    Date: 01.02.93 *",
@@ -124,12 +96,157 @@ PSencode(File, Width, Height, Ncol, R, G, B, data)
     "  } ifelse",
     "  grestore",
     "} bind def",
-    "%***********************************************************************",
-    "%*                          Image decoding                             *",
-    "%***********************************************************************",
-    "DisplayImage",
     NULL
   };
+
+  for (str=PSencodeheader; *str; str++) {
+    fprintf(tfp,"%s\n",*str);
+  }
+  /* set flag saying we've emitted the header */
+  psencode_header_done = True;
+}
+
+/* output transparentimage header */
+
+PStransp_header()
+{
+  static char *Transpheader[] = {
+    "%*************************************",
+    "% Transparent image template follows *",
+    "%*************************************",
+    "",
+    "/transparentimage {",
+    "  gsave",
+    "  32 dict begin",
+    "  /olddict <<",
+    "      /ImageType 1",
+    "      /BitsPerComponent 8",
+    "      /Decode [0 255]",
+    "  >> def",
+    "  /tinteger exch def",
+    "  /height exch def",
+    "  /width exch def",
+    "  /transparent 1 string def",
+    "  transparent 0 tinteger put",
+    "  olddict /ImageMatrix [width 0 0 height neg 0 height] put",
+    "  /newdict olddict maxlength dict def",
+    "  olddict newdict copy pop",
+    "  newdict /Width width put",
+    "  newdict /Height height put",
+    "  /w newdict /Width get def",
+    "  /str w string def",
+    "  /substrlen 2 w log 2 log div floor exp cvi def",
+    "  /substrs [",
+    "  {",
+    "     substrlen string",
+    "     0 1 substrlen 1 sub {",
+    "       1 index exch tinteger put",
+    "     } for",
+    "     /substrlen substrlen 2 idiv def",
+    "     substrlen 0 eq {exit} if",
+    "  } loop",
+    "  ] def",
+    "  /h newdict /Height get def",
+    "  1 w div 1 h div matrix scale",
+    "  olddict /ImageMatrix get exch matrix concatmatrix",
+    "  matrix invertmatrix concat",
+    "  newdict /Height 1 put",
+    "  newdict /DataSource str put",
+    "  /mat [w 0 0 h 0 0] def",
+    "  newdict /ImageMatrix mat put",
+    "  0 1 h 1 sub {",
+    "    mat 5 3 -1 roll neg put",
+    "    % get Width bytes from the image via the RLE decoder",
+    "    0 1 w 1 sub { str exch RLEPacket putinterval } for",
+    "    /tail str def",
+    "    /x 0 def",
+    "    {",
+    "      tail transparent search dup /done exch not def",
+    "      {exch pop exch pop} if",
+    "      /w1 1 index length def",
+    "      w1 0 ne {",
+    "        newdict /DataSource 3 -1 roll put",
+    "        newdict /Width w1 put",
+    "        mat 4 x neg put",
+    "        /x x w1 add def",
+    "        newdict image",
+    "        /tail tail w1 tail length w1 sub getinterval def",
+    "      } {",
+    "        pop",
+    "      } ifelse",
+    "      done {exit} if",
+    "      tail substrs {",
+    "        anchorsearch {pop} if",
+    "      } forall",
+    "      /tail exch def",
+    "      tail length 0 eq {exit} if",
+    "      /x w tail length sub def",
+    "    } loop",
+    "  } for",
+    "  end",
+    "  grestore",
+    "} bind def",
+    "",
+    "% number of bytes remaining in current RLE run",
+    "/Nbyte 0 def",
+    "% color of current RLE run",
+    "/color 1 string def",
+    "",
+    "/byte 1 string def",
+    "",
+    "%***************************************************",
+    "/RLEPacket         % Decode RLE color packet       *",
+    "%***************************************************",
+    "{",
+    "    Nbyte 0 eq {",
+    "	  currentfile byte readhexstring pop 0 get",
+    "	  /Nbyte exch 1 add def ",
+    "	  currentfile color readhexstring pop pop",
+    "	} if",
+    "    /Nbyte Nbyte 1 sub def",
+    "    color ",
+    "} bind def",
+    NULL
+    };
+
+    for (str=Transpheader; *str; str++) {
+	fprintf(tfp,"%s\n",*str);
+    }
+    /* set flag saying we've emitted the header */
+    transp_header_done = True;
+}
+
+/***********************************************************************
+ *                                                                     *
+ * Name: PSencode                                    Date:    13.01.93 *
+ *                                                                     *
+ * Function: Output image in PostScript format (runlength encoding)    *
+ *                                                                     *
+ * Input: Width      - image width                                     *
+ *        Height     - image height                                    *
+ *        Transparent - index of transparent color (-1 if none)        *
+ *        Ncol       - number of colors                                *
+ *        R[]        - red components                                  *
+ *        G[]        - green components                                *
+ *        B[]        - blue components                                 *
+ *        data[]     - array for image data (byte per pixel)           *
+ *                                                                     *
+ * Return: size of PS                                                  *
+ *                                                                     *
+ ***********************************************************************/
+long
+PSencode(Width, Height, Transparent, Ncol, R, G, B, data)
+    int		Width, Height, Transparent, Ncol;
+    byte	R[], G[], B[];
+    unsigned char *data;
+{
+
+  long    Nbyte;
+  char    s[80];
+  byte    *ptr, *end;
+  int     i, nc, k, current, previous, run, y;
+
+  static char h[] = "0123456789abcdef";
 
   /*   CHECK PARAMETERS   */
   
@@ -143,20 +260,19 @@ PSencode(File, Width, Height, Ncol, R, G, B, data)
     return 0;
   }
 
-  /*   OUTPUT HEADER   */
 
-  Nbyte = 0;
-
-  /*   OUTPUT POSTSCRIPT PROGRAM */
-
-  for (q=PostScript; *q; q++) {
-    sprintf(s,"%s\n",*q);                          put_string;
+  if (Transparent != -1) {
+	fprintf(tfp,"[/Indexed /DeviceRGB %d <\n",Ncol-1);
+  } else {
+	fprintf(tfp, "%%***********************************************\n");
+	fprintf(tfp, "%%*              Image decoding                 *\n");
+	fprintf(tfp, "%%***********************************************\n");
+	fprintf(tfp, "DisplayImage\n");
+	fprintf(tfp,"%d %d\n", Width, Height);
+	fprintf(tfp,"%d\n",Ncol);
   }
 
-  /*  OUTPUT IMAGE DATA  */
-
-  sprintf(s,"%d %d\n", Width, Height);             put_string;
-  sprintf(s,"%d\n",Ncol);                          put_string;
+  Nbyte = 0;
 
   for (k=0; k<Ncol; k++) {
     sprintf(s,"%02x%02x%02x", R[k], G[k], B[k]);   put_string; 
@@ -164,8 +280,12 @@ PSencode(File, Width, Height, Ncol, R, G, B, data)
       sprintf(s,"\n");                             put_string;
     }
   }
+  if (Transparent != -1) {
+	fprintf(tfp,"\n > ] setcolorspace\n");
+	fprintf(tfp,"%d %d %d transparentimage\n",Width,Height,Transparent);
+  }
 
-  /*  RUN-LENGTH  COMPRESSION   */
+  /* RUN-LENGTH COMPRESSION */
 
   run   = 0;
   nc    = 0;

@@ -1,4 +1,4 @@
-.TH FIG2DEV 1 "Version 3.2.3c July 25, 2000"
+.TH FIG2DEV 1 "Version 3.2.3d May 29, 2001"
 .SH NAME
 fig2dev \- translates Fig code to various graphics languages
 
@@ -51,7 +51,8 @@ tk (as # comments), and pic (as .\\" comments).
 Set the output graphics language.
 Valid languages are
 \fBbox, cgm, epic, eepic, eepicemu, eps, gif, ibmgl, jpeg,
-latex, map (HTML image map), mf (METAFONT), pcx, pdf, pic, pictex, png, ppm, ps,
+latex, map (HTML image map), mf (MetaFont), mp (MetaPost), mmp (MultiMetaPost), 
+pcx, pdf, pic, pictex, png, ppm, ps,
 pstex, pstex_t, sld (AutoCad slide format), textyl, \fR
 tiff, tk (tcl/tk), tpic, xbm and
 .B xpm.
@@ -63,7 +64,7 @@ and
 .I xdvi
 must be compiled with the tpic support (-DTPIC) for epic, eepic and tpic to work.
 .br
-You must have ghostscript and ps2pdf, which comes with the ghostscript distribution
+You must have ghostscript
 to get the pdf output and the bitmap formats (png, jpeg, etc.), and the netpbm (pbmplus)
 package to get gif, xbm, xpm, and sld output.
 
@@ -305,12 +306,11 @@ for the background.
 .B -S smoothfactor
 This will smooth the output by scaling the figure by the
 .I smoothfactor
-factor, which forces ghostscript to render the figure at the higher scale
-to improve font rendering, then passing through pnmscale to reduce to original size,
-which also smooths the image by averaging colors of adjacent pixels.
-A value of 2 or 3 for
+factor, which uses the TextAlphaBits and GraphicsAlphaBits option in 
+ghostscript to smooth text and graphics
+Values of 0, 2 or 4 for
 .I smoothfactor
-is reasonable.  xfig uses 2 when the "smooth" option is used in the export panel.
+are allowed.  xfig uses 2 when the "smooth" option is used in the export panel.
 
 .SH GIF OPTIONS
 

@@ -64,7 +64,7 @@ int		font_size = 0;
 double		mag = 1.0;
 FILE		*tfp = NULL;
 
-int		ppi;			/* Fig file resolution (e.g. 1200) */
+double		ppi;			/* Fig file resolution (e.g. 1200) */
 int		llx = 0, lly = 0, urx = 0, ury = 0;
 Boolean		landscape;
 Boolean		center;
@@ -86,11 +86,22 @@ RGB		background;		/* background (if specified by -g) */
 Boolean		bgspec = False;		/* flag to say -g was specified */
 char		gscom[1000];		/* to build up a command for ghostscript */
 
+Boolean	psencode_header_done = False; /* if we have already emitted PSencode header */
+Boolean	transp_header_done = False;   /* if we have already emitted transparent image header */
+
 struct obj_rec {
 	void (*gendev)();
 	char *obj;
 	int depth;
 };
+
+#define NUMDEPTHS 100
+
+struct depth_opts {
+        int d1,d2;
+} depth_opt[NUMDEPTHS];
+int	depth_index = 0;
+char	depth_op;		/* '+' for skip all but those listed */
 
 /* be sure to update NUMPAPERSIZES in fig2dev.h if this table changes */
 
@@ -147,9 +158,9 @@ char	*argv[];
 /* add :? */
 	/* sum of all arguments */
 #ifdef I18N
-	while ((c = fig_getopt(argc, argv, "aAb:cC:d:ef:g:hl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:j?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "aAb:cC:d:D:ef:g:hkl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:j?")) != EOF) {
 #else
-	while ((c = fig_getopt(argc, argv, "aAb:cC:d:ef:g:hl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "aAb:cC:d:D:ef:g:hkl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
 #endif
 
 	  /* generic option handling */
@@ -200,6 +211,9 @@ char	*argv[];
 		    support_i18n = True;
 		    continue;  /* don't pass this option to driver */
 #endif /* I18N */
+	        case 'D':	                /* depth filtering */
+		    depth_option(optarg);
+		    continue;	/* this opts parser is a mess */
 		case '?':			/* usage 		*/
 			fprintf(stderr,Usage,prog);
 			exit(1);
@@ -250,8 +264,7 @@ char	*argv[];
 	if (to == NULL)
 	    tfp = stdout;
 	else if ((tfp = fopen(to, "wb")) == NULL) {
-	    fprintf(stderr, "Couldn't open %s", to);
-	    fprintf(stderr, Usage, prog);
+	    fprintf(stderr, "Couldn't open %s\n", to);
 	    exit(1);
 	}
 
@@ -281,6 +294,7 @@ help_msg()
     }
     printf("\n");
     printf("  -m mag	set magnification\n");
+    printf("  -D +/-list	include or exclude depths listed\n");
     printf("  -f font	set default font\n");
     printf("  -s size	set default font size in points\n");
     printf("  -h		print this message, fig2dev version number and exit\n");
@@ -324,13 +338,15 @@ help_msg()
     printf("  -S smooth	specify smoothing factor [2-3 reasonable]\n");
     printf("  -t color	specify GIF transparent color in hexadecimal (e.g. #ff0000=red)\n");
 
+#ifdef USE_JPEG
     printf("JPEG Options:\n");
     printf("  -b width	specify width of blank border around figure\n");
     printf("  -g color	background color\n");
     printf("  -q quality	specify image quality factor (0-100)\n");
     printf("  -S smooth	specify smoothing factor [2-3 reasonable]\n");
+#endif /* USE_JPEG */
 
-    printf("PNG, PCX, PPM, and TIFF Options:\n");
+    printf("Options for all other bitmap languages:\n");
     printf("  -b width	specify width of blank border around figure\n");
     printf("  -g color	background color\n");
     printf("  -S smooth	specify smoothing factor [2-3 reasonable]\n");
@@ -473,6 +489,7 @@ gendev_objects(objects, dev)
 
 	/* generate objects in sorted order */
 	for (r = rec_array; r<rec_array+obj_count; r++)
+	  if (depth_filter(r))
 	    (*(r->gendev))(r->obj);
 
 	/* generate trailer */
@@ -492,6 +509,79 @@ int rec_comp(r1, r2)
 /* null operation */
 void gendev_null() {
     ;
+}
+
+/*
+ * depth_options:
+ *  +range[,range...]
+ *  -range[,range...]
+ *  where range is:
+ *  d       include/exclude this depth
+ *  d1:d2   include/exclude this range of depths
+ */
+
+depth_usage()
+{
+    fprintf(stderr,"%s: help for -D option:\n",prog);
+    fprintf(stderr,"  -D +rangelist  means keep only depths in rangelist.\n");
+    fprintf(stderr,"  -D -rangelist  means keep all depths but those in rangelist.\n");
+    fprintf(stderr,"  rangelist can be a list of numbers or ranges of numbers, e.g.:\n");
+    fprintf(stderr,"    10,40,55,60:70,99\n");
+    exit(1);
+}
+
+depth_option(s)
+char *s;
+{
+  struct depth_opts *d;
+
+  switch (depth_op = *s++) {
+    case '+':
+    case '-':
+	break;
+    default:
+	depth_usage();
+  }
+  
+  for (d = depth_opt; depth_index < NUMDEPTHS && *s; ++depth_index, d++) {
+    if (*s == ',') ++s;
+    d->d1 = d->d2 = -1;
+    d->d1 = strtol(s,&s,10);
+    if (d->d1 <= 0) 
+      depth_usage();
+    switch(*s) {		/* what's the delim? */
+    case ':':			/* parse a range */
+      d->d2 = strtol(++s,&s,10);
+      if (d->d2 < d->d1) 
+	depth_usage();
+      break;
+    case ',':			/* just start the next one */
+      ++s;
+      break;
+    }
+  }
+  if (depth_index >= NUMDEPTHS) {
+    fprintf(stderr,"%s: Too many -D values!\n",prog);
+    exit(1);
+  }
+}
+
+depth_filter(r)
+struct obj_rec *r;
+{
+  struct depth_opts *d;
+  
+  if (depth_index <= 0)		/* no filters were set up */
+    return 1;
+  for (d = depth_opt; d->d1 > 0; d++)
+    if (d->d2 >= 0) {		/* it's a range comparison */
+      if (r->depth >= d->d1 && r->depth <= d->d2)
+	return (depth_op=='+')?1:0;
+    } else {			/* it's a single-value comparison */
+      if (d->d1 == r->depth)
+	return (depth_op=='+')?1:0;
+    }
+  return (depth_op=='-')?1:0;
 }
 
 void

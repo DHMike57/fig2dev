@@ -58,9 +58,7 @@ static void		 count_lines_correctly();
 #define		BUF_SIZE	1024
 
 /* max number of comments that can be stored with each object */
-#define MAXCOMMENTS	50
-/* max length of any comment */
-#define MAXCOMLEN	200
+#define MAXCOMMENTS	100
 
 User_color	 user_colors[MAX_USR_COLS];
 int		 user_col_indx[MAX_USR_COLS];
@@ -122,6 +120,7 @@ F_compound	*obj;
 {
 	FILE		*fp;
 
+	/* initialize pattern_used[] array */
 	init_pats_used();
 	if ((fp = fopen(file_name, "r")) == NULL)
 	    return errno;
@@ -302,7 +301,7 @@ F_compound	*obj;
 	    put_msg("File is truncated at resolution specification.");
 	    return -1;
 	    }
-	if (sscanf(buf,"%d%d\n", &ppi, &coord_sys) != 2) {
+	if (sscanf(buf,"%lf%d\n", &ppi, &coord_sys) != 2) {
 	    put_msg("Incomplete resolution information at line %d", line_no);
 	    return -1;
 	    }
@@ -797,6 +796,7 @@ FILE	*fp;
 	}
     	if (l->type == T_PIC_BOX) {
 	  Pic_malloc(l->pic);
+	  l->pic->transp = -1;
 	  if (l->pic  == NULL) {
 	    free((char *) l);
 	    return (NULL);
@@ -1015,13 +1015,17 @@ FILE	*fp;
 
 	    l = create_line_with_spline(s);
 	    free_splinestorage(s);  
+	    /* skip to end of line */
+	    skip_line(fp);
 	    if (l == NULL)
 		return NULL;
 	    return (F_spline *)l;   /* return the new line */
 	  }
 
-	if (approx_spline(s)) 
+	if (approx_spline(s)) {
+	    skip_line(fp);
 	    return s;
+	}
 	/* Read controls from older versions */
 	/* keep track of newlines for line counter */
 	count_lines_correctly(fp);
@@ -1331,11 +1335,12 @@ save_comment(fp)
 {
     int		    i;
 
-    /* see if we've allocated space for this comment */
-    if (comments[numcom] == 0)
-	if ((comments[numcom] = malloc(MAXCOMLEN)) == NULL)
-	    return -1;
     i=strlen(buf);
+    /* see if we've allocated space for this comment */
+    if (comments[numcom])
+	free(comments[numcom]);
+    if ((comments[numcom] = malloc(i+1)) == NULL)
+	    return -1;
     /* remove any newline */
     if (buf[i-1] == '\n')
 	buf[i-1] = '\0';

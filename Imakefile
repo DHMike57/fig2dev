@@ -39,7 +39,7 @@ DependSubdirs($(SUBDIRS))
 manual: 
 
 transfig.man:: doc/transfig.1
-	-ln -s ../doc/transfig.1 transfig.man
+	-$(LN) ../doc/transfig.1 transfig.man
 	cd doc/manual; $(MAKE); latex manual; latex manual
 
 clean::

@@ -56,7 +56,8 @@ char *iname[] = {
 	"apg",
 	"fig",
   	"pic",
-	"ps"};
+	"ps",
+	"eps"};
  
 main(argc, argv)
 int argc;
@@ -165,11 +166,21 @@ char *argv[];
   }
 
   sysmv(txfile);
-  tx = fopen(txfile, "w");
+  if (strcmp(txfile,"-")==0)
+	tx = stdout;
+  else if ((tx = fopen(txfile, "w")) == NULL) {
+	fprintf(stderr,"transfig: can't open Texfile '%s'\n",txfile);
+	exit(1);
+  }
   texfile(tx, input, altfonts, arglist);
 
   sysmv(mkfile);
-  mk = fopen(mkfile, "w");
+  if (strcmp(mkfile,"-")==0)
+	mk = stdout;
+  else if ((mk = fopen(mkfile, "w")) == NULL) {
+	fprintf(stderr,"transfig: can't open Makefile '%s'\n",mkfile);
+	exit(1);
+  }
   makefile(mk, altfonts, arglist);
   exit(0);
 }

@@ -29,21 +29,13 @@
  *
  * 	Author Micah Beck, Cornell University, 4/88
  *	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
+ *	PCL job control option added Brian V. Smith 1/2001
 */
 
-static set_style();
-
-#if defined(hpux) || defined(SYSV) || defined(SVR4)
-#include <sys/types.h>
-#endif
-#include <sys/file.h>
-#if defined(SYSV) || defined(SVR4)
-#include <string.h>
-#else
-#include <strings.h>
-#endif
 #include "fig2dev.h"
 #include "object.h"
+
+static set_style();
 
 #define		FONTS 			35
 #define		COLORS 			8
@@ -63,7 +55,9 @@ static	int	ibmgec		 = True;
 #else
 static	int	ibmgec		 = False;
 #endif
-static	int	reflected	 = False;
+
+static	Boolean	pcljcl		 = False;  /* flag to precede IBMGL (HP/GL) output with PCL job control */
+static	Boolean	reflected	 = False;
 static	int	fonts		 = FONTS;
 static	int	colors		 = COLORS;
 static	int	patterns	 = PATTERNS;
@@ -113,6 +107,10 @@ static	double	high[]		 = {.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,
 static void genibmgl_option(opt, optarg)
 char opt, *optarg;
 {
+	FILE	*ffp;
+	int	 font;
+	int	 pattern;
+
 	switch (opt) {
 
 	    case 'a':				/* paper size		*/
@@ -133,39 +131,35 @@ char opt, *optarg;
 		break;
 
 	    case 'f':				/* user's characters	*/
-		{
-		    FILE	*ffp;
-		    int		font;
-		    if ((ffp = fopen(optarg, "r")) == NULL)
-			fprintf(stderr, "Couldn't open %s\n", optarg);
-		    else
-			for (font = 0; font <= fonts; font++)
-			    fscanf(ffp, "%d%d%lf%lf%lf",
+		if ((ffp = fopen(optarg, "r")) == NULL)
+		    fprintf(stderr, "Couldn't open %s\n", optarg);
+		else
+		    for (font = 0; font <= fonts; font++)
+			fscanf(ffp, "%d%d%lf%lf%lf",
 				&standard[font],	/* 0-4 6-9 30-39*/
 				&alternate[font],	/* 0-4 6-9 30-39*/
 				&slant[font],		/*   degrees	*/
 				&wide[font],		/*	~1.0	*/
 				&high[font]);		/*	~1.0	*/
-		    fclose(ffp);
-		}
+		fclose(ffp);
+		break;
+
+	    case 'k':				/* precede output with PCL job control */
+		pcljcl = True;
 		break;
 
 	    case 'l':				/* user's fill patterns	*/
-		{
-		    FILE	*ffp;
-		    int		pattern;
-		    if ((ffp = fopen(optarg, "r")) == NULL)
-			fprintf(stderr, "Couldn't open %s\n", optarg);
-		    else
-			for (pattern = 0; pattern < patterns; pattern++)
-			    fscanf(ffp, "%d%lf%d%lf%lf",
+		if ((ffp = fopen(optarg, "r")) == NULL)
+		    fprintf(stderr, "Couldn't open %s\n", optarg);
+		else
+		    for (pattern = 0; pattern < patterns; pattern++)
+			fscanf(ffp, "%d%lf%d%lf%lf",
 				&line_type[pattern],	/*    -1-6	*/
 				&line_space[pattern],	/*   inches	*/
 				&fill_type[pattern],	/*     1-5	*/
 				&fill_space[pattern],	/*   inches	*/
 				&fill_angle[pattern]);	/*   degrees	*/
-		    fclose(ffp);
-		}
+		fclose(ffp);
 		break;
 
 	    case 's':
@@ -271,6 +265,8 @@ F_compound	*objects;
 	cpp	 = cpi/ppi;
 
 	/* IBMGL start */
+	if (pcljcl)
+	    fprintf(tfp,"\033%%0B\033%%E\n");	/* set to HP/GL mode and reset printer */
 	fprintf(tfp, "IN;\n");			/* initialize plotter	*/
 
 	if (!landscape) {			/* portrait mode	*/

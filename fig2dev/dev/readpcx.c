@@ -33,6 +33,7 @@ read_pcx(file,filetype,pic,llx,lly)
     int		   *llx, *lly;
 {
 	*llx = *lly = 0;
+	pic->transp = -1;
 	return _read_pcx(file, pic);
 }
 

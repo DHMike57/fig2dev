@@ -126,29 +126,31 @@ F_compound	*objects;
     extra_options[0]='\0';
 
     gsdev = NULL;
-    /* if we're smoothing, we'll generate magnified ppm then convert it later */
-	if (strcmp(lang,"pcx")==0) {
-	    gsdev="pcx256";
-	} else if (strcmp(lang,"ppm")==0) {
-	    gsdev="ppmraw";
-	} else if (strcmp(lang,"png")==0) {
-	    gsdev="png16m";
-	} else if (strcmp(lang,"tiff")==0) {
-	    /* use the 24-bit - unfortunately, it doesn't use compression */
-	    gsdev="tiff24nc";
-	} else if (strcmp(lang,"jpeg")==0) {
-	    gsdev="jpeg";
-	    /* set quality for JPEG */
-	    sprintf(extra_options," -dJPEGQ=%d",jpeg_quality);
-	}
+    /* if we're smoothing, we'll generate ppm and tell gs to
+		use TextAlphaBits and GraphicsAlphaBits */
+    if (strcmp(lang,"pcx")==0) {
+	gsdev="pcx256";
+    } else if (strcmp(lang,"ppm")==0) {
+	gsdev="ppmraw";
+    } else if (strcmp(lang,"png")==0) {
+	gsdev="png16m";
+    } else if (strcmp(lang,"tiff")==0) {
+	/* use the 24-bit - unfortunately, it doesn't use compression */
+	gsdev="tiff24nc";
+    } else if (strcmp(lang,"jpeg")==0) {
+	gsdev="jpeg";
+	/* set quality for JPEG */
+	sprintf(extra_options," -dJPEGQ=%d",jpeg_quality);
+    }
     if (smooth > 1) {
       sprintf(extra_options+strlen(extra_options),
 	      " -dTextAlphaBits=%d -dGraphicsAlphaBits=%d",smooth,smooth);
     }
-    /* no driver in gs or we're smoothing, use ppm output then use ppmtoxxx later */
+    /* no driver in gs, use ppm output then use ppmtoxxx later */
     if (gsdev == NULL) {
 	gsdev="ppmraw";
-	if (smooth > 1 || strcmp(lang,"ppm")) {
+	/* if we're not going to ppm, setup a temp file to run through final ppmtoxx */
+	if (strcmp(lang,"ppm")) {
 	    /* make a unique name for the temporary ppm file */
 	    sprintf(tmpname,"%s/f2d%d.ppm",TMPDIR,getpid());
 	    ofile = tmpname;
@@ -214,7 +216,6 @@ genbitmaps_end()
 		    sprintf(com1,"ppmquant 256 %s | ppmtogif",tmpname1);
 		}
 	    } else if (strcmp(lang, "jpeg")==0) {
-		/*sprintf(com1, "cjpeg -quality %d %s", jpeg_quality, tmpname1);*/
 		sprintf(com1, "ppmtojpeg --quality=%d %s", jpeg_quality, tmpname1);
 	    } else if (strcmp(lang, "xbm")==0) {
 		sprintf(com1,"ppmtopgm %s | pgmtopbm | pbmtoxbm",tmpname1);

@@ -123,11 +123,11 @@ typedef		struct f_line {
 			struct f_arrow		*for_arrow;
 			struct f_arrow		*back_arrow;
 			int			cap_style;
+			struct f_point		*points;
 /* IMPORTANT: everything above this point must be in the same order 
 	      for ARC, LINE and SPLINE (LINE has join_style following cap_style */
  			int			join_style;
 			int			radius;	/* for T_ARC_BOX */
-			struct f_point		*points;
 		    	struct f_pic   		*pic;
 			struct f_comment	*comments;
 			struct f_line		*next;
@@ -150,6 +150,7 @@ typedef struct f_pic {
 #define	P_PCX	5	/* PCX picture type */
 #define	P_PPM	6	/* PPM picture type */
 #define	P_TIF	7	/* TIFF picture type */
+#define	P_PNG	8	/* PNG picture type */
     char            file[256];
     int             flipped;
     unsigned char  *bitmap;
@@ -263,10 +264,10 @@ typedef		struct f_spline {
 			struct f_arrow		*for_arrow;
 			struct f_arrow		*back_arrow;
 			int			cap_style;
+			struct f_point		*points;
 /* IMPORTANT: everything above this point must be in the same order 
 	      for ARC, LINE and SPLINE (LINE has join_style following cap_style */
 
-			struct f_point		*points;
 			struct f_control	*controls;
 			struct f_comment	*comments;
 			struct f_spline		*next;

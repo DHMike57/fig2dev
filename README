@@ -25,7 +25,7 @@ The file LATEX.AND.XFIG contains a useful tutorial on using xfig with LaTex.
 It was written by Eric Masson (McGill University)
 
 TransFig and its companion xfig are available from:
-	ftp://www-epb.lbl.gov/xfig
+	ftp://epb.lbl.gov/xfig
 	http://www.xfig.org/xfigdist
 	ftp://ftp.x.org/contrib/applications/drawing_tools
 	ftp://ftp.cdrom.com/pub/X11/contrib/applications/drawing_tools
@@ -39,6 +39,8 @@ To make TransFig:
 	same directory that xfig uses (usually /usr/local/lib/xfig).  This
 	will be used to hold the bitmaps directory for the tk fill patterns.
 2. Do a "xmkmf" to create the top level Makefile from the Imakefile
+	Note: If you don't have "xmkmf" on your system type
+	"make -f Makefile.noimake Makefile"
 3. Do a "make Makefiles"
 4. Do a "make" to make the programs
 	**** This MUST be done before "make install" ****
@@ -70,26 +72,42 @@ o Make sure that you point XFIGLIBDIR to the same directory that xfig uses
   (usually /usr/local/lib/xfig).  This will be used to hold the bitmaps
   directory for the tk fill patterns.
 
-o If you have NOT installed the JPEG library in your system library area,
-  comment out the USEINSTALLEDJPEG in fig2dev/Imakefile variable, change the
-  JPEGLIBDIR variable to the directory where your JPEG library resides and
-  change the JPEGINC to the directory where your JPEG header files (include)
-  reside.  You must have version 5b or newer of the JPEG library.
-
-  The JPEG library is available from several places.  The official archive site
-  is ftp.uu.net in /graphics/jpeg.
-  Another site is ftp.x.org in /contrib/libraries.
+o If you want to be able to import JPEG images then:
+  o If you already have a JPEG library in your system library directory leave
+    the "#define USEINSTALLEDJPEG" line (don't comment it out) in the Imakefile.
+  o If you don't have it installed, get it from one of the following places,
+    comment out the #define USEINSTALLEDJPEG line in the Imakefile (using XCOMM)
+    and point JPEGLIBDIR to the diredctory where the source is.  The default is
+    ../jpeg (relative to the xfig source directory).
+    You must also change the JPEGINCDIR variable to the directory where your
+    jpeg header files (include) reside.
+  o You must have version 5b or newer of the JPEG library.
+  o The JPEG library is available from several places.  The official
+    archive site is ftp.uu.net in /graphics/jpeg.
+    Another is ftp.x.org in /contrib/libraries.
+  o ** Make sure you delete or rename any older version of the JPEG
+    library you might have on your system.  Some Linux systems come
+    with an older version which is incompatible with xfig.
 
 o If you don't want to be able to import JPEG images in your Fig files at all
   then comment out the "#define USEJPEG" line in the fig2dev/Imakefile.
+
+o If you *don't* want PNG support, comment out the #define USEPNG line in
+  the Imakefile.
+
+o If you want to be able to import PNG images then:
+  o Uncomment the "#define USEPNG" line in the Imakefile.
+  o You need the PNG library (-lpng) and the zlib (-lz) compression library.
+    You can find the PNG sources at http://www.libpng.org/pub/png/libpng.html and
+    the zlib sources at ftp://ftp.cdrom.com/pub/infozip/zlib.
 
 o If you want to be able to translate Fig files that have imported XPM files
   (color pixmaps) uncomment the "#define USEXPM" line in fig2dev/Imakefile.
   You need version 3.4c or newer of the XPM package.
   This is available from ftp.x.org in /contrib/libraries.
 
-o If your system has the strerror() function (doesn't have sys_errlist) then
-  comment out NEED_STRERROR with an XCOMM comment.
+o If your system doesn't have the strerror() function then uncomment the
+  "#define NEED_STRERROR" in the Imakefile.
 
 o If your system can open files in text and binary modes and has the setmode()
   function, uncomment HAVE_SETMODE.  This probably only applies to Windows 9x/NT
@@ -111,12 +129,10 @@ o As of version 3.2.0 (final), fig2dev has taken over the translating of Fig
   the final format in the case of JPEG, PCX and TIFF, or to PPM (portable
   pixmap) after which the appropriate ppmtoXXX filter is used to get ACAD, GIF,
   XPM and XBM.  If smoothing is done (-S option) when jpeg output is used, the
-  "cjpeg" program must be installed from the jpeg package.  This is done
-  automatically when you "make" TransFig or fig2dev.
+  "ppmtojpeg" program must be installed from the netpbm package.
 
-  o You need the netpbm package of March 1994 (or later), which you can find
-    at ftp://ftp.x.org/contrib/utilities or
-    at ftp://ftp.cdrom.com/pub/X11/contrib/utilities.
+  o You need the netpbm package version 9.1 (or later), which you can find at
+    http://download.sourceforge.net/netpbm
 
   o You will also need ghostscript, which can be found on ftp.cs.wisc.edu in
     /ghost/aladdin, *AND* it must be compiled with the pcx256, jpeg, png256,

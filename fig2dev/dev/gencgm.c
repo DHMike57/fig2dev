@@ -65,7 +65,6 @@
  *
  */
 
-#include <stdlib.h>
 #include "fig2dev.h"
 #include "object.h"
 
@@ -132,19 +131,24 @@ gencgm_start(objects)
    F_compound	*objects;
 {
   int i;
-  char *p, *figname = malloc(strlen(from)+1);
-
-  sprintf(figname, from);
-  p = strrchr(figname, '/');
-  if (p) 
-    figname = p+1;		/* skip directory, small memory leak here!! */
-  p = strchr(figname, '.');	
-  if (p)
-    *p = '\0';			/* discard extension */
+  char *p, *figname;
+  
+  if (from) {
+	figname = malloc(strlen(from)+1);
+	sprintf(figname, from);
+	p = strrchr(figname, '/');
+	if (p) 
+	    figname = p+1;		/* skip directory, small memory leak here!! */
+	p = strchr(figname, '.');	
+	if (p)
+	    *p = '\0';			/* discard extension */
+  } else {
+	figname = "(stdin)";
+  }
 
   fprintf(tfp, "BEGMF '%s';\n", figname);
   fprintf(tfp, "mfversion 1;\n");
-  fprintf(tfp, "mfdesc 'Converted from %s using fig2dev -Lcgm';\n", from);
+  fprintf(tfp, "mfdesc 'Converted from %s using fig2dev -Lcgm';\n", from? from: "(stdin)");
   fprintf(tfp, "mfelemlist 'DRAWINGPLUS';\n");
   fprintf(tfp, "vdctype integer;\n");
 

@@ -81,6 +81,7 @@ static int	cur_capstyle = 0;
 int		pages;
 int		no_obj = 0;
 static int	border_margin = 0;
+static float	fllx, flly, furx, fury;
 
 /* arrowhead arrays */
 Point		bpoints[50], fpoints[50];
@@ -192,6 +193,9 @@ extern	int	read_pdf();
 extern	int	read_ppm();
 extern	int	read_tif();
 extern	int	read_xbm();
+#ifdef USE_PNG
+extern	int	read_png();
+#endif
 #ifdef USE_JPEG
 extern	int	read_jpg();
 #endif
@@ -220,6 +224,9 @@ static	 struct hdr {
 			{"TIFF", "II*\000",	    4, read_tif,	False},
 			{"TIFF", "MM\000*",	    4, read_tif,	False},
 			{"XBM", "#define",	    7, read_xbm,	True},
+#ifdef USE_PNG
+			{"PNG", "\211\120\116\107\015\012\032\012", 8, read_png, True},
+#endif
 #ifdef USE_JPEG
 			{"JPEG", "\377\330\377\340", 4, read_jpg,	True},
 #endif
@@ -390,17 +397,17 @@ F_compound	*objects;
 	sprintf(host,"llx=%d\n",llx);
 
 	/* convert to point unit */
-	llx = (int)floor(llx * scalex);
-	lly = (int)floor(lly * scaley);
-	urx = (int)ceil(urx * scalex);
-	ury = (int)ceil(ury * scaley);
+	fllx = llx * scalex;
+	flly = lly * scaley;
+	furx = urx * scalex;
+	fury = ury * scaley;
 
 	/* adjust for any border margin */
 
-	llx -= border_margin;
-	lly -= border_margin;
-	urx += border_margin;
-	ury += border_margin;
+	fllx -= border_margin;
+	flly -= border_margin;
+	furx += border_margin;
+	fury += border_margin;
 
 	/* convert ledger (deprecated) to tabloid */
 	if (strcasecmp(papersize, "ledger") == 0)
@@ -420,26 +427,22 @@ F_compound	*objects;
 
 	if (epsflag || pdfflag) {
 	    /* eps or pdf, shift figure to 0,0 */
-	    origx = -llx;
-	    origy =  ury;
-	    if (pdfflag && landscape) {
-		origx = -lly;
-		origy = -llx;
-	    }
+	    origx = -fllx;
+	    origy =  fury;
 	} else {
 	    /* postscript, do any orientation and/or centering */
 	    if (landscape) {
 		itmp = pageheight; pageheight = pagewidth; pagewidth = itmp;
-		itmp = llx; llx = lly; lly = itmp;
-		itmp = urx; urx = ury; ury = itmp;
+		itmp = fllx; fllx = flly; flly = itmp;
+		itmp = furx; furx = fury; fury = itmp;
 	    }
 	    if (center) {
 		if (landscape) {
-		    origx = (pageheight - urx - llx)/2.0;
-		    origy = (pagewidth - ury - lly)/2.0;
+		    origx = (pageheight - furx - fllx)/2.0;
+		    origy = (pagewidth - fury - flly)/2.0;
 		} else {
-		    origx = (pagewidth - urx - llx)/2.0;
-		    origy = (pageheight + ury + lly)/2.0;
+		    origx = (pagewidth - furx - fllx)/2.0;
+		    origy = (pageheight + fury + flly)/2.0;
 		}
 	    } else {
 		origx = 0.0;
@@ -447,8 +450,8 @@ F_compound	*objects;
 	   }
 	}
 
-	/* finally, adjust by any offset the user wants */
-	if (!epsflag || pdfflag) {
+	/* finally, for postscript adjust by any offset the user wants */
+	if (!epsflag) {
 	    if (landscape) {
 		origx += yoff;
 		origy += xoff;
@@ -480,27 +483,23 @@ F_compound	*objects;
 		for later clipping by arrowheads */
 	cliplx = cliply = 0;
 	if (epsflag || pdfflag) {
-	    clipux = urx-llx;
-	    clipuy = ury-lly;
-	    if (pdfflag && landscape) {
-		clipux = ury-lly;
-		clipuy = urx-llx;
-	    }
+	    clipux = (int) ceil(furx-fllx);
+	    clipuy = (int) ceil(fury-flly);
 	    pages = 1;
 	} else {
 	    if (landscape) {
 		clipux = pageheight;
 		clipuy = pagewidth;
 		/* account for overlap */
-		pages = (int)(1.11111*(urx-0.1*pageheight)/pageheight+1)*
-				(int)(1.11111*(ury-0.1*pagewidth)/pagewidth+1);
+		pages = (int)(1.11111*(furx-0.1*pageheight)/pageheight+1)*
+				(int)(1.11111*(fury-0.1*pagewidth)/pagewidth+1);
 		fprintf(tfp, "%%%%Orientation: Landscape\n");
 	    } else {
 		clipux = pagewidth;
 		clipuy = pageheight;
 		/* account for overlap */
-		pages = (int)(1.11111*(urx-0.1*pagewidth)/pagewidth+1)*
-				(int)(1.11111*(ury-0.1*pageheight)/pageheight+1);
+		pages = (int)(1.11111*(furx-0.1*pagewidth)/pagewidth+1)*
+				(int)(1.11111*(fury-0.1*pageheight)/pageheight+1);
 		fprintf(tfp, "%%%%Orientation: Portrait\n");
 	    }
 	    /* only print Pages if PostScript */
@@ -510,16 +509,14 @@ F_compound	*objects;
 			cliplx, cliply, clipux, clipuy);
 
 	/* only include a pagesize command if PS */
-	if (!epsflag && !pdfflag) {
+	if (!epsflag) {
 	    fprintf(tfp, "%%%%BeginSetup\n");
 	    fprintf(tfp, "%%%%IncludeFeature: *PageSize %s\n", papersize);
 	    fprintf(tfp, "%%%%EndSetup\n");
 	} else if (pdfflag) {
-	    /* set the page size for PDF */
-	    if (landscape)
-		fprintf(tfp, "<< /PageSize [%d %d] >> setpagedevice\n",ury-lly,urx-llx);
-	    else
-		fprintf(tfp, "<< /PageSize [%d %d] >> setpagedevice\n",urx-llx,ury-lly);
+	    /* set the page size to the image size for PDF */
+	    fprintf(tfp, "<< /PageSize [%.2f %.2f] >> setpagedevice\n",
+				furx-fllx,fury-flly);
 	}
 
 	/* put in the magnification for information purposes */
@@ -624,8 +621,11 @@ F_compound	*objects;
 	    sprintf(filename, "%s/%s.ps", libdir, locale);
 	    /* get filename like ``/usr/local/lib/fig2dev/japanese.ps'' */
 	    fp = fopen(filename, "rb");
+	    /* open the locale file */
 	    if (fp == NULL) {
-		fprintf(stderr, "fig2dev: can't open file: %s\n", filename);
+		/* only warn if it isn't the C locale */
+		if (strcmp(locale,"C") != 0)
+		    fprintf(stderr, "fig2dev: warning, can't open file: %s\n", filename);
 	    } else {
 		while (fgets(str, sizeof(str), fp)) {
 		    if (strstr(str, "CompositeRoman")) enable_composite_font = True;
@@ -640,9 +640,6 @@ F_compound	*objects;
 
 	fprintf(tfp, "$F2psBegin\n");
 
-	/* multipage will print the page numbers in genps_end() */
-	if (!multi_page)
-	    fprintf(tfp, "%%%%Page: 1 1\n");
 	fprintf(tfp, "10 setmiterlimit\n");	/* make like X server (11 degrees) */
 
  	if ( multi_page ) {
@@ -669,8 +666,8 @@ genps_end()
        page = 1;
        h = (landscape? pagewidth: pageheight);
        w = (landscape? pageheight: pagewidth);
-       for (dy=0; dy < (ury-h*0.1); dy += h*0.9) {
-	 for (dx=0; dx < (urx-w*0.1); dx += w*0.9) {
+       for (dy=0; dy < (fury-h*0.1); dy += h*0.9) {
+	 for (dx=0; dx < (furx-w*0.1); dx += w*0.9) {
 	    fprintf(tfp, "%%%%Page: %d %d\n",page,page);
 	    fprintf(tfp, "gs\n");
 	    fprintf(tfp,"%.1f %.1f tr", 
@@ -872,11 +869,10 @@ F_line	*l;
 	} else if (l->type == T_PIC_BOX) {  /* imported picture */
 	  /* PICTURE OBJECT */
 		int             dx, dy, rotation;
-		int		llx, lly, urx, ury;
+		int		pllx, plly, purx, pury;
 		int		i, j;
 		Boolean		found;
 		int		c;
-		double          fllx, flly, furx, fury;
 
 		dx = l->points->next->next->x - l->points->x;
 		dy = l->points->next->next->y - l->points->y;
@@ -922,14 +918,14 @@ F_line	*l;
 		    picf=open_picfile(l->pic->file, &filtype, headers[i].pipeok, realname);
 
 		    if (headers[i].pipeok) {
-			if (((*headers[i].readfunc)(picf,filtype,l->pic,&llx,&lly)) == 0) {
+			if (((*headers[i].readfunc)(picf,filtype,l->pic,&pllx,&plly)) == 0) {
 			    fprintf(stderr,"%s: Bad %s format\n",l->pic->file, headers[i].type);
 			    close_picfile(picf,filtype);
 			    return;
 			}
 		    } else {
 			/* routines that can't take a pipe (e.g. xpm) get the real filename */
-			if (((*headers[i].readfunc)(realname,filtype,l->pic,&llx,&lly)) == 0) {
+			if (((*headers[i].readfunc)(realname,filtype,l->pic,&pllx,&plly)) == 0) {
 			    fprintf(stderr,"%s: Bad %s format\n",l->pic->file, headers[i].type);
 			    close_picfile(picf,filtype);
 			    return;
@@ -942,17 +938,28 @@ F_line	*l;
 		    fprintf(stderr,"%s: Unknown image format\n",l->pic->file);
 		    return;
 		}
-		urx = l->pic->bit_size.x+llx;	/* calc upper-right from size and lower-left */
-		ury = l->pic->bit_size.y+lly;
+		/* if we have any of the following pic types, we need the ps encoder */
+		if ((l->pic->subtype == P_XPM || l->pic->subtype == P_PCX || 
+		    l->pic->subtype == P_PNG || l->pic->subtype == P_JPEG) && 
+			!psencode_header_done)
+			    PSencode_header();
+
+		/* if we have a GIF with a transparent color, we need the transparentimage code */
+		/* Actually, the GIF has been changed to PCX, but we still have the information */
+		if (l->pic->subtype == P_PCX && l->pic->transp != -1 && !transp_header_done)
+		    PStransp_header();
+
+		purx = l->pic->bit_size.x+pllx;	/* calc upper-right from size and lower-left */
+		pury = l->pic->bit_size.y+plly;
 
 		fprintf(tfp, "n gs\n");
 		if (((rotation == 90 || rotation == 270) && !l->pic->flipped) ||
 		    (rotation != 90 && rotation != 270 && l->pic->flipped)) {
-			pic_h = urx - llx;
-			pic_w = ury - lly;
+			pic_h = purx - pllx;
+			pic_w = pury - plly;
 		} else {
-			pic_w = urx - llx;
-			pic_h = ury - lly;
+			pic_w = purx - pllx;
+			pic_h = pury - plly;
 		}
 
 		/* translate the pic stuff to the right spot on the page */
@@ -1011,7 +1018,7 @@ F_line	*l;
 		}
 
 		/* translate the pic stuff so that the lower-left corner is at the origin */
-		fprintf(tfp, "%d %d tr\n", -llx, -lly);
+		fprintf(tfp, "%d %d tr\n", -pllx, -plly);
 		/* save vm so pic file won't change anything */
 		fprintf(tfp, "sa\n");
 
@@ -1020,7 +1027,7 @@ F_line	*l;
 		 */
 		if (l->pic->subtype == P_EPS) {
 		    fprintf(tfp, "n %d %d m %d %d l %d %d l %d %d l cp clip n\n",
-			llx,lly, urx,lly, urx,ury, llx,ury);
+			pllx,plly, purx,plly, purx,pury, pllx,pury);
 		    fprintf(tfp, "countdictstack\n");
 		    fprintf(tfp, "mark\n");
 		}
@@ -1037,20 +1044,20 @@ F_line	*l;
 			fprintf(tfp, "col%d\n ", l->pen_color);
 			fprintf(tfp, "%% Bitmap image follows:\n");
 			/* scale for size in bits */
-			fprintf(tfp, "%d %d sc\n", urx, ury);
-			fprintf(tfp, "/pix %d string def\n", (int)((urx+7)/8));
+			fprintf(tfp, "%d %d sc\n", pic_w, pic_h);
+			fprintf(tfp, "/pix %d string def\n", (int)((pic_w+7)/8));
 			/* width, height and paint 0 bits */
-			fprintf(tfp, "%d %d false\n", urx, ury);
+			fprintf(tfp, "%d %d false\n", pic_w, pic_h);
 			/* transformation matrix */
-			fprintf(tfp, "[%d 0 0 %d 0 %d]\n", urx, -ury, ury);
+			fprintf(tfp, "[%d 0 0 %d 0 %d]\n", pic_w, -pic_h, pic_h);
 			/* function for reading bits */
 			fprintf(tfp, "{currentfile pix readhexstring pop}\n");
 			/* use imagemask to draw in color */
 			fprintf(tfp, "imagemask\n");
 			bit = l->pic->bitmap;
 			cwid = 0;
-			for (i=0; i<ury; i++) {				/* for each row */
-			    for (j=0; j<(int)((urx+7)/8); j++) {	/* for each byte */
+			for (i=0; i<pic_h; i++) {			/* for each row */
+			    for (j=0; j<(int)((pic_w+7)/8); j++) {	/* for each byte */
 				fprintf(tfp,"%02x", (unsigned char) ~(*bit++));
 				cwid+=2;
 				if (cwid >= 80) {
@@ -1076,7 +1083,7 @@ F_line	*l;
 			ht = l->pic->xpmimage.height;
 			fprintf(tfp, "%% Pixmap image follows:\n");
 			/* scale for size in bits */
-			fprintf(tfp, "%d %d sc\n", urx, ury);
+			fprintf(tfp, "%d %d sc\n", pic_w, pic_h);
 			/* modify colortable entries to make consistent */
 			coltabl = l->pic->xpmimage.colorTable;
 			/* convert the colors to rgb constituents */
@@ -1093,7 +1100,7 @@ F_line	*l;
 			    *cp++ = (unsigned char) *dp++;
 				
 			/* now write out the image data in a compressed form */
-			(void) PSencode(tfp, wid, ht, l->pic->xpmimage.ncolors,
+			(void) PSencode(pic_w, pic_h, -1, l->pic->xpmimage.ncolors,
 				l->pic->cmap[0], l->pic->cmap[1], l->pic->cmap[2], 
 				cdata);
 			/* and free up the space */
@@ -1101,9 +1108,9 @@ F_line	*l;
 			XpmFreeXpmImage(&l->pic->xpmimage);
 #endif /* USE_XPM */
 
-		/* GIF, PCX, or JPEG file */
+		/* GIF, PCX, PNG, or JPEG file */
 		} else if (l->pic->subtype == P_GIF || l->pic->subtype == P_PCX || 
-				l->pic->subtype == P_JPEG) {
+		     l->pic->subtype == P_JPEG || l->pic->subtype == P_PNG) {
 			int		 wid, ht;
 
 			/* start with width and height */
@@ -1113,16 +1120,18 @@ F_line	*l;
 			    fprintf(tfp, "%% GIF image follows:\n");
 			else if (l->pic->subtype == P_PCX)
 			    fprintf(tfp, "%% PCX image follows:\n");
+			else if (l->pic->subtype == P_PNG)
+			    fprintf(tfp, "%% PNG image follows:\n");
 			else
 			    fprintf(tfp, "%% JPEG image follows:\n");
 			/* scale for size in bits */
-			fprintf(tfp, "%d %d sc\n", urx, ury);
+			fprintf(tfp, "%d %d sc\n", pic_w, pic_h);
 			if (l->pic->numcols > 256) {
 			    /* 24-bit image, write rgb values */
 			    (void) PSrgbimage(tfp, wid, ht, l->pic->bitmap);
 			} else {
 			    /* now write out the image data in a compressed form */
-			    (void) PSencode(tfp, wid, ht, l->pic->numcols,
+			    (void) PSencode(pic_w, pic_h, l->pic->transp, l->pic->numcols,
 				l->pic->cmap[0], l->pic->cmap[1], l->pic->cmap[2], 
 				l->pic->bitmap);
 			}

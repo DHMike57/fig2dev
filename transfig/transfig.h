@@ -27,10 +27,10 @@
 #endif
 
 enum language  {box, epic, eepic, eepicemu, latex,
-	pictex, postscript, eps, psfig, pstex, textyl, tpic};
+	pictex, postscript, encps, psfig, pstex, textyl, tpic};
 #define MAXLANG tpic
 
-enum input {apg, fig, pic, ps};
+enum input {apg, fig, pic, ps, eps};
 #define MAXINPUT xps
 
 typedef struct argument{
