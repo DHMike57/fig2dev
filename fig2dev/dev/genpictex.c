@@ -349,17 +349,17 @@ F_line	*l;
 	   	    ((convy(lly/ppi)+convy(ury/ppi))/2)*CONVUNIT);
 	       fprintf(tfp,"\\linethickness=%dpt\n", l->thickness);
 	   }
-	   else if (l->fill_style != UNFILLED && l->fill_style > 15)
+	   else if (l->fill_style != UNFILLED && l->fill_style > (int)(BLACK_FILL*3/4))
 	   {
 	       fprintf(tfp,"\\setshadegrid span <1pt>\n");
 	       fprintf(tfp,"\\shaderectangleson\n");
 	   }
-	   else if (l->fill_style != UNFILLED && l->fill_style > 10)
+	   else if (l->fill_style != UNFILLED && l->fill_style > (int)(BLACK_FILL*2/4))
 	   {
 	       fprintf(tfp,"\\setshadegrid span <2pt>\n");
 	       fprintf(tfp,"\\shaderectangleson\n");
 	   }
-	   else if (l->fill_style != UNFILLED && l->fill_style > 5)
+	   else if (l->fill_style != UNFILLED && l->fill_style > (int)(BLACK_FILL*1/4))
 	   {
 	       fprintf(tfp,"\\setshadegrid span <4pt>\n");
 	       fprintf(tfp,"\\shaderectangleson\n");

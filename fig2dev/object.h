@@ -66,8 +66,8 @@ typedef		struct f_ellipse {
 			int			direction;
 			double			angle;
 #define		       			UNFILLED	-1
-#define		       			WHITE_FILL	1
-#define		       			BLACK_FILL	21
+#define		       			WHITE_FILL	0
+#define		       			BLACK_FILL	20
 			struct f_pos		center;
 			struct f_pos		radiuses;
 			struct f_pos		start;

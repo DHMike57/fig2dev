@@ -1,3 +1,7 @@
+#ifndef XCOMM
+#define XCOMM #
+#endif
+
 XCOMM	Fig2dev : General Fig code translation program
 
 XCOMM TransFig: Facility for Translating Fig code
@@ -26,20 +30,23 @@ XCOMM the party supplying this software to the X Consortium.
 
 XCOMM Uncomment the XPMDEFINES variable here AND in dev/Imakefile if you have
 XCOMM the XPM (color pixmap) package and you would like to allow XPM files.
+XCOMM You need version 3.4c of the XPM package.
 
-XPMDEFINES = -DUSE_XPM
-XPMLIBDIR = -L/usr/local/X11/lib
-XPMLIB = $(XPMLIBDIR) -lXpm -lX11
+XCOMM XPMDEFINES = -DUSE_XPM
+XCOMM XPMLIBDIR = -L/usr/local/X11/lib
+XCOMM XPMINCDIR = -I/usr/local/X11/include/xpm
+XCOMM XPMLIB = $(XPMLIBDIR) -lXpm -lX11
 
 XCOMM For Linux machines or any machines that have a separate library for
 XCOMM the database management routines, uncomment the following line
-XCOMM LOCAL_LDFLAGS = -ldbm
+XCOMM DBMLIB = -ldbm
 
 XCOMM To include drivers for the following languages, 
 XCOMM add the corresponding symbol to the DEFINES list:
 XCOMM
 XCOMM -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
 XCOMM
+
 DEFINES = $(XPMDEFINES) -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF
 DEPLIBS =
 
@@ -58,6 +65,7 @@ STRSTRO=	strstr.o
 SUBDIRS = dev
 
 INCLUDES = -I..
+EXTRA_INCLUDES = $(XPMINCDIR)
 
 SRCS = fig2dev.c getopt.c psfonts.c iso2tex.c \
 	arrow.c bound.c free.c read.c read1_3.c latex_line.c $(STRSTRC)
@@ -65,8 +73,7 @@ OBJS = fig2dev.o getopt.o psfonts.o iso2tex.o \
 	arrow.o bound.o free.o read.o read1_3.o latex_line.o $(STRSTRO) \
 	dev/libtransfig.a
 
-SYS_LIBRARIES = -lm
-LOCAL_LIBRARIES = $(XPMLIB)
+SYS_LIBRARIES = $(XPMLIB) $(DBMLIB) -lm
 
 MakeSubdirs($(SUBDIRS))
 DependSubdirs($(SUBDIRS))

@@ -86,13 +86,13 @@ char opt, *optarg;
 		    break;
 
 		case 'f':			/* set default text font */
-	    for ( i = 1; i <= MAX_FONT; i++ )
-		if ( !strcmp(optarg, texfontnames[i]) ) break;
+		    for ( i = 1; i <= MAX_FONT; i++ )
+			if ( !strcmp(optarg, texfontnames[i]) ) break;
 
-	    if ( i > MAX_FONT)
+		    if ( i > MAX_FONT)
 			{
 			  fprintf(stderr,
-						 "warning: non-standard font name %s ignored\n", optarg);
+				 "warning: non-standard font name %s ignored\n", optarg);
 			}
 		 else
 			{

@@ -43,10 +43,9 @@
 #include "fig2dev.h"
 #include "object.h"
 
-#define dofill(obj)	1.2-((double)obj->fill_style/(double)FILL_BLACK)
+#define dofill(obj)	1.2-((double)obj->fill_style/(double)BLACK_FILL)
 #define dopen(x)	((x-1)*PEN_INCR)+DEF_PEN
 #define VERSION		0.05
-#define FILL_BLACK	21
 #define DEF_PEN		0.5
 #define PEN_INCR	0.10
 
@@ -140,9 +139,9 @@ F_line *l;
 	if (l->thickness > 1)
 		printf("  pickup pencircle scaled %.2lfpt;\n",
 			dopen(l->thickness));
-	if (l->fill_style == FILL_BLACK)
+	if (l->fill_style == BLACK_FILL)
 		printf("  cycleshade(0, false,\n");
-	else if (l->fill_style < FILL_BLACK && l->fill_style > 0)
+	else if (l->fill_style < BLACK_FILL && l->fill_style > 0)
 		printf("  cycleshade(%lfpt, false,\n", dofill(l));
 	else
 		printf("  curve(false, false,\n");
@@ -169,9 +168,9 @@ F_spline *s;
 	if (s->thickness > 1)
 		printf("  pickup pencircle scaled %.2lfpt;\n",
 			dopen(s->thickness));
-	if (s->fill_style == FILL_BLACK)
+	if (s->fill_style == BLACK_FILL)
 		printf("  cycleshade(0, true,\n");
-	else if (s->fill_style < FILL_BLACK && s->fill_style > 0)
+	else if (s->fill_style < BLACK_FILL && s->fill_style > 0)
 		printf("  cycleshade(%lfpt, true,\n", dofill(s));
 	else
 		printf("  curve(true, false,\n");
@@ -198,9 +197,9 @@ F_ellipse *e;
 
 	if (e->type == 3 || e->type == 4)
 	{
-		if (e->fill_style == FILL_BLACK)
+		if (e->fill_style == BLACK_FILL)
 			printf("  circshade(0, ");
-		else if (e->fill_style < FILL_BLACK && e->fill_style > 0)
+		else if (e->fill_style < BLACK_FILL && e->fill_style > 0)
 			printf("  circshade(%lfpt, ", dofill(e));
 		else
 			printf("  circle(");
@@ -209,9 +208,9 @@ F_ellipse *e;
 	}
 	else if (e->type == 1 || e->type == 2)
 	{
-		if (e->fill_style == FILL_BLACK)
+		if (e->fill_style == BLACK_FILL)
 			printf("  ellshade(0, ");
-		else if (e->fill_style < FILL_BLACK && e->fill_style > 0)
+		else if (e->fill_style < BLACK_FILL && e->fill_style > 0)
 			printf("  ellshade(%lfpt, ", dofill(e));
 		else
 			printf("  ellipse(");

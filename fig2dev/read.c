@@ -168,6 +168,8 @@ F_compound	*obj;
 
 	bzero((char*)obj, COMOBJ_SIZE);
 	(void)fgets(buf, BUF_SIZE, fp);	/* get the version line */
+	if (strlen(buf) > 0)
+	    buf[strlen(buf)-1] = '\0';	/* remove newline */
 
 	/* v2_flag is for version 2 or higher */
 	v2_flag = (!strncmp(buf, "#FIG 2", 6) || !strncmp(buf, "#FIG 3", 6));
@@ -880,13 +882,13 @@ FILE	*fp;
 	replaced = buf[pos];
 	buf[pos]='f';
 	if (v30_flag) {	/* order of parms is more like other objects now */
-	    n = sscanf(buf, "%*d%d%d%d%d%d%f%f%d%f%f%d%d%[^f]%[f]",
+	    n = sscanf(buf, "%*d%d%d%d%d%d%lf%lf%d%lf%lf%d%d%[^f]%[f]",
 		&t->type, &t->color, &t->depth, &t->pen,
 		&t->font, &t->size, &t->angle,
 		&t->flags, &t->height, &t->length,
 		&t->base_x, &t->base_y, s, junk);
 	} else {
-	    n = sscanf(buf, "%*d%d%d%f%d%d%d%f%d%f%f%d%d%[^f]%[f]",
+	    n = sscanf(buf, "%*d%d%d%lf%d%d%d%lf%d%lf%lf%d%d%[^f]%[f]",
 		&t->type, &t->font, &t->size, &t->pen,
 		&t->color, &t->depth, &t->angle,
 		&t->flags, &t->height, &t->length,

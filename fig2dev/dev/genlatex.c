@@ -273,7 +273,7 @@ F_compound	*objects;
 	if (lly > ury) SWAP(lly, ury)
 
 	/* LaTeX start */
-	fprintf(tfp, "\\setlength{\\unitlength}{%.6fin}%%\n",
+	fprintf(tfp, "\\setlength{\\unitlength}{%.8fin}%%\n",
 						round6(unitlength));
 	/* define the SetFigFont macro */
 	define_setfigfont(tfp);

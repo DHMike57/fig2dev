@@ -24,7 +24,7 @@
  * the party supplying this software to the X Consortium.
  */
 
-#ifdef SYSV
+#if defined(SYSV) || defined(SVR4)
 #include <string.h>
 #else
 #include <strings.h>

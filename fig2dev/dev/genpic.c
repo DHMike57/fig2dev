@@ -248,8 +248,8 @@ F_line *l;
       }
 
     /* Should have a #define somewhere for the # of fill patterns */
-    if (l->fill_style > 0)
-      fprintf(tfp, " fill %.2f", ((double) (l->fill_style - 1)) / 20);
+    if (l->fill_style != UNFILLED)
+      fprintf(tfp, " fill %.2f", ((double) l->fill_style ) / (double) BLACK_FILL);
 
     fprintf(tfp, " with .sw at (%.2f,%.2f) ",
 	    minx / ppi, convy(maxy / ppi));
@@ -421,8 +421,8 @@ F_ellipse	*e;
 		e->center.x/ppi, convy(e->center.y/ppi),
 		2 * e->radiuses.x/ppi, 2 * e->radiuses.y/ppi);
 
-	if ( OptEllipseFill && e->fill_style > 0)
-	  fprintf(tfp, " fill %.2f", ((double)(e->fill_style - 1)) / 20);
+	if ( OptEllipseFill && e->fill_style != UNFILLED)
+	  fprintf(tfp, " fill %.2f", (double)e->fill_style / (double) BLACK_FILL);
 
 	AddThickness();
 
@@ -511,7 +511,7 @@ F_arc	*a;
 	if (!a->direction)
 	  fprintf(tfp, " cw");
 
-	if (a->fill_style > 0.0)
+	if (a->fill_style != UNFILLED)
 	  fprintf(stderr, "PIC does not support filled arcs ... ignoring 'fill' directive\n");
 
 	AddThickness();

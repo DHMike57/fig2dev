@@ -1,7 +1,40 @@
 ===============================================================================
 Version 3.1
 ===============================================================================
-Transfig version 3.1.0 (Jan 9, 1995)
+Patchlevel 1 (Jan 24, 1995)
+Changes from patchlevel 0:
+
+Bugs Fixed:
+
+o eps files with binary data (!) now handled correctly
+o -f option to PostScript driver with unknown PostScript font name caused
+	seg fault
+o increased resolution of unitlength specifier in latex/epic drivers - was
+	rounding 0.00083333 to 0.0008.
+o dash length not set correctly for epic driver
+o area fill values incorrectly interpreted for some drivers other than
+	PostScript - this also made fig2dev outpus spurious %s%s(%d%d)}
+	for epic/eepic
+o linejoin set instead of linecap in postscript output
+o sets linecap to ROUND for ellipses and closed splines with dotted lines
+o defines showpage as null for included EPS files instead of removing the
+	word "showpage" from them
+o definition for XCOMM in Imakefiles for those running R4
+o bug in freeing xpm image structure incompatible pointer type
+o bug in fig2dev/Imakefile variable for including -ldbm explicitly
+o removed -lnsl option from fig2dev/dev/Imakefile - imake files should
+	automatically add this to the Makefile for Solaris (SVR4) systems
+o note added to README that you must do "make" before "make install"
+o bug in reading text for linux os - text size was set to 0
+o bcopy changed to memcpy call in dev/readpics.c
+o SVR4 condition added to transfig/transfig.h for including string.h
+o variable in fig2dev/Imakefile and fig2dev/dev/Imakefile for include
+	directory for xpm files if your xpm headers are not in the default X11
+	include directory
+
+---------------------------------------------------------------------------
+Patchlevel 0 (Jan 9, 1995)
+
 Changes from 3.0.0:
 
 o NOTE:	An error in xfig version 3.0.0 incorrectly positioned objects on the
@@ -15,7 +48,7 @@ Bugs Fixed:
 o error when figure was larger or partially off the page and user did not
 	select multipage option (-M)
 o newline() declared twice (inconsistently) in dev/gentpic.c
-o errors in read.c for linux machines
+o errors in read.c for linux machines - caused font size 0
 o Linux machines need LOCAL_LDFLAGS = -ldbm in fig2dev/Imakefile
 o sys/types.h needed in dev/readpics.c for BSD machines
 

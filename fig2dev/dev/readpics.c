@@ -223,7 +223,7 @@ int ReadFromBitmapFile (filename, width, height, data_ret)
 	    RETURN (0);
 	}
 	if (sscanf(line,"#define %s %d",name_and_type,&value) == 2) {
-	    if (!(type = rindex(name_and_type, '_')))
+	    if (!(type = strrchr(name_and_type, '_')))
 	      type = name_and_type;
 	    else
 	      type++;
@@ -244,7 +244,7 @@ int ReadFromBitmapFile (filename, width, height, data_ret)
 	else
 	  continue;
 
-	if (!(type = rindex(name_and_type, '_')))
+	if (!(type = strrchr(name_and_type, '_')))
 	  type = name_and_type;
 	else
 	  type++;
@@ -399,7 +399,7 @@ convert_names(coltabl, ncols)
 		dbent = fetch (dbent);
 #endif
 		if(dbent.dptr) {
-			bcopy(dbent.dptr, (char *) &rgb, sizeof (RGB));
+			memcpy((char *) &rgb, dbent.dptr, sizeof (RGB));
 		} else {
 			fprintf(stderr,"can't parse color '%s', using black.\n",name);
 			rgb.red=rgb.green=rgb.blue=0;

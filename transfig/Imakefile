@@ -1,3 +1,7 @@
+#ifndef XCOMM
+#define XCOMM #
+#endif
+
 XCOMM	TransFig : Fig code translation Makefile creation program
 XCOMM
 XCOMM	Copyright (c) 1994 Micah Beck

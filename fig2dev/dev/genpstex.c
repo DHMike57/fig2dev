@@ -32,7 +32,7 @@
  *      LaTeX processed text for a Postscript figure.
  *
  * The pstex_t driver is like a latex driver that only translates 
- * text defined in the defaul font.
+ * text defined in the default font.
  *
  * The pstex driver is like a PostScript driver that translates 
  * everything except for text in the default font.

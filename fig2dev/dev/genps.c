@@ -1339,10 +1339,10 @@ char *optarg;
 	switch (opt) {
 
 	case 'f':
-		for ( i = 1; i <= MAX_PSFONT + 1; i++ )
+		for ( i = 1; i <= MAX_PSFONT; i++ )
 			if ( !strcmp(optarg, PSfontnames[i]) ) break;
 
-		if ( i > MAX_PSFONT + 1 )
+		if ( i > MAX_PSFONT )
 			fprintf(stderr,
 			    "warning: non-standard font name %s\n", optarg);
 
@@ -1655,7 +1655,7 @@ int	j;
 
 	if (j != cur_capstyle) {
 	    cur_capstyle = j;
-	    fprintf(tfp, "%d slj\n", cur_capstyle);
+	    fprintf(tfp, "%d slc\n", cur_capstyle);
 	    }
 	}
 
@@ -1682,7 +1682,8 @@ F_line	*l;
 {
 	F_point		*p, *q;
 	/* JNT */
-	int		radius, i = 0;
+	int		radius;
+	int		i;
 	FILE		*picf;
 	char		buf[512];
 	char		*cp;
@@ -1894,6 +1895,8 @@ F_line	*l;
 		fprintf(tfp, "%d %d tr\n", -llx, -lly);
 		/* save vm so pic file won't change anything */
 		fprintf(tfp, "save\n");
+		/* and undefine showpage */
+		fprintf(tfp, "/showpage {} def\n");
 
 		/* XBM file */
 		if (l->pic->subtype == P_XBM) {
@@ -1994,7 +1997,7 @@ F_line	*l;
 				cdata);
 			/* and free up the space */
 			free(cdata);
-			XpmFree(xpmimage);
+			XpmFreeXpmImage(&xpmimage);
 #endif /* USE_XPM */
 
 		/* GIF file */
@@ -2014,6 +2017,7 @@ F_line	*l;
 
 		/* EPS file */
 		} else {
+		    int i;
 		    fprintf(tfp, "%% EPS file follows:\n");
 		    if ((picf=open_picfile(l->pic->file, &filtype)) == NULL) {
 			fprintf(stderr, "Unable to open EPS file: %s, error: (%d)\n",
@@ -2021,12 +2025,11 @@ F_line	*l;
 			fprintf(tfp, "gr\n");
 			return;
 		    }
-		    while (fgets(buf, sizeof(buf), picf) != NULL) {
-			if (*buf == '%')		/* skip comment lines */
-				continue;
-			if ((cp=strstr(buf, "showpage")) != NULL)
-				strcpy (cp, cp+8);	/* remove showpage */
-			fputs(buf, tfp);
+		    /* use read/write() calls in case of binary data! */
+		    /* but flush buffer first */
+		    fflush(tfp);
+		    while ((i = read(fileno(picf),buf,sizeof(buf))) > 0) {
+			write(fileno(tfp),buf,i);
 		    }
 		    close_picfile(picf,filtype);
 		}
@@ -2040,6 +2043,7 @@ F_line	*l;
 		p = l->points;
 		q = p->next;
 		fprintf(tfp, "n %d %d m", p->x, p->y);
+		i=0;
 		while (q->next != NULL) {
 		    p = q;
 		    q = q->next;
@@ -2078,7 +2082,12 @@ F_spline	*s;
 {
 	if (multi_page)
 	   fprintf(tfp, "/o%d {", no_obj++);
-	set_linecap(s->cap_style);
+	if (closed_spline(s)) {
+	    if (s->style == DOTTED_LINE)
+		set_linecap(1);		/* round dots for dotted line */
+	} else {
+	    set_linecap(s->cap_style);	/* open splines can explicitely set capstyle */
+	}
 	if (int_spline(s))
 	    genps_itp_spline(s);
 	else
@@ -2200,6 +2209,8 @@ F_ellipse	*e;
 	   fprintf(tfp, "/o%d {", no_obj++);
 	set_linewidth((double)e->thickness);
 	set_style(e->style, e->style_val);
+	if (e->style == DOTTED_LINE)
+	    set_linecap(1);	/* round dots */
 	if (e->angle == 0)
 	{
 	    fprintf(tfp, "%% Ellipse\n");

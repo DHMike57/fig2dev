@@ -1,3 +1,7 @@
+#ifndef XCOMM
+#define XCOMM #
+#endif
+
 XCOMM Copyright (c) 1991 Micah Beck
 
 XCOMM The X Consortium, and any party obtaining a copy of these files from

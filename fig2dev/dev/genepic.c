@@ -76,6 +76,8 @@
 #include "texfonts.h"
 #include "pi.h"
 
+extern float THICK_SCALE;	/* ratio of dpi/80 */
+
 #ifdef MSDOS
 #define getopt egetopt
 #define M_PI 3.14159265358979324
@@ -197,7 +199,7 @@ int BottomMargin = 10;
 int DotDist = 5;
 int LineThick = 2;
 int TeXLang = EEpic;
-double DashScale=1;
+double DashScale;
 int EllipseCmd=0;
 int UseBox=None;
 int DashType=Normal;
@@ -345,6 +347,7 @@ F_compound *objects;
         put_msg("Resolution has to be positive. Default to 80!\n");
         DPI = 80;
     }
+    DashScale = (double)DPI/80.0;
     coord_system = objects->nwcorner.y;
     switch (coord_system) {
     case 1:
@@ -379,7 +382,7 @@ F_compound *objects;
         fprintf(tfp, "%%\n%% Language in use is %s\n%%\n", Tlangkw[TeXLang]);
     }
     Threshold = 1.0 / DPI * mag;
-    fprintf(tfp, "\\setlength{\\unitlength}{%.4fin}\n", Threshold);
+    fprintf(tfp, "\\setlength{\\unitlength}{%.8fin}\n", Threshold);
     MaxCircleRadius = (int) (40 / 72.27 / Threshold);
     Threshold = SegLen / Threshold;
     define_setfigfont(tfp);
@@ -530,12 +533,14 @@ F_line *line;
     switch (LineStyle) {
     case SOLID_LINE:
 	if (q->next != NULL && strcmp(LnCmd,"path")==0) {
-	    if (line->fill_style < UNFILLED) line->fill_style = UNFILLED;
-	    fprintf(tfp, "%s", FillCommands[line->fill_style]);
+	    if (line->fill_style < UNFILLED)
+		line->fill_style = UNFILLED;
+	    fprintf(tfp, "%s", FillCommands[line->fill_style+1]);
 	}
 	fprintf(tfp, "\\%s", LnCmd);
 #ifdef DrawOutLine
-	if (line->fill_style != UNFILLED && OutLine == 0) OutLine=1;
+	if (line->fill_style != UNFILLED && OutLine == 0)
+	    OutLine=1;
 #endif
 	break;
     case DASH_LINE:
@@ -601,12 +606,16 @@ float dash_len;
         switch (DashType) {
         case DottedDash:
             LineStyle = DOTTED_LINE;
+	    DotDist = dash_len * DashScale;
             break;
         default:
             DashLen = dash_len * DashScale;
             break;
         }
+    } else if (LineStyle == DOTTED_LINE) {
+	DotDist = dash_len * DashScale;
     }
+
 }
 
 
@@ -867,10 +876,12 @@ F_ellipse *ell;
         fprintf(tfp, "\\put(%d,%d){", pt.x, pt.y );
 #ifndef OLDCODE
         if (EllipseCmd == 0) {
-	    if (ell->fill_style < UNFILLED) ell->fill_style = UNFILLED;
-	    fprintf(tfp, "%s", FillCommands[ell->fill_style]);
+	    if (ell->fill_style < UNFILLED)
+		ell->fill_style = UNFILLED;
+	    fprintf(tfp, "%s", FillCommands[ell->fill_style+1]);
 #  ifdef DrawOutLine
-	    if (ell->fill_style != UNFILLED && OutLine == 0) OutLine = 1;
+	    if (ell->fill_style != UNFILLED && OutLine == 0)
+		OutLine = 1;
 #  endif
         }
  	fprintf(tfp, EllCmdstr[EllipseCmd],EllCmdkw[EllipseCmd], "",
@@ -1082,10 +1093,12 @@ F_arc *arc;
 	fprintf(tfp, "\\drawline");
     }
     if (TeXLang == EEpic) {
-	if (arc->fill_style < UNFILLED) arc->fill_style = UNFILLED;
-	fprintf(tfp, "%s", FillCommands[arc->fill_style]);
+	if (arc->fill_style < UNFILLED)
+	    arc->fill_style = UNFILLED;
+	fprintf(tfp, "%s", FillCommands[arc->fill_style+1]);
 #ifdef DrawOutLine
-	if (arc->fill_style != UNFILLED && OutLine==0) OutLine=1;
+	if (arc->fill_style != UNFILLED && OutLine==0)
+	    OutLine=1;
 #endif
     }
     if (arc->direction) {

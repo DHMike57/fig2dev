@@ -1,17 +1,31 @@
 To make TransFig:
 
-1. Do a "xmkmf" to create the top level Makefile from the Imakefile
-2. Do a "make Makefiles"
-3. Do a "make install" to create the executables and install them in the system
-  or
-   do a "make" to create the executables only
-4. Do a "make install.man" to put the manual pages in the proper directories
+1. Edit fig2dev/Imakefile and fig2dev/dev/Imakefile to make any changes
+	noted below
+2. Do a "xmkmf" to create the top level Makefile from the Imakefile
+3. Do a "make Makefiles"
+4. Do a "make" to create the executables
+5. Do a "make install" to install them in the system
+6. Do a "make install.man" to put the manual pages in the proper directories
 
 Set the following flags in fig2dev/dev/Imakefile for the described features:
 
- -DNFSS: use NFSS2 font selection fpr LaTeX texts
- -DEPSF: use epsfig macros as distributed w/ LaTeX2e
- -DNOSTRSTR: define this if your system doesn't have strstr(3)
+Add -DNFSS to DEFINES list to use NFSS2 font selection for LaTeX texts
+OR  -DEPSF to DEFINES list to use epsfig macros as distributed w/ LaTeX2e
+DON'T use both -DNFSS and -DEPSF
+
+-DNOSTRSTR: define this if your system doesn't have strstr(3)
+
+Uncomment the XPMDEFINES variable in fig2dev/Imakefile AND in
+fig2dev/dev/Imakefile if you have the XPM (color pixmap) package and you would
+like to allow XPM files (color pixmaps).  You need version 3.4c or newer of the
+XPM package.
+This is available from ftp.x.org in /contrib/libraries.
+
+Uncomment the "DBMLIB = -ldbm" in fig2dev/Imakefile if your dbm routines are
+in their own library.
+
+Look in the Imakefiles to see if any options are relevant to your system.
 
 ------------------------------------------------------------------------------------
 General information:
@@ -65,3 +79,9 @@ PROBLEMS and POSSIBLE SOLUTIONS:
 Solaris 2.x users:
 
 You you must link with -lnsl because gethostname() is used.
+
+--------------------------------------------------------------------------------
+HP systems:
+
+You may need to reduce optimization to +O2 instead of +O3.
+--------------------------------------------------------------------------------
