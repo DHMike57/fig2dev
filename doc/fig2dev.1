@@ -345,6 +345,10 @@ Generate figure in landscape mode.  The dummy argument is ignored,
 but must appear on the command line for reasons of compatibility.
 This option will override the orientation specification in the
 file (for file versions 3.0 and higher).
+.br
+This option is only honored when not using the -P option (add showpage).
+This is because the figure doesn't need to be rotated when generating
+Encapsulated PostScript (EPS).
 .TP
 .B -M
 Generate multiple pages if figure exceeds page size.
@@ -383,13 +387,26 @@ units (1/72 inch).
 A negative value shifts the figure up and a positive value down.
 .TP
 .B -z pagesize
-Sets the pagesize. Available page sizes are
-"Letter" (8.5" x 11"),
-"Legal" (11" x 14")
+Sets the pagesize. Available page sizes are:
+.nf
+.in +.4i
+"Letter" (8.5" x 11" also "A"),
+"Legal" (11" x 14" also "A")
 "Ledger" (11" x 17"),
 "Tabloid" (17" x 11", really Ledger in Landscape mode),
+"A" (8.5" x 11" also "Letter"),
+"B" (11" x 17" also "Ledger"),
+"C" (17" x 22"),
+"D" (22" x 34"),
+"E" (34" x 44"),
 "A4" (21cm x 29.7cm),
+"A3" (29.7cm x 42cm),
+"A2" (42cm x 59.4cm),
+"A1" (59.4cm x 84cm),
+"A0" (84cm x 118.8cm),
 and "B5" (18.2cm x 25.7cm).
+.fi
+.in -.4i
 .LP
 
 .SH PSTEX OPTIONS

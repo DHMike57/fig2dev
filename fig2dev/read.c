@@ -1033,7 +1033,6 @@ FILE	*fp;
 	if (more) {
 	/* Read in the subsequent lines of the text if there is more than one. */
 	  do {
-	    fgets(buf, BUF_SIZE, fp);
 	    line_no++;		/* As is done in get_line */
 	    if (v30_flag) {
 		if (fgets(s_temp, BUF_SIZE, fp) == NULL)

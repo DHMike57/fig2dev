@@ -81,6 +81,7 @@ XCOMM DDEPSF = -DEPSF
 
 XCOMM For Linux machines or any machines that have a separate library for
 XCOMM the database management routines, uncomment the following line
+XCOMM For Redhat distributions of Linux you may have to change DBMLIB to -ldb
 XCOMM DBMLIB = -ldbm
 
 XCOMM To include drivers for the following languages,

@@ -1,6 +1,22 @@
 ===============================================================================
 Version 3.1
 ===============================================================================
+Patchlevel 3 (XXX XX 1996)
+
+NEW FEATURES
+
+o comment that Redhat Linux users may have to change DBMLIB to -ldb in
+	fig2dev/Imakefile
+o figures in landscape are only rotated when showpage command is NOT used 
+	(-P).  This is because it doesn't need to be rotated for EPS,
+
+BUGS FIXED
+
+o added second % to %%BeginDocument and %%EndDocument
+o garbage values for arrowhead produced when last two points in line were at
+	same coordinate
+o bug in reading multi-line text object
+
 Patchlevel 2a (Jun 4, 1996)
 
 NEW FEATURES
@@ -17,6 +33,9 @@ o can rotate all text (not just left justified) in LaTeX now using \rotatebox.
 	The old restriction is not needed because the epsfig package is
 	required to include ps_tex_t files anyway.
 o new line types - Dash-dot (_.) Dash-dot-dot (_..) and Dash-dot-dot-dot (_...)
+o new paper sizes: "Tabloid", "Ledger", "B", "C", "D", "E", "A0", "A1", "A2", 
+	"A3", "A4" and "B5".  See man fig2dev (-z option) for sizes in
+	inches and cm
 
 BUGS FIXED
 

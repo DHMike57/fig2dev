@@ -18,4 +18,4 @@
  */
 
 #define VERSION		"3.1"
-#define PATCHLEVEL	"2a"
+#define PATCHLEVEL	"3d-beta"

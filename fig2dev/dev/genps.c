@@ -94,6 +94,11 @@ struct pagedef pagedef[] =
     {"Legal", 612, 1008}, 	/* 8.5" x 14" */
     {"Ledger", 1224, 792}, 	/*  17" x 11" */
     {"Tabloid", 792, 1224}, 	/*  11" x 17" */
+    {"A", 612, 792},		/* 8.5" x 11" (letter) */
+    {"B", 792, 1224},		/*  11" x 17" (tabloid) */
+    {"C", 1224, 1584},		/*  17" x 22" */
+    {"D", 1584, 2448},		/*  22" x 34" */
+    {"E", 2448, 3168},		/*  34" x 44" */
     {"B5", 516, 729}, 		/* 18.2cm x 25.7cm */
     {"A4", 595, 842}, 		/* 21cm x 29.7cm */
     {"A3", 842, 1190},		/* 29.7cm x 42cm*/
@@ -341,7 +346,7 @@ F_compound	*objects;
 	   exit (1);
 	   }
 
-	if (landscape) {
+	if (landscape && show_page) {
 	   if (strcasecmp(pagesize,"ledger")==0) {
 		fprintf(stderr, "'Ledger' page size specified with landscape, switching to 'Tabloid'\n");
 		pagesize = "Tabloid";
@@ -370,11 +375,11 @@ F_compound	*objects;
 	   }
 	} else {
 	   origx = -llx;
-	   origy = landscape ? -lly : ury;
+	   origy = (landscape && show_page) ? -lly : ury;
 	}
 
 	/* finally, adjust by any offset the user wants */
-	if (landscape) {
+	if (landscape && show_page) {
 	    origx += yoff;
 	    origy += xoff;
 	} else {
@@ -400,14 +405,14 @@ F_compound	*objects;
 			who->pw_name, host, who->pw_gecos);
 
 	if (!center) {
-	   if (landscape)
+	   if (landscape && show_page)
 		pages = (urx/pageheight+1)*(ury/pagewidth+1);
 	   else
 		pages = (urx/pagewidth+1)*(ury/pageheight+1);
 	} else {
 	   pages = 1;
 	}
-	if (landscape) {
+	if (landscape && show_page) {
 	   fprintf(tfp, "%%%%Orientation: Landscape\n");
 	   fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n",
 	      (int)origx+llx, (int)origy+lly, (int)origx+urx, (int)origy+ury);
@@ -438,8 +443,8 @@ F_compound	*objects;
 	/* must specify translation/rotation before definition of fill patterns */
 	fprintf(tfp, "save\n");
 	fprintf(tfp, "%.1f %.1f translate\n", origx, origy);
-	/* also flip y if necessary */
-	if (landscape) {
+	/* also flip y if necessary, but *only* if to PostScript and not EPS */
+	if (landscape && show_page) {
 	    fprintf(tfp, " 90 rotate\n");
 	}
 	if (coord_system == 2) {
@@ -494,13 +499,13 @@ genps_end()
 
     if (multi_page) {
        page = 1;
-       h = (landscape? pagewidth: pageheight);
-       w = (landscape? pageheight: pagewidth);
+       h = ((landscape && show_page)? pagewidth: pageheight);
+       w = ((landscape && show_page)? pageheight: pagewidth);
        for (dy=0; dy < (ury-h*0.1); dy += h*0.9) {
 	 for (dx=0; dx < (urx-w*0.1); dx += w*0.9) {
 	    fprintf(tfp, "%%%%Page: %d %d\n",page,page);
-	    fprintf(tfp,"%.1f %.1f tr", dx, (landscape? -dy:dy));
-	    if (landscape) {
+	    fprintf(tfp,"%.1f %.1f tr", dx, ((landscape && show_page)? -dy:dy));
+	    if (landscape && show_page) {
 	       fprintf(tfp, " 90 rot");
 	    }
 	    if (coord_system == 2) {
@@ -757,7 +762,7 @@ F_line	*l;
 		/* none of the above, try EPS */
 		} else {
 			fprintf(tfp, "%% Begin Imported EPS File: %s\n", l->pic->file);
-			fprintf(tfp, "%%BeginDocument: %s\n", l->pic->file);
+			fprintf(tfp, "%%%%BeginDocument: %s\n", l->pic->file);
 			fprintf(tfp, "%%\n");
 
 			if ((picf=open_picfile(l->pic->file, &filtype)) == NULL) {
@@ -1007,7 +1012,7 @@ F_line	*l;
 		fprintf(tfp, "rs gr\n");
 		fprintf(tfp, "%%\n");
 		fprintf(tfp, "%% End Imported PIC File: %s\n", l->pic->file);
-		fprintf(tfp, "%%EndDocument\n");
+		fprintf(tfp, "%%%%EndDocument\n");
 		fprintf(tfp, "%%\n");
 	} else {
 	  /* POLYLINE */
@@ -1587,8 +1592,13 @@ calc_arrow(x1, y1, x2, y2, c1x, c1y, c2x, c2y, objthick, arrow, points, npoints)
     int		    style = arrow->style;
 
     *npoints = 0;
+    *c1x=x1;
+    *c1y=y1;
+    *c2x=x2;
+    *c2y=y2;
     dx = x2 - x1;
     dy = y1 - y2;
+    /* two points are the same, can't determine an arrowhead */
     if (dx==0 && dy==0)
 	return;
 
