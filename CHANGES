@@ -1,5 +1,43 @@
-Transfig version 2.1.6
+Transfig version 2.1.7
 
+Changes from 2.1.6:
+
+o no longer writes over input file if there is an error in the command line
+o added "%%Orientation: Landscape" comment for PostScript output in landscape
+	orientation
+o moved definition of SetFigFont from transfig into genpstex.c so that there
+	is no need to run transfig for pstex output
+o script pic2tpic was generating \ss instead of \sf for \fH
+	from Mark Roth (mroth@afit.af.mil)
+o changed header for Encapsulated postscript files from "%!PS-Adobe-2.0 EPSF"
+	to "%!PS-Adobe-2.0 EPSF-2.0" which allows FrameMaker and ghostview to
+	read them properly.
+	from Vivek Khera (khera@cs.duke.edu)
+o check for #ifdef SYSV to include string.h instead of strings.h in 
+	fig2dev/dev/genibmgl.c
+o changed EXTRA_LIBRARIES to SYS_LIBRARIES in fig2dev/Imakefile so wouldn't 
+	clobber system-dependent flags in EXTRA_LIBRARIES
+o fprintf and 'else' missing from genepic which caused incorrect information 
+	to be generated when drawing arcs using epic output
+o removed dependencies on the X libraries (Imakefiles and Makefiles)
+o SGI machines had trouble with hypot() which caused arrow heads to mess up
+	from Malcolm Davis (davis@nod.bms.com)
+o Flipped EPS objects were incorrectly flipped on output
+	from Brian Boyter (boyter@pyrdc.va.pyramid.com)
+o POLYLINES were being drawn in sections (10 points per section) which 
+	resulted in incorrect dashed line lengths and only one section 
+	filled if area fill was on
+	from Peter Egelberg (egel@neural.se)
+o added Sequent machines and Suns with SunOs < 4.1 to list of machines that
+	don't have strstr()
+	from Scott Erikson (sources@ics.uci.edu)
+o removed PATCHLEVEL from patchlevel.h file - version number is complete with 
+	three parts (e.g. 2.1.6)
+o removed "extern coord_system" from fig2dev.h (wasn't used by fig2dev)
+o SPECIAL_CHAR split into three strings for systems which can't handle one
+o -P flag dissappeared from eepic output language - reinstated
+
+Version 2.1.6
 Changes from 2.1.5:
 
 o Courier-BoldItalic changed to Courier-BoldOblique for PostScript fonts

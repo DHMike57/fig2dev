@@ -27,10 +27,13 @@
 # -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
 #
 DEFINES = -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
+DEPLIBS =
 
 #if (defined(VaxArchitecture) && !defined(UltrixArchitecture)) || \
     (defined(RtArchitecture) && !defined(AIXArchitecture)) || \
-    (defined(MipsArchitecture))
+    (defined(MipsArchitecture)) || defined(SequentArchitecture) || \
+    (defined(SunOSPlatform) && (OSMinorVersion==0))
+
 STRSTRC=	strstr.c
 STRSTRO=	strstr.o
 #endif
@@ -48,7 +51,7 @@ OBJS = fig2dev.o getopt.o psfonts.o iso2tex.o \
 	arrow.o bound.o free.o read.o read1_3.o latex_line.o $(STRSTRO) \
 	dev/libtransfig.a
 
-EXTRA_LIBRARIES = -lm
+SYS_LIBRARIES = -lm
 
 MakeSubdirs($(SUBDIRS))
 DependSubdirs($(SUBDIRS))

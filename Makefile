@@ -7,7 +7,7 @@
 #
 
 # -------------------------------------------------------------------------
-# Makefile generated from "Imake.tmpl" and </tmp/IIf.a10219>
+# Makefile generated from "Imake.tmpl" and </tmp/IIf.a21047>
 # $XConsortium: Imake.tmpl,v 1.139 91/09/16 08:52:48 rws Exp $
 #
 # Platform-specific parameters may be set in the appropriate <vendor>.cf
@@ -272,6 +272,7 @@ PICFLAGS = -pic
 # to make fig2dev:         type "make"
 #
 
+DEPLIBS =
 SUBDIRS = transfig fig2dev
 
 all::

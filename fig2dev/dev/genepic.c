@@ -234,6 +234,10 @@ char opt, *optarg;
 	case 'm':
 	    break;
 
+	case 'P':
+	    PageMode = 1;
+	    break;
+
 	case 's':
 	    font_size = atoi(optarg);
 	    if (font_size <= 0 || font_size > MAXFONTSIZE) {
@@ -933,6 +937,7 @@ F_text *text;
       texsize = TEXFONTMAG(text);
       baselineskip = (texsize * 1.2);
 
+      define_setfigfont(tfp);
       fprintf(tfp, "{{\\SetFigFont{%d}{%.1f}{%s}",
 	      texsize, baselineskip, TEXFONT(text->font));
     }
@@ -1073,9 +1078,11 @@ F_arc *arc;
 #ifdef DrawOutLine
 	    if (OutLine==1) {
 		OutLine=0;
+	        fprintf(tfp, "\\put(%4.3lf,%4.3lf){", ctr.x, ctr.y);
 		fprintf(tfp, "\\arc{%4.3f}{%2.4f}{%2.4f}}\n", 2*r2, th1, th1+theta);
 	    }
 #endif
+	} else {
             drawarc(&ctr, r2, 2*M_PI - th1 - theta, theta);
         }
     }
@@ -1120,7 +1127,7 @@ int direction;
 rtop(x, y, r, th)
 double x, y, *r, *th;
 {
-    *r = hypot(x,y);
+    *r = sqrt(x*x+y*y);
     *th = acos(x/(*r));
     if (*th < 0) *th = M_PI + *th;
     if (y < 0) *th = 2*M_PI - *th;
@@ -1153,7 +1160,7 @@ double arrowht, arrowwid;
     y2 = pt2->y;
 
     dx = x2 - x1;  dy = y1 - y2;
-    l = hypot(dx,dy);
+    l = sqrt(dx*dx+dy*dy);
     if (l == 0) {
 	 return;
     }

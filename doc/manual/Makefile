@@ -1,15 +1,13 @@
-# 
-# Makefile: TransFig makefile for translation of figures into latex
-# 
- 
-all: tex-list
- 
-trans.tex: trans.fig
+#
+# TransFig makefile
+#
+
+all: trans.tex 
+
+# translation into latex
+
+trans.tex: trans.fig Makefile
+	fig2dev -L latex trans.fig > trans.tex
+clean::
 	rm -f trans.tex
-	fig2dev -Llatex  trans.fig trans.tex
- 
-tex-list: trans.tex
-trans.tex: Makefile
- 
-clean:
-	rm -f trans.tex
+

@@ -7,7 +7,7 @@
 #
 
 # -------------------------------------------------------------------------
-# Makefile generated from "Imake.tmpl" and </tmp/IIf.a10733>
+# Makefile generated from "Imake.tmpl" and </tmp/IIf.a20985>
 # $XConsortium: Imake.tmpl,v 1.139 91/09/16 08:52:48 rws Exp $
 #
 # Platform-specific parameters may be set in the appropriate <vendor>.cf
@@ -42,8 +42,8 @@
 
             SHELL = /bin/sh
 
-              TOP = .
-      CURRENT_DIR = .
+              TOP = ../.
+      CURRENT_DIR = ./transfig
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
@@ -271,9 +271,10 @@ PICFLAGS = -pic
 #	Micah Beck
 #
 
+DEPLIBS =
 INCLUDES = -I..
 
-SCRS = transfig.c txfile.c mkfile.c sys.c
+SRCS = transfig.c txfile.c mkfile.c sys.c
 OBJS = transfig.o txfile.o mkfile.o sys.o
 
  PROGRAM = transfig

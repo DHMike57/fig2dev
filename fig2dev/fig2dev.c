@@ -146,14 +146,6 @@ char	*argv[];
 
 	get_args(argc, argv);
 
-	if (to == NULL)
-	    tfp = stdout;
-	else if ((tfp = fopen(to, "w")) == NULL) {
-	    fprintf(stderr, "Couldn't open %s", to);
-	    fprintf(stderr, Usage, prog);
-	    exit(1);
-	    }
-
 	if (from)
 	    status = read_fig(from, &objects);
 	else	/* read from stdin */
@@ -163,6 +155,15 @@ char	*argv[];
 	    if (from) read_fail_message(from, status);
 	    exit(1);
 	    }
+
+	if (to == NULL)
+	    tfp = stdout;
+	else if ((tfp = fopen(to, "w")) == NULL) {
+	    fprintf(stderr, "Couldn't open %s", to);
+	    fprintf(stderr, Usage, prog);
+	    exit(1);
+	    }
+
 	gendev_objects(&objects, dev);
 	if (tfp != stdout) (void)fclose(tfp);
 	exit(0);

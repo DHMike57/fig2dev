@@ -40,7 +40,11 @@
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
+#ifdef SYSV
+#include <string.h>
+#else
 #include <strings.h>
+#endif
 #include <stdio.h>
 #include <math.h>
 #include "object.h"
@@ -380,7 +384,7 @@ double	x1, y1, x2, y2, arrowht, arrowwid;
 
 	dx	 = x2 - x1;
 	dy	 = y1 - y2;
-	l	 = hypot(dx, dy);
+	l	 = sqrt(dx*dx+dy*dy);
 	sina	 = dy/l;
 	cosa	 = dx/l;
 	xb	 = x2*cosa - y2*sina;

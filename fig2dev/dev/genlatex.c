@@ -242,6 +242,8 @@ F_compound	*objects;
 	/* LaTeX start */
 	fprintf(tfp, "\\setlength{\\unitlength}{%.6fin}%%\n",
 						round6(unitlength));
+	/* define the SetFigFont macro */
+	define_setfigfont(tfp);
 	fprintf(tfp, "\\begin{picture}(%d,%d)(%d,%d)\n",
 	 				 urx-llx, ury-lly, llx, lly);
 }
@@ -425,7 +427,7 @@ double	l;
 	int	x2, y2, n;
 
 	if (sx) {
-	    cosine = (double)abs(sx) / hypot((double)sx, (double)sy);
+	    cosine = (double)abs(sx) / sqrt((double)(sx*sx)+(double)(sy*sy));
 	    x2 = (sx >= 0)? x + round(l): x - round(l);
 	    y2 = y + round( ((sx>=0)? l: -l) * (double)sy / (double)sx);
 	    }
@@ -488,7 +490,7 @@ double	val;
 	int	x2, y2;
 
 	if (sx) {
-	    cosine = (double)abs(sx) / hypot((double)sx, (double)sy);
+	    cosine = (double)abs(sx) / sqrt((double)(sx*sx)+(double)(sy*sy));
 	    x2 = (sx >= 0)? x + round(l): x - round(l);
 	    y2 = y + round( ((sx>=0)? l: -l) * (double)sy / (double)sx );
 	    }
@@ -548,7 +550,7 @@ double	val;
 	int	x2, y2;
 
 
-	cosine = (sx)? (double)abs(sx) / hypot((double)sx, (double)sy): 1.0;
+	cosine = (sx)? (double)abs(sx) / sqrt((double)(sx*sx)+(double)(sy*sy)): 1.0;
 	/*** compute step width ***/
 	nd = l / (3*val*cosine);
 	n = rint(nd);
@@ -803,7 +805,7 @@ F_arc	*a;
 	if (angle2 < 0.0)
 	    angle2 += 360.0; 
 	/* compute arc radius */
-	r = hypot(v1x, v1y);
+	r = sqrt(v1x*v1x+v1y*v1y);
 	/*** compute intersection of arc with x and y axis (origin at cx, cy) */
 	pq[0].x = round(cx);
 	pq[0].y = round(cy + r);

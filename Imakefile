@@ -6,6 +6,7 @@
 #define IHaveSubdirs
 #define PassCDebugFlags 'CDEBUGFLAGS=$(CDEBUGFLAGS)'
 
+DEPLIBS =
 SUBDIRS = transfig fig2dev
 MakeSubdirs($(SUBDIRS))
 DependSubdirs($(SUBDIRS))

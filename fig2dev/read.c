@@ -798,7 +798,6 @@ read_epsf(eps)
     eps->bit_size.x = 0;
     eps->bit_size.y = 0;
 
-    eps->pix_flipped = 0;
     eps->pix_rotation = 0;
     eps->pix_width = 0;
     eps->pix_height = 0;

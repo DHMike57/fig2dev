@@ -74,7 +74,18 @@ int             iso_encoding = 0;
 int		no_obj = 0;
 int		multi_page = FALSE;
 
-extern int 	v2_flag, v21_flag;
+extern	int 	v2_flag, v21_flag;
+
+extern	char	*strstr(), *ctime();
+extern	time_t	time();
+
+static	arc_tangent();
+static	draw_arrow_head();
+static	fill_area();
+static	iso_text_exist();
+static	encode_all_fonts();
+static	ellipse_exist();
+static	normal_spline_exist();
 
 #define GRAYVAL(F)	((F) <= 21 ? ((F)-1)/20.0 : 1.0)
 
@@ -102,7 +113,7 @@ $F2psDict /mtrx matrix put\n\
 /col7 {1 1 1 setrgbcolor} bind def\n\
 "
 
-#define		SPECIAL_CHAR	"\
+#define		SPECIAL_CHAR_1	"\
 /reencdict 12 dict def /ReEncode { reencdict begin\n\
 /newcodesandnames exch def /newfontname exch def /basefontname exch def\n\
 /basefontdict basefontname findfont def /newfont basefontdict maxlength dict def\n\
@@ -114,6 +125,8 @@ newfont /FontName newfontname put newcodesandnames aload pop\n\
 newcodesandnames length 2 idiv { newfont /Encoding get 3 1 roll put } repeat\n\
 newfontname newfont definefont pop end } def\n\
 /isovec [ \n\
+"
+#define		SPECIAL_CHAR_2	"\
 8#200 /grave 8#201 /acute 8#202 /circumflex 8#203 /tilde\n\
 8#204 /macron 8#205 /breve 8#206 /dotaccent 8#207 /dieresis\n\
 8#210 /ring 8#211 /cedilla 8#212 /hungarumlaut 8#213 /ogonek 8#214 /caron\n\
@@ -126,6 +139,8 @@ newfontname newfont definefont pop end } def\n\
 8#273 /guillemotright 8#274 /onequarter 8#275 /onehalf \n\
 8#276 /threequarters 8#277 /questiondown 8#300 /Agrave 8#301 /Aacute\n\
 8#302 /Acircumflex 8#303 /Atilde 8#304 /Adieresis 8#305 /Aring\n\
+"
+#define		SPECIAL_CHAR_3	"\
 8#306 /AE 8#307 /Ccedilla 8#310 /Egrave 8#311 /Eacute\n\
 8#312 /Ecircumflex 8#313 /Edieresis 8#314 /Igrave 8#315 /Iacute\n\
 8#316 /Icircumflex 8#317 /Idieresis 8#320 /Eth 8#321 /Ntilde 8#322 /Ograve\n\
@@ -244,13 +259,13 @@ F_compound	*objects;
 {
 	char		host[256];
 	struct passwd	*who;
-	long		when;
-	extern char	*strstr();
-	extern long	time();
+	time_t		when;
 	int		itmp;
+	int		resolution;
 
+	resolution = objects->nwcorner.x;
 	coord_system = objects->nwcorner.y;
-	scalex = scaley = mag * POINT_PER_INCH / (double)objects->nwcorner.x;
+	scalex = scaley = mag * POINT_PER_INCH / (double)resolution;
 	/* convert to point unit */
 	llx = (int)ceil(llx * scalex); lly = (int)ceil(lly * scaley);
 	urx = (int)ceil(urx * scalex); ury = (int)ceil(ury * scaley);
@@ -294,7 +309,7 @@ F_compound	*objects;
 	if (show_page)
 	    fprintf(tfp, "%%!PS-Adobe-2.0\n");		/* PostScript magic strings */
 	else
-	    fprintf(tfp, "%%!PS-Adobe-2.0 EPSF\n");	/* Encapsulated PostScript */
+	    fprintf(tfp, "%%!PS-Adobe-2.0 EPSF-2.0\n");	/* Encapsulated PostScript */
 	who = getpwuid(getuid());
 	if (-1 == gethostname(host, sizeof(host)))
 	    (void)strcpy(host, "unknown-host!?!?");
@@ -307,22 +322,27 @@ F_compound	*objects;
 			who->pw_name, host, who->pw_gecos);
 
 	if (!center)
-	   pages = (urx/pagewidth+1)*(ury/pageheight+1);
+	   if (landscape)
+		pages = (urx/pageheight+1)*(ury/pagewidth+1);
+	   else
+		pages = (urx/pagewidth+1)*(ury/pageheight+1);
 	else
 	   pages = 1;
-        if (landscape)
+        if (landscape) {
+	   fprintf(tfp, "%%%%Orientation: Landscape\n");
 	   fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n", 
 	      (int)origx+llx, (int)origy+lly, (int)origx+urx, (int)origy+ury);
-        else
+	} else {
 	   fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n", 
 	      (int)origx+llx, (int)origy-ury, (int)origx+urx, (int)origy-lly);
+	}
         fprintf(tfp, "%%%%Pages: %d\n", show_page ? pages : 0 );
 
 	fprintf(tfp, "%%%%EndComments\n");
 	fprintf(tfp, "%s", BEGIN_PROLOG);
 	if (iso_text_exist(objects))
 	{
-	   fprintf(tfp, "%s", SPECIAL_CHAR);
+	   fprintf(tfp, "%s%s%s", SPECIAL_CHAR_1,SPECIAL_CHAR_2,SPECIAL_CHAR_3);
 	   encode_all_fonts(objects);
            iso_encoding = 1;
 	}
@@ -537,9 +557,11 @@ ugh tr to tl */
 
 	/* flip the eps stuff */
 	/* always translate it back so that the lower-left corner is at the origin */
-	if (l->eps->flipped) {
+	if (l->eps->flipped && rotation==90) {
 		fprintf(tfp, "0 %d translate\n", eps_h);
 		fprintf(tfp, "1 -1 scale\n");
+	}
+	if (l->eps->flipped && rotation==270) {
 		fprintf(tfp, "%d 0 translate\n", eps_w);
 		fprintf(tfp, "-1 1 scale\n");
 	}
@@ -550,6 +572,7 @@ ugh tr to tl */
 	   case 0:
 		break;
 	   case 90:
+		if (l->eps->flipped) break;
 		fprintf(tfp, "%d %d translate\n", 0, eps_h);
 		fprintf(tfp, "%d rotate\n", 270);
 		break;
@@ -558,6 +581,7 @@ ugh tr to tl */
 		fprintf(tfp, "%d rotate\n", 180);
 		break;
 	   case 270:
+		if (l->eps->flipped) break;
 		fprintf(tfp, "%d %d translate\n", eps_w, 0);
 		fprintf(tfp, "%d rotate\n", 90);
 		break;
@@ -594,13 +618,8 @@ ugh tr to tl */
 		    p = q;
 		    q = q->next;
 		    fprintf(tfp, " %d %d l ", p->x, p->y);
- 	    	    if (!((++i)%5)) fprintf(tfp, "\n");
-             	     	if (!((++i)%20) && (l->type == T_POLYLINE))
- 	    	    	{
-               		fprintf(tfp, "gs col%d s gr\n",
-				l->color > MAXCOLORS ? -1 : l->color);
- 	      		fprintf(tfp, "n %d %d m", p->x, p->y);
-	    		}
+ 	    	    if (!((++i)%5)) 
+			fprintf(tfp, "\n");
 		}
 	}
 	if (l->type != T_EPS_BOX) {
@@ -846,7 +865,7 @@ F_arc	*a;
 	    }
 	dx = cx - sx;
 	dy = cy - sy;
-	radius = hypot(dx, dy);
+	radius = sqrt(dx*dx+dy*dy);
 	angle1 = atan2(sy-cy, sx-cx) * 180 / M_PI;
 	angle2 = atan2(ey-cy, ex-cx) * 180 / M_PI;
 	/* direction = 1 -> Counterclockwise */
@@ -887,7 +906,7 @@ int col;
 	double	xc, yc, xd, yd;
 
 	dx = x2 - x1;  dy = y1 - y2;
-	l = hypot(dx, dy);
+	l = sqrt(dx*dx+dy*dy);
 	if (l == 0) {
 	     return;
 	}

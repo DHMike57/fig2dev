@@ -63,6 +63,6 @@ extern int	font_size;
 extern double	mag;
 extern FILE	*tfp;
 
-extern int llx, lly, urx, ury, coord_system;
+extern int llx, lly, urx, ury;
 
 extern void gendev_null();

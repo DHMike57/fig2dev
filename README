@@ -1,3 +1,14 @@
+To make TransFig:
+
+1. Do a "make Makefiles"
+2. Do a "make install" to create the executables and install them in the system
+  or
+   do a "make" to create the executables only
+3. Do a "make install.man" to put the manual pages in the proper directories
+
+------------------------------------------------------------------------------------
+General information:
+
 TransFig is a set of tools for creating TeX documents with graphics
 which are portable, in the sense that they can be printed in a wide
 variety of environments.
@@ -25,22 +36,17 @@ Micah Beck
 Dept of Computer Science
 Cornell University
 
-1 January 1990
---------------
-
+1 May 1990
+----------
 Version 2.0 note: The PostScript translation implemented by fig2dev
 now supports both the TFX version of Fig code and the V2.0, the dialect
 used by XFig Version 2.0.  The other translations support only TFX.
 
-1 May 1990
-----------
-
+1 September 1990
+----------------
 Version 2.1 note: fig2dev now supports Fig code V2.1, which implements
 the features of both TFX and V2.0.  V2.1 has some options which are
 implemented only in the PS output mode, most notably the use of PS font
 names in specifying text objects.  However, unlike V2.0, this feature
 is optional in V2.1; TFX-style font specifiers are also supported and
 can be translated in all output modes.  TFX and V2.0 are still supported.
-
-1 September 1990
-----------------

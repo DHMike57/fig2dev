@@ -3,6 +3,7 @@
 #	Micah Beck
 #
 
+DEPLIBS =
 INCLUDES = -I..
 
 SRCS = transfig.c txfile.c mkfile.c sys.c

@@ -574,6 +574,7 @@ F_text	*t;
 	  texsize = TEXFONTMAG(t);
 	  baselineskip = (texsize * 1.2);
 
+	  define_setfigfont(tfp);
  	  fprintf(tfp, "\\put{\\SetFigFont{%d}{%.1f}{%s}",
 		texsize, baselineskip, TEXFONT(t->font));
 	}
@@ -680,7 +681,7 @@ F_arc	*a;
 static rtop(x, y, r, th)
 double x, y, *r, *th;
 {
-	*r = hypot(x,y);
+	*r = sqrt(x*x+y*y);
 	*th = acos(x/(*r));
 
 	if (y < 0) *th = 2*M_PI - *th;
@@ -715,7 +716,7 @@ double	x1, y1, x2, y2, arrowht, arrowwid;
 	if (!dx && !dy)
 	    return ;
 
-	l = hypot(dx, dy);
+	l = sqrt(dx*dx+dy*dy);
 	if (l == 0) {
 	     return;
 	}
