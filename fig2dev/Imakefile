@@ -1,0 +1,34 @@
+#	Fig2dev : General Fig code translation program
+#
+# to include drivers for the following languages, 
+# add the corresponding symbol to the DEFINES list:
+#
+# -DEPIC -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
+#
+# to set paper size to A4 			add -DA4d	to DEFINES list
+# to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEFINES list
+#
+DEFINES = -DEPIC -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DDVIPS
+
+
+#define IHaveSubdirs
+#define PassCDebugFlags 'CDEBUGFLAGS=$(CDEBUGFLAGS)'
+
+SUBDIRS = dev
+
+INCLUDES = -I..
+
+SCRS = fig2dev.c getopt.c psfonts.c iso2tex.c \
+	arrow.c bound.c free.c read.c read1_3.c latex_line.c
+OBJS = fig2dev.o getopt.o psfonts.o iso2tex.o \
+	arrow.o bound.o free.o read.o read1_3.o latex_line.o dev/libtransfig.a
+
+EXTRA_LIBRARIES = -lm
+
+MakeSubdirs($(SUBDIRS))
+DependSubdirs($(SUBDIRS))
+
+ComplexProgramTarget(fig2dev)
+
+InstallScript(fig2ps2tex,$(BINDIR))
+InstallScript(pic2tpic,$(BINDIR))
