@@ -39,9 +39,7 @@ To make TransFig:
 	same directory that xfig uses (usually /usr/local/lib/xfig).  This
 	will be used to hold the bitmaps directory for the tk fill patterns.
 2. Do a "xmkmf" to create the top level Makefile from the Imakefile
-	Note: If you don't have "xmkmf" on your system type
-	"make -f Makefile.noimake Makefile"
-3. Do a "make Makefiles"
+3. Do a "make Makefiles"   (That's with an "s")
 4. Do a "make" to make the programs
 	**** This MUST be done before "make install" ****
 5. Do a "make install" to install them in the system
@@ -72,26 +70,6 @@ o Make sure that you point XFIGLIBDIR to the same directory that xfig uses
   (usually /usr/local/lib/xfig).  This will be used to hold the bitmaps
   directory for the tk fill patterns.
 
-o If you want to be able to import JPEG images then:
-  o If you already have a JPEG library in your system library directory leave
-    the "#define USEINSTALLEDJPEG" line (don't comment it out) in the Imakefile.
-  o If you don't have it installed, get it from one of the following places,
-    comment out the #define USEINSTALLEDJPEG line in the Imakefile (using XCOMM)
-    and point JPEGLIBDIR to the diredctory where the source is.  The default is
-    ../jpeg (relative to the xfig source directory).
-    You must also change the JPEGINCDIR variable to the directory where your
-    jpeg header files (include) reside.
-  o You must have version 5b or newer of the JPEG library.
-  o The JPEG library is available from several places.  The official
-    archive site is ftp.uu.net in /graphics/jpeg.
-    Another is ftp.x.org in /contrib/libraries.
-  o ** Make sure you delete or rename any older version of the JPEG
-    library you might have on your system.  Some Linux systems come
-    with an older version which is incompatible with xfig.
-
-o If you don't want to be able to import JPEG images in your Fig files at all
-  then comment out the "#define USEJPEG" line in the fig2dev/Imakefile.
-
 o If you *don't* want PNG support, comment out the #define USEPNG line in
   the Imakefile.
 
@@ -117,6 +95,9 @@ o Look in the Imakefiles to see if any options are relevant to your system.
 
 o If you use epic, eepic or tpic you must have compiled your dvips and xvdi
   with the tpic support (-DTPIC for dvips).
+
+o To use the -b (binary) option for CGM export, the ralcgm program is required.
+  This is available from ftp://ftp.cc.rl.ac.uk/pub/graphics/ralcgm/
 
 ***************
 IMPORTANT NOTE:

@@ -1,15 +1,15 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -28,7 +28,8 @@
 #include "fig2dev.h"
 #include "object.h"
 
-extern	int	_read_pcx();
+extern	FILE	*open_picfile();
+extern	int	 _read_pcx();
 
 #define BUFLEN 1024
 
@@ -49,8 +50,6 @@ static Boolean	 ReadColorMap();
 static Boolean	 DoGIFextension();
 static int	 GetDataBlock();
 static int	 GetCode();
-extern FILE	*open_picfile();
-extern void	 close_picfile();
 
 #define LOCALCOLORMAP		0x80
 #define	ReadOK(file,buffer,len)	(fread(buffer, len, 1, file) != 0)
@@ -80,20 +79,27 @@ struct {
 */
 
 int
-read_gif(file,filetype,pic,llx,lly)
-    FILE	   *file;
+read_gif(filename,filetype,pic,llx,lly)
+    char	   *filename;
     int		    filetype;
     F_pic	   *pic;
     int		   *llx, *lly;
 {
-	char		buf[BUFLEN],pcxname[PATH_MAX];
-	FILE		*giftopcx;
-	int		i, stat, size;
-	int		useGlobalColormap;
-	unsigned int	bitPixel;
-	unsigned char	c;
-	char		version[4];
-	unsigned char   transp[3]; /* RGB of transparent color (if any) */
+	char		 buf[BUFLEN],pcxname[PATH_MAX];
+	char		 realname[PATH_MAX];
+	FILE		*file, *giftopcx;
+	int		 i, stat, size;
+	int		 useGlobalColormap;
+	unsigned int	 bitPixel;
+	unsigned char	 c;
+	char		 version[4];
+	unsigned char    transp[3]; /* RGB of transparent color (if any) */
+
+	/* open the file */
+	if ((file=open_picfile(filename, &filetype, False, realname)) == NULL) {
+		fprintf(stderr,"No such GIF file: %s\n",realname);
+		return;
+	}
 
 	/* first read header to look for any transparent color extension */
 
@@ -185,8 +191,7 @@ read_gif(file,filetype,pic,llx,lly)
 	}
 
 	/* reposition the file at the beginning */
-	close_picfile(file,filetype);
-	file = open_picfile(pic->file, &filetype, True, pcxname);
+	fseek(file, 0, SEEK_SET);
 	
 	/* now call giftopnm and ppmtopcx */
 

@@ -1,4 +1,4 @@
-.TH FIG2DEV 1 "Version 3.2.3d May 29, 2001"
+.TH FIG2DEV 1 "Version 3.2.4 Oct 2002"
 .SH NAME
 fig2dev \- translates Fig code to various graphics languages
 
@@ -42,20 +42,22 @@ xfig versions 1.3, 1.4, 2.0, 2.1, 3.0, 3.1 and 3.2.
 .LP
 Xfig version 3.2.3 and later saves and allows the user to edit comments
 for each Fig object.  These comments are output with several of the output languages,
-such as PostScript, CGM, LaTeX, MetaFont, PicTeX, (as % comments),
+such as PostScript, CGM, EMF, LaTeX, MetaFont, PicTeX, (as % comments),
 tk (as # comments), and pic (as .\\" comments).
 
 .SH GENERAL OPTIONS
 .TP
-.B \-L
+.B "\-L language"
 Set the output graphics language.
 Valid languages are
-\fBbox, cgm, epic, eepic, eepicemu, eps, gif, ibmgl, jpeg,
-latex, map (HTML image map), mf (MetaFont), mp (MetaPost), mmp (MultiMetaPost), 
-pcx, pdf, pic, pictex, png, ppm, ps,
-pstex, pstex_t, sld (AutoCad slide format), textyl, \fR
+\fBbox, cgm, epic, eepic, eepicemu, emf, eps, gif, ibmgl, jpeg,
+latex, map (HTML image map), mf (MetaFont),
+mp (MetaPost), mmp (Multi-MetaPost),
+pcx, pdf, pdftex, pdftex_t, pic, pictex, png, ppm, ps,
+pstex, pstex_t, ptk (Perl/tk),
+sld (AutoCad slide format), textyl,
 tiff, tk (tcl/tk), tpic, xbm and
-.B xpm.
+xpm\fR.
 
 Notes:
 .br
@@ -64,19 +66,20 @@ and
 .I xdvi
 must be compiled with the tpic support (-DTPIC) for epic, eepic and tpic to work.
 .br
-You must have ghostscript
+You must have ghostscript and ps2pdf, which comes with the ghostscript distribution
 to get the pdf output and the bitmap formats (png, jpeg, etc.), and the netpbm (pbmplus)
 package to get gif, xbm, xpm, and sld output.
 
 .TP
 .B \-h
-Print help message with all options for all output languages.
+Print help message with all options for all output languages then exit.
 
 .TP
-.B "\-m mag"
-Set the magnification at which the figure is rendered to
-.I mag.
-The default is 1.0.
+.B "\-D +/-rangelist"
+With +rangelist, keep only those depths in the list.  With -rangelist, keep all
+depths except those in the list. The rangelist may be a list of comma-separated
+numbers or ranges separated by colon (:). For example, -D +10,40,55:70,80
+means keep only layers 10, 40, 55 \fBthrough\fR 70, and 80.
 
 .TP
 .B "\-f font"
@@ -90,6 +93,29 @@ for instance "cmr" for Roman, or "tt" for teletype.
 In PostScript, it is any font name known to the printer or interpreter.
 
 .TP
+.B "\-G minor[:major][:unit]"
+Draws a grid on the page.  Specify thin, or thin and thick line
+spacing in one of several units.  For example, "-G .25:1cm" draws a thin,
+gray line every .25 cm and a thicker gray line every 1 cm.  Specifying
+"-G 1in" draws a thin line every 1 inch.
+Fractions may be used, e.g. "-G 1/16:1/2in" will draw a thin line every
+1/16 inch (0.0625 inch) and a thick line every 1/2 inch.
+.br
+Allowable units are: i, in, inch, f, ft, feet, c, cm, mm, and m.
+.br
+.B Only allowed for PostScript, EPS, PDF, and bitmap (GIF, JPEG, etc) drivers for now.
+
+.TP
+.B \-j
+Enable the I18N internationalization facility.
+
+.TP
+.B "\-m mag"
+Set the magnification at which the figure is rendered to
+.I mag.
+The default is 1.0.
+
+.TP
 .B "\-s size"
 Set the default font size (in points) for text objects to
 .I fsize.
@@ -98,7 +124,7 @@ If there is no scaling, the default font is eleven point Roman."
 
 .TP
 .B \-V
-Print the program version number only.
+Print the program version number and exit.
 
 .TP
 .I other options
@@ -112,6 +138,9 @@ vector-based plus bitmap language.  Microsoft WORD, PowerPoint and probably
 other products can import this format
 .I and display it on the screen,
 something that they won't do with EPS files that have an ASCII preview.
+.TP
+.B "\-b dummyarg"
+Generate binary output (dummy argument required after the "-b").
 
 .TP
 .B \-r
@@ -122,6 +151,14 @@ where the original endpoint of the line was.
 If the \fB-r\fR option is used, the position
 of arrows will \fINOT\fR be corrected for compensating line width effects,
 because the rounded arrowhead doesn't extend beyond the endpoint of the line.
+
+.SH EMF OPTIONS
+EMF is Enhanced Metafile, developed by Microsoft and is a
+vector-based plus bitmap language.  Microsoft WORD, PowerPoint and probably
+other products can import this format
+.I and display it on the screen,
+something that they won't do with EPS files that have an ASCII preview.
+
 .SH EPIC OPTIONS
 EPIC is an enhancement to LaTeX picture drawing environment.
 It was developed by Sunil Podar of Department of Computer Science
@@ -135,7 +172,7 @@ Computer Science at University of California, Davis.
 EEPIC-EMU is an EEPIC emulation package which does not use tpic specials.
 
 .TP
-.B \-A
+.B "\-A factor"
 Scale arrowheads by
 .I factor.
 The width and height of arrowheads is
@@ -148,14 +185,27 @@ double the size of
 arrowheads.
 
 .TP
-.B \-l
+.B "\-E num"
+Set encoding for text translation (0 = none, 1 = ISO-8859-1, 2 = ISO-8859-2)
+
+.TP
+.B \-F
+Don't set the font face, series, and style; only set it's size and the
+baselineskip. By default, fig2dev sets all 5 font parameters when it 
+puts some text. The disadvantage is that you can't set the font from your
+LaTeX document. With this option on, you can set the font from your LaTeX
+document (like "\fB\\sfshape \\input picture.eepic\fR").
+.IP
+If any of the pictures included in your LaTeX document has been generated
+with \fB-F\fR, then all pictures must be generated with this option.
+.IP
+This option can be used only when fig2dev was compiled with NFSS defined.
+
+.TP
+.B "\-l width"
 Use "\fB\\thicklines\fR" when width of the line is wider than
 .I lwidth.
 The default is 2.
-
-.TP
-.B \-v
-Include comments in the output file.
 
 .TP
 .B \-P
@@ -165,7 +215,16 @@ in the beginning and at the end of the file is controlled by the
 configuration parameter "Preamble" and "Postamble".
 
 .TP
-.B \-S
+.B \-R
+Allow rotated text. Rotated text will be set using the \\rotatebox command.
+So, you will need to include "\fB\\usepackage{graphics}\fR" in the preamble
+of your LaTeX document.
+.IP
+If this option is not set, then rotated text will be set horizontally.
+
+
+.TP
+.B "\-S scale"
 Set the scale to which the figure is rendered.
 This option automatically sets the
 .I magnification
@@ -174,6 +233,16 @@ and size to
 / 12 and
 .I scale
 respectively.
+
+.TP
+.B "\-t stretch"
+Set the stretch factor of dashed lines to
+.I sretch.
+The default is 30.
+
+.TP
+.B \-v
+Include comments in the output file.
 
 .TP
 .B \-W
@@ -185,7 +254,7 @@ lines (\thicklines), if a line width of more than one is selected in xfig.
 .B \-w
 Disable variable line width. Only "\fB\\thicklines\fR" and/or
 "\fB\\thinlines\fR" commands will be generated in the output file.
-.LP
+.IP
 When variable line width option is enabled, "\fB\\thinlines\fR"
 command is still used when line width is less than
 \fILineThick\fR. One potential problem is that the width of
@@ -199,8 +268,9 @@ those lines you want to be drawn in "\fB\\thinlines\fR"  to 0.
 Due to this problem, Variable line width \fIVarWidth\fR
 is defaulted to be false.
 
-.SH IBM-GL OPTIONS
-IBM-GL (International Business Machines Graphics Language) is compatible
+
+.SH IBM-GL (HP/GL) OPTIONS
+IBM-GL (IBM Graphics Language) is compatible
 with HP-GL (Hewlett-Packard Graphics Language).
 
 .TP
@@ -213,7 +283,7 @@ Generate instructions for an IBM 6180 Color Plotter
 with (without) an IBM Graphics Enhancement Cartridge (IBM-GEC).
 
 .TP
-.B \-d
+.B "\-d xll,yll,xur,yur"
 Restrict plotting to a rectangular area of the plotter paper which has
 a lower left hand corner at
 .I (xll,yll)
@@ -224,7 +294,7 @@ All four numbers are in inches and follow \fB-d\fR in a comma-sparated list -
 - with no spaces between them.
 
 .TP
-.B \-f
+.B "\-f file"
 Load text character specifications from the table in the
 .I fonts
 file.
@@ -238,9 +308,13 @@ which specify the
 5.) character height scale factor.
 
 .TP
-.B \-l
+.B \-k
+Precede output with PCL command to use HP/GL
+
+.TP
+.B "\-l pattfile"
 Load area fill line patterns from the table in the
-.I patterns
+.I pattfile
 file.
 The table must have 21 entries - one for each of the area fill patterns.
 Each entry consists of 5 numbers which specify the
@@ -251,15 +325,19 @@ Each entry consists of 5 numbers which specify the
 5.) fill angle (degrees).
 
 .TP
-.B \-m
+.B "\-m mag,x0,y0"
 The magnification may appear as the first element in a comma separated list -
 .I mag,x0,y0
 - where the second and third parameters specify an offset in inches.
 
 .TP
-.B \-p
+.B \-P
+Rotate the figure to portrait mode. The default is landscape mode.
+
+.TP
+.B "\-p penfile"
 Load plotter pen specifications from the table in the
-.I pens
+.I penfile
 file.
 The table must have 9 entries - one for each color plus a default.
 Each entry consists of 2 numbers which specify the
@@ -267,11 +345,7 @@ Each entry consists of 2 numbers which specify the
 2.) pen thickness (millimeters).
 
 .TP
-.B \-P
-Rotate the figure to portrait mode. The default is landscape mode.
-
-.TP
-.B \-S
+.B "\-S speed"
 Set the pen speed to
 .I speed
 (centimeters/second).
@@ -292,25 +366,37 @@ The \fB-c\fR option selects the alternate instruction set.
 .SH OPTIONS COMMON TO ALL BITMAP FORMATS
 
 .TP
-.B -b borderwidth
+.B \-b borderwidth
 Make blank border around figure of width
 .I borderwidth.
 
 .TP
-.B -g color
+.B \-F
+Use correct font sizes (points) instead of the traditional size that xfig/fig2dev uses,
+which is 1/80 inch.  The corresponding xfig command-line option is -correct_font_size.
+
+.TP
+.B \-g color
 Use
 .I color
 for the background.
 
 .TP
+.B \-N
+Convert all colors to grayscale.
+
+.TP
 .B -S smoothfactor
-This will smooth the output by scaling the figure by the
+This will smooth the output by passing
 .I smoothfactor
-factor, which uses the TextAlphaBits and GraphicsAlphaBits option in 
-ghostscript to smooth text and graphics
-Values of 0, 2 or 4 for
+to ghostscript in the 
+.I -dTextAlphaBits 
+and
+.I -dGraphicsAlphaBits
+options to improve font rendering and graphic smoothing.
+A value of 2 for
 .I smoothfactor
-are allowed.  xfig uses 2 when the "smooth" option is used in the export panel.
+provides some smoothing and 4 provides more.
 
 .SH GIF OPTIONS
 
@@ -328,12 +414,21 @@ a six-digit hexadecimal RGBvalue using the # sign, e.g. #ff0000 (Red).
 .B -q image_quality
 use the integer value
 .I image_quality
-for the JPEG "Quality" factor.  Valid values are 0-100.
+for the JPEG "Quality" factor.  Valid values are 0-100, with the default being 75.
 
 
 .SH LATEX OPTIONS
 .TP
-.B \-l
+.B "\-d dmag"
+Set a separate magnification for the length of line dashes to
+.I dmag.
+
+.TP
+.B \-E num
+Set encoding for latex text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)
+
+.TP
+.B "\-l lwidth"
 Sets the threshold between LaTeX thin and thick lines to
 .I lwidth
 pixels.
@@ -343,10 +438,6 @@ Lines of width greater than
 pixels are drawn as \\thicklines.
 Also affects the size of dots in dotted line style.
 The default is 1.
-.TP
-.B \-d
-Set a separate magnification for the length of line dashes to
-.I dmag.
 .TP
 .B \-v
 Verbose mode.
@@ -378,7 +469,7 @@ After the map file is generated by
 .I fig2dev
 you will need to edit it to fill out any additional information it may need.
 .TP
-.B -b borderwidth
+.B "\-b borderwidth"
 Make blank border around figure of width
 .I borderwidth.
 
@@ -412,25 +503,43 @@ original figure. The default is 1.
 specifies the top of the whole coordinate system. The default is
 .B ypos.
 .TP
-.B -x xneg
+.B -x xmin
 specifies the minimum x coordinate value of the figure (inches). The
 default is 0.
 .TP
-.B -y yneg
+.B -y ymin
 specifies the minumum y coordinate value of the figure (inches). The
 default is 0.
 .TP
-.B -X xpos
+.B -X xmax
 specifies the maximum x coordinate value of the figure (inches). The
 default is 8.
 .TP
-.B -Y ypos
+.B -Y ymax
 specifies the maximum y coordinate value of the figure (inches). The
 default is 8.
 
+.SH METAPOST OPTIONS
+.TP
+.B "\-i file"
+Include file content via \\input-command.
+
+.TP
+.B "-I file"
+Include file content as additional header.
+
+.TP
+.B -o
+Old mode (no latex).
+
+.TP
+.B "-p number"
+Adds the line "prologues:=number" to the output.
+
+
 .SH PIC OPTIONS
 .TP
-.B -p
+.B "-p ext"
 Enables the use of certain PIC extensions which are known to work with
 the groff package; compatibility with DWB PIC is unknown.
 The extensions enabled by each option are:
@@ -455,7 +564,7 @@ The extensions enabled by each option are:
 .fi
 .EP
 
-.SH PICTEX OUTPUT
+.SH PICTEX OPTIONS
 In order to include PiCTeX pictures into a document, it is necessary to
 load the PiCTeX macros.
 .LP
@@ -467,12 +576,17 @@ and generates large DVI files.
 The size of TeX's memory limits the number of plot symbols in a picture.
 As a result, it is best to use PiCTeX to generate small pictures.
 
+.TP
+.B \-E num
+Set encoding for latex text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)
+
 .SH POSTSCRIPT, ENCAPSULATED POSTSCRIPT (EPS), and PDF OPTIONS
-With PostScript, Fig can be used to create large posters. The figure
-will be created by printing multiple pages which can be glued together.
-Simply specify the -M option to produce a multi-page output.
+With PostScript, xfig can be used to create multiple page figures 
+Specify the -M option to produce a multi-page output. 
+For posters, add -O to overlap the pages slightly to get around the problem of
+the unprintable area in most printers, then cut and paste the pages together.
 Due to memory limitations of most laser printers, the figure should not
-be too complicated. Great for text with very big letters.
+have large imported images (bitmaps). Great for text with very big letters.
 .LP
 The EPS driver has the following differences from PostScript:
 .br
@@ -489,6 +603,24 @@ o The multiple-page option is ignored
 o The paper size option is ignored
 .br
 o The x/y offset options are ignored
+.LP
+The EPS driver has the following two special options:
+.TP
+.B -B 'Wx [Wy X0 Y0]'
+This specifies that the bounding box of the EPS file should have the
+width Wx and the height Wy. 
+If a value less than or equal to 0 is specified for Wx or Wy, these are set 
+to the width/height respectively of the figure. Origin is relative to
+screen (0,0) (upper-left).
+Wx, Wy, X0 and Y0 are interpreted in centimeters or inches depending on the measure 
+given in the fig-file.
+Remember to put either quotes (") or apostrophes (') to group the arguments to -B.
+.TP
+.B -R 'Wx [Wy X0 Y0]'
+Same as the -B option except that X0 and Y0 is relative to the lower 
+left corner of the 
+.B figure.
+Remember to put either quotes (") or apostrophes (') to group the arguments to -R.
 .LP
 The PDF driver uses all the PostScript options.
 .LP
@@ -512,9 +644,19 @@ and 21 more "tints" from full saturation + 1 to white.
 In addition, there are 16 patterns such as bricks, diagonal lines,
 crosshatch, etc.
 .TP
+.B -A
+Add an ASCII (EPSI) preview.
+.TP
 .B -b borderwidth
 Make blank border around figure of width
 .I borderwidth.
+.br
+Not availble in EPS.
+
+.TP
+.B -C dummy_arg
+Add a color *binary* TIFF preview for Microsoft products that need a binary preview.
+See also -T (monochrome preview).  A dummy argument must be supplied for historical reasons.
 .TP
 .B -c
 option centers the figure on the page.
@@ -524,6 +666,13 @@ that extends too far to the right of other objects.
 .TP
 .B -e
 option puts the figure against the edge (not centered) of the page.
+Not availble in EPS.
+
+.TP
+.B -F
+Use correct font sizes (points) instead of the traditional size that xfig/fig2dev uses,
+which is 1/80 inch.  The corresponding xfig command-line option is -correct_font_size.
+
 .TP
 .B -g color
 Use
@@ -536,20 +685,16 @@ but must appear on the command line for reasons of compatibility.
 This option will override the orientation specification in the
 file (for file versions 3.0 and higher).
 .br
-This and the -p (portrait) option are only honored only for PostScript output,
-not Encapsulated PostScript (EPS).
-This is because the figure doesn't need to be rotated when generating (EPS);
-it may be rotated by the program importing the EPS.
+Not availble in EPS.
 .TP
 .B -M
 Generate multiple pages if figure exceeds paper size.
+.br
+Not availble in EPS.
 .TP
-.B -p dummy_arg
-Generate figure in portrait mode.  The dummy argument is ignored,
-but must appear on the command line for reasons of compatibility.
-This option will override the orientation specification in the
-file (for file versions 3.0 and higher).
-This is the default for Fig files of version 2.1 or lower.
+.B \-N
+Convert all colors to grayscale.
+
 .TP
 .B -n name
 Set the Title part of the PostScript output to
@@ -558,20 +703,49 @@ This is useful when the input to
 .I fig2dev
 comes from standard input.
 .TP
+.B -O
+When used with \fB-M\fR,
+overlaps the pages slightly to get around the problem of
+the unprintable area in most printers.
+.br
+Not availble in EPS.
+.TP
+.B -p dummy_arg
+Generate figure in portrait mode.  The dummy argument is ignored,
+but must appear on the command line for reasons of compatibility.
+This option will override the orientation specification in the
+file (for file versions 3.0 and higher).
+This is the default for Fig files of version 2.1 or lower.
+.br
+Not availble in EPS.
+
+.TP
+.B -T
+Add a monochrome *binary* TIFF preview for Microsoft products that need a binary preview.
+See also -C (color preview).
+.TP
+.TP
 .B -x offset
 shift the figure in the X direction by
 .I offset
 units (1/72 inch).
 A negative value shifts the figure to the left and a positive value to the right.
+.br
+Not availble in EPS.
 .TP
 .B -y offset
 shift the figure in the Y direction by
 .I offset
 units (1/72 inch).
 A negative value shifts the figure up and a positive value down.
+.br
+Not availble in EPS.
 .TP
 .B -z papersize
-Sets the papersize. Available paper sizes are:
+Sets the papersize. 
+Not availble in EPS.
+.br
+Available paper sizes are:
 .nf
 .in +.4i
 "Letter" (8.5" x 11" also "A"),
@@ -591,6 +765,7 @@ Sets the papersize. Available paper sizes are:
 and "B5" (18.2cm x 25.7cm).
 .fi
 .in -.4i
+.br
 .LP
 
 .SH PSTEX OPTIONS
@@ -601,13 +776,20 @@ language is a variant of
 which suppresses formatted (special) text.
 The
 .B pstex_t
-language has the complementary behavior: it generates only LaTeX commands
+language has the complementary behavior: it generates only the LaTeX
+special text and the commands
 necessary to position special text, and to overlay the
 PostScript file generated using
 .B pstex.
 These two drivers can be used to generate a figure which combines the
 flexibility of PostScript graphics with LaTeX text formatting of
 special text.
+
+.TP
+.B -F
+Use correct font sizes (points) instead of the traditional size that xfig/fig2dev uses,
+which is 1/80 inch.  The corresponding xfig command-line option is -correct_font_size.
+
 .TP
 .B -g color
 Use
@@ -620,13 +802,32 @@ sets the Title part of the PostScript output to
 This is useful when the input to
 .I fig2dev
 comes from standard input.
+.LP
+
+.SH PSTEX_T OPTIONS
+The pstex_t language produces only the LaTeX special text and the commands necessary
+to position special text, and to overlay the
+PostScript file generated using
+.B pstex.
+(see above)
+
+.TP
+.B \-E num
+Set encoding for latex text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)
+
+.TP
+.B \-F
+Don't set the font face, series, and style; only set it's size and the
+baselineskip. By default, fig2dev sets all 5 font parameters when it 
+puts some text. The disadvantage is that you can't set the font from your
+LaTeX document. With this option on, you can set the font from your LaTeX
+document (like "\fB\\sfshape \\input picture.eepic\fR").
 .TP
 .B -p file
 specifies the name of the PostScript file to be overlaid.
 If not set or its value is null then no PS file will be inserted.
-.LP
 
-.SH TK OPTIONS
+.SH TK and PTK OPTIONS (tcl/tk and Perl/tk)
 .TP
 .B -l dummy_arg
 Generate figure in landscape mode.  The dummy argument is ignored,
@@ -743,3 +944,7 @@ Mike Markowski (mm@udel.edu) with a little touch-up by Brian Smith
 The CGM driver (Computer Graphics Metafile) was written by
 .br
 Philippe Bekaert (Philippe.Bekaert@cs.kuleuven.ac.be)
+.sp
+The EMF driver (Enhanced Metafile) was written by
+.br
+Michael Schrick (m_schrick@hotmail.com)

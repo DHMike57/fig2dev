@@ -3,16 +3,16 @@
  * Copyright (c) 1991 by Micah Beck
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -586,7 +586,6 @@ F_text	*t;
 void gentpic_arc(a)
 F_arc	*a;
 {
-	double		x, y;
 	double		cx, cy, sx, sy, ex, ey;
 
 	cx = a->center.x/ppi; cy = convy(a->center.y/ppi);
@@ -792,6 +791,7 @@ newline()
 struct driver dev_tpic = {
      	gentpic_option,
 	gentpic_start,
+	gendev_null,
 	gentpic_arc,
 	gentpic_ellipse,
 	gentpic_line,

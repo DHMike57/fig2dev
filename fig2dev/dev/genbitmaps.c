@@ -1,15 +1,15 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -25,11 +25,6 @@
  *		the final XXX file.
  */
 
-#if defined(hpux) || defined(SYSV) || defined(SVR4)
-#include <sys/types.h>
-#endif
-#include <sys/file.h>
-#include <signal.h>
 #include "fig2dev.h"
 #include "genps.h"
 #include "object.h"
@@ -64,6 +59,10 @@ char *optarg;
 	    }
 	    break;
 
+	case 'N':			/* convert colors to grayscale */
+	    grayonly = 1;
+	    break;
+
 	case 'q':			/* jpeg image quality */
 	    if (strcmp(lang,"jpeg") != 0)
 		fprintf(stderr,"-q option only allowed for jpeg quality; ignored\n");
@@ -87,10 +86,13 @@ char *optarg;
 	    }
 	    break;
 
-	case 'f':			/* ignore magnification, font sizes and lang here */
+	case 'F':	/* ignore magnification, font sizes and lang here */
+	case 'f':
 	case 'm':
 	case 's':
+      	case 'G':	/* grid */
 	case 'L':
+			/* these are all handled in fig2dev.c */
 	    break;
 
 	default:
@@ -146,11 +148,10 @@ F_compound	*objects;
       sprintf(extra_options+strlen(extra_options),
 	      " -dTextAlphaBits=%d -dGraphicsAlphaBits=%d",smooth,smooth);
     }
-    /* no driver in gs, use ppm output then use ppmtoxxx later */
+    /* no driver in gs or we're smoothing, use ppm output then use ppmtoxxx later */
     if (gsdev == NULL) {
 	gsdev="ppmraw";
-	/* if we're not going to ppm, setup a temp file to run through final ppmtoxx */
-	if (strcmp(lang,"ppm")) {
+	if (smooth > 1 || strcmp(lang,"ppm")) {
 	    /* make a unique name for the temporary ppm file */
 	    sprintf(tmpname,"%s/f2d%d.ppm",TMPDIR,getpid());
 	    ofile = tmpname;
@@ -158,8 +159,8 @@ F_compound	*objects;
 	}
     }
     /* make up the command for gs */
-    sprintf(gscom, "gs -q -dSAFER -sDEVICE=%s -r%d -g%dx%d -sOutputFile=%s%s -",
-		   gsdev, 80, width, height, ofile, extra_options);
+    sprintf(gscom, "gs -q -dSAFER -sDEVICE=%s -r80 -g%dx%d -sOutputFile=%s%s -",
+		   gsdev, width, height, ofile, extra_options);
     /* divert output from ps driver to the pipe into ghostscript */
     /* but first close the output file that main() opened */
     saveofile = tfp;
@@ -292,6 +293,7 @@ genbitmaps_end()
 struct driver dev_bitmaps = {
   	genbitmaps_option,
 	genbitmaps_start,
+	genps_grid,
 	genps_arc,
 	genps_ellipse,
 	genps_line,

@@ -2,16 +2,16 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -33,6 +33,11 @@ extern	int	 fig_getopt();
 extern	char	*optarg;
 extern	int	 optind;
 char		 lang[40];
+int		 parse_gridspec();
+
+void	help_msg();
+void	depth_option();
+int	depth_filter();
 
 /* hex names for Fig colors */
 char	*Fig_color_names[] = {
@@ -49,45 +54,55 @@ char	*Fig_color_names[] = {
 struct driver *dev = NULL;
 
 #ifdef I18N
-char		Usage[] = "Usage: %s [-L language] [-f font] [-s size] [-m scale] [-j] [input [output]]\n";
+char	Usage[] = "Usage: %s [-L language] [-f font] [-s size] [-m scale] [-j] [input [output]]\n";
 Boolean support_i18n = False;
 #else
-char		Usage[] = "Usage: %s [-L language] [-f font] [-s size] [-m scale] [input [output]]\n";
+char	Usage[] = "Usage: %s [-L language] [-f font] [-s size] [-m scale] [input [output]]\n";
 #endif  /* I18N */
-char		Err_badarg[] = "Argument -%c unknown to %s driver.";
-char		Err_mem[] = "Running out of memory.";
 
-char		*prog;
-char		*from = NULL, *to = NULL;
-char		*name = NULL;
-int		font_size = 0;
-double		mag = 1.0;
-FILE		*tfp = NULL;
+char	Err_badarg[] = "Argument -%c unknown to %s driver.";
+char	Err_mem[] = "Running out of memory.";
 
-double		ppi;			/* Fig file resolution (e.g. 1200) */
-int		llx = 0, lly = 0, urx = 0, ury = 0;
-Boolean		landscape;
-Boolean		center;
-Boolean		orientspec = False;	/* set if the user specs. the orientation */
-Boolean		centerspec = False;	/* set if the user specs. the justification */
-Boolean		magspec = False;	/* set if the user specs. the magnification */
-Boolean		transspec = False;	/* set if the user specs. the GIF transparent color */
-Boolean		multispec = False;	/* set if the user specs. multiple pages */
-Boolean		paperspec = False;	/* set if the user specs. the paper size */
-Boolean		pats_used, pattern_used[NUMPATTERNS];
-Boolean		multi_page = False;	/* multiple page option for PostScript */
-Boolean		metric;			/* true if file specifies Metric */
-char		gif_transparent[20]="\0"; /* GIF transp color hex name (e.g. #ff00dd) */
-char		papersize[20];		/* paper size */
-float		THICK_SCALE;		/* convert line thickness from screen res. */
+char	*prog;
+char	*from = NULL, *to = NULL;
+char	*name = NULL;
+double	font_size = 0.0;
+Boolean	correct_font_size = False;	/* use correct font size */
+double	mag = 1.0;
+double	fontmag = 1.0;
+FILE	*tfp = NULL;
+
+double	ppi;			/* Fig file resolution (e.g. 1200) */
+int	llx = 0, lly = 0, urx = 0, ury = 0;
+Boolean	landscape;
+Boolean	center;
+Boolean	orientspec = False;	/* set if the user specs. the orientation */
+Boolean	centerspec = False;	/* set if the user specs. the justification */
+Boolean	magspec = False;	/* set if the user specs. the magnification */
+Boolean	transspec = False;	/* set if the user specs. the GIF transparent color */
+Boolean	multispec = False;	/* set if the user specs. multiple pages */
+Boolean	paperspec = False;	/* set if the user specs. the paper size */
+Boolean	boundingboxspec = False;/* set if the user specs. the paper size */
+Boolean	pats_used, pattern_used[NUMPATTERNS];
+Boolean	multi_page = False;	/* multiple page option for PostScript */
+Boolean	overlap = False;	/* overlap pages in multiple page output */
+Boolean	metric;			/* true if file specifies Metric */
+char	gif_transparent[20]="\0"; /* GIF transp color hex name (e.g. #ff00dd) */
+char	papersize[20];		/* paper size */
+char	boundingbox[64];	/* boundingbox */
+float	THICK_SCALE;		/* convert line thickness from screen res. */
 					/* calculated in read_objects() */
-char		lang[40];		/* selected output language */
-RGB		background;		/* background (if specified by -g) */
-Boolean		bgspec = False;		/* flag to say -g was specified */
-char		gscom[1000];		/* to build up a command for ghostscript */
+char	lang[40];		/* selected output language */
+RGB	background;		/* background (if specified by -g) */
+Boolean	bgspec = False;		/* flag to say -g was specified */
+float	grid_minor_spacing=0.0;	/* grid minor spacing (if any) */
+float	grid_major_spacing=0.0;	/* grid major spacing (if any) */
+float	mult;			/* multiplier for grid spacing */
+char	gscom[1000];		/* to build up a command for ghostscript */
 
 Boolean	psencode_header_done = False; /* if we have already emitted PSencode header */
 Boolean	transp_header_done = False;   /* if we have already emitted transparent image header */
+Boolean	grayonly = False;	/* convert colors to grayscale (-N option) */
 
 struct obj_rec {
 	void (*gendev)();
@@ -99,7 +114,7 @@ struct obj_rec {
 
 struct depth_opts {
         int d1,d2;
-} depth_opt[NUMDEPTHS];
+} depth_opt[NUMDEPTHS+1];
 int	depth_index = 0;
 char	depth_op;		/* '+' for skip all but those listed */
 
@@ -139,7 +154,7 @@ struct paperdef paperdef[] =
     {NULL, 0, 0}
 };
 
-
+void
 put_msg(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
 char   *format, *arg1, *arg2, *arg3, *arg4, *arg5, *arg6, *arg7, *arg8;
 {
@@ -147,20 +162,23 @@ char   *format, *arg1, *arg2, *arg3, *arg4, *arg5, *arg6, *arg7, *arg8;
 	fprintf(stderr, "\n");
 	}
 
+void
 get_args(argc, argv)
 int	 argc;
 char	*argv[];
 {
-  	int	 c, i;
+  	int	 c, i, nvals, nchars;
 	double	 atof();
+	char	*grid, *p;
+	float	 numer, denom;
 
 	prog = *argv;
 /* add :? */
 	/* sum of all arguments */
 #ifdef I18N
-	while ((c = fig_getopt(argc, argv, "aAb:cC:d:D:ef:g:hkl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:j?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "AaB:b:C:cD:d:E:eFf:G:g:hI:i:jkl:L:Mm:Nn:OoPp:q:R:rS:s:Tt:UVvX:x:Y:y:Wwz:?")) != EOF) {
 #else
-	while ((c = fig_getopt(argc, argv, "aAb:cC:d:D:ef:g:hkl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "AaB:b:C:cD:d:E:eFf:G:g:hI:i:kl:L:Mm:Nn:OoPp:q:R:rS:s:Tt:UVvX:x:Y:y:Wwz:?")) != EOF) {
 #endif
 
 	  /* generic option handling */
@@ -173,6 +191,56 @@ char	*argv[];
 		    if (c == 'h')
 			help_msg();
 		    exit(0);
+		    break;
+
+		case 'F':			/* use correct font size */
+		    correct_font_size = True;
+		    break;
+
+		case 'G':			/* Grid */
+		    /* if major AND minor are specified */
+		    if (p = strchr(optarg,':')) {
+			/* parse minor grid spec first */
+			if (p != optarg) {
+			    if ((nvals=parse_gridspec(optarg, &numer, &denom, 
+				&grid_minor_spacing, &nchars)) == 2)
+				    grid_minor_spacing = numer/denom;
+			}
+			/* now parse major grid spec */
+			if ((nvals=parse_gridspec(p+1, &numer, &denom, 
+			     &grid_major_spacing, &nchars)) == 2)
+				grid_major_spacing = numer/denom;
+		    } else {
+			/* only minor grid specified */
+			if ((nvals=parse_gridspec(optarg, &numer, &denom,
+			     &grid_minor_spacing, &nchars)) == 2)
+				grid_minor_spacing = numer/denom;
+			p = optarg-1;
+		    }
+		    /* now parse any units after grid spacing */
+		    if (nchars < strlen(p+1)) {
+			grid = p+nchars+1;
+			if ((strcmp(grid,"i") && strcmp(grid,"in") && strcmp(grid,"inch") &&
+				 strcmp(grid,"f") && strcmp(grid,"ft") && strcmp(grid,"feet") &&
+				 strcmp(grid,"c") && strcmp(grid,"cm") &&
+				 strcmp(grid,"mm") && strcmp(grid,"m") )) {
+			    grid_usage();
+			    grid_major_spacing = grid_minor_spacing = 0.0;
+			    break;
+			}
+			if (!strcmp(grid,"i") || !strcmp(grid,"in") || !strcmp(grid,"in"))
+			    mult =  1.0;
+			else if (!strcmp(grid,"f") || !strcmp(grid,"ft") || !strcmp(grid,"feet"))
+			    mult = 12.0;
+			else if (strcmp(grid,"c") == 0 || strcmp(grid,"cm") == 0)
+			    mult = 1.0/2.54;
+			else if (strcmp(grid,"mm") == 0)
+			    mult = 1.0/25.4;
+			else if (strcmp(grid,"m") == 0)
+			    mult = 1.0/0.0254;
+		    } else {
+			mult = 1.0;	/* no units, 1:1 */
+		    }
 		    break;
 
 		case 'L':			/* set output language */
@@ -194,15 +262,15 @@ char	*argv[];
 		    break;
 
 		case 's':			/* set default font size */
-		    font_size = atoi(optarg);
+		    font_size = atof(optarg);
 		    /* max size is checked in respective drivers */
-		    if (font_size <= 0)
+		    if (font_size <= 0.0)
 			font_size = DEFAULT_FONT_SIZE;
-		    font_size = round(font_size * mag);
+		    font_size = font_size * fontmag;
 		    break;
 
 		case 'm':			/* set magnification */
-		    mag = atof(optarg);
+		    fontmag = mag = atof(optarg);
 		    magspec = True;		/* user-specified */
 		    break;
 
@@ -237,6 +305,39 @@ char	*argv[];
 		to   = argv[optind];	/*  to file    */
 }
 
+int
+parse_gridspec(string, numer, denom, spacing, nchrs)
+    char  *string;
+    float *numer, *denom, *spacing;
+    int	  *nchrs;
+{
+    int  numvals;
+
+    if ((numvals=sscanf(string,"%f/%f%n",numer,denom,nchrs)) == 2) {
+	if (*numer < 0.0 || *denom < 0.0 || *denom == 0.0)
+	    return 0;
+	else
+	    return numvals;
+    } else if ((numvals=sscanf(string,"%f%n",spacing,nchrs)) == 1) {
+	if (*spacing < 0.0 || *spacing == 0.0)
+	    return 0;
+	else
+	    return numvals;
+    }
+
+    grid_usage();
+    return 0;
+}
+
+grid_usage()
+{
+     fprintf(stderr,"Can't parse grid spec. Format is -G [minor_tick][:major_tick]unit ");
+     fprintf(stderr,"e.g. -G .5:2cm or -G 1/16:1/2in\n");
+     fprintf(stderr,"Allowable units are: ");
+     fprintf(stderr,"'i', 'in', 'ft', 'feet', 'c', 'cm', 'mm', 'm'.");
+     fprintf(stderr,"  Ignoring grid.\n");
+}
+
 main(argc, argv)
 int	 argc;
 char	*argv[];
@@ -255,6 +356,10 @@ char	*argv[];
 	else	/* read from stdin */
 	    status = readfp_fig(stdin, &objects);
 
+	/* multiply grid spacing by unit and scale to get FIG units */
+	grid_minor_spacing = mult * grid_minor_spacing * ppi;
+	grid_major_spacing = mult * grid_major_spacing * ppi;
+
 	if (status != 0) {
 	    if (from) 
 		read_fail_message(from, status);
@@ -263,13 +368,20 @@ char	*argv[];
 
 	if (to == NULL)
 	    tfp = stdout;
-	else if ((tfp = fopen(to, "wb")) == NULL) {
-	    fprintf(stderr, "Couldn't open %s\n", to);
-	    exit(1);
+	else {
+	    if (strstr(to, ".fig") == to + strlen(to)-4) {
+	   	fprintf(stderr,"Outfile is a .fig file, aborting\n");
+		exit(1);
+	    }
+	    if ((tfp = fopen(to, "wb")) == NULL) {
+		fprintf(stderr, "Couldn't open %s\n", to);
+		exit(1);
+	    }
 	}
 
-	/* if metric, adjust scale for difference between 
-	   FIG PIX/CM (450) and actual (472.44) */
+	/* If metric, adjust scale for difference between FIG PIX/CM (450) and actual (472.44)
+	   NOTE: we don't adjust font sizes by this amount because they are in points,
+	   not inches or cm */
 	if (metric)
 		mag *= 80.0/76.2;
 
@@ -279,6 +391,7 @@ char	*argv[];
 	exit(status);
 }
 
+void
 help_msg()
 {
     int i;
@@ -293,68 +406,87 @@ help_msg()
 	printf("%s ",drivers[i].name);
     }
     printf("\n");
-    printf("  -m mag	set magnification\n");
     printf("  -D +/-list	include or exclude depths listed\n");
     printf("  -f font	set default font\n");
-    printf("  -s size	set default font size in points\n");
+    printf("  -G minor[:major][:unit] draw light gray grid with thin/thick lines at minor/major units.\n");
+    printf("			(e.g. -G .25:1cm draws thin line every .25 cm and thick every 1 cm\n");
+    printf("		Only available for PostScript, EPS, PDF, and bitmap (GIF, JPEG, etc) drivers for now.\n");
     printf("  -h		print this message, fig2dev version number and exit\n");
-    printf("  -V		print fig2dev version number and exit\n");
 #ifdef I18N
     printf("  -j		enable i18n facility\n");
 #endif
+    printf("  -m mag	set magnification\n");
+    printf("  -s size	set default font size in points\n");
+    printf("  -V		print fig2dev version number and exit\n");
     printf("\n");
 
     printf("CGM Options:\n");
-    printf("  -r		Position arrowheads for CGM viewers that display rounded arrowheads\n");
+    printf("  -b dummyarg	generate binary output (dummy argument required after \"-b\")\n");
+    printf("  -r		position arrowheads for CGM viewers that display rounded arrowheads\n");
+
 
     printf("EPIC Options:\n");
     printf("  -A scale	scale arrowheads by dividing their size by scale\n");	
+    printf("  -E num	set encoding for text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)\n");
+#ifdef NFSS
+    printf("  -F		don't set font family/series/shape, so you can\n");
+    printf("		  set it from latex\n");
+#endif /* NFSS */
     printf("  -l lwidth	use \"thicklines\" when width of line is > lwidth\n");
-    printf("  -v		include comments in the output\n");
     printf("  -P		generate a complete LaTeX file\n");
+#ifdef NFSS
+    printf("  -R		allow rotated text (uses \\rotatebox) (requires compilation with NFSS)\n");
+#endif /* NFSS */
     printf("  -S scale	scale figure\n");
+    printf("  -t strch  	set the stretch of dashed lines (default = 30)\n");
+    printf("  -v		include comments in the output\n");
     printf("  -W		enable variable line width\n");
     printf("  -w		disable variable line width\n");
 
     printf("EPS (Encapsulated PostScript) Options:\n");
+    printf("  -A		add ASCII (EPSI) preview\n");
+    printf("  -B \"Wx [Wy X0 Y0]\" force width, height and origin in absolute coordinates\n");
+    printf("  -b width	specify width of blank border around figure\n");
+    printf("  -C dummyarg	add color TIFF preview (for Microsoft apps)\n");
+    printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
     printf("  -g color	background color\n");
+    printf("  -N		convert all colors to grayscale\n");
     printf("  -n name	set title part of PostScript output to name\n");
+    printf("  -R \"Wx [Wy X0 Y0]\" force width, height and origin in relative coordinates\n");
+    printf("			 (relative to lower-left of figure bounds)\n");
+    printf("  -T		add monochrome TIFF preview (for Microsoft apps)\n");
 
     printf("IBM-GL Options:\n");
     printf("  -a		select ISO A4 paper size if default is ANSI A, or vice versa\n");
     printf("  -c		generate instructions for IBM 6180 plotter\n");
     printf("  -d xll,yll,xur,yur	restrict plotting to area specified by coords\n");
     printf("  -f fontfile	load text character specs from table in file\n");
+    printf("  -k		precede output with PCL command to use HP/GL\n");
     printf("  -l pattfile	load patterns for pattern fill from file\n");
     printf("  -m mag,x0,y0	magnification with optional offset in inches\n");
-    printf("  -p pensfile	load plotter pen specs from file\n");
     printf("  -P		rotate figure to portrait (default is landscape)\n");
+    printf("  -p pensfile	load plotter pen specs from file\n");
     printf("  -S speed	set pen speed in cm/sec\n");
     printf("  -v		print figure upside-down in portrait or backwards in landscape\n");
 
-    printf("GIF Options:\n");
+    printf("Options common to all bitmap languages:\n");
     printf("  -b width	specify width of blank border around figure\n");
+    printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
     printf("  -g color	background color\n");
-    printf("  -S smooth	specify smoothing factor [2-3 reasonable]\n");
+    printf("  -N        	convert all colors to grayscale\n");
+    printf("  -S smooth	specify smoothing factor [1=none, 2=some 4=more]\n");
+
+    printf("GIF Options:\n");
     printf("  -t color	specify GIF transparent color in hexadecimal (e.g. #ff0000=red)\n");
 
-#ifdef USE_JPEG
     printf("JPEG Options:\n");
-    printf("  -b width	specify width of blank border around figure\n");
-    printf("  -g color	background color\n");
     printf("  -q quality	specify image quality factor (0-100)\n");
-    printf("  -S smooth	specify smoothing factor [2-3 reasonable]\n");
-#endif /* USE_JPEG */
-
-    printf("Options for all other bitmap languages:\n");
-    printf("  -b width	specify width of blank border around figure\n");
-    printf("  -g color	background color\n");
-    printf("  -S smooth	specify smoothing factor [2-3 reasonable]\n");
 
     printf("LaTeX Options:\n");
     printf("  -d dmag	set separate magnification for length of line dashes to dmag\n");
+    printf("  -E num	set encoding for latex text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)\n");
     printf("  -l lwidth	set threshold between thin and thick lines to lwidth\n");
-    printf("  -v		verbose mode\n");
+    printf("  -v	verbose mode\n");
 
     printf("MAP (HTML image map) Options:\n");
     printf("  -b width	specify width of blank border around figure\n");
@@ -364,41 +496,61 @@ help_msg()
     printf("  -n name	name to use in the output file\n");
     printf("  -p pen_mag	linewidth magnification compared to the original figure\n");
     printf("  -t top	specifies the top of the coordinate system\n");
-    printf("  -x xneg	specifies minimum x coordinate of figure (inches)\n");
-    printf("  -y yneg	specifies minimum y coordinate of figure (inches)\n");
-    printf("  -X xpos	specifies maximum x coordinate of figure (inches)\n");
-    printf("  -Y xpos	specifies maximum y coordinate of figure (inches)\n");
+    printf("  -x xmin	specifies minimum x coordinate of figure (inches)\n");
+    printf("  -y ymin	specifies minimum y coordinate of figure (inches)\n");
+    printf("  -X xmax	specifies maximum x coordinate of figure (inches)\n");
+    printf("  -Y xmax	specifies maximum y coordinate of figure (inches)\n");
+
+    printf("METAPOST Options:\n");
+    printf("  -i file   includes file content via \\input-command\n");
+    printf("  -I file   adds file content as additional header\n");
+    printf("  -o        old mode (no latex)\n");
+    printf("  -p number adds the line \"prologues:=number\"\n");
 
     printf("PIC Options:\n");
     printf("  -p ext	enables certain PIC extensions (see man pages)\n");
 
+    printf("PICTeX Options:\n");
+    printf("  -E num	set encoding for text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)\n");
+
     printf("PostScript and PDF Options:\n");
+    printf("  -A		add ASCII (EPSI) preview\n");
     printf("  -b width	specify width of blank border around figure\n");
+    printf("  -C dummyarg	add color TIFF preview (for Microsoft apps)\n");
     printf("  -c		center figure on page\n");
     printf("  -e		put figure at left edge of page\n");
+    printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
     printf("  -g color	background color\n");
-    printf("  -l dummyarg	landscape mode\n");
-    printf("  -p dummyarg	portrait mode\n");
+    printf("  -l dummyarg	landscape mode (dummy argument required after \"-l\")\n");
     printf("  -M		generate multiple pages for large figure\n");
+    printf("  -N        	convert all colors to grayscale\n");
     printf("  -n name	set title part of PostScript output to name\n");
+    printf("  -O        	overlap pages in multiple page mode (-M)\n");
+    printf("  -p dummyarg	portrait mode (dummy argument required after \"-p\")\n");
+    printf("  -T		add monochrome TIFF preview (for Microsoft apps)\n");
     printf("  -x offset	shift figure left/right by offset units (1/72 inch)\n");
     printf("  -y offset	shift figure up/down by offset units (1/72 inch)\n");
     printf("  -z papersize	set the papersize (see man pages for available sizes)\n");
 
     printf("PSTEX Options:\n");
+    printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
     printf("  -g color	background color\n");
     printf("  -n name	set title part of PostScript output to name\n");
+
+    printf("PSTEX_T Options:\n");
+    printf("  -E num	set encoding for latex text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)\n");
+#ifdef NFSS
+    printf("  -F		don't set font family/series/shape, so you can\n");
+    printf("		  set it from latex\n");
+#endif /* NFSS */
     printf("  -p name	name of the PostScript file to be overlaid\n");
 
-    printf("TEXTYL Options: None\n");
-
-    printf("TK Options:\n");
-    printf("  -l dummyarg	landscape mode\n");
-    printf("  -p dummyarg	portrait mode\n");
+    printf("Tcl/Tk (tk) and Perl/Tk (ptk) Options:\n");
+    printf("  -l dummyarg	landscape mode (dummy argument required after \"-l\")\n");
+    printf("  -p dummyarg	portrait mode (dummy argument required after \"-p\")\n");
     printf("  -P		generate canvas of full page size instead of figure bounds\n");
     printf("  -z papersize	set the papersize (see man pages for available sizes)\n");
 
-    printf("TPIC Options: None\n");
 }
 
 /* count primitive objects & create pointer array */
@@ -475,8 +627,8 @@ gendev_objects(objects, dev)
 	/* dump object pointers to an array */
 	obj_count = compound_dump(objects, 0, 0, dev);
 	if (!obj_count) {
-	    fprintf(stderr, "No object\n");
-	    return;
+	    fprintf(stderr, "fig2dev: No objects in Fig file\n");
+	    return -1;
 	}
 	rec_array = (struct obj_rec *)malloc(obj_count*sizeof(struct obj_rec));
 	(void)compound_dump(objects, rec_array, 0, dev);
@@ -486,6 +638,9 @@ gendev_objects(objects, dev)
 
 	/* generate header */
 	(*dev->start)(objects);
+
+	/* draw any grid specified */
+	(*dev->grid)(grid_major_spacing, grid_minor_spacing);
 
 	/* generate objects in sorted order */
 	for (r = rec_array; r<rec_array+obj_count; r++)
@@ -525,11 +680,12 @@ depth_usage()
     fprintf(stderr,"%s: help for -D option:\n",prog);
     fprintf(stderr,"  -D +rangelist  means keep only depths in rangelist.\n");
     fprintf(stderr,"  -D -rangelist  means keep all depths but those in rangelist.\n");
-    fprintf(stderr,"  rangelist can be a list of numbers or ranges of numbers, e.g.:\n");
+    fprintf(stderr,"  Rangelist can be a list of numbers or ranges of numbers, e.g.:\n");
     fprintf(stderr,"    10,40,55,60:70,99\n");
     exit(1);
 }
 
+void
 depth_option(s)
 char *s;
 {
@@ -547,25 +703,27 @@ char *s;
     if (*s == ',') ++s;
     d->d1 = d->d2 = -1;
     d->d1 = strtol(s,&s,10);
-    if (d->d1 <= 0) 
+    if (d->d1 < 0) 
       depth_usage();
     switch(*s) {		/* what's the delim? */
-    case ':':			/* parse a range */
-      d->d2 = strtol(++s,&s,10);
-      if (d->d2 < d->d1) 
-	depth_usage();
-      break;
-    case ',':			/* just start the next one */
-      ++s;
-      break;
+      case ':':			/* parse a range */
+	d->d2 = strtol(++s,&s,10);
+	if (d->d2 < d->d1) 
+	    depth_usage();
+	break;
+      case ',':			/* just start the next one */
+	++s;
+	break;
     }
   }
   if (depth_index >= NUMDEPTHS) {
     fprintf(stderr,"%s: Too many -D values!\n",prog);
     exit(1);
   }
+  d->d1 = -1;
 }
 
+int
 depth_filter(r)
 struct obj_rec *r;
 {
@@ -573,15 +731,15 @@ struct obj_rec *r;
   
   if (depth_index <= 0)		/* no filters were set up */
     return 1;
-  for (d = depth_opt; d->d1 > 0; d++)
+  for (d = depth_opt; d->d1 >= 0; d++)
     if (d->d2 >= 0) {		/* it's a range comparison */
       if (r->depth >= d->d1 && r->depth <= d->d2)
-	return (depth_op=='+')?1:0;
+	return (depth_op=='+')? 1:0;
     } else {			/* it's a single-value comparison */
       if (d->d1 == r->depth)
-	return (depth_op=='+')?1:0;
+	return (depth_op=='+')? 1:0;
     }
-  return (depth_op=='-')?1:0;
+  return (depth_op=='-')? 1:0;
 }
 
 void

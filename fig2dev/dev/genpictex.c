@@ -2,16 +2,16 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -21,10 +21,7 @@
  * 	Author Micah Beck, Cornell University, 4/88
  *    Color, rotated text and ISO-chars added by Herbert Bauer 11/91
 */
-#if defined(hpux) || defined(SYSV) || defined(SVR4)
-#include <sys/types.h>
-#endif
-#include <sys/file.h>
+
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
@@ -32,7 +29,9 @@
 #define UNIT "cm"       /* dip */
 #define CONVUNIT 2.54   /* dip */
 
-extern char *ISOtoTeX[];
+extern char	*ISO1toTeX[];
+extern char	*ISO2toTeX[];
+extern Boolean	 FontSizeOnly;	/* defined in setfigfont.c */
 
 static void genpictex_ctl_spline(), genpictex_itp_spline();
 static bezier_spline();
@@ -44,6 +43,7 @@ static rtop();
 static draw_arrow_head();
 
 #define rint(a) floor((a)+0.5)     /* close enough? */
+static int		encoding = 1;
 static double		dash_length = -1;
 static int		line_style = SOLID_LINE;
 static char 		*linethick = "1pt";
@@ -56,6 +56,7 @@ char opt, *optarg;
 {
         int i;
 
+	FontSizeOnly = False;
 	switch (opt) {
 
 		case 'a':
@@ -90,6 +91,12 @@ char opt, *optarg;
 		    plotsymbol = optarg;
 		    break;
 
+		case 'E':
+		    encoding = atoi(optarg);
+		    if (encoding < 0 || encoding > 2)
+		      encoding = 1;
+		    break;
+
 		case 's':
 		case 'm':
 		case 'L':
@@ -114,10 +121,28 @@ void
 genpictex_start(objects)
 F_compound	*objects;
 {
+	char		host[256];
+	time_t		when;
+	struct passwd	*who;
+
 	texfontsizes[0] = texfontsizes[1] = 
-		TEXFONTSIZE(font_size?font_size:DEFAULT_FONT_SIZE);
+		TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
 
 	/* PiCTeX start */
+
+	/* announce filename, version etc */
+
+	fprintf(tfp, "%%Title: %s\n",
+		(name? name: ((from) ? from : "stdin")));
+	fprintf(tfp, "%%%%Created by: %s Version %s Patchlevel %s\n",
+		prog, VERSION, PATCHLEVEL);
+	fprintf(tfp, "%%%%CreationDate: %s", ctime(&when));
+	who = getpwuid(getuid());
+	if (gethostname(host, sizeof(host)) == -1)
+	    (void)strcpy(host, "unknown-host!?!?");
+	if (who)
+	   fprintf(tfp, "%%%%User: %s@%s (%s)\n",
+			who->pw_name, host, who->pw_gecos);
 
 	/* print any whole-figure comments prefixed with "% " */
 	if (objects->comments) {
@@ -155,10 +180,7 @@ static
 set_linewidth(w)
 int	w;
 {
-/*	static int	cur_thickness = -1;*/
 
-/*	if (w == 0) return;*/
-/*	if (w != cur_thickness) {*/
 	    if (!w) {
 		fprintf(tfp, "\\linethickness=0pt\n");
 		cur_thickness = 0;
@@ -246,8 +268,6 @@ int	w;
 				"\\makebox(0,0)[l]{\\tencirc\\symbol{'176}}");
 		    break;
 	    }
-/* PIC  fprintf(tfp, "\"D't %.3fi'\"\n", 0.7 * cur_thickness);*/
-/*    }*/
 }
 
 void
@@ -639,10 +659,26 @@ F_text	*t;
 	      	}
 	else 
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
-		    if (*cp >= 0xa0)
-		         fprintf(tfp, "%s", ISOtoTeX[(int)*cp-0xa0]);
-		else
-		    fputc(*cp, tfp);
+#ifdef I18N
+		    extern Boolean support_i18n;
+		    if (support_i18n && (t->font <= 2))
+		            fputc(*cp, tfp);
+		    else
+#endif
+		    if (*cp >= 0xa0) {
+	                switch (encoding) {
+	                    case 0: /* no escaping */
+			        fputc(*cp, tfp);
+	                        break;
+	                    case 1: /* iso-8859-1 */
+	    	    	        fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
+	                        break;
+	                    case 2: /* iso-8859-2 */
+	    		        fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
+	                        break;
+	                }
+	            } else
+			fputc(*cp, tfp);
 		}
 
 	reset_color(t->color);
@@ -947,6 +983,7 @@ double	a0, b0, a1, b1, a2, b2, a3, b3;
 struct driver dev_pictex = {
      	genpictex_option,
 	genpictex_start,
+	gendev_null,
 	genpictex_arc,
 	genpictex_ellipse,
 	genpictex_line,

@@ -2,16 +2,16 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -25,10 +25,6 @@
  *
  */
 
-#if defined(hpux) || defined(SYSV) || defined(SVR4)
-#include <sys/types.h>
-#endif
-#include <sys/file.h>
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
@@ -44,7 +40,6 @@ static set_style();
 static arc_tangent();
 static rtop();
 
-static double		dash_length = -1;
 static int		line_style = 0; /* Textyl solid line style */
 static int 		linethick = 2;  /* Range is 1-12 `pixels' */
  
@@ -123,7 +118,7 @@ F_compound	*objects;
 {
 
 	texfontsizes[0] = texfontsizes[1] = 
-		texfontsizes[(font_size?font_size:DEFAULT_FONT_SIZE)+1];
+		texfontsizes[(font_size != 0.0? (int) font_size : DEFAULT_FONT_SIZE)+1];
 
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {
@@ -301,7 +296,6 @@ gentextyl_text(t)
 F_text	*t;
 {
 	double	x, y;
-	char *cp;
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ",t->comments, "");
@@ -430,8 +424,6 @@ double  arrowht, arrowwid;
 {
 	double	x, y, xb, yb, dx, dy, l, sina, cosa;
 	double	xc, yc, xd, yd;
-	int style;
-	double dash;
 
 	dx = x2 - x1;  dy = y1 - y2;
 	l = sqrt(dx*dx+dy*dy);
@@ -562,9 +554,9 @@ static
 void gentextyl_itp_spline(s)
 F_spline	*s;
 {
-  F_point		*p1, *p2;
+  F_point	*p1, *p2;
   F_control	*cp1, *cp2;
-  double		x1, x2, y1, y2;
+  double	 x1, x2, y1, y2;
   
   
   p1 = s->points;
@@ -622,6 +614,7 @@ double	a0, b0, a1, b1, a2, b2, a3, b3;
 struct driver dev_textyl = {
      	gentextyl_option,
 	gentextyl_start,
+	gendev_null,
 	gentextyl_arc,
 	gentextyl_ellipse,
 	gentextyl_line,

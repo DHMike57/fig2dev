@@ -2,16 +2,16 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -425,27 +425,25 @@ double	length;
 		    break;
 		}
 	    }
-    }
+}
 
 /* 
  * set_width - issue line width commands as appropriate
  *		NOTE: for HP plotters we can't do anything
  */
 static set_width(w)
-int	w;
+    int	w;
 {
-static	int	line_width	 = DEFAULT;	/* in pixels		 */
-	line_width  = w;
-	}
+}
 
 /* 
  * set_color - issue line color commands as appropriate
  */
 static set_color(color)
-int	color;
+    int	color;
 {
-static	int	number		 = 0;	/* 1 <= number <= 8		*/
-static	double	thickness	 = 0.3;	/* pen thickness in millimeters	*/
+    static	int	number		 = 0;	/* 1 <= number <= 8		*/
+    static	double	thickness	 = 0.3;	/* pen thickness in millimeters	*/
 	if (line_color != color) {
 	    line_color  = color;
 	    color	= (colors + color)%colors;
@@ -458,11 +456,11 @@ static	double	thickness	 = 0.3;	/* pen thickness in millimeters	*/
 		fprintf(tfp, "PT%.4f;\n", pen_thickness[color]);
 		}
 	    }
-	}
+}
 
 static fill_polygon(pattern, color)
-int	pattern;
-int	color;
+    int	pattern;
+    int	color;
 {
 	if (0 < pattern && pattern < patterns) {
 	    int		style;
@@ -485,10 +483,10 @@ int	color;
 	    dash_length	 = DEFAULT;
 	    set_style(style, length);
 	    }
-	}
+}
 	
 void arc(sx, sy, cx, cy, theta, delta)
-double	sx, sy, cx, cy, theta, delta;
+    double	sx, sy, cx, cy, theta, delta;
 {
 	if (ibmgec)
 	    if (delta == M_PI/36.0)		/* 5 degrees		*/
@@ -512,10 +510,10 @@ double	sx, sy, cx, cy, theta, delta;
 	    	    cx + (sx - cx)*cos(theta) - (sy - cy)*sin(theta),
 	    	    cy + (sy - cy)*cos(theta) + (sx - cx)*sin(theta));
 	    }
-	}
+}
 
 void genibmgl_arc(a)
-F_arc	*a;
+    F_arc	*a;
 {
 	if (a->thickness != 0 ||
 		ibmgec && 0 <= a->fill_style && a->fill_style < patterns) {
@@ -570,10 +568,10 @@ F_arc	*a;
 	    if (0 < a->fill_style && a->fill_style < patterns)
 		fill_polygon(a->fill_style, a->fill_color);
 	    }
-	}
+}
 
 void genibmgl_ellipse(e)
-F_ellipse	*e;
+    F_ellipse	*e;
 {
 	if (e->thickness != 0 ||
 		ibmgec && 0 <= e->fill_style && e->fill_style < patterns) {
@@ -615,14 +613,19 @@ F_ellipse	*e;
 	    if (0 < e->fill_style && e->fill_style < patterns)
 		fill_polygon((int)e->fill_style, e->fill_color);
 	    }
-	}
+}
 
 void swap(i, j)
-int	*i, *j;
-{	int	t; t = *i; *i = *j; *j = t; }
+    int	*i, *j;
+{
+	int	t;
+	t = *i;
+	*i = *j;
+	*j = t;
+}
 
 void genibmgl_line(l)
-F_line	*l;
+    F_line	*l;
 {
 	if (l->thickness != 0 ||
 		ibmgec && 0 <= l->fill_style && l->fill_style < patterns) {
@@ -723,12 +726,12 @@ F_line	*l;
 		    break;
 		}
 	    }
-	}
+}
 
 #define		THRESHOLD	.05	/* inch */
 
 static bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
-double	a0, b0, a1, b1, a2, b2, a3, b3;
+    double	a0, b0, a1, b1, a2, b2, a3, b3;
 {
 	double	x0, y0, x3, y3;
 	double	sx1, sy1, sx2, sy2, tx, ty, tx1, ty1, tx2, ty2, xmid, ymid;
@@ -749,7 +752,7 @@ double	a0, b0, a1, b1, a2, b2, a3, b3;
 	    bezier_spline(x0, y0, sx1, sy1, sx2, sy2, xmid, ymid);
 	    bezier_spline(xmid, ymid, tx1, ty1, tx2, ty2, x3, y3);
 	    }
-	}
+}
 
 static void genibmgl_itp_spline(s)
 F_spline	*s;
@@ -965,6 +968,7 @@ genibmgl_end()
 struct driver dev_ibmgl = {
      	genibmgl_option,
 	genibmgl_start,
+	gendev_null,
 	genibmgl_arc,
 	genibmgl_ellipse,
 	genibmgl_line,

@@ -1,15 +1,15 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Parts Copyright (c) 1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -96,9 +96,6 @@ void
 genge_start(objects)
 F_compound	*objects;
 {
-	int		itmp;
-	int		clipx, clipy;
-
 	/* convert dpi to 0.1mm per point */
 	scale = 254.0 / ppi;
 
@@ -216,10 +213,10 @@ genge_itp_spline(s)
 F_spline	*s;
 {
 	F_point		*p, *q;
-	F_control	*a, *b, *ar;
+	F_control	*a, *b;
 	int		 xmin, ymin;
 
-	a = ar = s->controls;
+	a = s->controls;
 
 	a = s->controls;
 	p = s->points;
@@ -249,9 +246,7 @@ F_spline	*s;
 {
 	double		a, b, c, d, x1, y1, x2, y2, x3, y3;
 	F_point		*p, *q;
-	double		xx,yy;
 	int		xmin, ymin;
-	Boolean		first = True;
 
 	if (closed_spline(s))
 	    fprintf(tfp, "%% Closed spline\n");
@@ -405,7 +400,7 @@ F_text	*t;
 		    break;
 	}
 
-	fprintf(tfp,"f%02d %z%02d y%01d ",t->font, min(MAX_FONT_SIZE,(int)t->size), style);
+	fprintf(tfp,"f%02d z%02d y%01d ",t->font, min(MAX_FONT_SIZE,(int)t->size), style);
 
 	x = t->base_x;
 	y = t->base_y;
@@ -460,8 +455,6 @@ set_style(s, v)
 int	s;
 double	v;
 {
-	int val;
-
 	if (s == DASH_LINE) {
 		fprintf(tfp,"y02 ");
 	} else if (s == DOTTED_LINE) {
@@ -488,6 +481,7 @@ struct
 driver dev_ge = {
      	genge_option,
 	genge_start,
+	gendev_null,
 	genge_arc,
 	genge_ellipse,
 	genge_line,

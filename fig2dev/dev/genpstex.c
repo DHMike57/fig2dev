@@ -2,16 +2,16 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -35,11 +35,9 @@
  * Jose Alberto.
  */
 
-#if defined(hpux) || defined(SYSV) || defined(SVR4)
-#include <sys/types.h>
-#endif
-#include <sys/file.h>
 #include "fig2dev.h"
+#include "genps.h"
+#include "genpdf.h"
 #include "object.h"
 #include "texfonts.h"
 
@@ -134,6 +132,20 @@ struct driver dev_pstex_t = {
 	gendev_null,
 	gendev_null,
 	gendev_null,
+	gendev_null,
+	genpstex_t_text,
+	genlatex_end,
+	INCLUDE_TEXT
+};
+
+struct driver dev_pdftex_t = {
+  	genpstex_t_option,
+	genpstex_t_start,
+	gendev_null,
+	gendev_null,
+	gendev_null,
+	gendev_null,
+	gendev_null,
 	genpstex_t_text,
 	genlatex_end,
 	INCLUDE_TEXT
@@ -142,12 +154,26 @@ struct driver dev_pstex_t = {
 struct driver dev_pstex = {
   	geneps_option, 	/* use eps so always exported in Portrait mode */
 	genps_start,
+	genps_grid,
 	genps_arc,
 	genps_ellipse,
 	genps_line,
 	genps_spline,
 	genpstex_text,
 	genps_end,
+	INCLUDE_TEXT
+};
+
+struct driver dev_pdftex = {
+  	genpdf_option,
+	genpdf_start,
+	genps_grid,
+	genps_arc,
+	genps_ellipse,
+	genps_line,
+	genps_spline,
+	genpstex_text,
+	genpdf_end,
 	INCLUDE_TEXT
 };
 

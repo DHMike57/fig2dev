@@ -6,10 +6,10 @@
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -187,10 +187,10 @@ F_line *l;
 		fprintf(tfp,"polyline(true)\n");
 	}
 	p = l->points;
-	fprintf(tfp,"      ((%f, %f)", p->x/ppi, maxy-(p->y/ppi));
+	fprintf(tfp,"      ((%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
 	p = p->next;
 	for ( ; p != NULL; p=p->next) {
-	    fprintf(tfp,",\n       (%f, %f)", p->x/ppi, maxy-(p->y/ppi));
+	    fprintf(tfp,",\n       (%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
 	}
 	fprintf(tfp, ");\n");
 	return;
@@ -222,10 +222,10 @@ F_spline *s;
 		fprintf(tfp,"curve(true)\n");
 	}
 	p = s->points;
-	fprintf(tfp,"      ((%f, %f)", p->x/ppi, maxy-(p->y/ppi));
+	fprintf(tfp,"      ((%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
 	p = p->next;
 	for ( ; p != NULL; p=p->next) {
-	    fprintf(tfp,",\n       (%f, %f)", p->x/ppi, maxy-(p->y/ppi));
+	    fprintf(tfp,",\n       (%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
 	}
 	fprintf(tfp, ");\n");
 	return;
@@ -250,13 +250,14 @@ F_ellipse *e;
 	if (e->type == 3 || e->type == 4)
 	{
 		fprintf(tfp,"circle((%f,%f),%f);\n",
-			e->center.x/ppi, maxy-(e->center.y/ppi), e->radiuses.x/ppi);
+			(float) e->center.x/ppi, maxy-((float) e->center.y/ppi),
+			(float) e->radiuses.x/ppi);
 	}
 	else if (e->type == 1 || e->type == 2)
 	{
 		fprintf(tfp,"ellipse((%f,%f),%f,%f,0);\n",
-			e->center.x/ppi, maxy-(e->center.y/ppi), 
-			e->radiuses.x/ppi, e->radiuses.y/ppi);
+			(float) e->center.x/ppi, maxy-((float) e->center.y/ppi), 
+			(float) e->radiuses.x/ppi, (float) e->radiuses.y/ppi);
 	}
 }
 
@@ -270,9 +271,9 @@ F_arc *a;
 	setpen(a->thickness);
 	fprintf(tfp, "  store (curpath)\n");
 	fprintf(tfp,"  drawn arcppp((%f,%f), (%f,%f), (%f,%f));\n",
-		a->point[0].x/ppi, maxy-(a->point[0].y/ppi),
-		a->point[1].x/ppi, maxy-(a->point[1].y/ppi),
-		a->point[2].x/ppi, maxy-(a->point[2].y/ppi));
+		(float) a->point[0].x/ppi, maxy-((float) a->point[0].y/ppi),
+		(float) a->point[1].x/ppi, maxy-((float) a->point[1].y/ppi),
+		(float) a->point[2].x/ppi, maxy-((float) a->point[2].y/ppi));
 
 	return;
 }
@@ -290,6 +291,7 @@ F_text *t;
 struct driver dev_mf = {
      	genmf_option,
 	genmf_start,
+	gendev_null,
 	genmf_arc,
 	genmf_ellipse,
 	genmf_line,

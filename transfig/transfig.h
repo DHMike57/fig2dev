@@ -26,11 +26,16 @@
 #define INCLFIG "documentstyle"
 #endif
 
-enum language  {box, epic, eepic, eepicemu, latex,
-	pictex, postscript, encps, psfig, pstex, textyl, tpic};
-#define MAXLANG tpic
+/* Warning - if this list is changed the lname[] array in transfig.c must be changed too */
+/* Also, be sure to change MAXLANG if the list extends beyond the current lang */
 
-enum input {apg, fig, pic, ps, eps};
+enum language  {box, cgm, eepic, eepicemu, emf, epic, eps, gif,
+	ibmgl, jpeg, latex, map, mf, mmp, mp, pcx, pdf, pdftex,
+	pic, pictex, png, ppm, ps, psfig, pstex, ptk, sld, svg,
+	textyl, tiff, tk, tpic, xbm, xpm};
+#define MAXLANG xpm
+
+enum input {i_apg, i_fig, i_pic, i_ps, i_eps};
 #define MAXINPUT xps
 
 typedef struct argument{

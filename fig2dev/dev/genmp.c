@@ -4,15 +4,14 @@
  * Ported from fig2MP by Klaus Guntermann (guntermann@iti.informatik.tu-darmstadt.de)
  * Original fig2MP Copyright 1995 Dane Dwyer (dwyer@geisel.csl.uiuc.edu)
  * 
- *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice and the one following remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -44,6 +43,70 @@
  *                   ".mmp" (multi-level MetaPost). These can be processed
  *                   with normal MetaPost, but you have to provide the
  *                   extension of the filename in the call.
+ *
+ *  Version 0.04 --  Fix handling of special characters (May 2001)
+ *                   as suggested by Jorma Laaksonen <jorma.laaksonen@hut.fi>.
+ *                   "Normal" text should come out correct without needing
+ *                   escapes for (LaTeX). That should make it easier to
+ *                   export to different formats with the same result.
+ *                   Let's use latex as the primary processor for our mpost
+ *                   output. Others probably won't use that anyway.
+ *
+ *                   Additional options for this processor:
+ *                   -I filename     include LaTeX commands
+ *                                   immediately into metapost file
+ *                   -i filename     let LaTeX input commands
+ *                                   when processing with MetaPost
+ *
+ *  Version 0.05 --  Fix positioning of imported text figures (Aug 2001).
+ *                   We need to take into account also their depth.
+ *
+ *  Version 0.06 --  Fix setting the correct font in math mode (Jun 2002).
+ *
+ *                   Bug fixed with rotated text.
+ *
+ *                   Support of scaled fonts.
+ *
+ *                   Blanks are also special characters (replaced with ~).
+ *
+ *                   The comments +MP-ADDITIONAL-HEADER and
+ *                   -MP-ADDITIONAL-HEADER surround the (la)tex
+ *                   header (if you want to automatically replace the header
+ *                   with a script afterwards).
+ *
+ *                   Option -I does not longer include material _into_ the
+ *                   header; it includes a whole header given in a file
+ *
+ *                   Options -I and -i can also be used in old mode (-o).
+ *
+ *                   Additional and changed options:
+ *
+ *                   -I filename     include a whole header (from
+ *                                   \documentclass... to \begin{document}
+ *                                   if using latex) into the metapost file
+ *                   -o              old mode (tex, no latex)
+ *                   -p number       This option adds the line
+ *                                       prologues:=number;
+ *                                   to the metapost file.
+ *
+ *
+ *                   In latex mode the font setting mechanism of genmplatex
+ *                   is used if the fig text is printed in a latex font. If
+ *                   it is printed in a postscript font, the font will be
+ *                   specified directly in a metapost label command.
+ *
+ *
+ *                   If the fig text is printed in the default latex font,
+ *                   the font of the surrounding latex environment will
+ *                   be taken.
+ *                   If the fig text is printed in the default postscript
+ *                   font, the defaultfont of metapost will be taken.
+ *                   (An option which selects this feature has been discarded
+ *                   because it is not clear what should be done if such an
+ *                   option is not used.)
+ *
+ *                   Changes by Christian Spannagel <cspannagel@web.de>
+ *                   Thanks to Dirk Krause for his suggestions.
  */
 
 /*
@@ -59,13 +122,16 @@
  *         Output is for MetaPost version 0.63
  */
 
+#include <stdio.h>
+#include <string.h>
 #include "fig2dev.h"
 #include "object.h"
+#include "texfonts.h"
 
 /*
  *  Definitions
  */
-#define GENMP_VERSION	0.03
+#define GENMP_VERSION	0.05
 #define PaperHeight	11.0	/* inches */
 #define BPperINCH	72.0
 #define MaxyBP		BPperINCH*PaperHeight
@@ -77,23 +143,22 @@
  */
 char	*genmp_fillcolor(int, int);
 char	*genmp_pencolor(int);
-void	genmp_writefontinfo(double, char *, char *);
+void	genmp_writefontmacro_tex(double, char *, char *);
+void    genmp_writefontmacro_latex(F_text *, char *);
 void	genmp_arrowstats(F_arrow *);
 void	do_split(int); /* new procedure to split different depths' objects */
 #define	getfont(x,y)	((x & 0x4)?xfigpsfonts[y]:xfiglatexfonts[y])
-#define	fig2bp(x)	((double)x * BPperINCH/PIXperINCH)
-
+#define ispsfont(x) (x & 0x4)
+#define isdefaultfont(x,y) ((!ispsfont(x) && y==0) || (ispsfont(x) && y==-1))
+#define	fig2bp(x)	((double)x * mag * BPperINCH/PIXperINCH)
 #define	rad2deg(x)	((double)x * 180.0/3.141592654)
 #define	y_off(x)	(MaxyBP-(double)(x))   /* reverse y coordinate */
 
-/* Next two used to generate random font names - AA, AB, AC, ... ZZ */
-#define	char1()		(((int)(c1++/26) % 26)+'A')
-#define	char2()		((c2++ % 26)+'A')
 
-/*
- *  Global variables
- */
-char c1=0,c2=0;
+/* Next two used to generate random font names - AA, AB, AC, ... ZZ */
+/* #define	char1()		(((int)(c1++/26) % 26)+'A') */
+/* #define	char2()		((c2++ % 26)+'A') */
+/* char c1=0,c2=0;*/
 
 int split = False; /* no splitting is default */
 
@@ -105,11 +170,28 @@ int split = False; /* no splitting is default */
  */
 static int fig_number=0;
 static int last_depth=1001;
+
+
+/* default: latex mode
+ * switch to tex mode with option -o (old mode)
+ */
+static int latexmode=1;
+
+
+/* variables for the prologues-command */
+static long int prologues_nr=0;
+static int has_prologues=0;
+
+static char options[1024] = "";
+
 /*
  * default xfig postscript fonts given TeX equivalent names
  */
 #define FONTNAMESIZE	8
-char xfigpsfonts[35][FONTNAMESIZE] = {
+
+#define MATHFONTMACRO "\\figtodev@genmp@mathfonts"
+
+static char xfigpsfonts[35][FONTNAMESIZE] = {
         "ptmr",         /* Times-Roman */
         "ptmri",        /* Times-Italic */
         "ptmb",         /* Times-Bold */
@@ -147,10 +229,12 @@ char xfigpsfonts[35][FONTNAMESIZE] = {
         "pzdr"          /* ZapfDingbats */
 };
 
+
+
 /*
  * default xfig latex fonts given TeX equivalent names
  */
-char xfiglatexfonts[6][FONTNAMESIZE] = {
+static char xfiglatexfonts[6][FONTNAMESIZE] = {
 	"cmr10",         /* DEFAULT = Computer Modern Roman */
 	"cmr10",         /* Computer Modern Roman */
 	"cmbx10",        /* Computer Modern Roman Bold */
@@ -162,7 +246,7 @@ char xfiglatexfonts[6][FONTNAMESIZE] = {
 /*
  * default xfig colors in postscript RGB notation
  */
-char xfigcolors[32][17] = {
+static char xfigcolors[32][17] = {
 	"(0.00,0.00,0.00)",		/* black */
 	"(0.00,0.00,1.00)",		/* blue */
 	"(0.00,1.00,0.00)",		/* green */
@@ -197,13 +281,18 @@ char xfigcolors[32][17] = {
 	"(1.00,0.84,0.00)"		/* gold */
 };
 
+static char *immediate_insert_filename=NULL;
+static char *include_filename=NULL;
+
 void
 genmp_start(objects)
 F_compound	*objects;
 {
-	fprintf(tfp,"%%\n%% fig2dev (version %s.%s) -L (m)mp version %.2lf --- Preamble\n%%\n",
-	   VERSION, PATCHLEVEL, GENMP_VERSION);
+    FILE *in;
+    fprintf(tfp,"%%\n%% fig2dev (version %s.%s) -L (m)mp version %.2lf --- Preamble\n%%\n", VERSION, PATCHLEVEL, GENMP_VERSION);
 	fprintf(tfp,"\n");
+
+    fprintf(tfp,"%%\n%% mp output driver options:\n%% %s\n%%\n\n", options);
 
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {
@@ -212,7 +301,64 @@ F_compound	*objects;
 	    fprintf(tfp,"%%\n");
 	}
 
-	fprintf(tfp,"\n");
+    /* print the "prologues:=n;" line */
+    if (has_prologues) {
+	fprintf(tfp,"prologues:=%d;\n\n",prologues_nr);
+    }
+
+
+    fprintf(tfp,"%% +MP-ADDITIONAL-HEADER\n");
+    if (latexmode || immediate_insert_filename!=NULL || include_filename!=NULL) {
+	fprintf(tfp,"verbatimtex\n");
+
+	if (latexmode) {
+  	   fprintf(tfp,"%%&latex\n");
+	}
+
+	if (immediate_insert_filename!=NULL &&
+	    (in=fopen(immediate_insert_filename,"r"))!=NULL) {
+	    /* We do not want to restrict line buffer sizes.
+	     * Furthermore we do not expect huge files here.
+	     * So just read the contents character by character.
+	     */
+
+	    int c;
+	    fprintf(tfp,"%% start of included material from %s\n",
+		    immediate_insert_filename);
+	    while ((c=getc(in))!=EOF) {
+		putc(c,tfp);
+	    }
+	    fprintf(tfp,"%% end of included material\n");
+	    fclose(in);
+	} else if (latexmode) {
+	    /* standard header text */
+	    fprintf(tfp,"\\documentclass{article}\n");
+	    fprintf(tfp,"\\begin{document}\n");
+	}
+
+
+	if (include_filename!=NULL) {
+	    fprintf(tfp,"\\input %s\n",include_filename);
+	}
+
+	fprintf(tfp,"etex\n");
+
+    }
+    fprintf(tfp,"%% -MP-ADDITIONAL-HEADER\n\n");
+
+    /* latexmode: write the font macros. */
+    if (latexmode) {
+	fprintf(tfp, "\n%%SetFigFont macros for latex\n");
+	fprintf(tfp, "verbatimtex\n");
+	define_setfigfont(tfp);
+	fprintf(tfp, "\\ifx\\SetFigFontSize\\undefined%%\n");
+	fprintf(tfp, "\\gdef\\SetFigFontSize#1#2{%%\n");
+	fprintf(tfp, "  \\fontsize{#1}{#2pt}%%\n");
+	fprintf(tfp, "  \\selectfont}%%\n");
+	fprintf(tfp, "\\fi%%\n");
+	fprintf(tfp,"etex\n\n");
+    }
+
 	fprintf(tfp,"%% Make arrowheads mitered by default\n");
 	fprintf(tfp,"%% NOTE: subject to change (edited from plain.mp)\n");
 	fprintf(tfp,"    def forwarr(text t) expr p =\n");
@@ -253,10 +399,12 @@ F_compound	*objects;
 	   fprintf(tfp,"%% Now draw the figure\n");
 	   fprintf(tfp,"beginfig(0)\n");
 	}
+
 	fprintf(tfp,"%% Some reasonable defaults\n");
 	fprintf(tfp,"  ahlength:=7;\n");
 	fprintf(tfp,"  ahangle:=30;\n");
 	fprintf(tfp,"  labeloffset:=0;\n");
+
 	/* For our overlapping figures we must keep the (invisible) bounding
 	 * box as the delimiting area. Thus we must not have MetaPost
 	 * compute the "true" bounds.
@@ -282,7 +430,56 @@ void
 genmp_option(opt, optarg)
 char opt, *optarg;
 {
-      if (strcasecmp(optarg,"mmp") == 0) split = True;
+    int cllen = 0;
+
+    switch (opt) {
+      case 'L':
+	  if (strcasecmp(optarg,"mmp") == 0){
+	      split = True;
+	  } else if (strcasecmp(optarg,"mp") == 0) {
+	      split = False;
+	  } else {
+	      fprintf(stderr,"bad language option %s",optarg);
+	  }
+	  break;
+      case 'o':
+	  latexmode = 0;
+	  break;
+      case 'I':
+	  if (optarg!=NULL) {
+	      immediate_insert_filename=strdup(optarg);
+	  }
+	  else fprintf(stderr,"Warning: missing argument for '-I'. Ignored.\n");
+	  break;
+      case 'i':
+	  if (optarg!=NULL) {
+	      include_filename=strdup(optarg);
+	  }
+	  else fprintf(stderr,"Warning: missing argument for '-i'. Ignored.\n");
+	  break;
+      case 'p':
+	  if (optarg!=NULL) {
+	      has_prologues = 1;
+	      prologues_nr = atoi(optarg);
+	  } else {
+	      fprintf(stderr,"Warning: missing argument for '-p'. Ignored.\n");
+	  }
+	  break;
+      /* other options are silently ignored */
+    }
+
+    /* add option (and argument) to the options string */
+    cllen = strlen(options);
+    if (cllen+4<sizeof(options)) {
+	options[cllen++]=' ';
+	options[cllen++]='-';
+	options[cllen++]=opt;
+	options[cllen]='\0';
+    }    
+    if (optarg != NULL && (cllen+strlen(optarg+2)<sizeof(options))) {
+	options[cllen++]=' ';	
+	strcat (options, optarg);
+    }
 }
 
 void
@@ -600,6 +797,7 @@ F_arc *a;
 
 	fprintf(tfp,"%% Begin arc object\n");
 	switch (a->type) {
+	   case 0:            /* three point arc (open) JFIG BUG */
 	   case 1:            /* three point arc (open) */
 	   case 2:            /* three point arc (pie wedge) */
 	      fprintf(tfp,"  linecap:=%d;\n",a->cap_style);
@@ -657,62 +855,209 @@ F_arc *a;
 	      }
 	      break;
 	   default:
-	      fprintf(tfp,"  show \"This Arc object is not supported!\"\n");
+	      fprintf(tfp,"  show \"This Arc object is not supported! (type=%d)\"\n",a->type);
 	}
 	fprintf(tfp,"%% End arc object\n");
 	return;
 }
 
+/* The handling of special characters is "borrowed" from genepic.c */
+/* The following two arrays are used to translate characters which
+ * are special to (La)TeX into characters that print as one would expect.
+ * Note that the <> characters aren't really special (La)TeX characters
+ * but they will not print as themselves unless one is using a font
+ * like tt.
+ */
+
+static char tex_text_specials[] = "\\{}><^~$&#_% ";
+static char *tex_text_mappings[] = {
+  "$\\backslash$",
+  "$\\{$",
+  "$\\}$",
+  "$>$",
+  "$<$",
+  "\\^{}",
+  "\\~{}",
+  "\\$",
+  "\\&",
+  "\\#",
+  "\\_",
+  "\\%",
+  "~"};
+
+
 void
 genmp_text(t)
 F_text *t;
 {
-	char ident[3];
-	char fname[FONTNAMESIZE];
 
 	do_split(t->depth);
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ",t->comments, "");
-
 	fprintf(tfp,"%% Begin text object\n");
-   fprintf(tfp,"  picture p;\n");
-/*
- * These next three lines pick a unique name for the selected
- *  font and size for use by TeX when typesetting.
+
+
+    /* The whole next part is just relevant for
+     *
+     *   text with a latex font  and
+     *   special text with a postscript font
+     */
+    if (! ispsfont(t->flags) || special_text(t) ) {
+	fprintf(tfp,"  picture q;\n");
+
+	/* Define fonts */
+	if ( latexmode ) {
+	    /* Define fonts for latex. */
+	    genmp_writefontmacro_latex(t,"mpsetfnt");
+	} else {
+	    /* Define fonts for tex (just special text) */
+	    genmp_writefontmacro_tex(t->size,getfont(t->flags,t->font),"mpsetfnt");
+	}
+
+
+	fprintf(tfp,"  q = btex \\mpsetfnt ");
+
+
+        /* normal text: escape the special characters. */
+	if (!special_text(t)){
+	    char *special_index, *cp, *esc_cp;
+
+	    /* This loop escapes special (La)TeX characters. */
+	    for(cp = t->cstring; *cp; cp++) {
+		if (special_index=strchr(tex_text_specials, *cp)) {
+		    /* Write out the replacement.  Implementation note: we can't
+		     * use puts since that will output an additional newline.
+		     */
+		    esc_cp=tex_text_mappings[special_index-tex_text_specials];
+		    while (*esc_cp)
+			fputc(*esc_cp++, tfp);
+		} else
+		    fputc(*cp, tfp);
+	    }
+
+	} else if (!latexmode) {
+	    /* special text in tex mode:
+	     * insert the mathmode font macro at the beginning of each
+	     * mathmode block. */
+	    char *cp;
+	    char tmpstr[15];
+	    int is_mathmode = 0;
+	    int handle_mathmode = 0;
+	    int delim_length = 0;
+
+
+	    for(cp = t->cstring; *cp; cp+=delim_length) {
+		delim_length = 1;
+		if ( strchr("$", *cp) ) {
+		    handle_mathmode = 1;
+		    delim_length = 1;
+		} else if ( cp == strstr (cp, "\\begin{math}") ) {
+		    handle_mathmode = 1;
+		    delim_length = 12;
+		} else if ( cp == strstr (cp, "\\end{math}") ) {
+		    handle_mathmode = 1;
+		    delim_length = 10;
+		} else if ( cp == strstr (cp, "\\(") ) {
+		    handle_mathmode = 1;
+		    delim_length = 2;
+		} else if ( cp == strstr (cp, "\\)") ) {
+		    handle_mathmode = 1;
+		    delim_length = 2;
+		} else if ( cp == strstr (cp, "\\$") ) {
+		    /* ignore */
+		    delim_length = 2;
+		}
+
+		strncpy ( tmpstr, cp, delim_length );
+		tmpstr[delim_length] = '\0';
+
+		/*if ( !latexmode && handle_mathmode && is_mathmode ) {
+		  fprintf (tfp, "}");
+		  }*/
+		fprintf(tfp, "%s", tmpstr);
+		if ( handle_mathmode ) {
+		    if (! is_mathmode ) {
+			/*fprintf(tfp, "%s {", MATHFONTMACRO);*/
+			fprintf(tfp, "%s ", MATHFONTMACRO);
+		    }
+		    handle_mathmode = 0;
+		    is_mathmode = 1 - is_mathmode;
+		}
+	    }
+	} else {
+	    /* special text in latex mode: just write the text. */
+	    fprintf(tfp, t->cstring);
+	}
+	fprintf(tfp," etex;\n");
+
+    }
+
+
+
+
+    /* The next section is related to normal text with a ps font. */
+    else {
+
+	fprintf(tfp,"  picture q;\n");
+	fprintf(tfp,"  q=thelabel.urt(\"");
+        fprintf(tfp, t->cstring);
+	fprintf(tfp, "\" infont ");
+	if (t->font<0) {
+	    fprintf(tfp, "defaultfont");
+	} else {
+	    fprintf(tfp, "\"%s\"", xfigpsfonts[t->font]);
+	}
+	fprintf(tfp," scaled ");
+	fprintf(tfp, "(%dpt/fontsize defaultfont)",(int)(t->size*mag*BPperINCH/FIGSperINCH));
+	fprintf(tfp,",(0,0));\n");
+    }
+
+
+
+    /* The next section is the same for all modes. Take the things done above,
+     * rotate them and put them to the right position.
  */
-   sprintf(ident,"%c%c",char1(),char2());
-   strcpy(fname,getfont(t->flags,t->font)); fname[3] = '\0';
-   strcat(fname,ident);
 
-/* Define fonts for TeX */
-   genmp_writefontinfo(t->size,getfont(t->flags,t->font),fname);
+    fprintf(tfp,"  picture p;\n");
+    fprintf(tfp,"  p = q rotated %.2lf;\n",rad2deg(t->angle));
 
-	fprintf(tfp,"  p = btex \\%s %s etex\n",fname,t->cstring);
-	fprintf(tfp,"    rotated %.2lf;\n",rad2deg(t->angle));
 
-	switch( t->type ) {
-	  case 0:       /* left justified */
-	     fprintf(tfp,"  label.urt(p,(%.2lf,%.2lf)) ",fig2bp(t->base_x),
-	        y_off(fig2bp(t->base_y)));
+    /* To put the text at the correct position, we must have
+       the left anchor point of the text; this point must
+       be calculated when the text is centered or right justified.
+       This also avoids mistakes with rotated text.
+       To get the left anchor point of right justified [centered] text,
+       we have to walk down the whole [the half] line of the text to the
+       beginning of the label. In the case of rotated text, this can be
+       calculated with the cos and sin of the rotation angle.*/
+    if ( t->type == 0) {
+	/* left justified */
+	    fprintf(tfp,"  label.urt(p,((%.2lf,%.2lf))+llcorner p) ",
+		    fig2bp(t->base_x), y_off(fig2bp(t->base_y)));
 	     fprintf(tfp,"withcolor %s;\n",genmp_pencolor(t->color));
-	     break;
-	  case 1:	/* centered */
-	     fprintf(tfp,"  label.top(p,(%.2lf,%.2lf)) ",fig2bp(t->base_x),
-	        y_off(fig2bp(t->base_y)));
+    } else if (t->type == 1) {
+	/* centered */
+	fprintf(tfp,"  label.urt(p,((%.2lf,%.2lf))+xpart (lrcorner q - llcorner q)*(-cosd %.2lf,-sind %.2lf)/2+llcorner p) ",
+		fig2bp(t->base_x), y_off(fig2bp(t->base_y)),
+		rad2deg(t->angle),rad2deg(t->angle));
 	     fprintf(tfp,"withcolor %s;\n",genmp_pencolor(t->color));
-	     break;
-	  case 2:	/* right justified */
-	     fprintf(tfp,"  label.ulft(p,(%.2lf,%.2lf)) ",fig2bp(t->base_x),
-	        y_off(fig2bp(t->base_y)));
+    } else if (t->type == 2) {
+	/* right justified */
+	fprintf(tfp,"  label.urt(p,((%.2lf,%.2lf))+xpart (lrcorner q - llcorner q)*(-cosd %.2lf,-sind %.2lf)+llcorner p) ",
+		fig2bp(t->base_x), y_off(fig2bp(t->base_y)),
+		rad2deg(t->angle),rad2deg(t->angle));
 	     fprintf(tfp,"withcolor %s;\n",genmp_pencolor(t->color));
-	     break;
-	  default:
+    } else {
 	     fprintf(tfp,"  show \"This Text object is not supported!\"\n");
 	}
+
 	fprintf(tfp,"%% End text object\n");
+
 	return;
 }
+
+
 
 char *
 genmp_pencolor(c)
@@ -759,32 +1104,68 @@ F_arrow *a;
 
 
 void
-genmp_writefontinfo(psize,font,name)
+genmp_writefontmacro_latex(t,name)
+F_text *t;
+char *name;
+{
+    /* Code inherited from genlatex.c, and modified*/
+    int texsize;
+    double baselineskip;
+
+
+    texsize = TEXFONTMAG(t);
+    baselineskip = texsize * 1.2;
+    texsize *= BPperINCH/FIGSperINCH;
+    baselineskip *= BPperINCH/FIGSperINCH;
+
+    fprintf(tfp,"  verbatimtex\n");
+    fprintf(tfp, "   \\def\\%s{%%\n", name);
+
+    /* not default font: set the font and font size. */
+    if (! isdefaultfont (t->flags, t->font)) {
+#ifdef NFSS
+	fprintf(tfp,"       \\SetFigFont{%d}{%.1f}{%s}{%s}{%s}%%\n",
+		texsize, baselineskip,
+		TEXFAMILY(t->font),TEXSERIES(t->font),TEXSHAPE(t->font));
+#else
+	fprintf(tfp, "\\SetFigFont{%d}{%.1f}{%s}%%\n",
+		texsize, baselineskip, TEXFONT(t->font));
+#endif
+    }
+
+    /* default font: set the font size only. */
+    else {
+	fprintf(tfp,"       \\SetFigFontSize{%d}{%.1f}%%\n",
+		texsize, baselineskip);
+    }
+
+    fprintf(tfp, "    }%%\n");
+    fprintf(tfp,"  etex;\n");
+}
+
+
+void
+genmp_writefontmacro_tex(psize,font,name)
 double psize;
 char *font, *name;
 {
    double ten, seven, five;
 
 /* For some reason, fonts are bigger than they should be */
-	psize *= BPperINCH/FIGSperINCH;
+	psize *= mag * BPperINCH/FIGSperINCH;
 
 	ten = psize; seven = psize*.7; five = psize*.5;
 	fprintf(tfp,"  verbatimtex\n");
 	fprintf(tfp,"    \\font\\%s=%s at %.2lfpt\n",name,font,psize);
-   fprintf(tfp,"    \\font\\tenrm=cmr10 at %.2lfpt \\font\\sevenrm=cmr7 \
-at %.2lfpt\n",ten,seven);
-   fprintf(tfp,"    \\font\\fiverm=cmr5 at %.2lfpt \\font\\teni=cmmi10 \
-at %.2lfpt\n",five,ten);
-   fprintf(tfp,"    \\font\\seveni=cmmi7 at %.2lfpt \\font\\fivei=cmmi5 \
-at %.2lfpt\n",seven,five);
-   fprintf(tfp,"    \\font\\tensy=cmsy10 at %.2lfpt \\font\\sevensy=cmsy7 \
-at %.2lfpt\n",ten,seven);
-   fprintf(tfp,"    \\font\\fivesy=cmsy5 at %.2lfpt \\textfont0\\tenrm\n", five);
-   fprintf(tfp,"    \\scriptfont0\\sevenrm \\scriptscriptfont0\\fiverm\n");
-   fprintf(tfp,"    \\textfont1\\teni \\scriptfont1\\seveni \
-\\scriptscriptfont1\\fivei\n");
-   fprintf(tfp,"    \\textfont2\\tensy \\scriptfont2\\sevensy \
-\\scriptscriptfont2\\fivesy\n");
+	fprintf(tfp,"    \\font\\tenrm=cmr10 at %.2lfpt\\font\\sevenrm=cmr7 at %.2lfpt\n",ten,seven);
+	fprintf(tfp,"    \\font\\fiverm=cmr5 at %.2lfpt\\font\\teni=cmmi10 at %.2lfpt\n",five,ten);
+	fprintf(tfp,"    \\font\\seveni=cmmi7 at %.2lfpt\\font\\fivei=cmmi5 at %.2lfpt\n",seven,five);
+	fprintf(tfp,"    \\font\\tensy=cmsy10 at %.2lfpt\\font\\sevensy=cmsy7 at %.2lfpt\n",ten,seven);
+	fprintf(tfp,"    \\font\\fivesy=cmsy5 at %.2lfpt\n", five);
+	fprintf(tfp,"    \\def%s{%%\n", MATHFONTMACRO);
+	fprintf(tfp,"      \\textfont0\\tenrm\\scriptfont0\\sevenrm\\scriptscriptfont0\\fiverm\n");
+	fprintf(tfp,"      \\textfont1\\teni\\scriptfont1\\seveni\\scriptscriptfont1\\fivei\n");
+	fprintf(tfp,"      \\textfont2\\tensy\\scriptfont2\\sevensy\\scriptscriptfont2\\fivesy}\n");
 	fprintf(tfp,"  etex;\n");
 }
 
@@ -816,6 +1197,7 @@ int actual_depth;
 struct driver dev_mp = {
 	genmp_option,
 	genmp_start,
+	gendev_null,
 	genmp_arc,
 	genmp_ellipse,
 	genmp_line,
@@ -825,3 +1207,9 @@ struct driver dev_mp = {
 	INCLUDE_TEXT
 };
 
+
+void
+stradd(dst,src)
+char* dst, src;
+{
+}

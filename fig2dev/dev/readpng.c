@@ -1,15 +1,15 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1989-2001 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -29,7 +29,6 @@ read_png(file,filetype,pic,llx,lly)
     int		   *llx, *lly;
 {
     register int    i, j;
-    int		    status;
     png_structp	    png_ptr;
     png_infop	    info_ptr;
     png_infop	    end_info;
@@ -107,6 +106,11 @@ read_png(file,filetype,pic,llx,lly)
     if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA)
 	png_set_bgr(png_ptr);
 
+    /* if user wants grayscale (-N) then map to gray */
+    if (grayonly &&
+	(color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA))
+	    png_set_rgb_to_gray(png_ptr, 1, 0.3, 0.59);
+
     /* strip 16-bit RGB values down to 8-bit */
     if (bit_depth == 16)
 	png_set_strip_16(png_ptr);
@@ -139,6 +143,12 @@ read_png(file,filetype,pic,llx,lly)
 	    pic->cmap[RED][i]   = palette[i].red;
 	    pic->cmap[GREEN][i] = palette[i].green;
 	    pic->cmap[BLUE][i]  = palette[i].blue;
+	    /* if user wants grayscale (-N) then map to gray */
+	    if (grayonly)
+		pic->cmap[RED][i] = pic->cmap[GREEN][i] = pic->cmap[BLUE][i] = 
+		    (int) (rgb2luminance(pic->cmap[RED][i]/256.0, 
+					pic->cmap[GREEN][i]/256.0, 
+					pic->cmap[BLUE][i]/256.0)*256.0);
 	}
     }
     rowsize = w;

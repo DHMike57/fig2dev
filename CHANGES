@@ -3,9 +3,163 @@ Changes to Transfig/fig2dev
 Version 3.2
 ===============================================================================
 
-NEW FEATURES
+Patchlevel 4 (December 2002)
 
+NEW FEATURES
+	o SVG (Scalable Vector Graphics) driver from Anthony Starks, modified
+	  by Brian Smith and greatly enhanced by Martin Kroeker
+	o ASCII and Binary (TIFF) preview bitmap options for PostScript and EPS
+	  export.  The latter is useful for Microsoft products which require a
+	  TIFF preview to display EPS on the screen. Use -A for ASCII preview,
+	  use -C for color TIFF or -T for monochrome TIFF preview.  These all
+	  require ghostscript to work.  If you don't have ghostscript, the
+	  export will continue without a preview.
+	o JPEG encoding (DCT) now used for EPS/PostScript output. This greatly
+	  reduces the size of the generated PostScript.  Gleaned with permission
+	  from jpeg2ps program written by Thomas Merz.
+	  As a result of this, the jpeg library is no longer needed, although xfig
+	  still needs it for JPEG support.
+	o Background (-g) option for tk export honored now
+	o Additional JPEG file format (EXIF) added. These usually come from
+	  digital cameras.
+	o -N Option to convert colors to grayscale on export.
+	o -b option for CGM export to produce binary CGM using ralcgm. You must,
+	  of course have ralcgm installed on your system to use this.
+	o Translations of LATEX.AND.XFIG document into two popular Chinese
+	  encodings (GB2312 and Big5).  These are called LATEX.AND.XFIG.zh_CN
+	  and LATEX.AND.XFIG.zh_TW respectively.
+	  From Mendel Chan
+	o The default for multi-page output (PostScript) is to NOT overlap pages
+	  now.  This is to allow multiple, independent pages of figures.
+	  The -O option has been added to force page overlap, e.g. to cut and
+	  paste pages together to make posters (the original use for multipage).
+	o Added EMF (Enhanced MetaFile) conversion genemf.c
+	  from Mike Schrick (based on the CGM driver from Philippe Bekaert
+	o New grid option (-G) to draw grid on page.  Specify minor and/or major
+	  tick spacing in one of several units.  For example, "-G .25:1cm" draws
+	  a thin, gray line every .25 cm and a thicker gray line every 1 cm.
+	  Specifying "-G 1in" draws a thin line every 1 inch.  See man pages for
+	  all units.  Fractions may be used, e.g. -G 1/16:1/2in will make a thin
+	  line every 1/16 (0.0625) inch and a thick line every 1/2 (0.5) inch.
+	  Only implemented in PostScript, EPS, PDF, and bitmap (GIF, JPEG, etc)
+	  drivers for now.
+	o Perk/Tk driver from Slaven Rezic (rezic@onlineoffice.de)
+	o Added options -B and -R to the EPS driver. This enables the user to
+	  clip out a region for display in the EPS file. Very convenient when
+	  using xfig via pstoedit as a postprocessor of ps files and one wants
+	  to maintain the preview of the file in lyx. See the man for additional
+	  information.  From Morten S. Nielsen <msn@ipt.dtu.dk>
+	o New PostScript DSC directives to specify page size.  Doesn't select
+	  tray, which is device dependent, but works better with ghostscript,
+	  ghostview and other PostScript interpreters.  
+	o fig2dev now includes all "special" (LaTeX) texts that don't have any
+	  backslashes ("\") in them in the bounding box.
+	o genepic and genpictex drivers updated for I18N (internationalization)
+	  From T. Sato
+	o Glyphs for Hungarian, Polish, Romanian, Slovak and Slovenian
+	  are essentially the same as Czech (ISO-Latin 2) so symbolic links are
+	  created for those .ps files (hu_HU.ps, pl_PL.ps, ro_RO.ps, sk_SK.ps
+	  and sl_SI.ps are linked to cs_CZ.ps)
+	o fig2dev prepends any path included in the .fig filename to imported
+	  image file paths (only if imported image path isn't already absolute).
+	o transfig now reports when it is renaming an existing makefile or TeX
+	  macro file to a backup (e.g. Makefile to Makefile~)
+	o now uses Thomas Merz' jpeg2ps for imported jpeg files when exporting
+	  to PS/EPS.  This is much more compact than the runlength encoding
+	  which is used for other bitmaps.  Many thanks to Thomas for his
+	  permission to use jpeg2ps.
+	o New option for binary CGM export. The ralcgm program is required for
+	  this option.  See ftp://ftp.cc.rl.ac.uk/pub/graphics/ralcgm/
+	o New -E option to set encoding for pictex, latex, pstex_t and epic
+	  text to ISO8859-1 (the default) or ISO8859-2
+	o Added "install.all" option to make to install man pages in addition to
+	  executables etc.
+	o If output file ends in ".fig", fig2dev prints error message to stderr
+	  and exits.
+	o New encoding option (-E) for ISO-8859-1 or ISO-8859-2 from Tomas Kopal
+	o Exporting to tk now supports imported PPM images in addition to GIF
+	  and XPM
+	o Comments added to EPS and PostScript output so MetaPost can group parts of
+	  figure according to depths.  From Klaus Guntermann.
+	o New -F, -R and -t options for epic output (do "fig2dev -h" for info).
+	  From Gabriel Zachmann.
+
+BUGS FIXED
+	o When importing multiple GIF or PCX images, fig2dev would segfault on
+	  Linux.  This happened for two reasons: the GIF file was closed and
+	  reopened, which would result in a different file structure being
+	  closed by the calling routine, and a palette was being allocated for
+	  the PCX image and never used.
+	o In multi-page mode for PDF export, figure was shifted up too far.
+	o The color gold was in the wrong place for LaTeX special text.
+	o Various extraneous variables removed
+	o In multipage mode (PostScript export), if the figure is smaller than
+	  0.1 page, nothing was generated or printed.
+	o When exporting to EPS, the multipage flag was not cleared after
+	  reading the file (options are set before reading file).
+	o Bug in the -D option (export or exclude certain depths) where it
+	  wouldn't accept 0 as a depth specifier.
+	o Extra "char *c" definition in fig2dev/dev/readeps.c
+	o Possible data type problem with result of floor() in readeps.c - now
+	  coerced with (int)
+	o fig2dev would sometimes emit the "transparentimage" for JPEG images
+	  (it's only for GIF with a transparent color)
+	o Minor adjustment made in tk driver which fixes problem where objects
+	  extend beyond the canvas, when the objects are very far away from the
+	  origin (50 inches or more)
+	o Line join was not explicitely set to "miter" and line cap was not set
+	  to "butt" explicitely at the beginning.  This caused problems if the
+	  figure was imported into another figure because settings from
+	  importing document were used
+	o PNGINC Imakefile variable wasn't used
+	o Minimum length (MIN_LEN) for "LaTeX short lines" was calculated
+	  incorrectly (was using 13 pixels instead of 13 points as per Lamport)
+	  Also, actual length of line was compared instead of horizontal
+	  component (or vertical component for vertical lines)
+	  Fixed by Jacques Lefrere
+	o The lines in three patterns: 45 degrees left, 45 degrees right and
+	  45 degrees crosshatch were too close together compared to the xfig
+	  (on-screen) version
+	o Pagesize may have been one pixel too small when exporting to PDF
+	o Text font sizes for latex, pic and tpic output were incorrectly scaled
+	  for metric Fig files (their units are points, not inches or cm)
+	o Added "&& !defined(__CYGWIN__) && !defined(__DARWIN__)" to declaration
+	  of sys_errlist[], errno and sys_nerr.  The __DARWIN__ is for Mac OSX
+	  using X.
+	o Font size was incorrect for CGM output when exporting Fig 2.x files
+	o Bug introduced in 3.2.3d shifted rotated imported pictures
+	o Missing % from \end{picture} in generated latex code. This caused bad
+	  extra spacing when the generated file is \input into a minipage or a
+	  framebox, for instance.
+	  Fix from Matthias Koeppe
+	o Not really a bug, but the text() proc in fig2dev/dev/gengcm.c was
+	  renamed to cgm_text because of a bug in IBM's compiler which turns
+	  text() into a .text assembler directive
+	o Options (fig2dev -h) incorrectly had "-p name" for pstex options
+	  instead of pstex_t
+	o Updated language options in transfig to current set in fig2dev
+	o Incorrect adjustment of scale and canvas offset for tk and ptk
+	  (perl/tk) export
+	o In the PIC driver, the macro PICFONTMAG should return int, but was
+	  returning double, which then trashed following arguments to fprintf.
+	o Extraneous semi-colon (;) after closing brace } and/or empty default
+	  case (no trailing semi-colon) causes HP ANSI compiler to complain
+	o Moved landscape rotation of page and Y-flip scaling inside
+	  %%BeginPageSetup %%EndPageSetup block according to DSC, which says
+	  that page orientation code should be there.
+	o ANSI style prototype for rgb2luminance did not match proc declaration
+	o When a compound object included lines that have arrowheads and large
+	  coordinates (>= 100000), an incorrect bounding box was produced.
+	  This same bug was in xfig 3.2.3d and earlier.
+	o Output file was being closed twice in CGM and PDF driver, causing
+	  segfault on some systems.
+	o In the eepic driver, the thickness of a line may be incorrect if it a
+	  has backward arrowhead of different thickness.
+
+-----------------------------
 Patchlevel 3d: (May 29, 2001)
+
+NEW FEATURES
 
 	o MetaPost driver (-L mp or -L mmp) ported from fig2MP by Klaus
 	  Guntermann (guntermann@iti.informatik.tu-darmstadt.de).  fig2MP was
@@ -141,7 +295,8 @@ BUGS FIXED
 	  portable to Cygwin environment
 	o fig2dev now uses gunzip instead of uncompress to uncompress .Z files
 	  to be more portable for Cygwin environment
-	o Papersize sometimes truncated when reading Fig file
+	o Papersize sometimes truncated when reading Fig file (e.g. would get
+	  "Lette" instead of "Letter")
 
 ----------------------------
 Patchlevel 3  (Jan 14, 2000)
@@ -307,6 +462,7 @@ NEW FEATURES
 	  See the README file.
 	o tiff (no compression) and AutoCad (acad) output languages added
 	o image quality (0-100) is selectable for JPEG export (-q option)
+	o PNG export driver added
 
 BUGS FIXED
 	o changed XPM variables to default X include/library in fig2dev/Imakefile
@@ -441,7 +597,7 @@ o erroneous "extern" declarations for cur_capstyle and cur_joinstyle in two
 o bug in skip_comment() which prevented some machines from seeing the end of
 	file, giving erroneous "Incorrect format" error
 
----------------------------------------------------------------------------
+---------------------------
 Patchlevel 2 (Aug 16, 1995)
 
 New Features:
@@ -497,7 +653,7 @@ o getopt.c not needed for Solaris - #if (defined(...)) added in Imakefile
 o removed duplicate #define of FALSE, TRUE and DEFAULT_FONT_SIZE in various
 	drivers
 
----------------------------------------------------------------------------
+---------------------------
 Patchlevel 1 (Jan 24, 1995)
 
 Bugs Fixed:
@@ -528,7 +684,7 @@ o variable in fig2dev/Imakefile and fig2dev/dev/Imakefile for include
 	directory for xpm files if your xpm headers are not in the default X11
 	include directory
 
----------------------------------------------------------------------------
+--------------------------
 Patchlevel 0 (Jan 9, 1995)
 
 o NOTE:	An error in xfig version 3.0.0 incorrectly positioned objects on the
@@ -663,7 +819,7 @@ o SUBDIR fig2dev/dev was missing from top-level Imakefile caused problems
 	where make would say something like "No rule to make target
 	dev/libtransfig.a"
 
----------------------------------------------------------------------------
+----------------------
 Transfig version 2.1.7
 
 o no longer writes over input file if there is an error in the command line
@@ -701,7 +857,7 @@ o removed "extern coord_system" from fig2dev.h (wasn't used by fig2dev)
 o SPECIAL_CHAR split into three strings for systems which can't handle one
 o -P flag dissappeared from eepic output language - reinstated
 
----------------------------------------------------------------------------
+-------------
 Version 2.1.6
 
 o Courier-BoldItalic changed to Courier-BoldOblique for PostScript fonts

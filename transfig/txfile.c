@@ -7,10 +7,10 @@
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -37,22 +37,46 @@ argument *arg_list;
 	if ( arg_l->tolang == to ) break;
 	
      if ( arg_l == a )
-	switch (to)
-	{
-	case box:
+	switch (to) {
+	  case box:
 		fprintf(tx, "\\typeout{TransFig: null figures.}\n");
 		texfonts = 0;
 		break;
 
-	case eepicemu:
+	  case cgm:
+	  case emf:
+	  case gif:
+	  case ibmgl:
+	  case jpeg:
+	  case map:
+	  case mf:
+	  case mmp:
+	  case mp:
+	  case pcx:
+	  case pdf:
+	  case pic:
+	  case png:
+	  case ppm:
+	  case ptk:
+	  case sld:
+	  case textyl:
+	  case tiff:
+	  case tk:
+	  case xbm:
+	  case xpm:
+		fprintf(tx, "\\typeout{TransFig: figures in %s.}\n", lname[(int)to]);
+		texfonts = 0;
+		break;
+
+	  case eepicemu:
 		to = eepicemu;
 
-	case eepic:
+	  case eepic:
 #ifdef eemulation
 		to = eepicemu;
 #endif
 
-	case epic:
+	  case epic:
 		fprintf(tx, "\\typeout{TransFig: figures in %s.}\n",
 							lname[(int)to]);
 		if (to == eepicemu || to == eepic)
@@ -60,11 +84,11 @@ argument *arg_list;
 		fprintf(tx, "\\%s{%s}\n",INCLFIG, lname[(int)to]);
 		break;
 
-	case latex:
+	  case latex:
 		fprintf(tx, "\\typeout{TransFig: figures in LaTeX.}\n");
 		break;
 
-	case pictex:
+	  case pictex:
 		fprintf(tx, "\\typeout{TransFig: figures in PiCTeX.}\n");
 		fprintf(tx, "\
 \\ifx\\fivrm\\undefined\n\
@@ -75,38 +99,34 @@ argument *arg_list;
 \\input{postpictex}\n");
 		break;
 
-	case postscript:
+	  case ps:
 		fprintf(tx, "\\typeout{TransFig: figures in PostScript.}\n");
 		texfonts = 0;
 		break;
 
-	case encps:
+	  case eps:
 		fprintf(tx, "\\typeout{TransFig: figures in EPS.}\n");
 		texfonts = 0;
 		break;
 
-	case pstex: 
+	  case pstex: 
 		fprintf(tx, "\\typeout{TransFig: figure text in LaTeX.}\n");
 		fprintf(tx, "\\typeout{TransFig: figures in PostScript.}\n");
 		break;
 
-	case psfig:
+	  case psfig:
 		fprintf(tx, "\\typeout{TransFig: figures in PostScript w/psfig.}\n");
 		fprintf(tx, "\\%s{psfig}\n",INCLFIG);
 		texfonts = 0;
 		break;
 
-	case textyl:
-		fprintf(tx, "\\typeout{TransFig: figures in TeXtyl.}\n");
-		break;
-
-	case tpic:
+	  case tpic:
 		fprintf(tx, "\\typeout{TransFig: figures in tpic.}\n");
 		texfonts = 0;
 		break;
 
-	default:
-		fprintf(tx, "Unknown graphics language %s\n", lname[(int)to]);
+	  default:
+		fprintf(stderr, "Unknown graphics language %s\n", lname[(int)to]);
 		exit(1);
 		break;
 

@@ -3,16 +3,16 @@
  * Copyright (c) 1998 by Mike Markowski
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -24,11 +24,6 @@
 
 #include "fig2dev.h"
 #include "object.h"
-
-#ifndef MIN
-#define MIN(A, B) ((A) < (B) ? (A) : (B))
-#define MAX(A, B) ((A) > (B) ? (A) : (B))
-#endif
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
@@ -67,6 +62,15 @@ gentk_option(opt, optarg)
 char opt, *optarg;
 {
     switch (opt) {
+	case 'g':			/* background color */
+		if (lookup_X_color(optarg,&background) >= 0) {
+		    bgspec = True;
+		} else {
+		    fprintf(stderr,"Can't parse color '%s', ignoring background option\n",
+				optarg);
+		}
+		break;
+
 	case 'l':			/* landscape mode */
 		landscape = True;	/* override the figure file setting */
 		orientspec = True;	/* user-specified */
@@ -108,12 +112,14 @@ char opt, *optarg;
 void
 gentk_start(F_compound *objects)
 {
-	char		stfp[128];
+	char		stfp[1024];
 	float		wid, ht, swap;
 	struct paperdef	*pd;
+	char		bkgnd[20];
 
-	/* adjust ppi for the difference of screen dots to points */
-	ppi = ppi / mag * 80.0/72.0;
+	sprintf(stfp, "# Produced by fig2dev Version %s Patchlevel %s\n", VERSION, PATCHLEVEL);
+	niceLine(stfp);
+	ppi = ppi / mag * 80/72.0;
 
 	/* print any whole-figure comments prefixed with "#" */
 	if (objects->comments) {
@@ -121,11 +127,11 @@ gentk_start(F_compound *objects)
 	    print_comments("# ",objects->comments, "");
 	    fprintf(tfp,"#\n");
 	}
-	sprintf(stfp, "# Canvas name (\".c\") can be changed to anything you "
+	sprintf(stfp, "# The canvas name (\".c\") can be changed to anything you "
 		"like.  It only\n");
 	niceLine(stfp);
 	sprintf(stfp, "# occurs in the following three lines.  The canvas size"
-		" can be changed\n# as well.\n\n");
+		" can be changed as well.\n\n");
 	niceLine(stfp);
 
 	if ( !full_page ) {
@@ -175,7 +181,16 @@ gentk_start(F_compound *objects)
 	    }
 	}
 
-	sprintf(stfp, "canvas .c -width %.2fi -height %.2fi -bg ivory\n", wid, ht);
+	sprintf(stfp, "canvas .c -width %.2fi -height %.2fi", wid, ht);
+ 	if (bgspec) {
+	    sprintf(bkgnd, " -bg #%02x%02x%02x",
+ 	    background.red/256,
+ 	    background.green/256,
+ 	    background.blue/256);
+	    strcat(stfp, bkgnd);
+	}
+	strcat(stfp, "\n");
+
 	niceLine(stfp);
 	sprintf(stfp, "set %s .c\n\n", canvas+1);	/* "+1" to skip "$" */
 	niceLine(stfp);
@@ -184,14 +199,9 @@ gentk_start(F_compound *objects)
 	if ( !full_page ) {
 	    sprintf(stfp, "# Shift canvas by lower of bounding box\n");
 	    niceLine(stfp);
-	    /* I have no idea why we have to correct this value by 1.125.  The "correct" 
-		factor is 16.6667 (1200/72points that we are using for the scroll 
-		increments), but for some reason the canvas is not using 72dpi for 
-		points but 64? so we need to correct by 1.125 to get 14.82 as 
-		the final factor */
-	    sprintf(stfp, "$xfigCanvas xview scroll %d u\n",round(llx/14.82));
+	    sprintf(stfp, "$xfigCanvas xview scroll %d u\n",round(llx/16.45*mag));
 	    niceLine(stfp);
-	    sprintf(stfp, "$xfigCanvas yview scroll %d u\n",round(lly/14.82));
+	    sprintf(stfp, "$xfigCanvas yview scroll %d u\n",round(lly/16.45*mag));
 	    niceLine(stfp);
 	}
 
@@ -342,27 +352,29 @@ drawBitmap(F_line *l)
 	dx = l->points->next->next->x - l->points->x;
 	dy = l->points->next->next->y - l->points->y;
 	if (!(dx >= 0. && dy >= 0.))
-	    fprintf(stderr, "drawBitmap: rotated bitmaps not supported by Tk.\n");
+	    fprintf(stderr, "Rotated images not supported by Tk.\n");
 
 	/* see if GIF first */
 
 	if ((fd=open_picfile(p->file, &filtype, True, xname)) == NULL) {
-	    fprintf(stderr,"drawBitmap: can't open bitmap file %s\n",p->file);
+	    fprintf(stderr,"Can't open image file %s\n",p->file);
 	    return;
 	}
 
 	/* read header */
 
-	stat = ReadOK(fd,buf,6);
+	stat = ReadOK(fd,buf,7);
 	if (!stat) {
-		fprintf(stderr,"drawBitmap: Bitmap file %s too short\n",p->file);
+		fprintf(stderr,"Image file %s too short\n",p->file);
 		close_picfile(fd,filtype);
 		return;
 	}
 
-	if (strncmp((char *) buf,"GIF",3) == 0) {
-	    /* GIF allright, create the image command */
-	    /* first make a name without the .gif part */
+	/* see if GIF or PPM (ASCII or binary) */
+	if ((strncmp((char *) buf,"GIF",3) == 0) || 
+	    (strncmp((char *) buf,"P3\n",3) == 0) || (strncmp((char *) buf,"P6\n",3) == 0)) {
+	    /* GIF or PPM allright, create the image command */
+	    /* first make a name without the suffix */
 	    char pname[PATH_MAX], *dot;
 
 	    close_picfile(fd,filtype);
@@ -400,7 +412,7 @@ drawBitmap(F_line *l)
 		}
 		niceLine("\n");
 	    } else
-		fprintf(stderr, "drawBitmap: only X bitmap picture objects "
+		fprintf(stderr, "Only X bitmap and GIF picture objects "
 			"are supported in Tk canvases.\n");
 	    close_picfile(fd,filtype);
 	}
@@ -421,8 +433,7 @@ drawBitmap(F_line *l)
 void
 gentk_text(F_text * t)
 {
-	char		stfp[2048], *tpos;
-	float           y;
+	char		stfp[2048];
 	int		i, j;
 
 	/* I'm sure I'm just too dense to have seen a better way of doing this... */
@@ -1299,7 +1310,8 @@ tkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
 	niceLine(stfp);
 	sprintf(stfp, " %fi %fi", X(p->x), Y(p->y));
 	niceLine(stfp);
-	for ( /* No op. */ ; q != NULL; q = q->next) {
+	/* don't emit last coords - just repeat of first */
+	for ( /* No op. */ ; q->next != NULL; q = q->next) {
 		sprintf(stfp, " %fi %fi", X(q->x), Y(q->y));
 		niceLine(stfp);
 	}
@@ -1401,7 +1413,7 @@ stippleFilename(int patternIndex)
  *   n i c e L i n e ( )
  *
  *   Instead of directly calling fprintf()'s, this routine is used so
- *   that lines are printed that are 70 characters long, give or take
+ *   that lines are printed that are 80 characters long, give or take
  *   a handful.  Otherwise - spline routines in particular - will generate
  *   humongously long lines that are a pain in the butt to edit...
  */
@@ -1420,7 +1432,7 @@ niceLine(char *s)
 			inQuote ^= 1;	/* Flip between 0/1. */
 			putc(s[i], tfp);
 			pos++;
-		} else if (!inQuote && (pos > 70) && (s[i] == ' ')) {
+		} else if (!inQuote && (pos > 80) && (s[i] == ' ')) {
 			fprintf(tfp, " \\\n  ");
 			pos = 2;
 		} else {
@@ -1443,6 +1455,7 @@ niceLine(char *s)
 struct driver   dev_tk = {
 	gentk_option,
 	gentk_start,
+	gendev_null,
 	gentk_arc,
 	gentk_ellipse,
 	gentk_line,

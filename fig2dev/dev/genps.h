@@ -2,16 +2,16 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -23,6 +23,7 @@
 
 extern Boolean	epsflag;	/* to distinguish PS and EPS */
 extern Boolean	pdfflag;	/* to distinguish PDF and PS/EPS */
+extern Boolean	tiffpreview;	/* add a TIFF preview? */
 
 extern void	genps_grid();
 extern void	genps_arc();
@@ -167,7 +168,7 @@ $F2psDict /mtrx matrix put\n\
   0 1 4 index length 2 sub {\n\
 				% string proc char idx\n\
     % Find the n+1th character in the string\n\
-    3 index exch 1 add get	% string proe char char+1\n\
+    3 index exch 1 add get	% string proc char char+1\n\
     exch 2 copy			% strinq proc char+1 char char+1 char\n\
     % Now show the nth character\n\
     PATsstr dup 0 4 -1 roll put	% string proc chr+1 chr chr+1 (chr)\n\
@@ -502,13 +503,10 @@ end\n\
 /Multi 2 def\n\
 /PaintData [\n\
   { clippath } bind\n\
-  { 32 32 true [ 32 0 0 -32 0 32 ]\n\
-	{<808080804040404020202020101010100808080804040404\n\
-	020202020101010180808080404040402020202010101010\n\
-	080808080404040402020202010101018080808040404040\n\
-	202020201010101008080808040404040202020201010101\n\
-	808080804040404020202020101010100808080804040404\n\
-	0202020201010101>}\n\
+  { 20 20 true [ 20 0 0 -20 0 20 ]\n\
+	{<8020004010002008001004000802000401000200\n\
+	8001004000802000401080200040100020080010\n\
+	0400080200040100020080010040008020004010>}\n\
      imagemask } bind\n\
 ] def\n\
 /PaintProc {\n\
@@ -533,13 +531,10 @@ end\n\
 /Multi 2 def\n\
 /PaintData [\n\
   { clippath } bind\n\
-  { 32 32 true [ 32 0 0 -32 0 32 ]\n\
-	{<010101010202020204040404080808081010101020202020\n\
-	404040408080808001010101020202020404040408080808\n\
-	101010102020202040404040808080800101010102020202\n\
-	040404040808080810101010202020204040404080808080\n\
-	010101010202020204040404080808081010101020202020\n\
-	4040404080808080>}\n\
+  { 20 20 true [ 20 0 0 -20 0 20 ]\n\
+	{<0040100080200100400200800401000802001004\n\
+	0020080040100080200000401000802001004002\n\
+	0080040100080200100400200800401000802000>}\n\
      imagemask } bind\n\
 ] def\n\
 /PaintProc {\n\
@@ -564,13 +559,10 @@ end\n\
 /Multi 2 def\n\
 /PaintData [\n\
   { clippath } bind\n\
-  { 32 32 true [ 32 0 0 -32 0 32 ]\n\
-	{<828282824444444428282828101010102828282844444444\n\
-	828282820101010182828282444444442828282810101010\n\
-	282828284444444482828282010101018282828244444444\n\
-	282828281010101028282828444444448282828201010101\n\
-	828282824444444428282828101010102828282844444444\n\
-	8282828201010101>}\n\
+  { 20 20 true [ 20 0 0 -20 0 20 ]\n\
+	{<8020004050102088201104400a02800401000a02\n\
+	8011044020882040501080200040501020882011\n\
+	04400a02800401000a0280110440208820405010>}\n\
      imagemask } bind\n\
 ] def\n\
 /PaintProc {\n\

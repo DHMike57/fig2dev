@@ -7,10 +7,10 @@
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -37,19 +37,43 @@ char *txfile = "transfig.tex";
 char *input = "";
 int  altfonts = 0;
 
+/* output languages */
+/* Warning - if this list is changed the enum language list in transfig.h must be changed too */
+
 char *lname[] = {
-	"box",
-	"epic",
-	"eepic",
-	"eepicemu",
-	"latex",
-	"pictex",
-	"ps",
-	"eps",
-	"psfig",
-	"pstex",
-	"textyl",
-	"tpic"};
+		"box",
+		"cgm",
+		"eepic",
+		"eepicemu",
+                "emf",
+		"epic",
+		"eps",
+		"gif",
+		"ibmgl",
+		"jpeg",
+		"latex",
+		"map",
+		"mf",
+                "mmp",
+                "mp",
+		"pcx",
+		"pdf",
+		"pdftex",
+		"pic",
+		"pictex",
+		"png",
+		"ppm",
+		"ps",
+		"pstex",
+		"ptk",
+		"sld",
+		"svg",
+		"textyl",
+		"tiff",
+		"tk",
+		"tpic",
+		"xbm",
+		"xpm"};
 
 /* enum input {apg, fig, pic, ps}; */
 char *iname[] = {
@@ -66,7 +90,7 @@ char *argv[];
   FILE *mk, *tx;
   enum language tolang = epic;
   argument *a;
-  char c, *cp; 
+  char *cp; 
   char *arg_f = NULL, *arg_s = NULL, *arg_m = NULL, *arg_o = NULL, *argbuf;
 
   for ( optind = 1; optind < argc; optind++ ) {
@@ -165,6 +189,7 @@ char *argv[];
 	}
   }
 
+  /* remove any backup and move existing texfile to texfile~ */
   sysmv(txfile);
   if (strcmp(txfile,"-")==0)
 	tx = stdout;
@@ -174,6 +199,7 @@ char *argv[];
   }
   texfile(tx, input, altfonts, arglist);
 
+  /* remove any backup and move existing makefile to makefile~ */
   sysmv(mkfile);
   if (strcmp(mkfile,"-")==0)
 	mk = stdout;
@@ -192,7 +218,7 @@ char *s;
 
   /* aliases */
   if (!strcmp(s, "pic")) return tpic;
-  if (!strcmp(s, "postscript")) return postscript;
+  if (!strcmp(s, "postscript")) return ps;
   if (!strcmp(s, "latexps")) return pstex;
   if (!strcmp(s, "null")) return box;
 
@@ -226,7 +252,7 @@ char *arg_f, *arg_s, *arg_m, *arg_o, *arg;
   if (strip(arg, ".pic"))
   {
   	a->name = mksuff(arg, "");
-  	a->type = pic;
+  	a->type = i_pic;
 	a->tofig = PIC2FIG;
 	return a;
   }
@@ -235,7 +261,7 @@ char *arg_f, *arg_s, *arg_m, *arg_o, *arg;
   if (strip(arg, ".ps"))
   {
   	a->name = mksuff(arg, "");
-  	a->type = ps;
+  	a->type = i_ps;
  	return a;
   }
 
@@ -243,7 +269,7 @@ char *arg_f, *arg_s, *arg_m, *arg_o, *arg;
   if (strip(arg, ".eps"))
   {
   	a->name = mksuff(arg, "");
-  	a->type = eps;
+  	a->type = i_eps;
  	return a;
   }
 
@@ -251,7 +277,7 @@ char *arg_f, *arg_s, *arg_m, *arg_o, *arg;
   if (strip(arg, ".apg"))
   {
   	a->name = mksuff(arg, "");
-  	a->type = apg;
+  	a->type = i_apg;
 	a->tofig = APG2FIG;
  	return a;
   }
@@ -259,6 +285,6 @@ char *arg_f, *arg_s, *arg_m, *arg_o, *arg;
   /* Fig format */
   strip(arg, ".fig");
   a->name = mksuff(arg, "");
-  a->type = fig;
+  a->type = i_fig;
   return a;
 }

@@ -1,4 +1,4 @@
-.TH TRANSFIG 1 "Version 3.2.3d May 29, 2001"
+.TH TRANSFIG 1 "Version 3.2.4 November 2002"
 .SH NAME
 transfig \- creates a makefile for portable LaTeX figures
 .SH SYNOPSIS
@@ -17,19 +17,44 @@ PIC files are identified by the suffix ".pic";
 Fig files can be specified either with or without the suffix ".fig" .
 Transfig also creates a TeX macro file appropriate to the target language.
 .SH OPTIONS
-The \fIlanguage\fR specifier must be either
+The \fIlanguage\fR specifier must be one of
 .T
-.BR epic ,
-.BR eepic ,
-.BR eepicemu ,
-.BR latex ,
-.BR pictex ,
-.BR ps ,
-.BR eps ,
-.BR psfig ,
-.BR pstex ,
-.BR textyl ,
-.BR tpic ,
+.BR box,
+.BR cgm,
+.BR eepic,
+.BR eepicemu,
+.BR emf,
+.BR epic,
+.BR eps,
+.BR ge,
+.BR gif,
+.BR ibmgl,
+.BR jpeg,
+.BR latex,
+.BR map,
+.BR mf,
+.BR mmp,
+.BR mp,
+.BR pcx,
+.BR pdf,
+.BR pdftex,
+.BR pdftex_t,
+.BR pic,
+.BR pictex,
+.BR png,
+.BR ppm,
+.BR ps,
+.BR psfig,
+.BR pstex,
+.BR pstex_t,
+.BR ptk,
+.BR sld,
+.BR textyl, 
+.BR tiff,
+.BR tk,
+.BR tpic,
+.BR xbm,
+.BR xpm
 or
 .BR null .
 The specifier
@@ -53,8 +78,9 @@ is the default.
 .PP
 The names of the makefile and TeX macro file can be set with the
 -M and -T options.
-To send output to standard output for either option, use "-" for the filename.
 The default names are "Makefile" and "transfig.tex", respectively.
+If there is already an existing \fImakefile\fR in the directory, transfig
+first renames it to \fImakefile~\fR.  The same holds for any existing TeX macro file.
 If the -I option is specified, then a command to read in \fImacrofile\fR is
 	inserted into the TeX macro file.
 If the -V option is specified, the program version number is printed only.
@@ -79,14 +105,17 @@ they affect the translation of files which appear to their
 right in the argument list. 
 If no files are specified, then "*.fig" is assumed.
 .SH "SEE ALSO"
-fig(1),
-fig2dev(1),
-pic(1),
-pic2fig(1),
+fig(l),
+fig2dev(l),
+pic(l),
+pic2fig(l),
+xfig(l)
 .SH COPYRIGHT
-Copyright (c) 1985 Supoj Sutantavibul
+Copyright (C) 1985 Supoj Sutantavibul
 .br
-Copyright (c) 1991 Micah Beck
+Copyright (C) 1991 Micah Beck
+.br
+Parts Copyright (C) 1991-2002 Brian Smith
 .LP
 THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
 INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
@@ -96,16 +125,14 @@ DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
 TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 .LP
-The X Consortium, and any party obtaining a copy of these files from
-the X Consortium, directly or indirectly, is granted, free of charge, a
+Any party obtaining a copy of these files is granted, free of charge, a
 full and unrestricted irrevocable, world-wide, paid up, royalty-free,
 nonexclusive right and license to deal in this software and
 documentation files (the "Software"), including without limitation the
 rights to use, copy, modify, merge, publish, distribute, sublicense,
 and/or sell copies of the Software, and to permit persons who receive
 copies from any such party to do so, with the only requirement being
-that this copyright notice remain intact.  This license includes without
-limitation a license to do the foregoing actions under any patents of
-the party supplying this software to the X Consortium.
+that this copyright notice remain intact.
+
 .SH AUTHOR
 Micah Beck

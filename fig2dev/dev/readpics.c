@@ -1,22 +1,24 @@
 /*
  * TransFig: Facility for Translating Fig code
  * Various copyrights in this file follow
- * Parts Copyright (c) 1994-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "fig2dev.h"
+
+char * xf_basename();
 
 /* 
    Open the file 'name' and return its type (pipe or real file) in 'type'.
@@ -49,28 +51,46 @@ open_picfile(name, type, pipeok, retname)
 	      ((strlen(name) > 2 && !strcmp(".z", name + (strlen(name)-2))))) {
 	sprintf(unc,"gunzip -q %s %s", gzoption, name);
 	*type = 1;
-    /* none of the above, see if the file with .Z or .gz or .z appended exists */
+    /* none of the above, see if the file with .gz, .z or .Z appended exists */
+    /* failing that, if there is an absolute path, strip it and look in current directory */
     } else {
+	/* check for .gz first */
 	strcpy(retname, name);
-	strcat(retname, ".Z");
+	strcat(retname, ".gz");
 	if (!stat(retname, &status)) {
+	    /* yes, found with .gz */
 	    sprintf(unc, "gunzip %s %s", gzoption, retname);
 	    *type = 1;
 	    name = retname;
 	} else {
+	    /* no, check for .z */
 	    strcpy(retname, name);
 	    strcat(retname, ".z");
 	    if (!stat(retname, &status)) {
+		/* yes, found with .z */
 		sprintf(unc, "gunzip %s %s", gzoption, retname);
 		*type = 1;
 		name = retname;
 	    } else {
+		/* no, check for .Z */
 		strcpy(retname, name);
-		strcat(retname, ".gz");
+		strcat(retname, ".Z");
 		if (!stat(retname, &status)) {
+		    /* yes, found with .Z */
 		    sprintf(unc, "gunzip %s %s", gzoption, retname);
 		    *type = 1;
 		    name = retname;
+		} else {
+		    /* can't find it, if there is an absolute path, strip it and look in
+		       current directory */
+		    if (strchr(name,'/')) {
+			/* yes, strip it off */
+			strcpy(retname, xf_basename(name));
+			if (!stat(retname, &status)) {
+			    *type = 0;
+			    strcpy(name, retname);
+			}
+		    }
 		}
 	    }
 	}
@@ -114,4 +134,21 @@ close_picfile(file,type)
 	fclose(file);
     else
 	pclose(file);
+}
+
+/* for systems without basename() (e.g. SunOS 4.1.3) */
+/* strip any path from filename */
+
+char *
+xf_basename(filename)
+    char	   *filename;
+{
+    char	   *p;
+    if (filename == NULL || *filename == '\0')
+	return filename;
+    if (p=strrchr(filename,'/')) {
+	return ++p;
+    } else {
+	return filename;
+    }
 }

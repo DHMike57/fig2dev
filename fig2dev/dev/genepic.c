@@ -3,16 +3,16 @@
  * Copyright (c) 1991 by Micah Beck
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -33,6 +33,16 @@
 
 /*====================================================================
   Changes:
+
+  Gabriel Zachmann <Gabriel.Zachmann@gmx.net>:
+  - remove \smash in text objects
+  - add option -F; this allows you to define the font in the latex file
+	before you \input the eepic file (except the font size).
+	You must not mix eepic files generated with and without the -F option.
+	However, I think this could be improved easily, I just don't speak TeX
+	well enough to feel confident enough to change the way \SetFigFont
+	is defined.
+  - add option -R: allows for rotated text.
 
   Version 3.1.2: <Aug 17, 1995>
   Changes from Andre Eickler (eickler@db.fmi.uni-passau.de)
@@ -79,13 +89,12 @@
 ====================================================================*/
 
   
-#include <varargs.h>
-#include <ctype.h>
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
 
-extern float THICK_SCALE;	/* ratio of dpi/80 */
+extern float	THICK_SCALE;	/* ratio of dpi/80 */
+extern Boolean	FontSizeOnly;	/* defined in setfigfont.c */
 
 #define DrawOutLine
 #ifdef DrawOutLine
@@ -124,6 +133,7 @@ struct fp_struct {
 typedef struct fp_struct FPoint;
 
 /* Local to the file only */
+static int	encoding;
 static double	Threshold;
 static Boolean	linew_spec;
 static int	CurWidth = 0;
@@ -203,6 +213,8 @@ char	*Postamble="\\end{center}\n\\end{document}\n";
 int	VarWidth=False;
 int	DashStretch=30;
 double	ArrowScale=1.0;
+int	AllowRotatedText = 0;
+
 
 void
 genepic_option(opt, optarg)
@@ -211,17 +223,29 @@ char opt, *optarg;
   	int loop, i;
 
         linew_spec = False;
+	FontSizeOnly = False;
 
         switch (opt) {
-	case 'A':
-	  ArrowScale = atof(optarg);
-	  break;
 
-	case 'a':
+	  case 's':
+	  case 'm':
+	    break;
+
+	  case 'A':
+	    ArrowScale = atof(optarg);
+	    break;
+
+	  case 'a':
 	    fprintf(stderr, "warning: genepic option -a obsolete\n");
 	    break;
 
-	case 'f':
+	  case 'E':
+	    encoding = atoi(optarg);
+	    if (encoding < 0 || encoding > 2)
+	      encoding = 1;
+	    break;
+
+	  case 'f':
 	    for ( i = 1; i <= MAX_FONT; i++ )
 		if ( !strcmp(optarg, texfontnames[i]) ) break;
 
@@ -237,28 +261,23 @@ char opt, *optarg;
 	    }
 	    break;
 
-        case 'l':
+          case 'l':
 	    linew_spec = True;
             LineThick = atoi(optarg);	/* save user's argument here */
             break;
 
-	case 'L':
+	  case 'L':
 	    for (loop=0; loop < 3; loop++) {
 	    	if (strcasecmp(optarg, Tlangkw[loop]) == 0) break;
 	    }
 	    TeXLang = loop;
 	    break;
 
-
-	case 's':
-	case 'm':
-	    break;
-
-	case 'P':
+	  case 'P':
 	    PageMode = 1;
 	    break;
 
-        case 'S':
+          case 'S':
             loop = atoi(optarg);
             if (loop < 8 || loop > 12) {
             	put_msg("Scale must be between 8 and 12 inclusively\n");
@@ -266,25 +285,33 @@ char opt, *optarg;
             }
             loop -= 8;
             mag = ScaleTbl[loop].mag;
-            font_size = ScaleTbl[loop].size;
+            font_size = (double) ScaleTbl[loop].size;
             break;
 
-        case 'v':
+          case 'v':
             Verbose = True;
             break;
 
-	case 'w':
-	case 'W':
+	  case 'W':
+	  case 'w':
 	    VarWidth = opt=='W';
 	    break;
 
-	case 't':
+	  case 't':
 	    DashStretch= atoi(optarg);
 	    if (DashStretch < -100)
 	      DashStretch = -100;
 	    break;
 
-	default:
+	  case 'F':
+	    FontSizeOnly = 1;
+	    break;
+
+	  case 'R':
+	    AllowRotatedText = 1;
+	    break;
+
+	  default:
 	    put_msg(Err_badarg, opt, "epic");
 	    exit(1);
         }
@@ -313,15 +340,9 @@ F_compound *objects;
 {
     int temp;
     F_point pt1, pt2;
-    F_arc *arc;
-    F_compound *comp;
-    F_ellipse *ell;
-    F_line *line;
-    F_spline *spl;
-    F_text *text;
 
     texfontsizes[0] = texfontsizes[1] =
-		TEXFONTSIZE(font_size?font_size:DEFAULT_FONT_SIZE);
+		TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
 
     /* print any whole-figure comments prefixed with "%" */
     if (objects->comments) {
@@ -331,15 +352,15 @@ F_compound *objects;
     }
 
     switch (TeXLang) {
-    case Epic:
+      case Epic:
         EllipseCmd = 1; /* Oval */
         LnCmd = "drawline";
         break;
-    case EEpic_emu:
-    case EEpic:
+      case EEpic_emu:
+      case EEpic:
         LnCmd = "path";
         break;
-    default:
+      default:
         put_msg("Program error in main\n");
         break;
     }
@@ -660,8 +681,6 @@ F_line *line;
     /* print any comments prefixed with "%" */
     print_comments("% ",line->comments,"");
 
-    set_linewidth(line->thickness);
-    set_style(line->style, line->style_val);
     p = line->points;
     q = p->next;
     convertCS(p);
@@ -670,12 +689,16 @@ F_line *line;
 	return;
     }
     convertCS(q);
+    /* first any backward arrowhead */
     if (line->back_arrow) {
 	draw_arrow_head(q, p, line->back_arrow->ht, line->back_arrow->wid,
 			line->back_arrow->type, line->back_arrow->style, 
 			line->back_arrow->thickness);
     	if (Verbose) fprintf(tfp, "%%\n");
     }
+    /* now set attributes */
+    set_linewidth(line->thickness);
+    set_style(line->style, line->style_val);
     if (line->type == T_ARC_BOX) { /* A box with rounded corners */
 
       if (TeXLang == Epic || /* Sorry, can't do more */
@@ -684,6 +707,11 @@ F_line *line;
 	fprintf(stderr, "Arc box not implemented; substituting box.\n");
 	line->type = T_BOX;
       } else {
+	if (TeXLang == Epic && (LineStyle != SOLID_LINE || line->fill_style != UNFILLED)) { 
+	    fprintf(stderr, "Arc boxes may only have solid lines and be unfilled.\n");
+	    LineStyle = SOLID_LINE;
+	    line->fill_style = UNFILLED;
+	}
 	if (Verbose) {
 	    fprintf(tfp, "%%\n%% An arcbox\n%%\n");
 	}
@@ -721,12 +749,12 @@ F_line *line;
 	    fprintf(tfp, "%%\n%% A box\n%%\n");
 	}
 	switch (LineStyle) {
-	case SOLID_LINE:
+	  case SOLID_LINE:
 	    if (UseBox == BothBoxType || UseBox == SolidLineBox) {
 	        boxflag = True;
 	    }
 	    break;
-	case DASH_LINE:
+	  case DASH_LINE:
 	    if (UseBox == BothBoxType || UseBox == DashLineBox) {
 	        boxflag = True;
 	    }
@@ -750,17 +778,17 @@ F_line *line;
 		   convertCS(q);
 	    }
 	    switch(LineStyle) {
-	    case SOLID_LINE:
+	      case SOLID_LINE:
 	        fprintf(tfp, "\\put(%d,%d){\\framebox(%d,%d){}}\n",
 	            llx, lly, urx-llx, ury-lly);
 	        break;
-	    case DASH_LINE:
+	      case DASH_LINE:
 		temp = (int) ((urx-llx) / DashLen);
 		dtemp = (double) (urx-llx) / temp;
 	        fprintf(tfp, "\\put(%d,%d){\\dashbox{%4.3f}(%d,%d){}}\n",
 	            llx, lly, dtemp , urx-llx, ury-lly);
 	        break;
-	    default:
+	      default:
 	        put_msg("Program Error! No other line styles allowed.\n");
 	        break;
 	    }
@@ -771,7 +799,7 @@ F_line *line;
     }
     set_pattern(line->fill_style, line->fill_color);
     switch (LineStyle) {
-    case SOLID_LINE:
+      case SOLID_LINE:
 	if (q->next != NULL && strcmp(LnCmd,"path")==0) {
 	    if (line->fill_style < UNFILLED)
 		line->fill_style = UNFILLED;
@@ -783,17 +811,17 @@ F_line *line;
 	    OutLine=1;
 #endif
 	break;
-    case DASH_LINE:
+      case DASH_LINE:
         if ((TeXLang==Epic || TeXLang ==EEpic_emu) && DashType == Economic) {
             fprintf(tfp, "\\drawline[-50]");
         } else {
 	    fprintf(tfp, "\\dashline{%4.3f}", DashLen);
 	}
 	break;
-    case DOTTED_LINE:
+      case DOTTED_LINE:
 	fprintf(tfp, "\\dottedline{%d}", DotDist);
 	break;
-    default:
+      default:
 	fprintf(stderr,"Only solid, dashed, and dotted line styles supported by epic(eepic)\n");
 	exit(1);
     }
@@ -831,6 +859,7 @@ F_line *line;
 	fprintf(tfp, "(%d,%d)\n", q->x, q->y);
     }
 #endif
+    /* finally, any forward arrowhead */
     if (line->for_arrow) {
 	draw_arrow_head(p, q, line->for_arrow->ht, line->for_arrow->wid,
 			line->for_arrow->type,line->for_arrow->style,
@@ -846,11 +875,11 @@ double dash_len;
     LineStyle = style;
     if (LineStyle == DASH_LINE) {
         switch (DashType) {
-        case DottedDash:
+          case DottedDash:
             LineStyle = DOTTED_LINE;
 	    DotDist = round(dash_len * DashScale);
             break;
-        default:
+          default:
             DashLen = round(dash_len * DashScale);
             break;
         }
@@ -1169,15 +1198,44 @@ F_ellipse *ell;
     }
 }
 
-extern char *ISOtoTeX[];
+
+void 
+setfigfont( text )
+    F_text *text;
+{
+    int texsize;
+    double baselineskip;
+
+    texsize = TEXFONTMAG(text);
+    baselineskip = (texsize * 1.2);
+
+#ifdef NFSS
+    if ( FontSizeOnly )
+	fprintf(tfp, "{\\SetFigFont{%d}{%.1f}",
+		texsize, baselineskip );
+    else
+	fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
+		texsize, baselineskip,
+		TEXFAMILY(text->font),TEXSERIES(text->font),
+		TEXSHAPE(text->font));
+#else
+    fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}",
+	    texsize, baselineskip, TEXFONT(text->font));
+#endif
+}
+
+
+extern char *ISO1toTeX[];
+extern char *ISO2toTeX[];
 
 void
 genepic_text(text)
-F_text *text;
+    F_text *text;
 {
     F_point pt;
     char *tpos, *esc_cp, *special_index;
     unsigned char   *cp;
+    int rot_angle = 0;
 
     /* print any comments prefixed with "%" */
     print_comments("% ",text->comments,"");
@@ -1186,38 +1244,43 @@ F_text *text;
     pt.y=text->base_y;
     convertCS(&pt);
     switch (text->type) {
-    case T_LEFT_JUSTIFIED:
-    case DEFAULT:
+      case T_LEFT_JUSTIFIED:
+      case DEFAULT:
 	tpos = "[lb]";
 	break;
-    case T_CENTER_JUSTIFIED:
+      case T_CENTER_JUSTIFIED:
 	tpos = "[b]";
 	break;
-    case T_RIGHT_JUSTIFIED:
+      case T_RIGHT_JUSTIFIED:
 	tpos = "[rb]";
 	break;
-    default:
+      default:
 	fprintf(stderr, "unknown text position type\n");
 	exit(1);
     }
-    fprintf(tfp, "\\put(%d,%d){\\makebox(0,0)%s{\\smash{",
-           pt.x, pt.y, tpos);
+    fprintf(tfp, "\\put(%d,%d){", pt.x, pt.y );
+    rot_angle = (int) (text->angle*(180.0/M_PI));
+    if ( AllowRotatedText && rot_angle )
+	fprintf(tfp,"\\rotatebox[origin=l]{%d}{", rot_angle );
+    else
+	fprintf(tfp, "\\makebox(0,0)%s{", tpos);
+
     /* Output a shortstack in case there are multiple lines. */
     for(cp = (unsigned char*)text->cstring; *cp; cp++) {
       if (*cp == TEXT_LINE_SEP) {
     fprintf(tfp, "\\shortstack" );
     /* Output the justification for the shortstack. */
     switch (text->type) {
-    case T_LEFT_JUSTIFIED:
-    case DEFAULT:
+      case T_LEFT_JUSTIFIED:
+      case DEFAULT:
 	fprintf(tfp, "[l]");
 	break;
-    case T_CENTER_JUSTIFIED:
+      case T_CENTER_JUSTIFIED:
 	break;
-    case T_RIGHT_JUSTIFIED:
+      case T_RIGHT_JUSTIFIED:
 	fprintf(tfp, "[r]");
 	break;
-    default:
+      default:
 	fprintf(stderr, "unknown text position type\n");
 	exit(1);
 	}
@@ -1226,21 +1289,7 @@ F_text *text;
     }
 
     unpsfont(text);
-    { int texsize;
-      double baselineskip;
-
-      texsize = TEXFONTMAG(text);
-      baselineskip = (texsize * 1.2);
-
-#ifdef NFSS
- 	  fprintf(tfp, "{{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
-				 texsize, baselineskip,
-				 TEXFAMILY(text->font),TEXSERIES(text->font),TEXSHAPE(text->font));
-#else
- 	  fprintf(tfp, "{{\\SetFigFont{%d}{%.1f}{%s}",
-		texsize, baselineskip, TEXFONT(text->font));
-#endif
-    }
+    setfigfont( text );
 
     if (!special_text(text))
 	/* This loop escapes special LaTeX characters. */
@@ -1260,54 +1309,43 @@ F_text *text;
 		 the current font. */
 	      fprintf(tfp, "} \\\\\n");
 
- 	      { int texsize;
- 		double baselineskip;
- 
- 		texsize = TEXFONTMAG(text);
- 		baselineskip = (texsize * 1.2);
- 		
-#ifdef NFSS
- 	  fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
-				 texsize, baselineskip,
-				 TEXFAMILY(text->font),TEXSERIES(text->font),TEXSHAPE(text->font));
-#else
- 	  fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}",
-		texsize, baselineskip, TEXFONT(text->font));
-#endif
-  	      }
+		setfigfont( text );
 	    }
 	    else
 		fputc(*cp, tfp);
       	}
     else 
 	for(cp = (unsigned char*)text->cstring; *cp; cp++) {
-	  if (*cp == TEXT_LINE_SEP) {
-	      /* Handle multi-line text strings. */
-	      fprintf(tfp, "} \\\\\n");
+	    if (*cp == TEXT_LINE_SEP) {
+		/* Handle multi-line text strings. */
+		fprintf(tfp, "} \\\\\n");
+		setfigfont( text );
 
-	      { int texsize;
-		double baselineskip;
-
-		texsize = TEXFONTMAG(text);
-		baselineskip = (texsize * 1.2);
-		
-#ifdef NFSS
- 	  fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
-				 texsize, baselineskip,
-				 TEXFAMILY(text->font),TEXSERIES(text->font),TEXSHAPE(text->font));
-#else
- 	  fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}",
-		texsize, baselineskip, TEXFONT(text->font));
-#endif
-	      }
-	    }
-	    else
-	        if (*cp >= 0xa0)	/* we escape 8-bit char */
-	    		fprintf(tfp, "%s", ISOtoTeX[(int)*cp-0xa0]);
-		else
+	    } else {
+#ifdef I18N
+		extern Boolean support_i18n;
+		if (support_i18n && (text->font <= 2))
 			fputc(*cp, tfp);
+	    else
+#endif /* I18N */
+	        if (*cp >= 0xa0) {	/* we escape 8-bit char */
+	            switch (encoding) {
+	                case 0: /* no escaping */
+			    fputc(*cp, tfp);
+	                    break;
+	                case 1: /* iso-8859-1 */
+	    		    fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
+	                    break;
+	                case 2: /* iso-8859-2 */
+	    		    fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
+	                    break;
+	            }
+	        } else
+		    /* no escaping */
+		    fputc(*cp, tfp);
 	  }
-    fprintf(tfp, "}}}}}\n");
+	}
+    fprintf(tfp, "}}}\n");
 }
 
 void
@@ -1579,22 +1617,22 @@ double arrowht, arrowwid, thickness;
     set_linewidth((int) thickness);
 
     switch(type) {
-    case 0:
-      fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
+      case 0:
+	fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
 	      xc, yc, x2, y2, xd, yd);
-      break;
-    case 1:
-      fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
+	break;
+      case 1:
+	fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
 	      xc, yc, x2, y2, xd, yd, xc, yc);
-      break;
-    case 2:
-      fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
+	break;
+      case 2:
+	fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
 	      xc, yc, x2, y2, xd, yd, x2 - (x2-x1)/l*arrowht*0.7, y2 - (y2-y1)/l*arrowht*0.7, xc, yc);
-      break;
-    case 3:
-      fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
+	break;
+      case 3:
+	fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
 	      xc, yc, x2, y2, xd, yd, x2 - (x2-x1)/l*arrowht*1.3, y2 - (y2-y1)/l*arrowht*1.3, xc, yc);
-      break;
+	break;
     }
 }
 
@@ -1627,6 +1665,7 @@ int style, color;
 struct driver dev_epic = {
      	genepic_option,
 	genepic_start,
+	gendev_null,
 	genepic_arc,
 	genepic_ellipse,
 	genepic_line,

@@ -2,27 +2,16 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  */
 
 #include "fig2dev.h"
@@ -197,7 +186,6 @@ compound_bound(compound, xmin, ymin, xmax, ymax, include)
 {
     F_arc	*a;
     F_ellipse	*e;
-    F_compound	*c;
     F_spline	*s;
     F_line	*l;
     F_text	*t;
@@ -205,8 +193,8 @@ compound_bound(compound, xmin, ymin, xmax, ymax, include)
     int		 llx, lly, urx, ury;
     int	         half_wd;
 
-    llx = lly =  1000000;
-    urx = ury = -1000000;
+    llx = lly =  10000000;
+    urx = ury = -10000000;
     while(compound != NULL) {
 	for (a = compound->arcs; a != NULL; a = a->next) {
 	    arc_bound(a, &sx, &sy, &bx, &by);
@@ -339,8 +327,8 @@ int		*xmin, *ymin, *xmax, *ymax;
 	c6 = 2*v1;
 	c3 = c3*v1-v1;
 	/* odd first points */
-	*xmin = *ymin =  100000;
-	*xmax = *ymax = -100000;
+	*xmin = *ymin =  10000000;
+	*xmax = *ymax = -10000000;
 	if (yymax % 2) {
 		d = sqrt(c3);
 		*xmin = min(*xmin,xcen-ceil(d));
@@ -521,7 +509,12 @@ text_bound(t, xmin, ymin, xmax, ymax, inc_text)
     double	 dx1, dx2, dx3, dx4, dy1, dy2, dy3, dy4;
     int		 descend;
 
-    Boolean include = (inc_text && ((t->flags & SPECIAL_TEXT)==0));
+    Boolean	 include;
+    
+    include = (inc_text &&
+			(t->flags & SPECIAL_TEXT)==0 || strchr(t->cstring,'\\')==0);
+    /* look for descenders in string (this is a kludge - next version 
+       of xfig should include ascent/descent in text structure */
     descend = (strchr(t->cstring,'g') || strchr(t->cstring,'j') ||
 		  strchr(t->cstring,'p') || strchr(t->cstring,'q') ||
 		  strchr(t->cstring,'y') || strchr(t->cstring,'$') ||
@@ -641,8 +634,8 @@ arrow_bound(objtype, obj, xmin, ymin, xmax, ymax)
 	}
 	calc_arrow(p1x, p1y, p2x, p2y, &dum, &dum, &dum, &dum,
 			obj->for_arrow, arrowpts, &npts, &dum);
-	fxmin=fymin=100000;
-	fxmax=fymax=-100000;
+	fxmin=fymin=10000000;
+	fxmax=fymax=-10000000;
 	for (i=0; i<npts; i++) {
 	    fxmin = min2(fxmin, arrowpts[i].x);
 	    fymin = min2(fymin, arrowpts[i].y);
@@ -670,8 +663,8 @@ arrow_bound(objtype, obj, xmin, ymin, xmax, ymax)
 	}
 	calc_arrow(p1x, p1y, p2x, p2y, &dum, &dum, &dum, &dum,
 			obj->back_arrow, arrowpts, &npts, &dum);
-	bxmin=bymin=100000;
-	bxmax=bymax=-100000;
+	bxmin=bymin=10000000;
+	bxmax=bymax=-10000000;
 	for (i=0; i<npts; i++) {
 	    bxmin = min2(bxmin, arrowpts[i].x);
 	    bymin = min2(bymin, arrowpts[i].y);
@@ -782,8 +775,8 @@ calc_arrow(x1, y1, x2, y2, c1x, c1y, c2x, c2y, arrow, points, npoints, nboundpts
      * this is sufficient.  I haven't bothered to alter the bounding
      * box calculations.
      */
-    miny =  100000.0;
-    maxy = -100000.0;
+    miny =  10000000.0;
+    maxy = -10000000.0;
     if (type == 5 || type == 6) {	/* also include half circle */
 	double rmag;
 	double angle, init_angle, rads;

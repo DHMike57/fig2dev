@@ -2,16 +2,16 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -23,17 +23,23 @@
  * 	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
  *      Arc boxes added by C. Scott Ananian 6/99
  *
+ *	Gabriel Zachmann <Gabriel.Zachmann@gmx.net>:
+ *	- add option -F (for the PSTEX output language; it is not really an option
+ *	  for latex output language!);
+ *	  this allows you to define the font in the latex file before you \input the
+ *	  eepic file (except the font size).  You must not mix eepic files generated
+ *	  with and without the -F option.  However, I think this could be improved
+ *	  easily, I just don't speak TeX well enough to feel confident enough to
+ *	  change the way \SetFigFont is defined.
+ *
  */
-#if defined(hpux) || defined(SYSV) || defined(SVR4)
-#include <sys/types.h>
-#endif
-#include <sys/file.h>
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
 
 extern double rad2deg;
 extern void unpsfont();
+extern Boolean	FontSizeOnly;	/* defined in setfigfont.c */
 
 static put_box();
 static put_arc_box();
@@ -78,7 +84,7 @@ double	THIN_LXOFF =	(0.1/72.0);
 double	THIN_LYOFF =	(0.7/72.0);
 double	THICK_LXOFF =	(0.4/72.0);
 double	THICK_LYOFF =	(0.6/72.0);
-#define MIN_LEN		(13.0/72.0/1200.0*80.0)	/* 13  points */
+#define MIN_LEN		(13.0/72.27)	/* 13  points */
 
 /*
  *  other constants and macros
@@ -95,12 +101,6 @@ double	THICK_LYOFF =	(0.6/72.0);
 #define TRANS2(x1,y1,x2,y2)	(*translate_coordinates)(&x1,&y1); \
 				(*translate_coordinates)(&x2,&y2)
 #define TRANSD(x,y)		(*translate_coordinates_d)(&x,&y)
-#ifndef MIN
-#define	MIN(x,y)	(((x) <= (y))? (x): (y))
-#endif
-#ifndef MAX
-#define	MAX(x,y)	(((x) >= (y))? (x): (y))
-#endif
 #define	ABS(x)		(((x) >= 0)? (x): -(x))
 #define round4(x)	((round(10000.0*(x))/10000.0))
 #define round6(x)	((round(1000000.0*(x))/1000000.0))
@@ -110,6 +110,7 @@ char		thickdot[] = THICKDOT;
 char		thin_ldot [] = THIN_LDOT;
 char		thick_ldot[] = THICK_LDOT;
 
+static  int 	encoding = 1;
 static	int	verbose = 0;
 double		dash_mag = 1.0;
 int		thick_width = 2;
@@ -127,7 +128,8 @@ double		dot_yoffset;
 double		ldot_xoffset;
 double		ldot_yoffset;
 
-extern char *ISOtoTeX[];
+extern char *ISO1toTeX[];
+extern char *ISO2toTeX[];
 
 static
 translate1(xp, yp)
@@ -167,6 +169,7 @@ genlatex_option(opt, optarg)
 {
     int i;
 
+    FontSizeOnly = False;
     switch (opt) {
 	case 'a':
 	    fprintf(stderr, "warning: latex option -a obsolete");
@@ -176,6 +179,9 @@ genlatex_option(opt, optarg)
 	    dash_mag = atof(optarg);	/* set dash magnification */
 	    break;
 
+	case 'F':
+	    FontSizeOnly = 1;
+	    break;
 
 	case 'f':		/* set default text font */
 	    for ( i = 1; i <= MAX_FONT; i++ )
@@ -205,9 +211,15 @@ genlatex_option(opt, optarg)
 	    verbose = 1;		/* verbose mode */
 	    break;
 
-	case 's':
-	case 'm':
+	case 'E':
+	    encoding = atoi(optarg);
+	    if (encoding < 0 || encoding > 2)
+	      encoding = 1;
+	    break;
+
 	case 'L':
+	case 'm':
+	case 's':
 	    break;
 
 	default:
@@ -223,7 +235,7 @@ genlatex_start(objects)
 	int tmp;
 
 	texfontsizes[0] = texfontsizes[1] = 
-		TEXFONTSIZE(font_size?font_size:DEFAULT_FONT_SIZE);
+		TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
 
  	unitlength = mag/ppi;
 	dash_mag /= unitlength*80.0;
@@ -256,7 +268,7 @@ int
 genlatex_end()
 {
 	/* LaTeX ending */
-	fprintf(tfp, "\\end{picture}\n");
+	fprintf(tfp, "\\end{picture}%%\n");
 
 	/* all ok */
 	return 0;
@@ -496,7 +508,7 @@ put_solidline (x, y, sx, sy, l, arrow, val)
 	    x2 = x;
 	    y2 = (sy >= 0)? y + round(l): y - round(l);
 	    }
-	if (sx == 0  ||  sy == 0  ||  (l/cosine)*unitlength >= MIN_LEN) {
+	if (sx == 0  ||  sy == 0  ||  l*unitlength >= MIN_LEN) {
 	    switch (arrow) {
 	    case 0:  /* simple line */
 		fprintf(tfp, "\\put(%3d,%3d){\\line(%2d,%2d)", x, y, sx,sy);
@@ -564,13 +576,13 @@ put_dashline (x, y, sx, sy, l, arrow, val)
 	nd = l / (val*dash_mag*cosine);
 	n = (int) (rint((nd + 1.0)/2.0)*2 - 1);
 	dl = l / (double)n;
-	if (sx  &&  sy  &&  (dl/cosine)*unitlength < MIN_LEN) {
+	if (sx  &&  sy  &&  dl*unitlength < MIN_LEN) {
 	    fprintf(stderr, "Dash too small; using larger dash\n");
 	    dl = MIN_LEN/unitlength * cosine;
 	    nd = l / dl;
 	    n = (int) (rint((nd + 1.0)/2.0)*2 - 1);
 	    }
-	if (2*dl >= l  ||  (sx  &&  sy  &&  (l/cosine)*unitlength < MIN_LEN)) {
+	if (2*dl >= l  ||  (sx  &&  sy  &&  l*unitlength < MIN_LEN)) {
 	    fprintf(stderr, "Dashed line too short; drawing solid line\n");
 	    put_solidline (x, y, sx, sy, l, arrow, (double) 0.0);
 	    return;
@@ -762,22 +774,7 @@ genlatex_text(t)
 
 	fprintf(tfp, "\\makebox(0,0)%s{\\smash{", tpos);
 
-        { int texsize;
-          double baselineskip;
-
-	  texsize = TEXFONTMAG(t);
-	  baselineskip = (texsize * 1.2);
-
-#ifdef NFSS
- 	  fprintf(tfp, "\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
-				 texsize, baselineskip,
-				 TEXFAMILY(t->font),TEXSERIES(t->font),TEXSHAPE(t->font));
-#else
- 	  fprintf(tfp, "\\SetFigFont{%d}{%.1f}{%s}",
-		texsize, baselineskip, TEXFONT(t->font));
-#endif
-	}
-
+	setfigfont( t );	/* in genepic.c */
 	set_color(t->color);
 
 	if (!special_text(t))
@@ -785,12 +782,13 @@ genlatex_text(t)
 		/* this loop escapes characters "$&%#_{}" */
 		/* and deleted characters "~^\" */
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
-	      	    if (strchr("$&%#_{}", *cp)) (void)fputc('\\', tfp);
+	      	    if (strchr("$&%#_{}", *cp)) 
+			fputc('\\', tfp);
 	      	    if (strchr("~^\\", *cp))
 			fprintf(stderr,
 				"Bad character in text object '%c'\n" ,*cp);
 		    else
-			(void)fputc(*cp, tfp);
+			fputc(*cp, tfp);
 	      	}
 	else 
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
@@ -800,10 +798,20 @@ genlatex_text(t)
 			fputc(*cp, tfp);
 		    else
 #endif
-		    if (*cp >= 0xa0)
-			 fprintf(tfp, "%s", ISOtoTeX[(int)*cp-0xa0]);
-		else
-		    fputc(*cp, tfp);
+		    if (*cp >= 0xa0) {
+	                switch (encoding) {
+	                   case 0: /* no escaping */
+			        fputc(*cp, tfp);
+	                        break;
+	                   case 1: /* iso-8859-1 */
+	    	    	        fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
+	                        break;
+	                   case 2: /* iso-8859-2 */
+	    		        fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
+	                        break;
+	                }
+	            } else
+			fputc(*cp, tfp);
 		}
 
 	reset_color(t->color);
@@ -812,7 +820,7 @@ genlatex_text(t)
         if(t->angle)
              fprintf(tfp, "}");
 #endif
- 	fprintf(tfp, "}}}\n");
+ 	fprintf(tfp, "}}}}\n");
 	}
 
 void
@@ -988,7 +996,6 @@ int col;
    "1,0,1",    /* magenta */
    "1,1,0",    /* yellow */
    "1,1,1",    /* white */
-   "1,.84,0",	/* gold */
    "0,0,.56",	/* dk blue */
    "0,0,.69",	/* md blue */
    "0,0,.82",	/* lt blue */
@@ -1012,6 +1019,7 @@ int col;
    "1,.63,.63",	/* md pink1 */
    "1,.75,.75",	/* md pink2 */
    "1,.88,.88",	/* lt pink */
+   "1,.84,0",	/* gold */
    };
    
 
@@ -1052,6 +1060,7 @@ int col;
 struct driver dev_latex = {
      	genlatex_option,
 	genlatex_start,
+	gendev_null,
 	genlatex_arc,
 	genlatex_ellipse,
 	genlatex_line,

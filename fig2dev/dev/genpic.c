@@ -3,16 +3,16 @@
  * Copyright (c) 1991 by Micah Beck
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -128,7 +128,7 @@ F_compound	*objects;
 	}
 
 	fprintf(tfp, ".PS\n.ps %d\n", 		/* PIC preamble */
-		font_size?font_size:DEFAULT_FONT_SIZE);
+		font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
 }
 
 int
@@ -154,17 +154,7 @@ static
 set_linewidth(w)
 int	w;
 {
-	static int	cur_thickness = -1;
-
 	LineThickness = w*80/ppi;
-
-	/*
-	if (w == 0) return;
-	if (w != cur_thickness) {
-	    cur_thickness = w;
-	    fprintf(tfp, "\"\\D't %.5fi'\"\n", 0.7 * cur_thickness / ppi);
-	    }
-	*/
 }
 
 static void
@@ -442,18 +432,20 @@ void
 genpic_text(t)
 F_text	*t;
 {
-	float	y;
-        char *tpos;
+	float	 y;
+	int	 size;
+        char	*tpos;
 
 	/* print any comments */
 	print_comments(".\\\" ",t->comments, "");
 
+
+	size = PICFONTMAG(t);
 	if (!OptNoUnps) {
 	  unpsfont(t);
-	  fprintf(tfp, "\"\\s%d\\f%s", PICFONTMAG(t) ,
-		  PICFONT(t->font) );
+	  fprintf(tfp, "\"\\s%d\\f%s ", size, PICFONT(t->font));
 	} else {
-	  fprintf(tfp, ".ps\n.ps %d\n", PICFONTMAG(t) );
+	  fprintf(tfp, ".ps\n.ps %d\n", size );
 	  fprintf(tfp, ".ft\n.ft %s\n", PICPSFONT(t) );
 	}
 
@@ -472,9 +464,7 @@ F_text	*t;
             fprintf(stderr, "unknown text position type\n");
             exit(1);
         }    
- 	y = convy(t->base_y/ppi) +
- 	    PICFONTMAG(t) *
-             HT_OFFSET;
+ 	y = convy(t->base_y/ppi) + size * HT_OFFSET;
  	if (!OptNoUnps)
  	    fprintf(tfp, "%s\\fP\" at %.3f,%.3f %s\n",
  			t->cstring, t->base_x/ppi, y, tpos);
@@ -709,6 +699,7 @@ double	a0, b0, a1, b1, a2, b2, a3, b3;
 struct driver dev_pic = {
      	genpic_option,
 	genpic_start,
+	gendev_null,
 	genpic_arc,
 	genpic_ellipse,
 	genpic_line,

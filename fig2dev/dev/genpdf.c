@@ -1,15 +1,15 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -21,20 +21,13 @@
  *		calls ghostscript (device pdfwrite) to convert it to pdf.
  */
 
-#if defined(hpux) || defined(SYSV) || defined(SVR4)
-#include <sys/types.h>
-#endif
-#include <sys/file.h>
-#include <signal.h>
 #include "fig2dev.h"
 #include "genps.h"
 #include "object.h"
 #include "texfonts.h"
 
-static	Boolean	 direct;
 static	FILE	*saveofile;
 static	char	*ofile;
-static	char	 tempfile[PATH_MAX];
 
 void
 genpdf_option(opt, optarg)
@@ -43,7 +36,7 @@ char *optarg;
 {
 	/* just use the ps options */
 	pdfflag = True;
-	epsflag = True;
+	epsflag = False;
 	gen_ps_eps_option(opt, optarg);
 }
 
@@ -74,17 +67,9 @@ F_compound	*objects;
 int
 genpdf_end()
 {
-	char	 com[PATH_MAX*2],tempofile[PATH_MAX];
-	FILE	*tmpfile;
-	int	 status = 0;
-	int	 num;
-
 	/* wrap up the postscript output */
 	if (genps_end() != 0)
 	    return -1;		/* error, return now */
-
-	/* add a showpage so ghostscript will produce output */
-	fprintf(tfp, "showpage\n");
 
 	if (pclose(tfp) != 0) {
 	    fprintf(stderr,"Error in ghostcript command\n");
@@ -92,15 +77,18 @@ genpdf_end()
 	    return -1;
 	}
 	(void) signal(SIGPIPE, SIG_DFL);
+	/* we've already closed the original output file */
+	tfp = 0;
 
 	/* all ok so far */
 
-	return status;
+	return 0;
 }
 
 struct driver dev_pdf = {
   	genpdf_option,
 	genpdf_start,
+	genps_grid,
 	genps_arc,
 	genps_ellipse,
 	genps_line,

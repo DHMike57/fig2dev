@@ -2,23 +2,22 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1994-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
 #include <ctype.h>
 #include <errno.h>
 #include <sys/param.h>
-#include <string.h>
 #include "alloc.h"
 #include "fig2dev.h"
 #include "object.h"
@@ -33,7 +32,7 @@ strerror(e)
 	int e;
 {
 	return sys_errlist[e];
-	}
+}
 #endif
 
 extern int            errno;
@@ -122,6 +121,7 @@ F_compound	*obj;
 
 	/* initialize pattern_used[] array */
 	init_pats_used();
+
 	if ((fp = fopen(file_name, "r")) == NULL)
 	    return errno;
 	else
@@ -721,6 +721,7 @@ FILE	*fp;
 	int	type, style, radius_flag;
 	double	thickness, wid, ht;
 	int	npts;
+	char	file[PATH_MAX], *c;
 
 	Line_malloc(l);
 	l->points = NULL;
@@ -795,41 +796,34 @@ FILE	*fp;
 	    l->back_arrow = make_arrow(type, style, thickness, wid, ht);
 	}
     	if (l->type == T_PIC_BOX) {
-	  Pic_malloc(l->pic);
-	  l->pic->transp = -1;
-	  if (l->pic  == NULL) {
-	    free((char *) l);
-	    return (NULL);
-	  }
-	  if (get_line(fp) < 0 || 
-	      sscanf(buf, "%d %s", &l->pic->flipped, l->pic->file) != 2) {
+	    Pic_malloc(l->pic);
+	    l->pic->transp = -1;
+	    if (l->pic  == NULL) {
+		free((char *) l);
+		return (NULL);
+	    }
+	    if (get_line(fp) < 0 || 
+	      sscanf(buf, "%d %s", &l->pic->flipped, file) != 2) {
 	        put_msg(Err_incomp,
 		    "Picture object", line_no);
 	        put_msg(Err_incomp, "Picture object", line_no);
 	        return (NULL);
-	  }
-
-#ifdef V4_0
-	  l->pic->figure=NULL;
-	  Compound_malloc(l->pic->figure);
-	  if (l->pic->figure == NULL) {
-	    free((char*) l);
-	    put_msg("No memory.");
-	    return (NULL);
-	  }
-	  
-	  if (push() == -1) 
-	      return (NULL);
-	  suppress_error=1;
-	  if (read_fig(l->pic->file,l->pic->figure) != 0) {
-	    free ((char *) l->pic->figure);
-	    l->pic->figure=NULL;
-	  }
-	  suppress_error=0;
-	  pop();
-#endif /* V4_0 */
-
-
+	    }
+	    /* if there is a path in the .fig filename, and the path of the imported
+	       picture filename is NOT absolute, prepend the .fig file path to it */
+	    if (from && file[0] != '/') {
+		/* copy the .fig filename to pic filename */
+		strcpy(l->pic->file, from);
+		if (c = strrchr(l->pic->file,'/')) {
+		    /* there is a '/', copy the filename past the last one */
+		    strcpy(c+1, file);
+		} else {
+		    /* either absolute picture file path or no path in the .fig filename */
+		    strcpy(l->pic->file, file);
+		}
+	    } else {
+		strcpy(l->pic->file, file);
+	    }
     	} else
 	   l->pic = NULL;
 	
@@ -870,18 +864,6 @@ FILE	*fp;
 	  p = q;
 	}
 
-#ifdef V4_0
-	if ((l->pic!=NULL)&&(l->pic->figure!=NULL)) {
-	    compound_bound(l->pic->figure,
-			&l->pic->figure->nwcorner.x,
-			&l->pic->figure->nwcorner.y,
-			&l->pic->figure->secorner.x,
-			&l->pic->figure->secorner.y);
-	    convert_figure(l);
-	  
-	}
-#endif /* V4_0 */
-	
 	l->comments = attach_comments();	/* attach any comments */
 	/* skip to the end of the line */
 	skip_line(fp);
@@ -1109,7 +1091,7 @@ FILE	*fp;
  	  return NULL;
 	}
 
-	if (font_size) {
+	if (font_size != 0.0) {
 	    /* scale length/height of text by ratio of requested font size to actual size */
 	    t->length = t->length * font_size/t->size;
 	    t->height = t->height * font_size/t->size;
@@ -1323,7 +1305,7 @@ get_line(fp)
 	    buf[len-1] = '\0';			/* strip trailing newline */
 	    if (buf[len-2] == '\r')
 		buf[len-2] = '\0';		/* strip any trailing CRs */
-	    return (1);
+	    return 1;
 	}
     }
 }
@@ -1373,6 +1355,8 @@ int	 fill_style;
 	}
 }
 	
+/* reset pattern_used[] array */
+
 init_pats_used()
 {
 	int i;

@@ -6,27 +6,42 @@
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
 /* Add a (La)TeX macro, if TeX fonts are used. */
-/* This macro is called with three arguments:
+
+/* This macro is called with three (five with NFSS support) arguments:
  *    #1   fontsize (without `pt')
  *    #2   baselineskip (without `pt')
  *    #3   font  (without escape character)
+ *  And, for NFSS support:
+ *    #4   font series
+ *    #5   font shape
  */
 
 #include <fig2dev.h>
+
+Boolean FontSizeOnly = False;
 
 define_setfigfont(tfp)
      FILE *tfp;
 {
 #ifdef NFSS
-  fprintf(tfp, "%%\n\
+
+    if ( FontSizeOnly )
+    	fprintf(tfp, "%%\n\
+\\begingroup\\makeatletter\\ifx\\SetFigFont\\undefined%%\n\
+\\gdef\\SetFigFont#1#2{%%\n\
+  \\fontsize{#1}{#2pt}%%\n\
+  \\selectfont}%%\n\
+\\fi\\endgroup%%\n");
+    else
+	fprintf(tfp, "%%\n\
 \\begingroup\\makeatletter\\ifx\\SetFigFont\\undefined%%\n\
 \\gdef\\SetFigFont#1#2#3#4#5{%%\n\
   \\reset@font\\fontsize{#1}{#2pt}%%\n\

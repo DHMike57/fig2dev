@@ -7,10 +7,10 @@
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -39,12 +39,15 @@ char *sysls()
   return sysbuf;
 }
 
-sysmv(f)
-char *f;
+sysmv(file)
+char *file;
 {
-  sprintf(sysbuf, "%s~", f);
+  sprintf(sysbuf, "%s~", file);
   unlink(sysbuf);
-  if (!link(f, sysbuf)) unlink(f);
+  if (!link(file, sysbuf)) {
+	fprintf(stderr, "Renaming %s to %s~\n", file, file);
+	unlink(file);
+  }
 }
 
 char *strip(str, suf)

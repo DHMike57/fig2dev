@@ -1,16 +1,16 @@
 /*
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1999 by Philippe Bekaert
- * Parts Copyright (c) 1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -68,17 +68,21 @@
 #include "fig2dev.h"
 #include "object.h"
 
-#define UNDEFVALUE	-100	/* undefined attribute value */
-#define FILL_COLOR_INDEX 999 	/* special color index for solid filled shapes.
+#define	UNDEFVALUE	-100	/* undefined attribute value */
+#define	FILL_COLOR_INDEX 999 	/* special color index for solid filled shapes.
 				 * see fillshade() and conv_color(). */
-#define EPSILON		1e-4	/* small floating point value */
+#define	EPSILON		1e-4	/* small floating point value */
 
-static int rounded_arrows;	/* If rounded_arrows is False, the position
+static	int rounded_arrows;	/* If rounded_arrows is False, the position
 				 * of arrows will be corrected for
 				 * compensating line width effects. This
 				 * correction is not needed if arrows appear
 				 * rounded with the used CGM viewer.
 				 * See -r driver command line option. */
+
+static	Boolean	 binary_output = False;	/* default is ASCII output */
+static	FILE	*saveofile;	/* used when piping to ralcgm for binary output */
+static	char	 cgmcom[PATH_MAX];
 
 static struct	_rgb {
   float r, g, b;
@@ -130,20 +134,36 @@ void
 gencgm_start(objects)
    F_compound	*objects;
 {
-  int i;
-  char *p, *figname;
+  int	 i;
+  char	*p, *figname;
   
   if (from) {
 	figname = malloc(strlen(from)+1);
 	sprintf(figname, from);
 	p = strrchr(figname, '/');
 	if (p) 
-	    figname = p+1;		/* skip directory, small memory leak here!! */
+	    figname = p+1;		/* remove path from name for comment in file */
 	p = strchr(figname, '.');	
 	if (p)
-	    *p = '\0';			/* discard extension */
+	    *p = '\0';			/* and extension */
   } else {
 	figname = "(stdin)";
+  }
+  if (binary_output) {
+    /* pipe output through "ralcgm -b" to produce binary CGM */
+    /* but first close the output file that main() opened */
+    saveofile = tfp;
+    if (tfp != stdout)
+	fclose(tfp);
+    sprintf(cgmcom, "ralcgm -b - %s", to? to: "-");
+    /* open pipe to ralcgm */
+    if ((tfp = popen(cgmcom,"w" )) == 0) {
+	fprintf(stderr,"fig2dev: Can't open pipe to ralcgm, producing ASCII CGM instead.\n");
+	fprintf(stderr,"Command was: %s\n", cgmcom);
+	/* failed, revert back to ASCII */
+	tfp = saveofile;
+	binary_output = False;
+    }
   }
 
   fprintf(tfp, "BEGMF '%s';\n", figname);
@@ -217,12 +237,23 @@ gencgm_start(objects)
 int
 gencgm_end()
 {
-  fprintf(tfp,"%% End of Picture %%\n");
-  fprintf(tfp, "ENDPIC;\n");
-  fprintf(tfp, "ENDMF;\n");
+    fprintf(tfp,"%% End of Picture %%\n");
+    fprintf(tfp, "ENDPIC;\n");
+    fprintf(tfp, "ENDMF;\n");
 
-  /* all ok */
-  return 0;
+    /* if user wanted binary, close pipe to ralcgm */
+    if (binary_output) {
+	if (pclose(tfp) != 0) {
+	    fprintf(stderr,"Error in ralcgm command\n");
+	    fprintf(stderr,"command was: %s\n", cgmcom);
+	    return -1;
+	}
+    }
+    /* we've already closed the original output file */
+    tfp = 0;
+
+    /* all ok */
+    return 0;
 }
 
 void
@@ -232,6 +263,10 @@ gencgm_option(opt, optarg)
 {
     rounded_arrows = False;
     switch (opt) {
+	case 'b':
+	    binary_output = True;	/* call ralcgm to convert output to binary cgm */
+	    break;
+
 	case 'r': 
 	    rounded_arrows = True;
 	    break;
@@ -1464,7 +1499,8 @@ textsize(size)
 {
   static double oldsize = UNDEFVALUE;
   chkcache(size, oldsize);
-  fprintf(tfp, "charheight %d;\n", round( 10 * size ));
+  /* adjust for any differences in ppi (Fig 2.x vs 3.x) */
+  fprintf(tfp, "charheight %d;\n", round( 10 * size * ppi / 1200.0 / fontmag));
 }
 
 static void
@@ -1479,7 +1515,7 @@ textangle(angle)
 }
 
 static void
-text(x, y, text)
+cgm_text(x, y, text)
     int x, y;
     char *text;
 {
@@ -1509,12 +1545,13 @@ gencgm_text(t)
   textcolr(t->color);
   textsize(t->size);
   textangle(t->angle);
-  text(t->base_x, t->base_y, t->cstring);
+  cgm_text(t->base_x, t->base_y, t->cstring);
 }
 
 struct driver dev_cgm = {
      	gencgm_option,
 	gencgm_start,
+	gendev_null,
 	gencgm_arc,
 	gencgm_ellipse,
 	gencgm_line,

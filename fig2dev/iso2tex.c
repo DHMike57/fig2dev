@@ -6,10 +6,10 @@
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -22,8 +22,10 @@
 
 /* B.Raichle 12.10.92, changed some of the definitions */
 
+/* T.Kopal 22.3.02, added ISO-8859-2 table */
 
-char *ISOtoTeX[] =   /* starts at octal 240 */
+/* ISO-8859-1 encoding table */
+char *ISO1toTeX[] =   /* starts at octal 240 */
 {
   "{}",
   "{!`}",	/* inverse ! */
@@ -126,5 +128,111 @@ char *ISOtoTeX[] =   /* starts at octal 240 */
   "\\'y",
   "{}",		/* letter p wide-spaced */
   "\\\"y"
+};
+
+/* ISO-8859-2 encoding table */
+char *ISO2toTeX[] =   /* starts at octal 240 */
+{
+  "{}",		/* no-break space */
+  "\\c{A}",	/* latin capital letter A with ogonek */
+  "\\u{}",	/* breve */
+  "{\\L}",	/* latin capital letter L with stroke */
+  "{}",		/* currency sign */
+  "\\v{L}",	/* latin capital letter L with caron */
+  "\\'S",	/* latin capital letter S with acute */
+  "\\S{}",	/* section sign */
+  "\\\"{}",	/* diaeresis */
+  "\v{S}",	/* latin capital letter S with caron */
+  "\\c{S}",	/* latin capital letter S with cedilla */
+  "\\v{T}",	/* latin capital letter T with caron */
+  "\\'Z", 	/* latin capital letter Z with acute */
+  "{-}",	/* soft hyphen */
+  "\\v{Z}",	/* latin capital letter Z with caron */
+  "\\.S",	/* latin capital letter S with dot above */
+/* 0xb0 */
+  "{\\lower.2ex\\hbox{\\char\\'27}}",		/* degree sign */
+  "\\c{a}",	/* latin small letter A with ogonek */
+  "\\c{}",	/* ogonek */
+  "{\\l}",	/* latin small letter L with stroke */
+  "\\'{}",	/* acute accent */
+  "\\v{l}",	/* latin small letter L with caron */
+  "\\'s",	/* latin small letter S with acute */
+  "\\v{}",	/* caron */
+  "\\o{}",	/* cedilla */
+  "\\v{s}",	/* latin small letter S with caron */
+  "\\c{s}",	/* latin small letter S with cedilla */
+  "\\v{t}",	/* latin small letter T with caron */
+  "\\'z",	/* latin small letter Z with acute */
+  "\\H{}",	/* double acute accent */
+  "\\v{z}",	/* latin small letter Z with caron */
+  "\\.z",	/* latin small letter Z with dot above */
+/* 0xc0 */
+  "\\'R",	/* latin capital letter R with acute */
+  "\\'A",	/* latin capital letter A with acute */
+  "\\^A",	/* latin capital letter A with circumflex */
+  "\\u{A}",	/* latin capital letter A with breve */
+  "\\\"A",	/* latin capital letter A with diaeresis */
+  "\\'L",	/* latin capital letter L with acute */
+  "\\'C",	/* latin capital letter C with acute */
+  "\\c{C}",	/* latin capital letter C with cedilla */
+  "\\v{C}",	/* latin capital letter C with caron */
+  "\\'E",	/* latin capital letter E with acute */
+  "\\c{E}",	/* latin capital letter E with ogonek */
+  "\\\"E",	/* latin capital letter E with diaeresis */
+  "\\v{E}",	/* latin capital letter E with caron */
+  "\\'I",	/* latin capital letter I with acute */
+  "\\^I",	/* latin capital letter I with circumflex */
+  "\\v{D}",	/* latin capital letter D with caron */
+/* 0xd0 */
+  "D",		/* latin capital letter D with stroke */
+  "\\'N",	/* latin capital letter N with acute */
+  "\\v{N}",	/* latin capital letter N with caron */
+  "\\'O",	/* latin capital letter O with acute */
+  "\\^O",	/* latin capital letter O with circumflex */
+  "\\H{O}",	/* latin capital letter O with double acute */
+  "\\\"O",	/* latin capital letter O with diaeresis */
+  "\\mbox{$\\times$}",	/* multiplication sign */
+  "\\v{R}",	/* latin capital letter R with caron */
+  "\\v{U}",	/* latin capital letter U with ring above */
+  "\\'U",	/* latin capital letter U with acute */
+  "\\H{U}",	/* latin capital letter U with double acute */
+  "\\\"U",	/* latin capital letter U with diaeresis */
+  "\\'Y",	/* latin capital letter Y with acute */
+  "\\c{T}",	/* latin capital letter T with cedilla */
+  "\\ss{}",	/* latin small letter sharp S */
+/* 0xe0 */
+  "\\'r",	/* latin small letter R with acute */
+  "\\'a",	/* latin small letter A with acute */
+  "\\^a",	/* latin small letter A with circumflex */
+  "\\u{a}",	/* latin small letter A with breve */
+  "\\\"a",	/* latin small letter A with diaeresis */
+  "\\'l",	/* latin small letter L with acute */
+  "\\'c",	/* latin small letter C with acute */
+  "\\c{c}",	/* latin small letter C with cedilla */
+  "\\v{c}",	/* latin small letter C with caron */
+  "\\'e",	/* latin small letter E with acute */
+  "\\c{e}",	/* latin small letter E with ogonek */
+  "\\\"e",	/* latin small letter E with diaeresis */
+  "\\v{e}",	/* latin small letter E with caron */
+  "\\'\\i{}",	/* latin small letter I with acute */
+  "\\^\\i{}",	/* latin small letter I with circumflex */
+  "\\v{d}",	/* latin small letter D with caron */
+/* 0xf0 */
+  "d",		/* latin small letter D with stroke */
+  "\\'n",	/* latin small letter N with acute */
+  "\\v{n}",	/* latin small letter N with caron */
+  "\\'o",	/* latin small letter O with acute */
+  "\\^o",	/* latin small letter O with circumflex */
+  "\\H{o}",	/* latin small letter O with double acute */
+  "\\\"o",	/* latin small letter O with diaeresis */
+  "\\mbox{$\\div$}",	/* division sign */
+  "\\v{r}",	/* latin small letter R with caron */
+  "\\v{u}",	/* latin small letter U with ring above */
+  "\\'u",	/* latin small letter U with acute */
+  "\\H{u}",	/* latin small letter U with double acute */
+  "\\\"u",	/* latin small letter U with diaeresis */
+  "\\'y",	/* latin small letter Y with acute */
+  "\\c{t}",	/* latin small letter T with cedilla */
+  "\\.{}"	/* dot above */
 };
 

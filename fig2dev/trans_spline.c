@@ -6,10 +6,10 @@
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
@@ -73,11 +73,7 @@ static F_line	     *create_line();
 static F_point	     *create_point();
 static F_control     *create_cpoint();
 
-
-static char *Err_msg =  "Out of memory \n";
-
 /************** CURVE DRAWING FACILITIES ****************/
-
 
 static int	npoints;
 static zXPoint *points;
@@ -230,7 +226,6 @@ compute_closed_spline(spline, precision)
 {
   int k, npoints = num_points(spline->points), i;
   float     step;
-  double    t;
   F_point   *p0, *p1, *p2, *p3, *first;
   F_control *s0, *s1, *s2, *s3, *s_first;
 
@@ -520,7 +515,6 @@ create_line_with_spline(s)
   int      i = 0;
   int      start = 0;
   F_point  *ptr, *pt;
-  F_arrow  *arrow;
   F_comment *lcomm, *scomm;
   
   points = open_spline(s) ? compute_open_spline(s, HIGH_PRECISION)

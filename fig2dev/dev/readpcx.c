@@ -1,20 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1992 by Brian Boyter
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons who receive
- * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such 
+ * party to do so, with the only requirement being that this copyright 
+ * notice remain intact.
  *
  */
 
-#include <unistd.h>
 #include "fig2dev.h"
 #include "object.h"
 
@@ -78,7 +77,6 @@ _read_pcx(pcxfile,pic)
     F_pic	*pic;
 {
 	int		 w,h,bytepp,x,y,yy,byteline,plane,pmask;
-	unsigned char	*pal, *old;
 	struct pcxhed	 header;
 	int		 count,waste;
 	long		 bytemax,bytesdone;
@@ -125,9 +123,6 @@ _read_pcx(pcxfile,pic)
 	  }
 
 	if (!real_bpp)
-	    return 0;
-
-	if ((pal=calloc(768,1))==NULL)
 	    return 0;
 
 	w=(header.x2lo+256*header.x2hi)-(header.x1lo+256*header.x1hi)+1;
@@ -177,8 +172,8 @@ _read_pcx(pcxfile,pic)
 	/* read palette */
 	switch(real_bpp) {
 	    case 1:
-		pic->cmap[0][0] = pic->cmap[1][0] = pic->cmap[2][0] = 0;
-		pic->cmap[0][1] = pic->cmap[1][1] = pic->cmap[2][1] = 255;
+		pic->cmap[RED][0] = pic->cmap[GREEN][0] = pic->cmap[BLUE][0] = 0;
+		pic->cmap[RED][1] = pic->cmap[GREEN][1] = pic->cmap[BLUE][1] = 255;
 		pic->numcols = 2;
 		break;
 	  
@@ -188,9 +183,15 @@ _read_pcx(pcxfile,pic)
 		/* 2-,3-, and 4-bit, palette is embedded in header */
 		pic->numcols = (1<<real_bpp);
 		for (x=0; x < pic->numcols; x++) {
-		    pic->cmap[0][x] = header.pal16[x*3  ];
-		    pic->cmap[1][x] = header.pal16[x*3+1];
-		    pic->cmap[2][x] = header.pal16[x*3+2];
+		    pic->cmap[RED][x] = header.pal16[x*3  ];
+		    pic->cmap[GREEN][x] = header.pal16[x*3+1];
+		    pic->cmap[BLUE][x] = header.pal16[x*3+2];
+		    /* if user wants grayscale (-N) then map to gray */
+		    if (grayonly)
+			pic->cmap[RED][x] = pic->cmap[GREEN][x] = pic->cmap[BLUE][x] = 
+			    (int) (rgb2luminance(pic->cmap[RED][x]/256.0, 
+						pic->cmap[GREEN][x]/256.0, 
+						pic->cmap[BLUE][x]/256.0)*256.0);
 		}
 		break;
 
@@ -198,9 +199,15 @@ _read_pcx(pcxfile,pic)
 		/* 8-bit */
 		waste=fgetc(pcxfile);                    /* ditch splitter byte */
 		for (x=0; x<256; x++) {
-		    pic->cmap[0][x] = fgetc(pcxfile);
-		    pic->cmap[1][x] = fgetc(pcxfile);
-		    pic->cmap[2][x] = fgetc(pcxfile);
+		    pic->cmap[RED][x] = fgetc(pcxfile);
+		    pic->cmap[GREEN][x] = fgetc(pcxfile);
+		    pic->cmap[BLUE][x] = fgetc(pcxfile);
+		    /* if user wants grayscale (-N) then map to gray */
+		    if (grayonly)
+			pic->cmap[RED][x] = pic->cmap[GREEN][x] = pic->cmap[BLUE][x] = 
+			    (int) (rgb2luminance(pic->cmap[RED][x]/256.0, 
+						pic->cmap[GREEN][x]/256.0, 
+						pic->cmap[BLUE][x]/256.0)*256.0);
 		}
 		pic->numcols = 256;
 		break;
