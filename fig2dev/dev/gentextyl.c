@@ -322,7 +322,7 @@ F_arc	*a;
 {
 	double		x, y;
 	double		cx, cy, sx, sy, ex, ey;
-	double		dx1, dy1, dx2, dy2, r1, r2, th1, th2, theta;
+	double		dx1, dy1, dx2, dy2, r1, r2, th1, th2;
 
 	set_linewidth(a->thickness);
 	set_style(a->style, a->style_val);
@@ -358,8 +358,6 @@ F_arc	*a;
 	    
 	rtop(dx1, dy1, &r1, &th1);
 	rtop(dx2, dy2, &r2, &th2);
-	theta = th2 - th1;
-	if (theta > 0) theta -= 2*M_PI;
 
 	set_linewidth(a->thickness);
 

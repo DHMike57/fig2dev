@@ -89,7 +89,7 @@ static NextInt (fstream)
 {
     int	ch;
     int	value = 0;
-    int	ret_value = 0;
+    int	ret_value;
     int gotone = 0;
     int done = 0;
 

@@ -97,7 +97,6 @@
     INSTKMEMFLAGS = -g kmem -m 2755
 
       CDEBUGFLAGS = -O
-      CDEBUGFLAGS = -g
         CCOPTIONS =
 
       ALLINCLUDES = $(INCLUDES) $(EXTRA_INCLUDES) $(TOP_INCLUDES) $(STD_INCLUDES)
@@ -296,16 +295,27 @@ PICFLAGS = -pic
 # limitation a license to do the foregoing actions under any patents of
 # the party supplying this software to the X Consortium.
 
+# You should point XFIGLIBDIR to the same directory you did when you compiled
+# and installed xfig.  This will be made automatic in the future.
+
+XFIGLIBDIR =	/usr/local/lib/X11/xfig
+
 # If your system has the strerror() function (doesn't have sys_errlist) then
 # comment out NEED_STRERROR with an # comment.
 
 NEED_STRERROR = -DNEED_STRERROR
 
-# Uncomment the XPM variables here  if you have the XPM (color pixmap)
-# package and you would like to allow XPM files.
+# uncomment the following line if your compiler supports
+# inline functions. With the "INLINE" keyword, you should notice that
+# the display will be a bit faster in complex figures
+
+# USEINLINE = -DUSE_INLINE
+
+# Unomment the #define for USEXPM if you want to use the XPM
+# (color pixmap) package.
 # You need version 3.4c or newer of the XPM package.
 #
-# Change XPMLIB if necessary to point to the xpm library (libXpm)
+# Change XPMLIBS if necessary to point to the xpm library (libXpm)
 # Change XPMINC if necessary to point to the include file for xpm (xpm.h)
 #
 # Also change XPMRGB if necessary, to point to your rgb.txt color
@@ -313,15 +323,28 @@ NEED_STRERROR = -DNEED_STRERROR
 # have named colors (e.g. "white").
 # You need version 3.4c of the XPM package.
 #
-# Finally, if your system doesn't have ndbm (the 'new' database subroutines)
-# remove the -DNDBM from the XPMDBM definition.
 
-DUSEXPM = -DUSE_XPM
-XPMLIBDIR = /usr/lib
-XPMINC = -I/usr/include/X11
-XPMLIB = -L$(XPMLIBDIR) -lXpm -lX11
-XPMRGB = XPMRGB=/usr/lib/X11/rgb
-XPMDBM = -DNDBM
+# #define USEXPM
+
+# For Linux machines or any machines that have a separate library for
+# the database management routines, uncomment the following line.
+# For the Redhat distributions of Linux you may have to change DBMLIB to -ldb.
+# For other Linux versions you may need -ldbm instead of -lgdbm.
+# Slackware Linuxes use -lgdbm.
+
+# DBMLIB = -lgdbm
+
+# If your system doesn't have ndbm ("New" database manager) comment the following
+USE_NDBM = -DNDBM
+
+# If don't want to use JPEG, comment out the following line
+
+# If you don't have the jpeg library in your system library area, comment
+# out the USEINSTALLEDJPEG variable (using #), change the JPEGLIBDIR
+# variable to the directory where your jpeg library resides and change
+# the JPEGINCDIR to the directory where your jpeg header files (include)
+# reside.
+# You must have version 5b or newer of the jpeg library.
 
 # uncomment the following to set paper size to A4
 # DDA4 = -DA4
@@ -332,25 +355,16 @@ XPMDBM = -DNDBM
 # uncomment the following to set DVI-to-PostScript driver to dvip
 # DDDVIPS = -DDVIPS
 
-# uncomment the DDNFSS = ... line to use NFSS2 font selection for LaTeX texts
-# uncomment the DDEPSF = ... line to use epsfig macros as distributed w/ LaTeX2e
+# comment out the DDNFSS = ... line if you don't want NFSS2 font selection
+# for LaTeX texts
+# comment out the DDEPSF = ... line if you don't want epsfig macros as
+# distributed w/ LaTeX2e
 #
 #     Hint: Users of LaTeX2e will probably want to include both of these
 #     options; users of LaTeX 2.09 will probably want to include neither.
 
-# DDNFSS = -DNFSS
-# DDEPSF = -DEPSF
-
-# For Linux machines or any machines that have a separate library for
-# the database management routines, uncomment the following line
-# For Redhat distributions of Linux you may have to change DBMLIB to -ldb
-# DBMLIB = -ldbm
-
-# To include drivers for the following languages,
-# add the corresponding symbol to the DEFINES list:
-#
-# -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
-#
+DDNFSS = -DNFSS
+DDEPSF = -DEPSF
 
 # If your system doesn't have strcasecmp and/or strncasecmp
 # undefine the following two definitions
@@ -358,33 +372,33 @@ XPMDBM = -DNDBM
 # HAVE_NO_STRCASECMP = -DHAVE_NO_STRCASECMP
 # HAVE_NO_STRNCASECMP = -DHAVE_NO_STRNCASECMP
 
-DEFINES = -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF $(NEED_STRERROR) $(HAVE_NO_STRCASECMP) $(HAVE_NO_STRNCASECMP)
+# Uncomment the next line if you want use Japanese (i18n) on xfig.
+
+# #define I18N
+
+DEFINES = $(NEED_STRERROR) $(HAVE_NO_STRCASECMP) $(HAVE_NO_STRNCASECMP) $(USEINLINE) \
+	$(I18N_DEFS)
 
 # If your system doesn't have strstr() then uncomment the following line
 # #define NOSTRSTR
 
-# If you have installed the jpeg library on your system, uncomment the
-# USEINSTALLEDJPEG variable, change the JPEGLIBDIR variable to the directory
-# where your jpeg library resides and change the JPEGINCDIR to the
-# directory where your jpeg header files (include) reside.
-# You must have version 5b or newer of the jpeg library.
-# If you haven't installed the jpeg library leave the XCOMM comment in and
-# set JPEGLIBDIR after the #else to the directory where you have the source
-# for jpeg.
-# ** Important:  If you use a version earlier than 6a, you must change
-# the name of the configuration program from "configur" to "configure" in
-# the JPEGCONF variable.
+# **************************************************************
+# *** You shouldn't have to change anything below this point ***
+# *** The one exception is to change JPEGLIBDIR if you have  ***
+# ***  commented out.                        ***
+# **************************************************************
+
+DIR_DEFS=	-DBITMAPDIR=\\\"$(XFIGLIBDIR)/bitmaps\\\"
+
+IMAKE_DEFINES = -DUSE_JPEG
+DUSEJPEG = -DUSE_JPEG
 
 JPEGLIBDIR = /usr/local/lib
 JPEGINCDIR = /usr/include/X11
 JPEGLIB = -L$(JPEGLIBDIR) -ljpeg
 
-# *** You shouldn't have to change anything below this point ***
-
-DUSEGIF = -DUSE_GIF
-
-DEVDEFINES = $(DUSEGIF) $(DUSEXPM) $(XPMINC) $(XPMDBM) $(DDNFSS) $(DDEPSF) \
-		$(DDA4) $(DDIBMGEC) $(DDDVIPS)
+DEVDEFINES = $(DUSEJPEG) $(DUSEXPM) $(XPMINC) $(XPMDBM) \
+		$(DDNFSS) $(DDEPSF) $(DDA4) $(DDIBMGEC) $(DDDVIPS) $(I18N_DEV_DEFS)
 
 DEVDIR = dev
 
@@ -392,11 +406,11 @@ SUBDIRS = $(DEVDIR)
 
 LIBTRANSFIG = $(DEVDIR)/libtransfig.a
 
-INCLUDES = -I.. -I$(JPEGINCDIR)
+INCLUDES = -I..
 
 LOCAL_LIBRARIES = $(LIBTRANSFIG) $(JPEGLIB)
 
-SYS_LIBRARIES = $(XPMLIB) $(DBMLIB) -lm
+SYS_LIBRARIES = $(XPMLIBS) $(DBMLIB) -lm
 
 DEPLIBS = $(LIBTRANSFIG)
 
@@ -414,7 +428,7 @@ fig2dev: $(DEPLIBJPEG) $(DEPLIBS)
 
 $(LIBTRANSFIG)::
 	cd $(DEVDIR); $(MAKE) JPEGINCDIR=$(JPEGINCDIR) \
-		DEFINES="$(DEVDEFINES)" $(XPMRGB) libtransfig.a
+		DEFINES="$(DEVDEFINES) $(DIR_DEFS)" $(XPMRGB) libtransfig.a
 
 PROGRAM = fig2dev
 
@@ -472,6 +486,14 @@ clean::
 	$(RM) $(PROGRAM)
 
 all:: fig2dev.man fig2ps2tex.man pic2tpic.man
+
+# Install the tk bitmaps here
+install::
+	    @(cd bitmaps ; \
+	    if [ -d $(XFIGLIBDIR)/bitmaps ]; then set +x; \
+	    else (set -x; $(MKDIRHIER) $(XFIGLIBDIR)/bitmaps ); fi ; \
+	    echo Copying files for $$d library to $(XFIGLIBDIR)/bitmaps ; \
+	    $(INSTALL) -c * $(XFIGLIBDIR)/bitmaps ; )
 
 install:: fig2ps2tex.script
 	@if [ -d $(DESTDIR)$(BINDIR) ]; then set +x; \

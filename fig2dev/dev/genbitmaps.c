@@ -28,7 +28,7 @@
  *	genbitmaps.c : bitmap driver for fig2dev 
  *
  *	Author: Brian V. Smith
- *		Handles GIF, PCX, JPEG, TIFF, XBM and XPM.
+ *		Handles ACAD, GIF, PCX, JPEG, TIFF, XBM and XPM.
  *		Uses genps functions to generate PostScript output then
  *		calls ghostscript to convert it to the output language
  *		if ghostscript has a driver for that language, or to ppm
@@ -36,6 +36,9 @@
  *		called to make the final XXX file.
  */
 
+#if defined(hpux) || defined(SYSV) || defined(SVR4)
+#include <sys/types.h>
+#endif
 #include <sys/file.h>
 #include <stdio.h>
 #include <math.h>
@@ -55,6 +58,7 @@ Boolean	direct;
 char	*ofile;
 int	width,height;
 int	jpeg_quality=75;
+char	transparent[10]="\0";
 
 void
 genbitmaps_option(opt, optarg)
@@ -67,6 +71,11 @@ char *optarg;
 	    if (strcmp(lang,"jpeg") != 0)
 		fprintf(stderr,"-q option only allowed for jpeg quality; ignored\n");
 	    sscanf(optarg,"%d",&jpeg_quality);
+	    break;
+	case 't':			/* GIF transparent color */
+	    if (strcmp(lang,"gif") != 0)
+		fprintf(stderr,"-t option only allowed for GIF transparent color; ignored\n");
+	    (void) strcpy(transparent,optarg);
 	    break;
 	default:
 	    break;
@@ -157,7 +166,13 @@ genbitmaps_end()
 	/* and pipe through the ppm converter for that format */
 	if (!direct) {
 	    if (strcmp(lang, "gif")==0) {
-		sprintf(com,"(ppmquant 256 %s | ppmtogif",tmpname);
+		if (transparent[0]) {
+		    /* escape the first char of the transparent color (#) for the shell */
+		    sprintf(com,"(ppmquant 256 %s | ppmtogif -transparent \\%s",
+			tmpname,transparent);
+		} else {
+		    sprintf(com,"(ppmquant 256 %s | ppmtogif",tmpname);
+		}
 	    } else if (strcmp(lang, "xbm")==0) {
 		sprintf(com,"(ppmtopgm %s | pgmtopbm | pbmtoxbm",tmpname);
 	    } else if (strcmp(lang, "xpm")==0) {

@@ -468,7 +468,13 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
 
   /* compute cosinus of origin-middle-extremity angle, which approximates the
      curve of the spline segment */
-  angle_cos = scal_prod/sides_length_prod; 
+
+/* IG: Wed Oct  1 13:16:46 BST 1997: Fix floating-point exception bug */
+
+   if (sides_length_prod == 0.0)
+     angle_cos = 0.0;
+   else
+     angle_cos = scal_prod/sides_length_prod; 
 
   xlength = xend - xstart;
   ylength = yend - ystart;
@@ -499,7 +505,7 @@ spline_segment_computing(step, k, p0, p1, p2, p3, s1, s2)
      double  s1, s2;
 {
   double A_blend[4];
-  double t;
+  float t;
   
   if (s1<0)
     {  
@@ -606,7 +612,7 @@ create_line_with_spline(s)
   line->next = NULL;
   line->pic = NULL;  
   ptr = NULL;
-  for (i = start; i<npoints; i++)
+  for (i = start; i<npoints+start; i++)
     {
       if ((pt = create_point()) == NULL)
 	{

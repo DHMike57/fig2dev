@@ -32,7 +32,9 @@ ftp.tex.ac.uk) in /pub/archive/graphics.
 To make TransFig:
 
 1. Edit fig2dev/Imakefile and fig2dev/dev/Imakefile to make any changes
-	noted below
+	noted below.  At least make sure that you point XFIGLIBDIR to the
+	same directory that xfig uses (usually /usr/local/lib/xfig).  This
+	will be used to hold the bitmaps directory for the tk fill patterns.
 2. Do a "xmkmf" to create the top level Makefile from the Imakefile
 3. Do a "make Makefiles"
 4. Do a "make" to make the programs 
@@ -45,8 +47,10 @@ Uncomment the USELATEX2E flag in the transfig/Imakefile file to use the
 The default is to use \\documentstyle{} for LaTeX209.
 
 In fig2dev/Imakefile for the described features:
-uncomment the DDNFSS = ... line to use NFSS2 font selection for LaTeX texts
-uncomment the DDEPSF = ... line to use epsfig macros as distributed w/ LaTeX2e
+Comment out the DDNFSS = ... line if you don't want NFSS2 font selection
+	for LaTeX texts.
+Comment out the DDEPSF = ... line if you don't want epsfig macros as
+	distributed w/ LaTeX2e.
 
     Hint: Users of LaTeX2e will probably want to include both of these
     options; users of LaTeX 2.09 will probably want to include neither.
@@ -78,15 +82,15 @@ You will also need ghostscript, which can be found on ftp.cs.wisc.edu in
 tiff24nc drivers.
 ***************
 ----------------------------------------------------------------------------
-If you have installed the JPEG library on your system, uncomment the
-USEINSTALLEDJPEG in fig2dev/Imakefile variable, change the JPEGLIBDIR variable
-to the directory where your JPEG library resides and change the JPEGINCDIR to
-the directory where your JPEG header files (include) reside.
+Make sure that you point XFIGLIBDIR to the same directory that xfig uses
+(usually /usr/local/lib/xfig).  This will be used to hold the bitmaps directory
+for the tk fill patterns.
+----------------------------------------------------------------------------
+If you have NOT installed the JPEG library in your system library area, comment
+out the USEINSTALLEDJPEG in fig2dev/Imakefile variable, change the JPEGLIBDIR
+variable to the directory where your JPEG library resides and change the
+JPEGINCDIR to the directory where your JPEG header files (include) reside.
 You must have version 5b or newer of the JPEG library.
-
-If you have the JPEG library but haven't installed it in the normal system
-area, leave the XCOMM comment in and set JPEGLIBDIR after the #else to the
-directory where you have the source for JPEG.
 
 The JPEG library is available from several places.  The official archive site
 is ftp.uu.net in /graphics/jpeg.
@@ -100,9 +104,11 @@ If you want to be able to translate Fig files that have imported XPM files
 You need version 3.4c or newer of the XPM package.
 This is available from ftp.x.org in /contrib/libraries.
 ----------------------------------------------------------------------------
-Uncomment the "DBMLIB = -ldbm" in fig2dev/Imakefile if your dbm routines are
+Uncomment the "DBMLIB = -lgdbm" in fig2dev/Imakefile if your dbm routines are
 in their own library.
-This is true for Lunix machines.
+For the Redhat distributions of Linux you may have to change DBMLIB to -ldb.
+For some Linuxes you may need to change it to "DBMLIB = -ldbm".
+Slackware Linuxes use -lgdbm.
 ----------------------------------------------------------------------------
 If your system has the strerror() function (doesn't have sys_errlist) then
 comment out NEED_STRERROR with an XCOMM comment.
@@ -151,6 +157,7 @@ You you must link with -lnsl because gethostname() is used.
 HP systems:
 
 You may need to reduce optimization to +O2 instead of +O3.
+The symptom is that not all of the objects in compound objects print.
 ________________________________________________________________________________
 PROBLEM:
 	Arc-boxes don't appear correct when viewing exported PostScript with 

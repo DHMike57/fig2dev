@@ -740,7 +740,6 @@ F_spline	*s;
 
 	p1 = s->points;
 	cp1 = s->controls;
-	cp2 = cp1->next;
 	x2 = p1->x/ppi; y2 = convy(p1->y/ppi);
 
          pfirst = p1->next;/*save first to test in loop*/

@@ -98,10 +98,6 @@
 
 extern float THICK_SCALE;	/* ratio of dpi/80 */
 
-#ifdef MSDOS
-#define M_PI 3.14159265358979324
-#endif
-
 #define DrawOutLine
 #ifdef DrawOutLine
 int OutLine=0;
@@ -139,19 +135,20 @@ struct fp_struct {
 typedef struct fp_struct FPoint;
 
 /* Local to the file only */
-static int coord_system;
-static int CoordSys = 2;
-static double Threshold;
-static int DPI;
-static int CurWidth = 0;
-static int LineStyle = SOLID_LINE;
-static int LLX = 0, LLY = 0;
-static char *LnCmd;
-static int MaxCircleRadius;
-static double DashLen;
-static int PageMode = FALSE;
-static int PatternType=UNFILLED;
-static int PatternColor=WHITE_COLOR;
+static int	coord_system;
+static int	CoordSys = 2;
+static double	Threshold;
+static Boolean	linew_spec;
+static int	DPI;
+static int	CurWidth = 0;
+static int	LineStyle = SOLID_LINE;
+static int	LLX = 0, LLY = 0;
+static char	*LnCmd;
+static int	MaxCircleRadius;
+static double	DashLen;
+static int	PageMode = FALSE;
+static int	PatternType=UNFILLED;
+static int	PatternColor=WHITE_COLOR;
 static struct {
     double mag;
     int size;
@@ -203,28 +200,30 @@ char *latex_text_mappings[] = {
 
 
 /* Configurable parameters */
-int LowerLeftX=0, LowerLeftY=0;
-double SegLen = 0.0625; /* inch */
-int Verbose = FALSE;
-int TopMargin = 5;
-int BottomMargin = 10;
-int DotDist = 5;
-int LineThick = 0;	/* first use as flag to say whether user specified -l */
-int TeXLang = EEpic;
-double DashScale;
-int EllipseCmd=0;
-int UseBox=None;
-int DashType=Normal;
-char *Preamble="\\documentstyle[epic,eepic]{article}\n\\begin{document}\n\\begin{center}\n";
-char *Postamble="\\end{center}\n\\end{document}\n";
-int VarWidth=FALSE;
-int DashStretch=30;
-double ArrowScale=1.0;
+int	LowerLeftX=0, LowerLeftY=0;
+double	SegLen = 0.0625; /* inch */
+int	Verbose = FALSE;
+int	TopMargin = 5;
+int	BottomMargin = 10;
+int	DotDist = 5;
+int	LineThick = 0;	/* first use as flag to say whether user specified -l */
+int	TeXLang = EEpic;
+double	DashScale;
+int	EllipseCmd=0;
+int	UseBox=None;
+int	DashType=Normal;
+char	*Preamble="\\documentstyle[epic,eepic]{article}\n\\begin{document}\n\\begin{center}\n";
+char	*Postamble="\\end{center}\n\\end{document}\n";
+int	VarWidth=FALSE;
+int	DashStretch=30;
+double	ArrowScale=1.0;
 
 void genepic_option(opt, optarg)
 char opt, *optarg;
 {
   	int loop, i;
+
+        linew_spec = FALSE;
 
         switch (opt) {
 	case 'A':
@@ -256,12 +255,13 @@ char opt, *optarg;
 	    break;
 
         case 'l':
-            LineThick = atoi(optarg) * DPI/80;
+	    linew_spec = TRUE;
+            LineThick = atoi(optarg);	/* save user's argument here */
             break;
 
 	case 'L':
 	    for (loop=0; loop < 3; loop++) {
-	    	if (stricmp(optarg, Tlangkw[loop]) == 0) break;
+	    	if (strcasecmp(optarg, Tlangkw[loop]) == 0) break;
 	    }
 	    TeXLang = loop;
 	    break;
@@ -365,8 +365,11 @@ F_compound *objects;
         put_msg("Resolution has to be positive. Default to 80!\n");
         DPI = 80;
     }
+    /* now that we have DPI defined we can use the -l option */
+    if (linew_spec)
+	LineThick = LineThick * DPI/80;
     if (LineThick == 0)
-	LineThick = 2*DPI/80;	/* user didn't specify -l */
+	LineThick = 2*DPI/80;
     DashScale = (double)DPI/80.0;
     coord_system = objects->nwcorner.y;
     switch (coord_system) {
@@ -429,12 +432,12 @@ int w;
 
     if (w < 0) return;
     old_width=CurWidth;
-    CurWidth = (w >= LineThick) ? (VarWidth ? w : ThickLines) : ThinLines;
+    CurWidth = VarWidth ? w : ((w >= LineThick) ? ThickLines : ThinLines);
     if (old_width != CurWidth) {
 	if (CurWidth==ThinLines) {
 	    fprintf(tfp, "\\thinlines\n");
 	} else if (VarWidth) {
-	    fprintf(tfp, "\\allinethickness{%4.3fpt}%%\n",w*80/DPI);
+	    fprintf(tfp, "\\allinethickness{%4.3fpt}%%\n",w*80.0/DPI);
 	} else {
 	    fprintf(tfp, "\\thicklines\n");
 	}
@@ -1414,7 +1417,7 @@ drawarc(ctr, r, th1, angle)
 FPoint *ctr;
 double r, th1, angle;
 {
-    double arclength, delta;
+    double delta;
     int division, pt_count = 0;
 
 
@@ -1612,23 +1615,6 @@ int style, color;
 
   return shaded;
 }
-
-#ifndef MSDOS
-stricmp(s, t)
-char *s, *t;
-{
-    char a, b;
-
-    for (;;) {
-        a= *s++; b= *t++;
-        a = islower(a) ? toupper(a) : a;
-        b = islower(b) ? toupper(b) : b;
-        if (a != b) break;
-        if (a == '\0') return(0);
-    }
-    return(a - b);
-}
-#endif
 
 struct driver dev_epic = {
      	genepic_option,

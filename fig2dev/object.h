@@ -135,6 +135,7 @@ typedef struct f_pic {
 #define	P_XBM	1	/* X11 bitmap picture type */
 #define	P_XPM	2	/* X11 pixmap (XPM) picture type */
 #define	P_GIF	3	/* GIF picture type */
+#define	P_PCX	5	/* PCX picture type */
 #define	P_JPEG	4	/* JPEG picture type */
     char            file[256];
     int             flipped;
@@ -144,6 +145,9 @@ typedef struct f_pic {
     float	    hw_ratio;
     struct f_pos    bit_size;
     int             pix_rotation, pix_width, pix_height, pix_flipped;
+#ifdef V4_0
+    struct f_compound *figure; /*ggstemme*/
+#endif /* V4_0 */
 }
 		F_pic;
 

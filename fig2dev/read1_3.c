@@ -51,10 +51,6 @@
 
 extern F_arrow		*forward_arrow(), *backward_arrow();
 extern int		figure_modified;
-#ifndef __NetBSD__
-extern char		*sys_errlist[];
-extern int		sys_nerr, errno;
-#endif
 
 static F_ellipse	*read_ellipseobject();
 static F_line		*read_lineobject();
@@ -65,6 +61,10 @@ static F_compound	*read_compoundobject();
 
 extern int		line_no;
 extern int		num_object;
+
+#ifdef V4_0
+extern int              suppress_error;/*ggstemme*/
+#endif /* V4_0 */
 
 int
 read_1_3_objects(fp, obj)
@@ -81,10 +81,13 @@ F_compound	*obj;
 	int		 object, pixperinch, canvaswid, canvasht, coord_sys;
 
 	n = fscanf(fp,"%d%d%d%d\n", &pixperinch, &coord_sys, &canvaswid, &canvasht);
-	if (n != 4) {
-	    put_msg("Incorrect format in the first line in input file");
-	    return(-1);
-	    }
+	if (n != 4){
+#ifdef V4_0
+	  if (!suppress_error)
+#endif /* V4_0 */
+	     put_msg("Incorrect format in the first line in input file");
+	  return(-1);
+	}
 	obj->nwcorner.x = pixperinch;
 	obj->nwcorner.y = coord_sys;
 	while (fscanf(fp, "%d", &object) == 1) {

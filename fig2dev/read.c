@@ -56,9 +56,6 @@ char *
 strerror(e)
 	int e;
 {
-#if (! (defined(BSD) && (BSD >= 199306)) && !defined(__NetBSD__))
-	extern char *sys_errlist[];
-#endif
 	return sys_errlist[e];
 	}
 #endif
@@ -93,6 +90,113 @@ int			v2_flag;	/* Protocol V2.0 or higher */
 int			v21_flag;	/* Protocol V2.1 or higher */
 int			v30_flag;	/* Protocol V3.0 or higher */
 int			v32_flag;	/* Protocol V3.2 or higher */
+
+#ifdef V4_0
+
+int suppress_error=0; /*ggstemme*/
+
+/*ggstemme*/
+static struct stackobj {
+  User_color		user_colors[MAX_USR_COLS];
+  int			user_col_indx[MAX_USR_COLS];
+  int			num_usr_cols;
+  char			buf[BUF_SIZE];
+  int			line_no;
+  int			num_object;
+  int			v2_flag;	
+  int			v21_flag;	
+  int			v30_flag;	
+  float			THICK_SCALE;	
+  int landscape;
+  int center;
+  double mag;
+  Boolean pats_used;
+  Boolean pattern_used[NUMPATTERNS];
+  
+  struct stackobj *previous;
+  int stack_height;
+};
+
+static struct stackobj *top = NULL;
+
+static int push() {
+  struct stackobj* newobj;
+  int i;
+  
+  if (NULL==(newobj= (struct stackobj*) malloc(sizeof(struct stackobj))))
+    return -1;
+ 
+  newobj->previous=top;
+  top=newobj;
+
+  for (i=0; i < MAX_USR_COLS;i++) {
+    top->user_colors[i]=user_colors[i];
+    top->user_col_indx[i]=user_col_indx[i];
+  }
+  top->num_usr_cols=num_usr_cols;
+  for (i=0; i < BUF_SIZE; i++)
+    top->buf[i]=buf[i];
+  top->line_no=line_no;
+  top->num_object=num_object;
+  top->v2_flag=v2_flag;	
+  top->v21_flag=v21_flag;	
+  top->v30_flag=v30_flag;	
+  top->THICK_SCALE=THICK_SCALE;	
+  top->landscape=landscape;
+  top->center=center;
+  top->mag=mag;
+  top->pats_used=pats_used;
+  for (i=0;i < NUMPATTERNS;i++)
+    top->pattern_used[i]=pattern_used[i];
+  
+  if (top->previous!=NULL) {
+    top->stack_height=top->previous->stack_height+1;
+  }
+  else
+    top->stack_height=0;
+
+  line_no=0;
+  return 0;
+}
+
+static int pop() {
+  struct stackobj *oldtop;
+  int i;
+  if (top==NULL)
+    return -1;
+  
+  for (i=0; i < MAX_USR_COLS;i++) {
+    user_colors[i]=top->user_colors[i];
+    user_col_indx[i]=top->user_col_indx[i];
+  }
+  num_usr_cols=top->num_usr_cols;
+  for (i=0;i < BUF_SIZE;i++)
+    buf[i]=top->buf[i];
+  line_no=top->line_no;
+  num_object=top->num_object;
+  v2_flag=top->v2_flag;	
+  v21_flag=top->v21_flag;	
+  v30_flag=top->v30_flag;	
+  THICK_SCALE=top->THICK_SCALE;	
+  landscape=top->landscape;
+  center=top->center;
+  mag=top->mag;
+  pats_used=top->pats_used;
+  for (i=0; i < NUMPATTERNS;i++)
+    pattern_used[i]=top->pattern_used[i];
+  
+  oldtop=top;
+  top=top->previous;
+  free ((char *) oldtop);
+  
+  if (top==NULL) 
+    return 0;
+  else
+    return top->stack_height;
+  
+}
+
+#endif /* V4_0 */
 
 read_fail_message(file, err)
 char	*file;
@@ -156,10 +260,13 @@ F_compound	*obj;
 
 	num_object = 0;
 	num_usr_cols = 0;
+	/* read first character to see if it is "#" (#FIG 1.4 and newer) */
 	c = fgetc(fp);
 	if (feof(fp)) 
 	    return -2;
 	bzero((char*)obj, COMOBJ_SIZE);
+	/* put the character back */
+	ungetc(c, fp);
 	if (c == '#')
 	    status = read_objects(fp, obj);
 	else
@@ -182,8 +289,6 @@ F_compound	*obj;
 	int		object, ppi, coord_sys;
 
 	bzero((char*)obj, COMOBJ_SIZE);
-	/* get back to the top */
-	rewind(fp);
 	(void)fgets(buf, BUF_SIZE, fp);	/* get the version line */
 	if (strlen(buf) > (size_t)0)
 	    buf[strlen(buf)-1] = '\0';	/* remove newline */
@@ -334,11 +439,24 @@ F_compound	*obj;
 		case O_POLYLINE :
 		    if ((l = read_lineobject(fp)) == NULL) 
 			return -1;
-		    if (ll)
-			ll = (ll->next = l);
-		    else 
-			ll = obj->lines = l;
-		    num_object++;
+#ifdef V4_0
+		    if ((l->pic != NULL) && (l->pic->figure != NULL)) {
+			if (lc)
+			    lc = (lc->next = l->pic->figure);
+			else 
+			    lc = obj->compounds = l->pic->figure;
+			free_linestorage(l);
+			num_object++;
+		    } else {
+#else /* V4_0 */
+		    {
+#endif /* V4_0 */
+			if (ll)
+			    ll = (ll->next = l);
+			else 
+			    ll = obj->lines = l;
+			num_object++;
+		    }
 		    break;
 		case O_SPLINE :
 		    if ((s = read_splineobject(fp)) == NULL) { 
@@ -554,10 +672,23 @@ FILE	*fp;
 			free_line(&l);
 			return NULL;
 			}
-		    if (ll)
-			ll = (ll->next = l);
-		    else 
-			ll = com->lines = l;
+#ifdef V4_0
+		    if (l->pic->figure != NULL) {
+			if (lc)
+			    lc = (lc->next = l->pic->figure);
+			else 
+			    lc = com->compounds = l->pic->figure;
+			free_linestorage(l);
+		    }
+		    else {
+#else /* V4_0 */
+		    {
+#endif /* V4_0 */
+			if (ll)
+			    ll = (ll->next = l);
+			else 
+			    ll = com->lines = l;
+		    }
 		    break;
 		case O_SPLINE :
 		    if ((s = read_splineobject(fp)) == NULL) { 
@@ -735,8 +866,10 @@ FILE	*fp;
 	l->radius *= round(THICK_SCALE);
 	l->thickness *= round(THICK_SCALE);
 	l->fill_style = FILL_CONVERT(l->fill_style);
+
 	/* keep track if pattern is used */
 	note_pattern(l->fill_style);
+
 	fix_color(&l->pen_color);
 	fix_color(&l->fill_color);
 	skip_comment(fp);
@@ -761,53 +894,88 @@ FILE	*fp;
 	    skip_comment(fp);
 	    }
     	if (l->type == T_PIC_BOX) {
-		line_no++;
-		Pic_malloc(l->pic);
-		if (l->pic  == NULL) {
-		    free((char *) l);
-		    return (NULL);
-		}
-		if (fscanf(fp, "%d %s", &l->pic->flipped, l->pic->file) != 2) {
-	    		put_msg(Err_incomp,
-				"Picture object", line_no);
-	    		fprintf(stderr, Err_incomp,
-				"Picture object", line_no);
-	    	return (NULL);
-		}
-    	} else
-		l->pic = NULL;
+	  line_no++;
+	  Pic_malloc(l->pic);
+	  if (l->pic  == NULL) {
+	    free((char *) l);
+	    return (NULL);
+	  }
+	  if (fscanf(fp, "%d %s", &l->pic->flipped, l->pic->file) != 2) {
+	    put_msg(Err_incomp,
+		    "Picture object", line_no);
+	    fprintf(stderr, Err_incomp,
+		    "Picture object", line_no);
+	    return (NULL);
+	  }
 
+#ifdef V4_0
+	  l->pic->figure=NULL;
+	  Compound_malloc(l->pic->figure);
+	  if (l->pic->figure == NULL) {
+	    free((char*) l);
+	    fprintf(stderr,"read: no memory.\n");
+	    return (NULL);
+	  }
+	  
+	  if (push() == -1) 
+	      return (NULL);
+	  suppress_error=1;
+	  if (read_fig(l->pic->file,l->pic->figure) != 0) {
+	    free ((char *) l->pic->figure);
+	    l->pic->figure=NULL;
+	  }
+	  suppress_error=0;
+	  pop();
+#endif /* V4_0 */
+
+
+    	} else
+	   l->pic = NULL;
+	
 	if (NULL == (l->points = Point_malloc(p))) {
-	    put_msg(Err_mem);
-	    return NULL;
-	    }
+	  put_msg(Err_mem);
+	  return(NULL);
+	}
 	p->next = NULL;
 	if (fscanf(fp, "%d%d", &p->x, &p->y) != 2) {
+	  put_msg(Err_incomp, "line", line_no);
+	  free_linestorage(l);
+	  return(NULL);
+	}
+	if (!v30_flag)
+	   npts = 1000000;
+	for (--npts; npts > 0; npts--) {
+	  if (fscanf(fp, "%d%d", &x, &y) != 2) {
 	    put_msg(Err_incomp, "line", line_no);
 	    free_linestorage(l);
 	    return NULL;
-	    }
-	if (!v30_flag)
-		npts = 1000000;
-	for (--npts; npts > 0; npts--) {
-	    if (fscanf(fp, "%d%d", &x, &y) != 2) {
-		put_msg(Err_incomp, "line", line_no);
-		free_linestorage(l);
-		return NULL;
-		}
-	    if (!v30_flag && x == 9999) 
-		break;
-	    if (NULL == (Point_malloc(q))) {
-		put_msg(Err_mem);
-		free_linestorage(l);
-		return NULL;
-		}
-	    q->x = x;
-	    q->y = y;
-	    q->next = NULL;
-	    p->next = q;
-	    p = q;
-	    }
+	  }
+	  if (!v30_flag && x == 9999) 
+	     break;
+	  if (NULL == (Point_malloc(q))) {
+	    put_msg(Err_mem);
+	    free_linestorage(l);
+	    return(NULL);
+	  }
+	  q->x = x;
+	  q->y = y;
+	  q->next = NULL;
+	  p->next = q;
+	  p = q;
+	}
+
+#ifdef V4_0
+	if ((l->pic!=NULL)&&(l->pic->figure!=NULL)) {
+	    compound_bound(l->pic->figure,
+			&l->pic->figure->nwcorner.x,
+			&l->pic->figure->nwcorner.y,
+			&l->pic->figure->secorner.x,
+			&l->pic->figure->secorner.y);
+	    convert_figure(l);
+	  
+	}
+#endif /* V4_0 */
+	
 	skip_line(fp);
 	return l;
 	}

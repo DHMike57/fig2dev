@@ -116,7 +116,7 @@ struct paperdef
     int height;			/* paper height in points */
 };
 
-#define NUMPAPERSIZES 15
+#define NUMPAPERSIZES 14
 extern struct paperdef paperdef[];
 
 /* user-defined colors */
@@ -163,3 +163,10 @@ struct Cmap {
 #endif /* MAXPATHLEN */
 #endif /* PATH_MAX */
 
+#ifndef __NetBSD__
+extern int		sys_nerr, errno;
+#endif
+
+#if (! (defined(BSD) && (BSD >= 199306)) && !defined(__NetBSD__))  && !defined(__GNU_LIBRARY__)
+	extern char *sys_errlist[];
+#endif

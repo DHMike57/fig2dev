@@ -1,4 +1,4 @@
-.TH FIG2DEV 1 "Release 3.2(0) (Protocol 3.2) XXX X, 1996"
+.TH FIG2DEV 1 "Release 3.2 Patchlevel 1 (Protocol 3.2) July 1, 1998"
 .SH NAME
 fig2dev \- translates Fig code to various graphics languages
 
@@ -45,9 +45,10 @@ Fig2dev is compatible with Fig versions 1.3, 1.4, 2.0, 2.1, 3.0, 3.1 and 3.2.
 .B \-L
 Set the output graphics language.
 Valid languages are
-\fBacad, box, epic, eepic, eepicemu, gif, ibmgl, jpeg, latex, mf (METAFONT),
+\fBacad (AutoCad slide format), box, epic, eepic, eepicemu, gif, ibmgl, jpeg, 
+latex, mf (METAFONT),
 pcx, pic, pictex, png, ppm, ps, pstex, pstex_t, textyl, \fR
-tiff, tpic, xbm and
+tiff, tk (tcl/tk), tpic, xbm and
 .B xpm.
 
 Note that
@@ -56,6 +57,9 @@ and
 .I xdvi
 must be compiled with the tpic support (-DTPIC) for epic, eepic and tpic to work.
 
+.TP
+.B \-h
+Print help message with all options for all output languages.
 .TP
 .B \-m
 Set the magnification at which the figure is rendered to
@@ -203,7 +207,7 @@ Each entry consists of 5 numbers which specify the
 5.) fill angle (degrees).
 .TP
 .B \-m
-The magnification may appear as the first element in a comma sepatated list -
+The magnification may appear as the first element in a comma separated list -
 .I mag,x0,y0
 - where the second and third parameters specify an offset in inches.
 .TP
@@ -270,26 +274,24 @@ Enables the use of certain PIC extensions which are known to work with
 the groff package; compatibility with DWB PIC is unknown.
 The extensions enabled by each option are:
 .LP
-.TP
-.B arc
-Allow ARC_BOX i.e. use rounded corners
-.TP
-.B line
-Use the 'line_thickness' value
-.TP
-.B fill
-Allow ellipses to be filled
-.TP
-.B all
-Use all of the above
-.TP
-.B psfont
-Don't convert Postscript fonts generic type (useful for files going to be
-Ditroff'ed for and printed on PS printer). DWB-compatible.
-.TP
-.B allps
-Use all of the above (i.e. "all" + "psfont")
-.EP
+.nf
+.in 1.1i
+.ta .8i
+\fBarc\fR	Allow ARC_BOX i.e. use rounded corners
+.br
+\fBline\fR	Use the 'line_thickness' value
+.br
+\fBfill\fR	Allow ellipses to be filled
+.br
+\fBall\fR	Use all of the above
+.br
+\fBpsfont\fR	Don't convert Postscript fonts generic type 
+	(useful for files going to be Ditroff'ed for
+	and printed on PS printer). DWB-compatible.
+.br
+\fBallps\fR	Use all of the above (i.e. "all" + "psfont")
+.in
+.fi
 .EP
 
 .SH PICTEX OUTPUT
@@ -410,7 +412,6 @@ and "B5" (18.2cm x 25.7cm).
 .LP
 
 .SH PSTEX OPTIONS
-.TP
 The
 .B pstex
 language is a variant of
@@ -426,9 +427,6 @@ These two drivers can be used to generate a figure which combines the
 flexibility of PostScript graphics with LaTeX text formatting of
 special text.
 .TP
-The
-.B pstex
-option
 .B -n name
 sets the Title part of the PostScript output to
 .I name.
@@ -436,43 +434,97 @@ This is useful when the input to
 .I fig2dev
 comes from standard input.
 .TP
-The
-.B pstex_t
-option 
 .B -p file
 specifies the name of the PostScript file to be overlaid.
 If not set or its value is null then no PS file will be inserted.
 .LP
 
+.SH TK OPTIONS
+.TP
+.B -l dummy_arg
+Generate figure in landscape mode.  The dummy argument is ignored,
+but must appear on the command line for reasons of compatibility.
+This option will override the orientation specification in the
+file (for file versions 3.0 and higher).
+.TP
+.B -p dummy_arg
+Generate figure in portrait mode.  The dummy argument is ignored,
+but must appear on the command line for reasons of compatibility.
+This option will override the orientation specification in the
+file (for file versions 3.0 and higher).
+This is the default for Fig files of version 2.1 or lower.
+.TP
+.B -P
+Generate canvas of full page size instead of using the bounding box
+of the figure's objects. The default is to use only the bounding box.
+.TP
+.B -z papersize
+Sets the papersize.  See the POSTSCRIPT OPTIONS for available paper sizes.
+This is only used when the -P option (use full page) is used.
+
 .SH TEXTYL OPTIONS
 There are no TeXtyl-specific options.
 
 .SH METAFONT OPTIONS
+.I fig2dev
+scales the figure by 1/8 before generating METAFONT code.
+The magnification can be further changed with the
+.B -m
+option or by giving magnification options to 
+.B mf.
+.LP
+In order to process the generated METAFONT code, the mfpic macros
+must be installed where
+.B mf
+can find them. The mfpic macro package is available at any CTAN cite
+under the subdirectory: graphics/mfpic
+
 .TP
 .B -C code
-specifies the starting METAFONT font code.
+specifies the starting METAFONT font code. The default is 32.
 .TP
 .B -n name
 specifies the name to use in the output file.
 .TP
-.B -p pen
-specifies the size of the METAFONT pen.
+.B -p pen_magnification
+specifies how much the line width should be magnified compared to the
+original figure. The default is 1.
 .TP
 .B -t top
-specifies the top of the whole coordinate system.
+specifies the top of the whole coordinate system. The default is 
+.B ypos.
 .TP
 .B -x xneg
-specifies the minimum x coordinate value of the figure (inches).
+specifies the minimum x coordinate value of the figure (inches). The
+default is 0.
 .TP
 .B -y yneg
-specifies the minumum y coordinate value of the figure (inches).
+specifies the minumum y coordinate value of the figure (inches). The
+default is 0. 
 .TP
 .B -X xpos
-specifies the maximum x coordinate value of the figure (inches).
+specifies the maximum x coordinate value of the figure (inches). The
+default is 8.
 .TP
 .B -Y ypos
-specifies the maximum y coordinate value of the figure (inches).
+specifies the maximum y coordinate value of the figure (inches). The
+default is 8.
 
+.SH JPEG OPTIONS
+.TP
+.B -q image_quality
+use the integer value 
+.I image_quality
+for the JPEG "Quality" factor.  Valid values are 0-100.
+
+
+.SH GIF OPTIONS
+.TP
+.B -t color
+Use
+.I color
+for the transparent color in the GIF file.  This must be specified
+as a six-digit hexadecimal RGBvalue with the # sign, e.g. #ff0000 (Red).
 
 .SH TPIC OPTIONS
 There are no tpic-specific options.
@@ -482,6 +534,23 @@ There are no tpic-specific options.
 pic(1)
 pic2fig(1),
 transfig(1)
+.SH BUGS and RESTRICTIONS
+Please send bug reports, fixes, new features etc. to:
+.br
+xfig-bugs@epb1.lbl.gov
+(Brian V. Smith)
+.PP
+Arc-boxes are not supported for the tk output language, and only X bitmap pictures
+are supported because of the canvas limitation in tk.
+.PP
+Picture objects are not scaled with the magnification factor for tk output.
+.PP
+Because tk scales canvas items according to the X display resolution,
+polygons, lines, etc. may be scaled differently than imported pictures (bitmaps)
+which aren't scaled at all.
+.PP
+Rotated text is only supported in the IBM-GL (HP/GL) and PostScript (including eps)
+languages.
 .SH COPYRIGHT
 Copyright (c) 1985 Supoj Sutantavibul
 .br
@@ -541,4 +610,6 @@ Christophe Schlick (schlick@labri.u-bordeaux.fr)
 .br
 The initial implementation was done by C. Feuille, S. Grobois, L. Maziere
 and L. Minihot as a student practice (Universite Bordeaux, France).
-
+The tk driver was written by:
+.br
+Mike Markowski (mm@udel.edu) with a little touch-up by Brian Smith

@@ -88,7 +88,7 @@ double	THIN_LXOFF =	(0.1/72.0);
 double	THIN_LYOFF =	(0.7/72.0);
 double	THICK_LXOFF =	(0.4/72.0);
 double	THICK_LYOFF =	(0.6/72.0);
-#define MIN_LEN		(13.0/72.0)	/* 13  points */
+#define MIN_LEN		(13.0/72.0/1200.0*80.0)	/* 13  points */
 
 /*
  *  other constants and macros
@@ -233,7 +233,7 @@ F_compound	*objects;
 
 	coord_system = objects->nwcorner.y;
  	unitlength = mag/objects->nwcorner.x;
-	dash_mag /= unitlength;
+	dash_mag /= unitlength*80.0;
 
 	switch (coord_system) {
 	    case 1:
@@ -570,7 +570,6 @@ double	val;
 	n = rint(nd);
 	if (n == 0)
 		n = 1;		/* sanity check */
-	dx = l / (double)n;
 	if (sx) {
 	    dx = l / (double)n;
 	    if (sx < 0) dx = -dx;
@@ -731,6 +730,12 @@ F_text	*t;
 	      	}
 	else 
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
+#ifdef I18N
+		    extern Boolean support_i18n;
+		    if (support_i18n && (t->font <= 2))
+			fputc(*cp, tfp);
+		    else
+#endif
 		    if (*cp >= 0xa0)
 			 fprintf(tfp, "%s", ISOtoTeX[(int)*cp-0xa0]);
 		else

@@ -37,6 +37,17 @@
  *  Version 0.03 --	Support new arcthree mode
  *  Version 0.04 --	Token support for text
  *  Version 0.05 --	Integrated into fig2dev - B.V.Smith 11/28/94
+ *  Version 0.06 --	Fixed a number of bugs.
+ 			Converted to mfpic 0.2.10.8 alfa
+				/M.Bengtsson July 1, 1998
+ */
+
+/* TODO: 
+ *  - Dashed and dotted lines
+ *  - Arrow heads
+ *  - Filled polylines and open splines
+ *  - Difference between interpolated and non-interpolated splines
+ *  - ...
  */
 
 #include <stdio.h>
@@ -44,11 +55,10 @@
 #include "object.h"
 
 #define dofill(obj)	1.2-((double)obj->fill_style/(double)BLACK_FILL)
-#define dopen(x)	((x-1)*PEN_INCR)+DEF_PEN
-#define VERSION		0.05
+#define VERSION		0.06
 #define DEF_PEN		0.5
 #define PEN_INCR	0.10
-
+#define INFTY		1e5
 typedef struct {
 	char *keyword;
 	double *value;
@@ -56,14 +66,27 @@ typedef struct {
 
 static double ppi;
 static double code = 32.0;
-static double mfpen = 0.5;
+static int oldpen = 0;
+static double penscale = 1;
 static double xscale = 0.125;
 static double yscale = 0.125;
 static double xl = 0.0;
-static double yl = 8.0;
-static double xu = 0.0;
+static double xu = 8.0;
+static double yl = 0.0;
 static double yu = 8.0;
-static double maxy = 8.0;
+static double maxy = INFTY;
+
+void
+setpen(thickness)
+int thickness;
+{
+  if (thickness != oldpen) {
+    fprintf(tfp, "penwd := %.2lfpt;\n", 
+	    thickness/THICK_SCALE*penscale*yscale*mag);
+    fprintf(tfp, "drawpen := pencircle scaled penwd yscaled aspect_ratio;\n");
+    oldpen = thickness;
+  }
+}
 
 void
 genmf_start(objects)
@@ -71,30 +94,32 @@ F_compound	*objects;
 {
 	int	curchar;
 
-	ppi = objects->nwcorner.x/mag;
+	if (maxy == INFTY) 
+		maxy = yu;
+	
+	ppi = objects->nwcorner.x;
 	curchar = (int)code;
 
 	fprintf(tfp,"%%\n%% fig2dev -L mf version %.2lf --- Preamble\n%%\n",
 		VERSION);
-	fprintf(tfp,"mag:=%g/1000; input graphbase.mf; code:=%g;\n",
-		mag, code);
-	fprintf(tfp,"mfpicenv;\ninterim hdwdr:=1; interim hdten:=1;\n");
-	fprintf(tfp,"interim penwd:=%.2lfpt;\npickup pencircle scaled penwd;\n", mfpen);
+	fprintf(tfp,"mag:=1; input grafbase.mf; code:=%g;\n",
+		code);
+	fprintf(tfp,"interim hdwdr:=1; interim hdten:=1;\n");
 
 	fprintf(tfp,"%%\n%% %s (char %d)\n%%\n",
 		(name? name: ((from) ? from : "stdin")), ++curchar);
-	fprintf(tfp,"xscale:=%.3lf; yscale:=%.3lf; bounds(%.3lf,%.3lf,%.3lf,%.3lf);\n",
-		xscale, yscale, xl, xu, yl, yu);
-	fprintf(tfp,"beginchar(incr code,xscale*(xpos-xneg)*in#,yscale*(ypos-yneg)*in#,0);\n");
-	fprintf(tfp,"  setztr;\n");
-	fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n", mfpen);
+	fprintf(tfp,"xscale:=%.3lf; yscale:=%.3lf;\n", xscale*mag, yscale*mag);
+	fprintf(tfp,"bounds(%.3lf,%.3lf,%.3lf,%.3lf);\n", xl, xu, yl, yu);
+	fprintf(tfp,"unitlen:=1.0in#;\n");
+	fprintf(tfp,"beginmfpic(incr code);\n");
+	setpen(1);
 }
 
 
 void
 genmf_end()
 {
-	fprintf(tfp,"endmfpicenv;\nend.\n");
+	fprintf(tfp,"endmfpic;\nend.\n");
 }
 
 void
@@ -110,7 +135,7 @@ char *optarg;
 	    name = optarg;
 	    break;
 	case 'p':
-	    mfpen = atof(optarg);
+	    penscale = atof(optarg);
 	    break;
 	case 't':
 	    maxy = atof(optarg);
@@ -136,26 +161,30 @@ genmf_line(l)
 F_line *l;
 {
 	F_point	*p;
-	if (l->thickness > 1)
-		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
-			dopen(l->thickness));
-	if (l->fill_style == BLACK_FILL)
-		fprintf(tfp,"  cycleshade(0, false,\n");
-	else if (l->fill_style < BLACK_FILL && l->fill_style > 0)
-		fprintf(tfp,"  cycleshade(%lfpt, false,\n", dofill(l));
-	else
-		fprintf(tfp,"  curve(false, false,\n");
+	setpen(l->thickness);
+	fprintf(tfp, "  store (curpath)\n");
+	if ((l->type==1) && (l->fill_style<0)) /* Open polyline */
+		fprintf(tfp,"  drawn polyline(false)\n");
+	else {	
+  /* Closed and/or filled polygon, cover underlying figures 
+   * first with white if this polygon is shaded */
+		if (l->fill_style == BLACK_FILL)
+			fprintf(tfp,"  filled ");
+		else if (l->fill_style < BLACK_FILL && l->fill_style > 0)
+			fprintf(tfp,"  shade(%lfpt) unfilled", dofill(l));
+		else if (l->fill_style == 0)
+			fprintf(tfp,"  drawn unfilled ");
+		else 
+			fprintf(tfp,"  drawn ");
+		fprintf(tfp,"polyline(true)\n");
+	}
 	p = l->points;
-	fprintf(tfp,"       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
+	fprintf(tfp,"      ((%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
 	p = p->next;
 	for ( ; p != NULL; p=p->next) {
 	    fprintf(tfp,",\n       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
 	}
-	if (l->thickness > 1)
-		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
-			mfpen);
-
-	cfin();
+	fprintf(tfp, ");\n");
 	return;
 }
 
@@ -165,24 +194,28 @@ genmf_spline(s)
 F_spline *s;
 {
 	F_point	*p;
-	if (s->thickness > 1)
-		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
-			dopen(s->thickness));
-	if (s->fill_style == BLACK_FILL)
-		fprintf(tfp,"  cycleshade(0, true,\n");
-	else if (s->fill_style < BLACK_FILL && s->fill_style > 0)
-		fprintf(tfp,"  cycleshade(%lfpt, true,\n", dofill(s));
-	else
-		fprintf(tfp,"  curve(true, false,\n");
+	setpen(s->thickness);
+	fprintf(tfp, "  store (curpath)\n");
+	if ((s->type == 0) || (s->type == 2) && (s->fill_style < 0)) /* Open spline */
+		fprintf(tfp,"  drawn curve(false)\n");
+	else { /* Closed and/or filled spline, see comment above */
+		if (s->fill_style == BLACK_FILL)
+			fprintf(tfp,"  filled ");
+		else if (s->fill_style < BLACK_FILL && s->fill_style > 0)
+			fprintf(tfp,"  shade(%lfpt) unfilled ", dofill(s));
+		else if (s->fill_style == 0)
+			fprintf(tfp,"  drawn unfilled ");
+		else
+			fprintf(tfp,"  drawn ");
+		fprintf(tfp,"curve(true)\n");
+	}
 	p = s->points;
-	fprintf(tfp,"       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
+	fprintf(tfp,"      ((%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
 	p = p->next;
 	for ( ; p != NULL; p=p->next) {
 	    fprintf(tfp,",\n       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
 	}
-	if (s->thickness > 1)
-		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n", mfpen);
-	cfin();
+	fprintf(tfp, ");\n");
 	return;
 }
 
@@ -191,35 +224,25 @@ void
 genmf_ellipse(e)
 F_ellipse *e;
 {
-	if (e->thickness > 1)
-		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
-			dopen(e->thickness));
-
+        setpen(e->thickness);
+	fprintf(tfp, "  store (curpath)\n");
+	if (e->fill_style == BLACK_FILL)
+		fprintf(tfp,"  filled ");
+	else if (e->fill_style < BLACK_FILL && e->fill_style > 0)
+		fprintf(tfp,"  shade(%lfpt) ", dofill(e));
+	else
+		fprintf(tfp,"  drawn ");
 	if (e->type == 3 || e->type == 4)
 	{
-		if (e->fill_style == BLACK_FILL)
-			fprintf(tfp,"  circshade(0, ");
-		else if (e->fill_style < BLACK_FILL && e->fill_style > 0)
-			fprintf(tfp,"  circshade(%lfpt, ", dofill(e));
-		else
-			fprintf(tfp,"  circle(");
-		fprintf(tfp,"(%lf,%lf),%lf);\n",
+		fprintf(tfp,"circle((%lf,%lf),%lf);\n",
 			e->center.x/ppi, maxy-(e->center.y/ppi), e->radiuses.x/ppi);
 	}
 	else if (e->type == 1 || e->type == 2)
 	{
-		if (e->fill_style == BLACK_FILL)
-			fprintf(tfp,"  ellshade(0, ");
-		else if (e->fill_style < BLACK_FILL && e->fill_style > 0)
-			fprintf(tfp,"  ellshade(%lfpt, ", dofill(e));
-		else
-			fprintf(tfp,"  ellipse(");
-		fprintf(tfp,"(%lf,%lf),%lf,%lf,0);\n",
+		fprintf(tfp,"ellipse((%lf,%lf),%lf,%lf,0);\n",
 			e->center.x/ppi, maxy-(e->center.y/ppi), 
 			e->radiuses.x/ppi, e->radiuses.y/ppi);
 	}
-	if (e->thickness > 1)
-		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n", mfpen);
 
 }
 
@@ -228,20 +251,13 @@ genmf_arc(a)
 F_arc *a;
 {
 
-	if (a->thickness > 1)
-		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
-			dopen(a->thickness));
-
-	fprintf(tfp,"  arcthree((%lf,%lf), (%lf,%lf), (%lf,%lf));\n",
+	setpen(a->thickness);
+	fprintf(tfp, "  store (curpath)\n");
+	fprintf(tfp,"  drawn arcppp((%lf,%lf), (%lf,%lf), (%lf,%lf));\n",
 		a->point[0].x/ppi, maxy-(a->point[0].y/ppi),
 		a->point[1].x/ppi, maxy-(a->point[1].y/ppi),
 		a->point[2].x/ppi, maxy-(a->point[2].y/ppi));
 
-	if (a->thickness > 1)
-		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
-			mfpen);
-
-	cfin();
 	return;
 
 }
@@ -250,16 +266,11 @@ void
 genmf_text(t)
 F_text *t;
 {
-	fprintf(tfp,"%% label((%lf,%lf),%s)\n", t->base_x/ppi,
-		maxy-(t->base_y/ppi), t->cstring);
-	cfin();
+	fprintf(stderr, "warning: text ignored in MF output: `%s'\n",
+		t->cstring);
 	return;
 }
 
-cfin()
-{
-	fprintf(tfp,"endchar;\n");
-}
 
 struct driver dev_mf = {
      	genmf_option,

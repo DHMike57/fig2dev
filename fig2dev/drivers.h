@@ -34,6 +34,7 @@ extern struct driver dev_ps;
 extern struct driver dev_pstex;
 extern struct driver dev_pstex_t;
 extern struct driver dev_textyl;
+extern struct driver dev_tk;
 extern struct driver dev_tpic;
 extern struct driver dev_mf;
 extern struct driver dev_bitmaps;
@@ -64,6 +65,7 @@ struct
 		{"pstex_t",	&dev_pstex_t},
 		{"textyl",	&dev_textyl},
 		{"tiff",	&dev_bitmaps},
+		{"tk",		&dev_tk},
 		{"tpic",	&dev_tpic},
 		{"xbm",		&dev_bitmaps},
 		{"xpm",		&dev_bitmaps},

@@ -310,10 +310,6 @@ F_compound	*objects;
 		P1y	 = Yll;
 		P2y	 = Yur;
 		}
-	    Xmin	 =  xz;
-	    Xmax	 =  xz + (yu - yl)/mag;
-	    Ymin	 =  yz;
-	    Ymax	 =  yz + (xu - xl)/mag;
 	    }
 	else {					/* landscape mode	*/
 	    Xll	 = xl*UNITS_PER_INCH;
@@ -613,7 +609,7 @@ F_ellipse	*e;
 	if (e->thickness != 0 ||
 		ibmgec && 0 <= e->fill_style && e->fill_style < patterns) {
 	    int		j;
-	    double	alpha	 = 0.0;
+	    double	alpha;
 	    double	angle;
 	    double	delta;
 	    double	x0, y0;
@@ -634,13 +630,14 @@ F_ellipse	*e;
 	    x		 = x0 + cos(angle)*a;
 	    y		 = y0 + sin(angle)*a;
 	    fprintf(tfp, "PA%.4f,%.4f;PM;PD;\n", x, y);
-	    for (j = 1; j <= 72; j++) { alpha	 = j*delta;
+	    for (j = 1; j <= 72; j++) { 
+		alpha	 = j*delta;
 		x	 = x0 + cos(angle)*a*cos(alpha)
 	    		 - sin(angle)*b*sin(alpha);
 		y	 = y0 + sin(angle)*a*cos(alpha)
 	    		 + cos(angle)*b*sin(alpha);
 		fprintf(tfp, "PA%.4f,%.4f;\n", x, y);
-		}
+	    }
 	    fprintf(tfp, "PU;PM2;\n");
 
 	    if (e->thickness != 0)

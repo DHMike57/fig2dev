@@ -285,6 +285,15 @@ PICFLAGS = -pic
 # limitation a license to do the foregoing actions under any patents of
 # the party supplying this software to the X Consortium.
 
+# Uncomment the USELATEX2E flag in the transfig/Imakefile file to use the
+# \\usepackage{} command for LaTeX2e.
+# The default is to use \\documentstyle{} for LaTeX209.
+
+# USELATEX2E = -DLATEX2E
+
+# ******* DON'T CHANGE ANYTHIN BELOW THIS POINT *******
+
+DEFINES = $(USELATEX2E)
 DEPLIBS =
 INCLUDES = -I..
 

@@ -24,7 +24,8 @@
  * the party supplying this software to the X Consortium.
  */
 
-#ifndef M_PI
+#undef M_PI
+#undef M_PI_2
 #define M_PI	3.14159265358979323846
-#define M_PI_2	1.57079632679489661923
-#endif
+#define M_PI_2	(M_PI/2.0)
+#define M_2PI	(3.14159265358979323846*2.0)

@@ -289,12 +289,15 @@ PICFLAGS = -pic
 INCLUDES = -I..
 EXTRA_INCLUDES = -I$(JPEGINCDIR)
 
+READJPGS=readjpg.c
+READJPGO=readjpg.o
+
 SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genmf.c genpic.c genpictex.c \
-	genps.c genpstex.c gentextyl.c gentpic.c gengif.c setfigfont.c psencode.c \
-	readpics.c readgif.c readxbm.c readxpm.c $(READJPGS)
+	genps.c genpstex.c gentextyl.c gentk.c gentpic.c genbitmaps.c setfigfont.c \
+	psencode.c readpics.c readgif.c readpcx.c readxbm.c $(READJPGS)
 LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genmf.o genpic.o genpictex.o \
-	genps.o genpstex.o gentextyl.o gentpic.o gengif.o setfigfont.o psencode.o \
-	readpics.o readgif.o readxbm.o readxpm.o $(READJPGO)
+	genps.o genpstex.o gentextyl.o gentk.o gentpic.o genbitmaps.o setfigfont.o \
+	psencode.o readpics.o readgif.o readpcx.o readxbm.o $(READJPGO)
 
 LIB = transfig
 XPMRGBFILE = -DRGB_FILE=\"$(XPMRGB)\"
@@ -306,7 +309,7 @@ lib$(LIB).a: $(LIBOBJS)
 	$(AR) $@ $(LIBOBJS)
 	$(RANLIB) $@
 
-readxpm.o:
+genps.o:
 	$(RM) $@
 	$(CC) -c $(CFLAGS)  $(XPMRGBFILE) $*.c
 

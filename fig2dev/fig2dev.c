@@ -89,7 +89,6 @@ struct paperdef paperdef[] =
 {
     {"Letter", 612, 792}, 	/* 8.5" x 11" */
     {"Legal", 612, 1008}, 	/* 8.5" x 14" */
-    {"Ledger", 1224, 792}, 	/*  17" x 11" */
     {"Tabloid", 792, 1224}, 	/*  11" x 17" */
     {"A", 612, 792},		/* 8.5" x 11" (letter) */
     {"B", 792, 1224},		/*  11" x 17" (tabloid) */
@@ -124,17 +123,20 @@ char	*argv[];
 /* add :? */
 	/* sum of all arguments */
 #ifdef I18N
-	while ((c = fig_getopt(argc, argv, "aAcC:d:ef:l:L:Mm:n:q:Pp:s:S:t:vVx:X:y:Y:wWz:j?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "aAcC:d:ef:hl:L:Mm:n:q:Pp:s:S:t:vVx:X:y:Y:wWz:j?")) != EOF) {
 #else
-	while ((c = fig_getopt(argc, argv, "aAcC:d:ef:l:L:Mm:n:q:Pp:s:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "aAcC:d:ef:hl:L:Mm:n:q:Pp:s:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
 #endif
 
 	  /* generic option handling */
 	  switch (c) {
 
+		case 'h':	/* print version message for -h too */
 		case 'V': 
 			fprintf(stderr, "fig2dev Version %s Patchlevel %s\n",
 							VERSION, PATCHLEVEL);
+			if (c == 'h')
+			    help_msg();
 			exit(0);
 			break;
 
@@ -222,13 +224,90 @@ char	*argv[];
 	    fprintf(stderr, "Couldn't open %s", to);
 	    fprintf(stderr, Usage, prog);
 	    exit(1);
-	    }
+	}
+
+	/* if metric, adjust scale for difference between 
+	   FIG PIX/CM (450) and actual (472.44) */
+	if (metric)
+		mag *= 80.0/76.2;
 
 	gendev_objects(&objects, dev);
 	if ((tfp != stdout) && (tfp != 0)) 
 	    (void)fclose(tfp);
 	exit(0);
-	}
+}
+
+help_msg()
+{
+	fprintf(stderr,"General Options:\n");
+	fprintf(stderr,"  -L language	choose output language (this must be first)\n");
+	fprintf(stderr,"  -m mag	set magnification\n");
+	fprintf(stderr,"  -f font	set default font\n");
+	fprintf(stderr,"  -s size	set default font size in points\n");
+	fprintf(stderr,"  -h		print this message, fig2dev version number and exit\n");
+	fprintf(stderr,"  -V		print fig2dev version number and exit\n");
+	fprintf(stderr,"\n");
+	fprintf(stderr,"PostScript Options:\n");
+	fprintf(stderr,"  -c		center figure on page\n");
+	fprintf(stderr,"  -e		put figure at edge of page\n");
+	fprintf(stderr,"  -l dummyarg	landscape mode\n");
+	fprintf(stderr,"  -p dummyarg	portrait mode\n");
+	fprintf(stderr,"  -M		generate multiple pages for large figure\n");
+	fprintf(stderr,"  -P		generate \"showpage\" command for printing\n");
+	fprintf(stderr,"  -n name	set title part of PostScript output to name\n");
+	fprintf(stderr,"  -x offset	shift figure left/right by offset units (1/72 inch)\n");
+	fprintf(stderr,"  -y offset	shift figure up/down by offset units (1/72 inch)\n");
+	fprintf(stderr,"  -z papersize	set the papersize (see man pages for available sizes)\n");
+	fprintf(stderr,"LaTeX Options:\n");
+	fprintf(stderr,"  -l lwidth	set threshold between thin and thick lines to lwidth\n");
+	fprintf(stderr,"  -d dmag	set separate magnification for length of line dashes to dmag\n");
+	fprintf(stderr,"  -v		verbose mode\n");
+	fprintf(stderr,"PSTEX Options:\n");
+	fprintf(stderr,"  -n name	set title part of PostScript output to name\n");
+	fprintf(stderr,"  -p name	name of the PostScript file to be overlaid\n");
+	fprintf(stderr,"EPIC Options:\n");
+	fprintf(stderr,"  -A scale	scale arrowheads by dividing their size by scale\n");	
+	fprintf(stderr,"  -l lwidth	use \"thicklines\" when width of line is > lwidth\n");
+	fprintf(stderr,"  -v		include comments in the output\n");
+	fprintf(stderr,"  -P		generate a complete LaTeX file\n");
+	fprintf(stderr,"  -S scale	scale figure\n");
+	fprintf(stderr,"  -W		enable variable line width\n");
+	fprintf(stderr,"  -w		disable variable line width\n");
+	fprintf(stderr,"\n");
+	fprintf(stderr,"TK Options:\n");
+	fprintf(stderr,"  -l dummyarg	landscape mode\n");
+	fprintf(stderr,"  -p dummyarg	portrait mode\n");
+	fprintf(stderr,"  -P		generate canvas of full page size instead of figure bounds\n");
+	fprintf(stderr,"  -z papersize	set the papersize (see man pages for available sizes)\n");
+	fprintf(stderr,"PIC Options:\n");
+	fprintf(stderr,"  -p ext	enables certain PIC extensions (see man pages)\n");
+	fprintf(stderr,"METAFONT Options:\n");
+	fprintf(stderr,"  -C code	specifies the starting METAFONT font code\n");
+	fprintf(stderr,"  -n name	name to use in the output file\n");
+	fprintf(stderr,"  -p pen_mag	linewidth magnification compared to the original figure\n");
+	fprintf(stderr,"  -t top	specifies the top of the coordinate system\n");
+	fprintf(stderr,"  -x xneg	specifies minimum x coordinate of figure (inches)\n");
+	fprintf(stderr,"  -y yneg	specifies minimum y coordinate of figure (inches)\n");
+	fprintf(stderr,"  -X xpos	specifies maximum x coordinate of figure (inches)\n");
+	fprintf(stderr,"  -Y xpos	specifies maximum y coordinate of figure (inches)\n");
+	fprintf(stderr,"JPEG Options:\n");
+	fprintf(stderr,"  -q quality	specify image quality factor (0-100)\n");
+	fprintf(stderr,"GIF Options:\n");
+	fprintf(stderr,"  -t color	specify GIF transparent color in hexadecimal (e.g. #ff0000=red)\n");
+	fprintf(stderr,"TEXTYL Options: None\n");
+	fprintf(stderr,"TPIC Options: None\n");
+	fprintf(stderr,"IBM-GL Options:\n");
+	fprintf(stderr,"  -a		select ISO A4 paper size if default is ANSI A, or vice versa\n");
+	fprintf(stderr,"  -c		generate instructions for IBM 6180 plotter\n");
+	fprintf(stderr,"  -d xll,yll,xur,yur	restrict plotting to area specified by coords\n");
+	fprintf(stderr,"  -f fontfile	load text character specs from table in file\n");
+	fprintf(stderr,"  -l pattfile	load patterns for pattern fill from file\n");
+	fprintf(stderr,"  -m mag,x0,y0	magnification with optional offset in inches\n");
+	fprintf(stderr,"  -p pensfile	load plotter pen specs from file\n");
+	fprintf(stderr,"  -P		rotate figure to portrait (default is landscape)\n");
+	fprintf(stderr,"  -S speed	set pen speed in cm/sec\n");
+	fprintf(stderr,"  -v		print figure upside-down in portrait or backwards in landscape\n");
+}
 
 /* count primitive objects & create pointer array */
 static int compound_dump(com, array, count, dev)

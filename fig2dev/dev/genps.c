@@ -47,11 +47,7 @@
 #include <math.h>
 #include <pwd.h>
 #include <errno.h>
-#ifndef __NetBSD__
-#if (! (defined(BSD) && (BSD >= 199306)))
-extern char *sys_errlist[];
-#endif
-#endif
+
 #include "pi.h"
 #include "fig2dev.h"
 #include "object.h"
@@ -63,7 +59,7 @@ extern char *sys_errlist[];
 #ifdef USE_XPM
 #include <xpm.h>
 int	XpmReadFileToXpmImage();
-#endif
+#endif /* USE_XPM */
 
 #ifdef I18N
 #include <stdlib.h>
@@ -300,12 +296,6 @@ F_compound	*objects;
 	resolution = objects->nwcorner.x;
 	coord_system = objects->nwcorner.y;
 	scalex = scaley = mag * POINT_PER_INCH / (double)resolution;
-	/* if metric, adjust scale for difference between 
-	   FIG PIX/CM (450) and actual (472.44) */
-	if (metric) {
-		scalex *= 80.0/76.2;
-		scaley *= 80.0/76.2;
-	}
 
 	/* convert to point unit */
 	llx = (int)floor(llx * scalex); lly = (int)floor(lly * scaley);
@@ -314,6 +304,9 @@ F_compound	*objects;
 	clipy = ury;
 	urx = (int)ceil(urx * scalex); ury = (int)ceil(ury * scaley);
 
+	/* convert ledger (deprecated) to tabloid */
+	if (strcasecmp(papersize, "ledger") == 0)
+		strcpy(papersize, "tabloid");
         for (pd = paperdef; pd->name != NULL; pd++)
 	    if (strcasecmp (papersize, pd->name) == 0) {
 		pagewidth = pd->width;
@@ -404,7 +397,7 @@ F_compound	*objects;
 	fprintf(tfp, "%%%%EndSetup\n");
 
 	/* put in the magnification for information purposes */
-	fprintf(tfp, "%%%%Magnification: %.4f\n",mag);
+	fprintf(tfp, "%%%%Magnification: %.4f\n",metric? mag*76.2/80.0 : mag);
 
 	fprintf(tfp, "%%%%EndComments\n");
 
@@ -715,7 +708,7 @@ F_line	*l;
 		dy = l->points->next->next->y - l->points->y;
 		rotation = 0;
 		if (dx < 0 && dy < 0)
-			   rotation = 180.0;
+			   rotation = 180;
 		else if (dx < 0 && dy >= 0)
 			   rotation = 90;
 		else if (dy < 0 && dx >= 0)
@@ -755,7 +748,16 @@ F_line	*l;
 			urx = l->pic->bit_size.x;	/* size of image from the file */
 			ury = l->pic->bit_size.y;
 
-		/* not GIF, try JPEG (JFIF) */
+		/* not GIF, try PCX */
+		} else if (read_pcx(l->pic) > 0) {
+			/* yes, say so */
+			fprintf(tfp, "%% Begin Imported PCX File: %s\n", l->pic->file);
+
+			llx = lly = 0;
+			urx = l->pic->bit_size.x;	/* size of image from the file */
+			ury = l->pic->bit_size.y;
+
+		/* not PCX, try JPEG (JFIF) */
 #ifdef USE_JPEG
 		} else if (read_jpg(l->pic) > 0) {
 			/* yes, say so */
@@ -878,7 +880,7 @@ F_line	*l;
 		 * and prepare to clean up stacks and dicts of included EPS file
 		 */
 		if (l->pic->subtype == P_EPS) {
-		    fprintf(tfp, "n %d %d m %d %d l %d %d l %d %d l cp clip\n",
+		    fprintf(tfp, "n %d %d m %d %d l %d %d l %d %d l cp clip n\n",
 			llx,lly, urx,lly, urx,ury, llx,ury);
 		    fprintf(tfp, "countdictstack\n");
 		    fprintf(tfp, "mark\n");
@@ -989,8 +991,9 @@ F_line	*l;
 			XpmFreeXpmImage(&xpmimage);
 #endif /* USE_XPM */
 
-		/* GIF or JPEG file */
-		} else if (l->pic->subtype == P_GIF || l->pic->subtype == P_JPEG) {
+		/* GIF, PCX, or JPEG file */
+		} else if (l->pic->subtype == P_GIF || l->pic->subtype == P_PCX || 
+				l->pic->subtype == P_JPEG) {
 			int		 wid, ht;
 
 			/* start with width and height */
@@ -998,6 +1001,8 @@ F_line	*l;
 			ht = l->pic->bit_size.y;
 			if (l->pic->subtype == P_GIF)
 			    fprintf(tfp, "%% GIF image follows:\n");
+			else if (l->pic->subtype == P_PCX)
+			    fprintf(tfp, "%% PCX image follows:\n");
 			else
 			    fprintf(tfp, "%% JPEG image follows:\n");
 			/* scale for size in bits */
@@ -1407,11 +1412,11 @@ F_ellipse	*e;
 	    fprintf(tfp, "%% Rotated Ellipse\n");
 	    fprintf(tfp, "gs\n");
 	    fprintf(tfp, "%d %d tr\n",e->center.x, e->center.y);
-	    fprintf(tfp, "%6.3f rot\n",-e->angle*180/M_PI);
+	    fprintf(tfp, "%6.3f rot\n",-e->angle*180.0/M_PI);
 	    fprintf(tfp, "n 0 0 %d %d 0 360 DrawEllipse ",
 		 e->radiuses.x, e->radiuses.y);
 	    /* rotate back so any fill pattern will come out correct */
-	    fprintf(tfp, "%6.3f rot\n",e->angle*180/M_PI);
+	    fprintf(tfp, "%6.3f rot\n",e->angle*180.0/M_PI);
 	}
 	if (e->fill_style != UNFILLED)
 	    fill_area(e->fill_style, e->pen_color, e->fill_color,
@@ -1464,7 +1469,7 @@ F_text	*t;
 		fprintf(tfp, "1 -1 sc ");
 
 	if (t->angle != 0)
-	   fprintf(tfp, " %.1f rot ", t->angle*180/M_PI);
+	   fprintf(tfp, " %.1f rot ", t->angle*180.0/M_PI);
 	/* this loop escapes characters '(', ')', and '\' */
 	fputc('(', tfp);
 #ifdef I18N
@@ -1699,15 +1704,20 @@ calc_arrow(x1, y1, x2, y2, c1x, c1y, c2x, c2y, objthick, arrow, points, npoints)
 
     /* lpt is the amount the arrowhead extends beyond the end of the
        line because of the sharp point (miter join) */
-    lpt = arrow->thickness/2.0/(wid/ht/2.0);
+    if (type == 2)
+      lpt = (arrow->thickness-THICK_SCALE) / (2.0 * sin(atan(wid / (2.4 * ht))));
+    else if (type == 3)
+      lpt = (arrow->thickness-THICK_SCALE) / (2.0 * sin(atan(wid / (1.6 * ht))));
+    else
+      lpt = (arrow->thickness-THICK_SCALE) / (2.0 * sin(atan(wid / (2.0 * ht))));
 
     /* alpha is the angle the line is relative to horizontal */
     alpha = atan2(dy,-dx);
 
     /* ddx, ddy is amount to move end of line back so that arrowhead point
        ends where line used to */
-    ddx = lpt*0.9 * cos(alpha);
-    ddy = lpt*0.9 * sin(alpha);
+    ddx = lpt * cos(alpha);
+    ddy = lpt * sin(alpha);
 
     /* move endpoint of line back */
     mx = x2 + ddx;
@@ -2013,3 +2023,82 @@ driver dev_ps = {
 	genps_end,
 	INCLUDE_TEXT
 };
+
+#ifdef USE_XPM
+
+/* lookup the named colors referenced in the colortable passed */
+/* total colors in the table are "ncols" */
+/* This is called from the XPM image import section above */
+
+#ifdef NDBM
+#include <ndbm.h>
+#else
+#ifdef SVR4
+#include <rpcsvc/dbm.h>
+#else
+#include <dbm.h>
+#endif
+#endif
+
+#ifndef RGB_H
+#define RGB_H
+typedef struct _RGB {
+	unsigned short red, green, blue;
+	} RGB;
+#endif /* RGB_H */
+
+#ifdef NDBM
+DBM *rgb_dbm = (DBM *)NULL;
+#else
+int rgb_dbm = 0;
+#endif
+
+convert_names(coltabl, ncols)
+	XpmColor *coltabl;
+	int	  ncols;
+{
+	int	i,j;
+	char	*name;
+	datum	dbent;
+	RGB	rgb;
+
+#ifdef NDBM
+	rgb_dbm = dbm_open(RGB_FILE, 0, 0);
+#else
+	if (dbminit(RGB_FILE) == 0)
+	    rgb_dbm = 1;
+#endif
+	if (!rgb_dbm) {
+	    fprintf(stderr,"Couldn't open the RGB database file '%s'\n", RGB_FILE );
+	    return;
+	}
+	/* look through each entry in the colortable for the named colors */
+	for (i=0; i<ncols; i++) {
+	    name = (coltabl+i)->c_color;
+	    if (name[0]!='#') {		/* found named color, make lowercase */
+	        for (j=strlen(name); j>=0; j--) {
+		    if (isupper(name[j]))
+			name[j]=tolower(name[j]);
+		}
+		dbent.dptr = name;
+		dbent.dsize = strlen(name);
+		/* look it up to get the rgb values */
+#ifdef NDBM
+		dbent = dbm_fetch(rgb_dbm, dbent);
+#else
+		dbent = fetch (dbent);
+#endif
+		if(dbent.dptr) {
+			memcpy((char *) &rgb, dbent.dptr, sizeof (RGB));
+		} else {
+			fprintf(stderr,"can't parse color '%s', using black.\n",name);
+			rgb.red=rgb.green=rgb.blue=0;
+		}
+		name = (coltabl+i)->c_color = (char *) malloc(7);
+		/* change named color for #rrggbb type */
+		sprintf(name,"#%.2x%.2x%.2x",rgb.red>>8, rgb.green>>8, rgb.blue>>8);
+	    }
+	}
+}
+
+#endif /* USE_XPM */
