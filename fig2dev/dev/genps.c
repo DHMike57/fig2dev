@@ -65,6 +65,12 @@ extern char *sys_errlist[];
 int	XpmReadFileToXpmImage();
 #endif
 
+#ifdef I18N
+#include <stdlib.h>
+extern Boolean support_i18n;  /* enable i18n support? */
+static Boolean enable_composite_font = FALSE;
+#endif /* I18N */
+
 /* for the version nubmer */
 #include "../../patchlevel.h"
 
@@ -72,9 +78,6 @@ int	XpmReadFileToXpmImage();
 #include "genps.h"
 
 int	ReadFromBitmapFile();
-
-/* ratio of resolution to 80ppi */
-extern float	THICK_SCALE;
 
 typedef struct _point
 {
@@ -297,6 +300,13 @@ F_compound	*objects;
 	resolution = objects->nwcorner.x;
 	coord_system = objects->nwcorner.y;
 	scalex = scaley = mag * POINT_PER_INCH / (double)resolution;
+	/* if metric, adjust scale for difference between 
+	   FIG PIX/CM (450) and actual (472.44) */
+	if (metric) {
+		scalex *= 80.0/76.2;
+		scaley *= 80.0/76.2;
+	}
+
 	/* convert to point unit */
 	llx = (int)floor(llx * scalex); lly = (int)floor(lly * scaley);
 	/* save upper bounds before scaling for clipping later */
@@ -318,19 +328,10 @@ F_compound	*objects;
 	}
 
 	if (landscape) {
-	    if (strcasecmp(papersize,"ledger")==0) {
-		fprintf(stderr, "'Ledger' paper size specified with landscape, switching to 'Tabloid'\n");
-		strcpy(papersize,"Tabloid");
-	    }
 	    if (show_page) {
 		itmp = pageheight; pageheight = pagewidth; pagewidth = itmp;
 		itmp = llx; llx = lly; lly = itmp;
 		itmp = urx; urx = ury; ury = itmp;
-	    }
-	} else {
-	    if (strcasecmp(papersize,"tabloid")==0) {
-		fprintf(stderr, "'Tabloid' paper size specified with portrait, switching to 'Ledger'\n");
-		strcpy(papersize,"Ledger");
 	    }
 	}
 	if (show_page) {
@@ -396,11 +397,14 @@ F_compound	*objects;
 	}
 	fprintf(tfp, "%%%%Pages: %d\n", show_page ? pages : 0 );
 	fprintf(tfp, "%%%%BeginSetup\n");
-	fprintf(tfp, "%%%%IncludeFeature: *PageSize %s\n", papersize);
+	/* only include a pagesize command if not EPS */
+	if (show_page) {
+	    fprintf(tfp, "%%%%IncludeFeature: *PageSize %s\n", papersize);
+	}
 	fprintf(tfp, "%%%%EndSetup\n");
 
 	/* put in the magnification for information purposes */
-	fprintf(tfp, "%%%%Magnification: %.2f\n",mag);
+	fprintf(tfp, "%%%%Magnification: %.4f\n",mag);
 
 	fprintf(tfp, "%%%%EndComments\n");
 
@@ -445,6 +449,32 @@ F_compound	*objects;
 		fprintf(tfp, "%s\n", ELLIPSE_PS);
 	if (approx_spline_exist(objects))
 		fprintf(tfp, "%s\n", SPLINE_PS);
+#ifdef I18N
+	if (support_i18n && iso_text_exist(objects)) {
+	  char *libdir, *locale;
+	  char filename[512], str[512];
+	  FILE *fp;
+	  libdir = getenv("FIG2DEV_LIBDIR");
+	  if (libdir == NULL) libdir = FIG2DEV_LIBDIR;
+	  locale = getenv("LANG");
+	  if (locale == NULL) {
+	    fprintf(stderr, "fig2dev: LANG not defined; assuming C locale\n");
+	    locale = "C";
+	  }
+	  sprintf(filename, "%s/%s.ps", libdir, locale);
+	  /* get filename like ``/usr/local/lib/fig2dev/japanese.ps'' */
+	  fp = fopen(filename, "r");
+	  if (fp == NULL) {
+	    fprintf(stderr, "fig2dev: can't open file: %s\n", filename);
+	  } else {
+	    while (fgets(str, sizeof(str), fp)) {
+	      if (strstr(str, "CompositeRoman")) enable_composite_font = TRUE;
+	      fputs(str, tfp);
+	    }
+	    fclose(fp);
+	  }
+	}
+#endif /* I18N */
 	
 	fprintf(tfp, "%s\n", END_PROLOG);
 	fprintf(tfp, "$F2psBegin\n");
@@ -452,7 +482,7 @@ F_compound	*objects;
 	/* set initial clipping area to size of the bounding box plus a margin
 	   (this is needed for later clipping by arrowheads */
 	fprintf(tfp, "n %d %d m %d %d l %d %d l %d %d l cp clip\n",
-			0,clipy+40,0,0,clipx+40,0,clipx+40,clipy+40);
+			-1000,clipy+1000,-1000,-1000,clipx+1000,-1000,clipx+1000,clipy+1000);
 
  	if ( multi_page ) {
 	    fprintf(tfp, "initmatrix\n");
@@ -477,7 +507,9 @@ genps_end()
        for (dy=0; dy < (ury-h*0.1); dy += h*0.9) {
 	 for (dx=0; dx < (urx-w*0.1); dx += w*0.9) {
 	    fprintf(tfp, "%%%%Page: %d %d\n",page,page);
-	    fprintf(tfp,"%.1f %.1f tr", dx, ((landscape && show_page)? -dy:dy));
+	    fprintf(tfp, "gs\n");
+	    fprintf(tfp,"%.1f %.1f tr", 
+		-dx, ((landscape && show_page)? -dy:(dy+h*0.9)));
 	    if (landscape && show_page) {
 	       fprintf(tfp, " 90 rot");
 	    }
@@ -490,6 +522,7 @@ genps_end()
 	       if (!(i%20)) 
 		  fprintf(tfp, "\n");
 	    }
+	    fprintf(tfp, "gr\n");
 	    fprintf(tfp, "showpage\n");
 	    page++;
 	 }
@@ -723,6 +756,7 @@ F_line	*l;
 			ury = l->pic->bit_size.y;
 
 		/* not GIF, try JPEG (JFIF) */
+#ifdef USE_JPEG
 		} else if (read_jpg(l->pic) > 0) {
 			/* yes, say so */
 			fprintf(tfp, "%% Begin Imported JPEG File: %s\n", l->pic->file);
@@ -731,6 +765,7 @@ F_line	*l;
 			urx = l->pic->bit_size.x;	/* size of image from the file */
 			ury = l->pic->bit_size.y;
 
+#endif /* USE_JPEG */
 		/* none of the above, try EPS */
 		} else {
 			fprintf(tfp, "%% Begin Imported EPS File: %s\n", l->pic->file);
@@ -838,6 +873,17 @@ F_line	*l;
 		fprintf(tfp, "%d %d tr\n", -llx, -lly);
 		/* save vm so pic file won't change anything */
 		fprintf(tfp, "sa\n");
+
+		/* if PIC object is EPS file, set up clipping rectangle to BB
+		 * and prepare to clean up stacks and dicts of included EPS file
+		 */
+		if (l->pic->subtype == P_EPS) {
+		    fprintf(tfp, "n %d %d m %d %d l %d %d l %d %d l cp clip\n",
+			llx,lly, urx,lly, urx,ury, llx,ury);
+		    fprintf(tfp, "countdictstack\n");
+		    fprintf(tfp, "mark\n");
+		}
+
 		/* and undefine showpage */
 		fprintf(tfp, "/showpage {} def\n");
 
@@ -934,7 +980,7 @@ F_line	*l;
 			for (i=0; i<wid*ht; i++)
 			    *cp++ = (unsigned char) *dp++;
 				
-			/* now write out the compressed image data */
+			/* now write out the image data in a compressed form */
 			(void) PSencode(tfp, wid, ht, xpmimage.ncolors,
 				l->pic->cmap[0], l->pic->cmap[1], l->pic->cmap[2], 
 				cdata);
@@ -956,7 +1002,7 @@ F_line	*l;
 			    fprintf(tfp, "%% JPEG image follows:\n");
 			/* scale for size in bits */
 			fprintf(tfp, "%d %d sc\n", urx, ury);
-			/* now write out the compressed image data */
+			/* now write out the image data in a compressed form */
 			(void) PSencode(tfp, wid, ht, l->pic->numcols,
 				l->pic->cmap[0], l->pic->cmap[1], l->pic->cmap[2], 
 				l->pic->bitmap);
@@ -980,8 +1026,16 @@ F_line	*l;
 		    close_picfile(picf,filtype);
 		}
 
+		/* if PIC object is EPS file, clean up stacks and dicts
+		 * before 'restore'ing vm
+		 */
+		if (l->pic->subtype == P_EPS) {
+		    fprintf(tfp, "cleartomark\n");
+		    fprintf(tfp, "countdictstack exch sub { end } repeat\n");
+		}
+
 		/* restore vm and gsave */
-		fprintf(tfp, "rs gr\n");
+		fprintf(tfp, "restore grestore\n");
 		fprintf(tfp, "%%\n");
 		fprintf(tfp, "%% End Imported PIC File: %s\n", l->pic->file);
 		fprintf(tfp, "%%%%EndDocument\n");
@@ -1356,6 +1410,8 @@ F_ellipse	*e;
 	    fprintf(tfp, "%6.3f rot\n",-e->angle*180/M_PI);
 	    fprintf(tfp, "n 0 0 %d %d 0 360 DrawEllipse ",
 		 e->radiuses.x, e->radiuses.y);
+	    /* rotate back so any fill pattern will come out correct */
+	    fprintf(tfp, "%6.3f rot\n",e->angle*180/M_PI);
 	}
 	if (e->fill_style != UNFILLED)
 	    fill_area(e->fill_style, e->pen_color, e->fill_color,
@@ -1378,9 +1434,26 @@ genps_text(t)
 F_text	*t;
 {
 	unsigned char		*cp;
+#ifdef I18N
+#define LINE_LENGTH_LIMIT 200
+	Boolean composite = FALSE;
+	Boolean state_gr = FALSE;
+	int chars = 0;
+        int gr_chars = 0;
+	unsigned char ch;
+#endif /* I18N */
 
 	if (multi_page)
 	   fprintf(tfp, "/o%d {", no_obj++);
+#ifdef I18N
+	if (enable_composite_font && (t->font <= 0 || t->font == 2)) {
+	  composite = TRUE;
+	  if (t->font <= 0)
+	    fprintf(tfp, TEXT_PS, "CompositeRoman", "", PSFONTMAG(t));
+	  else
+	    fprintf(tfp, TEXT_PS, "CompositeBold", "", PSFONTMAG(t));
+	} else
+#endif /* I18N */
 	if (PSisomap[t->font+1] == TRUE)
 	   fprintf(tfp, TEXT_PS, PSFONT(t), "-iso", PSFONTMAG(t));
 	else
@@ -1394,6 +1467,55 @@ F_text	*t;
 	   fprintf(tfp, " %.1f rot ", t->angle*180/M_PI);
 	/* this loop escapes characters '(', ')', and '\' */
 	fputc('(', tfp);
+#ifdef I18N
+	for(cp = (unsigned char *)t->cstring; *cp; cp++) {
+	    if (LINE_LENGTH_LIMIT < chars) {
+	      fputs("\\\n", tfp);
+	      chars = 0;
+	    }
+	    ch = *cp;
+	    if (enable_composite_font && composite) {
+	      if (ch & 0x80) {  /* GR */
+		if (!state_gr) {
+		  fprintf(tfp, "\\377\\001");
+		  chars += 8;
+		  state_gr = TRUE;
+		  gr_chars = 0;
+		}
+		gr_chars++;
+	      } else {  /* GL */
+		if (state_gr) {
+		  if (gr_chars % 2) {
+		    fprintf(stderr, "warning: incomplete multi-byte text: %s\n",
+			    t->cstring);
+		    fputc('?', tfp);
+		  }
+		  fprintf(tfp, "\\377\\000");
+		  chars += 8;
+		  state_gr = FALSE;
+		}
+	      }
+            }
+	    if (strchr("()\\", ch)) {
+	      fputc('\\', tfp);
+	      chars += 1;
+	    }
+	    if (ch>=0x80) {
+	      fprintf(tfp,"\\%o", ch);
+	      chars += 4;
+	    } else {
+	      fputc(ch, tfp);
+	      chars += 1;
+	    }
+	  }
+	  if (enable_composite_font && composite && state_gr) {
+	    if (gr_chars % 2) {
+	      fprintf(stderr, "warning: incomplete multi-byte text: %s\n",
+		      t->cstring);
+	      fputc('?', tfp);
+	    }
+	  }
+#else
 	for(cp = (unsigned char *)t->cstring; *cp; cp++) {
 	    if (strchr("()\\", *cp))
 		fputc('\\', tfp);
@@ -1402,6 +1524,7 @@ F_text	*t;
 	    else
 		fputc(*cp, tfp);
 		}
+#endif /* I18N */
 	fputc(')', tfp);
 
 	if ((t->type == T_CENTER_JUSTIFIED) || (t->type == T_RIGHT_JUSTIFIED)){
@@ -1701,9 +1824,9 @@ compute_arcarrow_angle(x1, y1, x2, y2, direction, arrow, x, y)
 
     beta=atan2(dy,dx);
     if (direction) {
-	alpha=2*asin(h/2.0/r);
+	alpha = 2*asin(h/2.0/r);
     } else {
-	alpha=-2*asin(h/2.0/r);
+	alpha = -2*asin(h/2.0/r);
     }
 
     *x=round(x1+r*cos(beta+alpha));
@@ -1807,16 +1930,18 @@ F_compound      *ob;
       {
 	 for (s = (unsigned char*)t->cstring; *s != '\0'; s++)
 	 {
-	    /* look for characters >= 128 */
-	    if (*s>127) return(1);
+	    /* look for characters >= 128 or ASCII '-' */
+	    if ((*s>127) || (*s==45))
+		return 1;
 	 }
       }
    }
 
    for (c = ob->compounds; c != NULL; c = c->next) {
-       if (iso_text_exist(c)) return(1);
-       }
-   return(0);
+	if (iso_text_exist(c))
+	    return 1;
+   }
+   return 0;
 }
 
 static
@@ -1826,18 +1951,15 @@ F_compound	*ob;
    F_compound *c;
    F_text     *t;
 
-   if (ob->texts != NULL)
-   {
+   if (ob->texts != NULL) {
 	for (t = ob->texts; t != NULL; t = t->next)
-	    if (PSisomap[t->font+1] == FALSE)
-	    {
+	    if (PSisomap[t->font+1] == FALSE) {
 		fprintf(tfp, "/%s /%s-iso isovec ReEncode\n", PSFONT(t), PSFONT(t));
 		PSisomap[t->font+1] = TRUE;
-	    }
+	}
    }
 
-   for (c = ob->compounds; c != NULL; c = c->next)
-   {
+   for (c = ob->compounds; c != NULL; c = c->next) {
 	encode_all_fonts(c);
    }
 }
@@ -1848,13 +1970,15 @@ F_compound	*ob;
 {
 	F_compound	*c;
 
-	if (NULL != ob->ellipses) return(1);
+	if (NULL != ob->ellipses) 
+		return 1;
 
 	for (c = ob->compounds; c != NULL; c = c->next) {
-	    if (ellipse_exist(c)) return(1);
-	    }
+	    if (ellipse_exist(c))
+		return 1;
+	}
 
-	return(0);
+	return 0;
 	}
 
 static
@@ -1865,14 +1989,16 @@ F_compound	*ob;
 	F_compound	*c;
 
 	for (s = ob->splines; s != NULL; s = s->next) {
-	    if (approx_spline(s)) return(1);
-	    }
+	    if (approx_spline(s))
+		return 1;
+	}
 
 	for (c = ob->compounds; c != NULL; c = c->next) {
-	    if (approx_spline_exist(c)) return(1);
-	    }
+	    if (approx_spline_exist(c))
+		return 1;
+	}
 
-	return(0);
+	return 0;
 	}
 
 struct

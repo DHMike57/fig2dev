@@ -29,8 +29,6 @@
 #include "fig2dev.h"
 #include "object.h"
 
-extern float		THICK_SCALE;
-
 static double		forward_arrow_wid = 4;
 static double		forward_arrow_ht = 8;
 static int		forward_arrow_type = 0;

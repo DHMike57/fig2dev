@@ -182,7 +182,7 @@ AddThickness()
 static void
 set_style(s, v)
 int	s;
-float	v;
+double	v;
 {
 	static float	style_val = -1;
 
@@ -190,7 +190,7 @@ float	v;
 	    if (v == style_val) return;
 	    if (v == 0.0) return;
 	    style_val = v;
-	    fprintf(tfp, "dashwid = %.3fi\n", style_val/80.0);
+	    fprintf(tfp, "dashwid = %.3f\n", (float)(style_val/80.0));
 	    }
 }
 
@@ -235,8 +235,8 @@ F_line *l;
     if (l->thickness == 0)
       fprintf(tfp, " invis");
     else
-      if (l->style_val > 0.0)
-      { if (l->style == DASH_LINE)
+      if (l->style_val > 0.0) {
+	if (l->style == DASH_LINE)
 	  fprintf(tfp, " dashed");
 	else if (l->style == DOTTED_LINE)
 	  fprintf(tfp, " dotted");
@@ -490,6 +490,13 @@ F_arc	*a;
 	set_linewidth(a->thickness);
 
 	fprintf(tfp, "arc ");
+
+	if (a->style_val > 0.0) {
+	    if (a->style == DASH_LINE)
+		fprintf(tfp, " dashed");
+	    else if (a->style == DOTTED_LINE)
+		fprintf(tfp, " dotted");
+	}
 
 	/*rja: Attach arrowhead as required */
 	if ((a->for_arrow) && (a->back_arrow))

@@ -18,6 +18,15 @@ XCOMM that this copyright notice remain intact.  This license includes without
 XCOMM limitation a license to do the foregoing actions under any patents of
 XCOMM the party supplying this software to the X Consortium.
 
+XCOMM Uncomment the USELATEX2E flag in the transfig/Imakefile file to use the
+XCOMM \\usepackage{} command for LaTeX2e. 
+XCOMM The default is to use \\documentstyle{} for LaTeX209.
+
+XCOMM USELATEX2E = -DLATEX2E
+
+XCOMM ******* DON'T CHANGE ANYTHIN BELOW THIS POINT *******
+
+DEFINES = $(USELATEX2E)
 DEPLIBS =
 INCLUDES = -I..
 

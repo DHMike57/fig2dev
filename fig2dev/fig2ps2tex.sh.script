@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#!/bin/sh -f
 #
 # Fig2ps2tex.sh - generate a TeX file for including a PostScript file
 #		 involves calculating the bounding box from fig2ps output

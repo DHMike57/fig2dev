@@ -195,32 +195,33 @@ compute_open_spline(spline, precision)
   if (!init_point_array(300, 200))
       return NULL;
 
+  p1 = spline->points;
+  for (k=0; p1->next; k++) {
+      p0 = p1;
+      p1 = p1->next;
+  }
+  /* special case - two point spline is just straight line */
+  if (k==1) {
+      if (!add_point(p0->x,p0->y) ||
+	  !add_point(p1->x,p1->y))
+		too_many_points();
+      return points;
+  }
+
   COPY_CONTROL_POINT(p0, s0, spline->points, spline->controls);
   COPY_CONTROL_POINT(p1, s1, p0, s0);
   /* first control point is needed twice for the first segment */
   COPY_CONTROL_POINT(p2, s2, p1->next, s1->next);
+  COPY_CONTROL_POINT(p3, s3, p2, s2); /* In case only two points */
 
-  if (p2->next == NULL)
-    {
-      COPY_CONTROL_POINT(p3, s3, p2, s2);
-    }
-  else
-    {
+  for (k = 0; p2->next != NULL; k++) {
       COPY_CONTROL_POINT(p3, s3, p2->next, s2->next);
-    }
-
-
-  for (k = 0 ;  ; k++)
-    {
       SPLINE_SEGMENT_LOOP(k, p0, p1, p2, p3, s1->s, s2->s, precision);
-      if (p3->next == NULL)
-	break;
-      NEXT_CONTROL_POINTS(p0, s0, p1, s1, p2, s2, p3, s3);
-    }
+      COPY_CONTROL_POINT(p0, s0, p1, s1);
+      COPY_CONTROL_POINT(p1, s1, p2, s2);
+      COPY_CONTROL_POINT(p2, s2, p3, s3);
+  }
   /* last control point is needed twice for the last segment */
-  COPY_CONTROL_POINT(p0, s0, p1, s1);
-  COPY_CONTROL_POINT(p1, s1, p2, s2);
-  COPY_CONTROL_POINT(p2, s2, p3, s3);
   SPLINE_SEGMENT_LOOP(k, p0, p1, p2, p3, s1->s, s2->s, precision);
   
   if (!add_point(p3->x, p3->y))
@@ -472,10 +473,10 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
   xlength = xend - xstart;
   ylength = yend - ystart;
 
-  start_to_end_dist = sqrt(xlength*xlength + ylength*ylength);
+  start_to_end_dist = (int)sqrt((double)(xlength*xlength + ylength*ylength));
 
   /* more steps if segment's origin and extremity are remote */
-  number_of_steps = sqrt(start_to_end_dist)/2;
+  number_of_steps = (int)sqrt((double)start_to_end_dist)/2;
 
   /* more steps if the curve is high */
   number_of_steps += (int)((1.0 + angle_cos)*10.0);
@@ -487,7 +488,7 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
   
   if ((step > MAX_SPLINE_STEP) || (step == 0))
     step = MAX_SPLINE_STEP;
-  return (step);
+  return step;
 }
 
 static void
@@ -560,12 +561,12 @@ create_line_with_spline(s)
   points = open_spline(s) ? compute_open_spline(s, HIGH_PRECISION)
                           : compute_closed_spline(s, HIGH_PRECISION);
   if (points==NULL)  
-    return;
+    return NULL;
 
 
   if ((line = create_line()) == NULL) {
     free_point_array(points);
-    return;
+    return NULL;
   }
   line->style      = s->style;  
   line->thickness  = s->thickness;
@@ -582,16 +583,22 @@ create_line_with_spline(s)
   
   if (s->for_arrow) {
     s->for_arrow = NULL;
-    points[npoints - ARROW_START] = points[npoints - 1];
-    npoints -= (ARROW_START-1);          /* avoid some points to have good 
+    if (npoints > ARROW_START) {
+	points[npoints - ARROW_START] = points[npoints - 1];
+	npoints -= (ARROW_START-1);          /* avoid some points to have good 
 					    orientation for arrow */
+    }
   }
   if (s->back_arrow) {
     s->back_arrow = NULL;
-    points[ARROW_START - 1] = points[0];   /* avoid some points to have good 
+    if (npoints > ARROW_START) {
+	points[ARROW_START - 1] = points[0];   /* avoid some points to have good 
 					      orientation for arrow */
-    npoints -= (ARROW_START - 1);
-    start = ARROW_START - 1;
+	npoints -= (ARROW_START - 1);
+	start = ARROW_START - 1;
+    } else {
+	start = 0;
+    }
   }
   
   line->type = open_spline(s) ? T_POLYLINE : T_POLYGON;
@@ -605,7 +612,7 @@ create_line_with_spline(s)
 	{
 	  free(points);
 	  free_line(&line);
-	  return;
+	  return NULL;
 	}
       pt->x = points[i].x;
       pt->y = points[i].y;
@@ -622,7 +629,7 @@ create_line_with_spline(s)
 
   free_point_array(points);
   npoints = 0;
-  return (line);
+  return line;
 }
 
 
@@ -666,7 +673,7 @@ create_cpoint()
 
     if ((cp = (F_control *) malloc(CONTROL_SIZE)) == NULL)
 	fprintf(stderr,Err_mem);
-    return (cp);
+    return cp;
 }
 
 
@@ -683,7 +690,7 @@ create_line()
     l->back_arrow = NULL;
     l->points = NULL;
     l->radius = DEFAULT;
-    return (l);
+    return l;
 }
 
 
@@ -695,7 +702,7 @@ create_arrow()
 
     if ((a = (F_arrow *) malloc(ARROW_SIZE)) == NULL)
 	fprintf(stderr,Err_mem);
-    return (a);
+    return a;
 }
 
 
@@ -706,7 +713,7 @@ create_point()
 
     if ((p = (F_point *) malloc(POINT_SIZE)) == NULL)
 	put_msg(Err_mem);
-    return (p);
+    return p;
 }
 
 
@@ -718,5 +725,5 @@ static num_points(points)
     F_point	   *p;
 
     for (p = points, n = 0; p != NULL; p = p->next, n++);
-    return (n);
+    return n;
 }

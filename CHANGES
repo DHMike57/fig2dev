@@ -1,7 +1,50 @@
 ===============================================================================
-Version 3.2
+Version 3.2 Final (August 22, 1997)
 ===============================================================================
-Patchlevel 0 (Jan 9, 1997)
+
+NEW FEATURES
+	o flag in transfig/Imakefile to use "\usepackage" for LaTeX2e instead of
+	  "\documentstyle" for LaTeX209.  See README file.
+	o fig2dev now handles the bitmap formats (GIF, JPEG etc) instead of xfig,
+	  so there is more consistent output. Requires the (free) netpbm package.
+	  See the README file.
+	o tiff (no compression) and AutoCad (acad) output languages added
+	o image quality (0-100) is selectable for JPEG export (-q option)
+
+BUGS FIXED
+	o changed XPM variables to default X include/library in fig2dev/Imakefile
+	o remove PageSize comment if EPS (no showpage)
+	o bug in colormap for imported grayscale JPEG files
+	o "rs gr" sequence after imported eps file changed to "restore grestore"
+	  in case imported eps file had defined either "rs" or "gr"
+	o There was a bug in the EPIC driver when drawing backward arrows - in
+	  several places in genepic.c draw_arrow_head is called with unconverted
+	  coordinates, which leads to totally displaced arrows.
+	  from Heiko Schroeder (heiko@linux.local.de)
+	o cleanup of dictionary wrapped around imported EPS files 
+	  from Franz Koch (franz.koch@zdv.uni-tuebingen.de)
+	o pic output didn't produce dashed or dotted arc
+	o metric flag incorrectly parsed
+	o strcasecmp and strncasecmp bugs (s2 != '\0' and s2 == '\0' should
+	  be *s2 ...)
+	o error in JPEGINCDIR in fig2dev/Imakefile
+	o rec_array wasn't being freed in gendev_objects (fig2dev.c)
+	o thicklines not being set properly for LaTeX output
+	o two-point splines looped infinitely on some machines
+	  fixed by Jeff Dairiki <dairiki@kalman.apl.washington.edu>
+	o arrowheads weren't correct on tight arcs in eepic output
+	  fixed by Wolfgang Reissenberger <reissenb@veilchen.informatik.uni-stuttgart.de>
+	o TransFig now uses \usepackage instead of \documentstyle, which is old
+	  From Klaus Georg Barthelmann (barthel@Informatik.Uni-Mainz.DE)
+	o fill pattern of rotated ellipses was rotated itself
+	o Ledger/Tabloid sizes reversed (Tabloid is 11x17", Ledger is 17x11")
+	o bounding box of text more accurate for text with/without descenders
+	o added USEINLINE variable in Imakefile to use compiler inline functions
+	o removed ANSI prototypes from spline routines in trans_spline.c
+
+------------------------------
+Version 3.2 Beta (Jan 9, 1997)
+------------------------------
 
 NEW FEATURES
 

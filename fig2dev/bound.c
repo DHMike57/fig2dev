@@ -112,8 +112,18 @@ int	*xmin, *ymin, *xmax, *ymax;
 		    by = (int)(arc->center.y + radius + 1.0);
 		}
 	    }
-	*xmax = bx; *ymax = by;
-	*xmin = sx; *ymin = sy;
+	/* if pie-wedge type, account for the center point */
+	if(arc->type == T_PIE_WEDGE_ARC) {
+	    sx = min((int)arc->center.x, sx);
+	    bx = max((int)arc->center.x, bx);
+	    sy = min((int)arc->center.y, sy);
+	    by = max((int)arc->center.y, by);
+	}
+
+	*xmin = sx;
+	*ymin = sy;
+	*xmax = bx;
+	*ymax = by;
 	}
 
 compound_bound(compound, xmin, ymin, xmax, ymax, include)
@@ -432,24 +442,35 @@ F_text	*t;
 int	*xmin, *ymin, *xmax, *ymax;
 int	include;
 {
-    double dx1, dx2, dx3, dx4, dy1, dy2, dy3, dy4;
+	double dx1, dx2, dx3, dx4, dy1, dy2, dy3, dy4;
+	int descend;
+	descend = (strchr(t->cstring,'g') || strchr(t->cstring,'j') ||
+		  strchr(t->cstring,'p') || strchr(t->cstring,'q') ||
+		  strchr(t->cstring,'y'));
 	/* characters have some extent downside */
 	if (t->type == T_CENTER_JUSTIFIED) {
-	    dx1 = (t->length/1.95);     dy1 =  0.2*t->height;
-	    dx2 = -(t->length/1.95);    dy2 =  0.2*t->height;
-	    dx3 = (t->length/1.95);     dy3 = -0.8*t->height;
-	    dx4 = -(t->length/1.95);    dy4 = -0.8*t->height;
+	    dx1 = (t->length/1.95);     dy1 =  0.0;
+	    dx2 = -(t->length/1.95);    dy2 =  0.0;
+	    dx3 = (t->length/1.95);     dy3 = -t->height;
+	    dx4 = -(t->length/1.95);    dy4 = -t->height;
 	} else if (t->type == T_RIGHT_JUSTIFIED) {
-	    dx1 = 0.0;                      dy1 =  0.2*t->height;
-	    dx2 = -t->length*1.0256;        dy2 =  0.2*t->height;
-	    dx3 = 0.0;                      dy3 = -0.8*t->height;
-	    dx4 = -t->length*1.0256;        dy4 = -0.8*t->height;
+	    dx1 = 0.0;                      dy1 =  0.0;
+	    dx2 = -t->length*1.0256;        dy2 =  0.0;
+	    dx3 = 0.0;                      dy3 = -t->height;
+	    dx4 = -t->length*1.0256;        dy4 = -t->height;
 	} else {
-	    dx1 = (include ? t->length*1.0256 : 0); dy1 =  0.2*t->height;
-	    dx2 = 0.0;                              dy2 =  0.2*t->height;
-	    dx3 = (include ? t->length*1.0256 : 0); dy3 = -0.8*t->height;
-	    dx4 = 0.0;                              dy4 = -0.8*t->height;
+	    dx1 = (include ? t->length*1.0256 : 0); dy1 =  0;
+	    dx2 = 0.0;                              dy2 =  0;
+	    dx3 = (include ? t->length*1.0256 : 0); dy3 = -t->height;
+	    dx4 = 0.0;                              dy4 = -t->height;
 	}
+    if (descend) {
+	dy1 = 0.3*t->height;
+	dy2 = 0.3*t->height;
+	dy3 = -0.8*t->height;
+	dy4 = -0.8*t->height;
+    }
+	
     *xmax= t->base_x +
            max( max( rot_x(dx1,dy1,t->angle), rot_x(dx2,dy2,t->angle) ), 
 	        max( rot_x(dx3,dy3,t->angle), rot_x(dx4,dy4,t->angle) ) );

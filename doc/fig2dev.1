@@ -38,17 +38,17 @@ Fig (Facility for Interactive Generation of figures) is a screen-oriented
 tool which allows the user to draw and manipulate objects interactively.
 Various versions of Fig run under the Suntools/Sunview window environment
 and under version 11 of the X Windows System.
-Fig2dev is compatible with Fig versions 1.3, 1.4, 2.0, 2.1, 3.0 and 3.1.
+Fig2dev is compatible with Fig versions 1.3, 1.4, 2.0, 2.1, 3.0, 3.1 and 3.2.
 
 .SH OPTIONS
 .TP
 .B \-L
 Set the output graphics language.
 Valid languages are
-\fBbox, epic, eepic, eepicemu, ibmgl, latex, null, pic, pictex,
-ps, pstex, pstex_t, textyl, mf (METAFONT)\fR
-and
-.B tpic.
+\fBacad, box, epic, eepic, eepicemu, gif, ibmgl, jpeg, latex, mf (METAFONT),
+pcx, pic, pictex, png, ppm, ps, pstex, pstex_t, textyl, \fR
+tiff, tpic, xbm and
+.B xpm.
 
 Note that
 .I dvips
@@ -399,11 +399,11 @@ Sets the papersize. Available paper sizes are:
 "C" (17" x 22"),
 "D" (22" x 34"),
 "E" (34" x 44"),
-"A4" (21cm x 29.7cm),
-"A3" (29.7cm x 42cm),
-"A2" (42cm x 59.4cm),
-"A1" (59.4cm x 84cm),
-"A0" (84cm x 118.8cm),
+"A4" (21  cm x  29.7cm),
+"A3" (29.7cm x  42  cm),
+"A2" (42  cm x  59.4cm),
+"A1" (59.4cm x  84.1cm),
+"A0" (84.1cm x 118.9cm),
 and "B5" (18.2cm x 25.7cm).
 .fi
 .in -.4i
@@ -425,6 +425,16 @@ PostScript file generated using
 These two drivers can be used to generate a figure which combines the
 flexibility of PostScript graphics with LaTeX text formatting of
 special text.
+.TP
+The
+.B pstex
+option
+.B -n name
+sets the Title part of the PostScript output to
+.I name.
+This is useful when the input to
+.I fig2dev
+comes from standard input.
 .TP
 The
 .B pstex_t

@@ -45,6 +45,13 @@
 #define MK "Makefile"
 #define TX "transfig.tex"
 
+/* if using LaTeX209, use "documentstyle", if using LaTeX2e use "usepackage" */
+#ifdef LATEX2E
+#define INCLFIG "usepackage"
+#else
+#define INCLFIG "documentstyle"
+#endif
+
 enum language  {box, epic, eepic, eepicemu, latex,
 	pictex, postscript, psfig, pstex, textyl, tpic};
 #define MAXLANG tpic

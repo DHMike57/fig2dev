@@ -128,6 +128,7 @@ static void genepic_open_spline(), genepic_closed_spline();
 static quadratic_spline();
 static bezier_spline();
 static arc_tangent();
+static arc_arrow();
 static draw_arrow_head();
 
 /* Structure for Point with "double" values */
@@ -682,16 +683,17 @@ F_line *line;
     set_style(line->style, line->style_val);
     p = line->points;
     q = p->next;
+    convertCS(p);
+    if (q == NULL) {
+	fprintf(tfp, "\\drawline(%d,%d)(%d,%d)\n", p->x, p->y, p->x, p->y);
+	return;
+    }
+    convertCS(q);
     if (line->back_arrow) {
 	draw_arrow_head(q, p, line->back_arrow->ht, line->back_arrow->wid,
 			line->back_arrow->type, line->back_arrow->style, 
 			line->back_arrow->thickness);
     	if (Verbose) fprintf(tfp, "%%\n");
-    }
-    convertCS(p);
-    if (q == NULL) {
-	fprintf(tfp, "\\drawline(%d,%d)(%d,%d)\n", p->x, p->y, p->x, p->y);
-	return;
     }
     if (line->type == T_ARC_BOX) { /* A box with rounded corners */
 
@@ -708,7 +710,6 @@ F_line *line;
 	llx = urx = p->x;
 	lly = ury = p->y;
 	while (q != NULL) {
-	  convertCS(q);
 	  if (q->x < llx) {
 	    llx = q->x;
 	  } else if (q->x > urx) {
@@ -719,7 +720,8 @@ F_line *line;
 	  } else if (q->y > ury) {
 	    ury = q->y;
 	  }
-	  q = q->next;
+	  if ((q = q->next))
+	     convertCS(q);
 	}
 	r= line->radius;
 	fprintf(tfp, "\\put(%d,%d){\\arc{%d}{1.5708}{3.1416}}\n", llx+r, lly+r, 2*r);
@@ -753,7 +755,6 @@ F_line *line;
 	    llx = urx = p->x;
 	    lly = ury = p->y;
 	    while (q != NULL) {
-	        convertCS(q);
 	        if (q->x < llx) {
 	            llx = q->x;
 	        } else if (q->x > urx) {
@@ -764,7 +765,8 @@ F_line *line;
 	        } else if (q->y > ury) {
 	            ury = q->y;
 	        }
-	        q = q->next;
+	        if ((q = q->next))
+		   convertCS(q);
 	    }
 	    switch(LineStyle) {
 	    case SOLID_LINE:
@@ -787,7 +789,6 @@ F_line *line;
       fprintf(tfp, "%%\n%% A polyline\n%%\n");
     }
     set_pattern(line->fill_style, line->fill_color);
-    convertCS(q);
     switch (LineStyle) {
     case SOLID_LINE:
 	if (q->next != NULL && strcmp(LnCmd,"path")==0) {
@@ -859,21 +860,21 @@ F_line *line;
 
 set_style(style, dash_len)
 int style;
-float dash_len;
+double dash_len;
 {
     LineStyle = style;
     if (LineStyle == DASH_LINE) {
         switch (DashType) {
         case DottedDash:
             LineStyle = DOTTED_LINE;
-	    DotDist = dash_len * DashScale;
+	    DotDist = round(dash_len * DashScale);
             break;
         default:
-            DashLen = dash_len * DashScale;
+            DashLen = round(dash_len * DashScale);
             break;
         }
     } else if (LineStyle == DOTTED_LINE) {
-	DotDist = dash_len * DashScale;
+	DotDist = round(dash_len * DashScale);
     }
 
 }
@@ -911,14 +912,14 @@ F_spline *spl;
 
     p = spl->points;
     q = p->next;
+    convertCS(p);
+    convertCS(q);
     if (spl->back_arrow) {
       draw_arrow_head(q, p, spl->back_arrow->ht, spl->back_arrow->wid,
                       spl->back_arrow->type,spl->back_arrow->style,
                       spl->back_arrow->thickness);
       if (Verbose) fprintf(tfp, "%%\n");
     }
-    convertCS(p);
-    convertCS(q);
     if (q->next == NULL) {
 	fprintf(tfp, "\\%s(%d,%d)(%d,%d)\n", LnCmd,
 	       p->x, p->y, q->x, q->y);
@@ -1065,6 +1066,7 @@ F_spline *spl;
     pt1r.x = cp1->rx;
     pt1r.y = cp1->ry;
     fconvertCS(&pt1l);
+    fconvertCS(&pt1r);
     if (spl->back_arrow) {
       tmpfpt.x = p1->x;
       tmpfpt.y = p1->y;
@@ -1074,7 +1076,6 @@ F_spline *spl;
                        spl->back_arrow->thickness);
       if (Verbose) fprintf(tfp, "%%\n");
     }
-    fconvertCS(&pt1r);
 
     for (p2 = p1->next, cp2 = cp1->next; p2 != NULL;
 	 p1 = p2, pt1r = pt2r, p2 = p2->next, cp2 = cp2->next) {
@@ -1388,7 +1389,7 @@ F_arc *arc;
         }
     }
     if (arc->for_arrow) {
-	arc_tangent(&ctr, &pt2, arc->direction, &tmp);
+	arc_arrow(&ctr, &pt2, arc->direction, arc->for_arrow, &tmp);
 	fdraw_arrow_head(&tmp, &pt2,
 			 arc->for_arrow->ht*arrowfactor,
 			 arc->for_arrow->wid*arrowfactor,
@@ -1398,7 +1399,7 @@ F_arc *arc;
     	if (Verbose) fprintf(tfp, "%%\n");
     }
     if (arc->back_arrow) {
-	arc_tangent(&ctr, &pt1, !arc->direction, &tmp);
+	arc_arrow(&ctr, &pt1, !arc->direction, arc->back_arrow, &tmp);
 	fdraw_arrow_head(&tmp, &pt1,
 			 arc->back_arrow->ht*arrowfactor,
 			 arc->back_arrow->wid*arrowfactor,
@@ -1443,6 +1444,60 @@ int direction;
 	pt3->x = pt2->x - (pt2->y - pt1->y);
 	pt3->y = pt2->y + (pt2->x - pt1->x);
     }
+}
+
+/*************************** ARROWS *****************************
+
+ arc_arrow - Computes a point on a line which is a chord to the 
+        arc specified by center pt1 and endpoint pt2, where the 
+        chord intersects the arc arrow->ht from the endpoint.
+
+ May give strange values if the arrow.ht is larger than about 1/4 of
+ the circumference of a circle on which the arc lies.
+
+  This function is copied from xfig-3.2.0-beta3/u_draw.c 
+       compute_arcarrow_angle. Thanks to the author.
+
+****************************************************************/
+
+static arc_arrow(pt1, pt2, direction, arrow, pt3)
+FPoint *pt1, *pt2, *pt3;
+int direction;
+F_arrow *arrow;
+{
+    double	r, alpha, beta, dy, dx, x1, x2, y1, y2;
+    double	lpt,h;
+
+    x1=pt1->x;
+    y1=pt1->y;
+
+    x2=pt2->x;
+    y2=pt2->y;
+
+    dy=y2-y1;
+    dx=x2-x1;
+    r=sqrt(dx*dx+dy*dy);
+    h = arrow->ht;
+    /* lpt is the amount the arrowhead extends beyond the end of the line */
+    lpt = arrow->thickness/30.0/(arrow->wid/h/2.0);
+    /* add this to the length */
+    h += lpt;
+
+    /* radius too small for this method, use normal method */
+    if (h > 2.0*r) {
+	arc_tangent(pt1,pt2,direction,pt3);
+	return;
+    }
+
+    beta=atan2(dx,dy);
+    if (direction) {
+	alpha=2*asin(h/2.0/r);
+    } else {
+	alpha=-2*asin(h/2.0/r);
+    }
+
+    pt3->x=round(x1+r*sin(beta+alpha));
+    pt3->y=y1+r*cos(beta+alpha);
 }
 
 rtop(x, y, r, th)

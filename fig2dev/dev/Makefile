@@ -97,7 +97,6 @@
     INSTKMEMFLAGS = -g kmem -m 2755
 
       CDEBUGFLAGS = -O
-      CDEBUGFLAGS = -g
         CCOPTIONS =
 
       ALLINCLUDES = $(INCLUDES) $(EXTRA_INCLUDES) $(TOP_INCLUDES) $(STD_INCLUDES)
@@ -291,11 +290,11 @@ INCLUDES = -I..
 EXTRA_INCLUDES = -I$(JPEGINCDIR)
 
 SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genmf.c genpic.c genpictex.c \
-	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c psencode.c \
-	readpics.c readgif.c readxbm.c readxpm.c readjpg.c
+	genps.c genpstex.c gentextyl.c gentpic.c gengif.c setfigfont.c psencode.c \
+	readpics.c readgif.c readxbm.c readxpm.c $(READJPGS)
 LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genmf.o genpic.o genpictex.o \
-	genps.o genpstex.o gentextyl.o gentpic.o setfigfont.o psencode.o \
-	readpics.o readgif.o readxbm.o readxpm.o readjpg.o
+	genps.o genpstex.o gentextyl.o gentpic.o gengif.o setfigfont.o psencode.o \
+	readpics.o readgif.o readxbm.o readxpm.o $(READJPGO)
 
 LIB = transfig
 XPMRGBFILE = -DRGB_FILE=\"$(XPMRGB)\"

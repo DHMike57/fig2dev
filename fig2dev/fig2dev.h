@@ -89,7 +89,7 @@ extern char *PSfontnames[];
 
 extern int   PSisomap[];
 
-extern char	*prog, *from;
+extern char	*prog, *from, *to;
 extern char	*name;
 extern int	font_size;
 extern double	mag;
@@ -99,12 +99,15 @@ extern int	llx, lly, urx, ury;
 extern Boolean	landscape;
 extern Boolean	center;
 extern Boolean	multi_page;	/* multiple page option for PostScript */
-extern Boolean	orientspec;	/* true of the command-line args specified land or port */
-extern Boolean	centerspec;	/* true of the command-line args specified -c or -e */
-extern Boolean	magspec;	/* true of the command-line args specified -m */
-extern Boolean	paperspec;	/* true of the command-line args specified -z */
-extern Boolean	multispec;	/* true of the command-line args specified -M */
+extern Boolean	orientspec;	/* true if the command-line args specified land or port */
+extern Boolean	centerspec;	/* true if the command-line args specified -c or -e */
+extern Boolean	magspec;	/* true if the command-line args specified -m */
+extern Boolean	paperspec;	/* true if the command-line args specified -z */
+extern Boolean	multispec;	/* true if the command-line args specified -M */
+extern Boolean	metric;		/* true if the file contains Metric specifier */
 extern char	papersize[];	/* paper size */
+extern float	THICK_SCALE;	/* convert line thickness from screen res. */
+extern char	lang[];		/* selected output language */
 
 struct paperdef
 {
@@ -136,3 +139,27 @@ struct Cmap {
 	unsigned short red, green, blue;
 	unsigned long pixel;
 };
+
+/* define PATH_MAX if not already defined */
+/* taken from the X11R5 server/os/osfonts.c file */
+#ifndef X_NOT_POSIX
+#ifdef _POSIX_SOURCE
+#include <limits.h>
+#else
+#if !defined(sun) || defined(sparc)
+#define _POSIX_SOURCE
+#include <limits.h>
+#undef _POSIX_SOURCE
+#endif /* !defined(sun) || defined(sparc) */
+#endif /* _POSIX_SOURCE */
+#endif /* X_NOT_POSIX */
+
+#ifndef PATH_MAX
+#include <sys/param.h>
+#ifdef MAXPATHLEN
+#define PATH_MAX MAXPATHLEN
+#else
+#define PATH_MAX 1024
+#endif /* MAXPATHLEN */
+#endif /* PATH_MAX */
+

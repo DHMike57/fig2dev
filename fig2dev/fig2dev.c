@@ -41,10 +41,16 @@
 extern int fig_getopt();
 extern char *optarg;
 extern int optind;
+char	lang[40];
 
 struct driver *dev = NULL;
 
+#ifdef I18N
+char		Usage[] = "Usage: %s [-L language] [-f font] [-s size] [-m scale] [-j] [input [output]]\n";
+Boolean support_i18n = FALSE;
+#else
 char		Usage[] = "Usage: %s [-L language] [-f font] [-s size] [-m scale] [input [output]]\n";
+#endif  /* I18N */
 char		Err_badarg[] = "Argument -%c unknown to %s driver.";
 char		Err_incomp[] = "Incomplete %s object at line %d.";
 char		Err_mem[] = "Running out of memory.";
@@ -65,7 +71,11 @@ Boolean		multispec=FALSE;	/* set if the user specifies multiple pages */
 Boolean		paperspec=FALSE;	/* set if the user specifies the paper size */
 Boolean		pats_used, pattern_used[NUMPATTERNS];
 Boolean		multi_page = FALSE;	/* multiple page option for PostScript */
-char		papersize[20];
+Boolean		metric;			/* true if file specifies Metric */
+char		papersize[20];		/* paper size */
+float		THICK_SCALE;		/* convert line thickness from screen res. */
+					/* calculated in read_objects() */
+char		lang[40];		/* selected output language */
 
 struct obj_rec {
 	void (*gendev)();
@@ -86,12 +96,12 @@ struct paperdef paperdef[] =
     {"C", 1224, 1584},		/*  17" x 22" */
     {"D", 1584, 2448},		/*  22" x 34" */
     {"E", 2448, 3168},		/*  34" x 44" */
-    {"B5", 516, 729}, 		/* 18.2cm x 25.7cm */
-    {"A4", 595, 842}, 		/* 21cm x 29.7cm */
-    {"A3", 842, 1190},		/* 29.7cm x 42cm*/
-    {"A2", 1190, 1684},		/* 42cm x 59.4 */
-    {"A1", 1684, 2380},		/* 59.4cm x 84cm */
-    {"A0", 2380, 3368},		/* 84cm x 118.8 */ 
+    {"B5", 516, 729}, 		/* 18.2cm x  25.7cm */
+    {"A4", 595, 842}, 		/* 21  cm x  29.7cm */
+    {"A3", 842, 1190},		/* 29.7cm x  42  cm */
+    {"A2", 1190, 1684},		/* 42  cm x  59.4cm */
+    {"A1", 1684, 2383},		/* 59.4cm x  84.1cm */
+    {"A0", 2383, 3370},		/* 84.1cm x 118.9cm */ 
     {NULL, 0, 0}
 };
 
@@ -113,7 +123,11 @@ char	*argv[];
 	prog = *argv;
 /* add :? */
 	/* sum of all arguments */
-	while ((c = fig_getopt(argc, argv, "aAcC:d:ef:l:L:Mm:n:Pp:s:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
+#ifdef I18N
+	while ((c = fig_getopt(argc, argv, "aAcC:d:ef:l:L:Mm:n:q:Pp:s:S:t:vVx:X:y:Y:wWz:j?")) != EOF) {
+#else
+	while ((c = fig_getopt(argc, argv, "aAcC:d:ef:l:L:Mm:n:q:Pp:s:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
+#endif
 
 	  /* generic option handling */
 	  switch (c) {
@@ -125,12 +139,14 @@ char	*argv[];
 			break;
 
 		case 'L':			/* set output language */
+		    /* save language for gen{gif,jpg,pcx,xbm,xpm,ppm,tif} */
+		    strncpy(lang,optarg,sizeof(lang)-1);
 		    for (i=0; *drivers[i].name; i++) 
-			if (!strcmp(optarg, drivers[i].name))
+			if (!strcmp(lang, drivers[i].name))
 				dev = drivers[i].dev;
 		    if (!dev) {
 			fprintf(stderr,
-				"Unknown graphics language %s\n", optarg);
+				"Unknown graphics language %s\n", lang);
 			fprintf(stderr,"Known languages are:\n");
 			/* display available languages - 23/01/90 */
 			for (i=0; *drivers[i].name; i++)
@@ -150,8 +166,14 @@ char	*argv[];
 
 		case 'm':			/* set magnification */
 		    mag = atof(optarg);
+		    magspec = TRUE;		/* user-specified */
 		    break;
 
+#ifdef I18N
+		case 'j':			/* set magnification */
+		    support_i18n = TRUE;
+		    continue;  /* don't pass this option to driver */
+#endif /* I18N */
 		case '?':			/* usage 		*/
 			fprintf(stderr,Usage,prog);
 			exit(1);
@@ -203,7 +225,8 @@ char	*argv[];
 	    }
 
 	gendev_objects(&objects, dev);
-	if (tfp != stdout) (void)fclose(tfp);
+	if ((tfp != stdout) && (tfp != 0)) 
+	    (void)fclose(tfp);
 	exit(0);
 	}
 
@@ -306,6 +329,7 @@ struct driver *dev;
 
 	/* generate trailer */
 	(*dev->end)();
+	free(rec_array);
 }
 
 int rec_comp(r1, r2)

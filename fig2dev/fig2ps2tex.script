@@ -1,4 +1,4 @@
-#! /bin/csh -f
+#!/bin/csh -f
 #
 # Fig2ps2tex - generate a TeX file for including a PostScript file
 #		 involves calculating the bounding box from fig2ps output

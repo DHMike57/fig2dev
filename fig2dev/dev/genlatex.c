@@ -151,7 +151,7 @@ static translate2(xp, yp)
 int	*xp, *yp;
 {
 	*xp = *xp + 1;
-	*yp = TOP - *yp -1;
+	*yp = (double)(TOP - *yp -1);
 	}
 
 static translate1_d(xp, yp)
@@ -275,7 +275,7 @@ int	w;
 
 	if (w == 0) return;
 	/* latex only knows thin lines or thick lines */
-	latex_w = (w >= thick_width)? THICKLINES: THINLINES;
+	latex_w = (w >= thick_width*THICK_SCALE)? THICKLINES: THINLINES;
 	if (latex_w != cur_thickness) {
 	    cur_thickness = latex_w;
 	    if (cur_thickness == THICKLINES) {

@@ -93,7 +93,6 @@ int			v2_flag;	/* Protocol V2.0 or higher */
 int			v21_flag;	/* Protocol V2.1 or higher */
 int			v30_flag;	/* Protocol V3.0 or higher */
 int			v32_flag;	/* Protocol V3.2 or higher */
-float			THICK_SCALE;	/* convert line thickness from screen res. */
 
 read_fail_message(file, err)
 char	*file;
@@ -143,9 +142,9 @@ F_compound	*obj;
 
 	init_pats_used();
 	if ((fp = fopen(file_name, "r")) == NULL)
-	    return(errno);
+	    return errno;
 	else
-	    return(readfp_fig(fp, obj));
+	    return readfp_fig(fp, obj);
 	}
 
 readfp_fig(fp, obj)
@@ -158,15 +157,15 @@ F_compound	*obj;
 	num_object = 0;
 	num_usr_cols = 0;
 	c = fgetc(fp);
-	if (feof(fp)) return(-2);
-	ungetc(c, fp);
+	if (feof(fp)) 
+	    return -2;
 	bzero((char*)obj, COMOBJ_SIZE);
 	if (c == '#')
 	    status = read_objects(fp, obj);
 	else
 	    status = read_1_3_objects(fp, obj);
 	(void)fclose(fp);
-	return(status);
+	return status;
 	}
 	
 int
@@ -181,9 +180,10 @@ F_compound	*obj;
 	F_arc		*a, *la = NULL;
 	F_compound	*c, *lc = NULL;
 	int		object, ppi, coord_sys;
-	int		metric;
 
 	bzero((char*)obj, COMOBJ_SIZE);
+	/* get back to the top */
+	rewind(fp);
 	(void)fgets(buf, BUF_SIZE, fp);	/* get the version line */
 	if (strlen(buf) > (size_t)0)
 	    buf[strlen(buf)-1] = '\0';	/* remove newline */
@@ -208,7 +208,7 @@ F_compound	*obj;
 	    line_no++;
 	    if (get_line(fp) < 0) {
 		put_msg("File is truncated at landscape/portrait specification.");
-		return(-1);
+		return -1;
 	    }
 	    /* but set only if the user didn't specify the orientation
 	       on the command line */
@@ -219,7 +219,7 @@ F_compound	*obj;
 	    line_no++;
 	    if (get_line(fp) < 0) {
 		put_msg("File is truncated at metric/inches or centering specification.");
-		return(-1);
+		return -1;
 	    }
 	    /* read justification spec */
 	    if ((strncasecmp(buf,"center",6) == 0) || 
@@ -231,8 +231,15 @@ F_compound	*obj;
 		line_no++;
 		if (get_line(fp) < 0) {
 		    put_msg("File is truncated at metric/inches specification.");
-		    return(-1);
+		    return -1;
 		}
+	    }
+	    /* read metric/inches spec */
+	    /* if metric, scale magnification to correct for xfig display error */
+	    if (strncasecmp(buf,"metric",5)==0) {
+		metric = 1;
+	    } else {
+		metric = 0;
 	    }
 	
 	    /* new stuff in 3.2 */
@@ -242,7 +249,7 @@ F_compound	*obj;
 		line_no++;
 		if (get_line(fp) < 0) {
 		    put_msg("File is truncated at paper size specification.");
-		    return(-1);
+		    return -1;
 		}
 		if (!paperspec) {
 		    /* copy all except newline */
@@ -256,8 +263,10 @@ F_compound	*obj;
 		line_no++;
 		if (get_line(fp) < 0) {
 		    put_msg("File is truncated at magnification specification.");
-		    return(-1);
+		    return -1;
 		}
+		/* if the users hasn't specified a magnification on the command line,
+		   use the one in the file */
 		if (!magspec)
 		    mag = atof(buf)/100.0;
 
@@ -265,7 +274,7 @@ F_compound	*obj;
 		line_no++;
 		if (get_line(fp) < 0) {
 		    put_msg("File is truncated at multiple page specification.");
-		    return(-1);
+		    return -1;
 		}
 		if (!multispec)
 		    multi_page = (strncasecmp(buf,"multiple",8) == 0);
@@ -275,16 +284,9 @@ F_compound	*obj;
 		line_no++;
 		if (get_line(fp) < 0) {
 		    put_msg("File is truncated at transparent color specification.");
-		    return(-1);
+		    return -1;
 		}
 	    } 
-	    /* if metric, scale magnification to correct for xfig display error */
-	    if (strncasecmp(buf,"metric",5)==0) {
-		metric = 1;
-		mag *= 80.0/76.2;
-	    } else {
-		metric = 0;
-	    }
 	} else {
 	/* older than 3.1, no metric/inch flag */
 	    metric = 0;
@@ -304,11 +306,11 @@ F_compound	*obj;
 	/* now read for resolution and coord_sys */
 	if (get_line(fp) < 0) {
 	    put_msg("File is truncated at resolution specification.");
-	    return(-1);
+	    return -1;
 	    }
 	if (sscanf(buf,"%d%d\n", &ppi, &coord_sys) != 2) {
 	    put_msg("Incomplete resolution information at line %d", line_no);
-	    return(-1);
+	    return -1;
 	    }
 
 	THICK_SCALE = ppi/80;	/* convert line thickness from screen resolution */
@@ -317,7 +319,7 @@ F_compound	*obj;
 	while (get_line(fp) > 0) {
 	    if (sscanf(buf, "%d", &object) != 1) {
 		put_msg("Incorrect format at line %d", line_no);
-		return(-1);
+		return -1;
 		}
 	    switch (object) {
 		case O_COLOR_DEF:
@@ -331,7 +333,7 @@ F_compound	*obj;
 		    break;
 		case O_POLYLINE :
 		    if ((l = read_lineobject(fp)) == NULL) 
-			return(-1);
+			return -1;
 		    if (ll)
 			ll = (ll->next = l);
 		    else 
@@ -340,7 +342,7 @@ F_compound	*obj;
 		    break;
 		case O_SPLINE :
 		    if ((s = read_splineobject(fp)) == NULL) { 
-			return(-1);
+			return -1;
 			}
 		    if (v32_flag){ /* s is a line */
 		      if (ll)
@@ -358,7 +360,7 @@ F_compound	*obj;
 		    break;
 		case O_ELLIPSE :
 		    if ((e = read_ellipseobject()) == NULL) 
-			return(-1);
+			return -1;
 		    if (le)
 			le = (le->next = e);
 		    else 
@@ -367,7 +369,7 @@ F_compound	*obj;
 		    break;
 		case O_ARC :
 		    if ((a = read_arcobject(fp)) == NULL) 
-			return(-1);
+			return -1;
 		    if (la)
 			la = (la->next = a);
 		    else 
@@ -376,7 +378,7 @@ F_compound	*obj;
 		    break;
 		case O_TEXT :
 		    if ((t = read_textobject(fp)) == NULL) 
-			return(-1);
+			return -1;
 		    if (lt)
 			lt = (lt->next = t);
 		    else 
@@ -385,7 +387,7 @@ F_compound	*obj;
 		    break;
 		case O_COMPOUND :
 		    if ((c = read_compoundobject(fp)) == NULL) 
-			return(-1);
+			return -1;
 		    if (lc)
 			lc = (lc->next = c);
 		    else 
@@ -394,13 +396,13 @@ F_compound	*obj;
 		    break;
 		default :
 		    put_msg("Incorrect object code at line %d", line_no);
-		    return(-1);
+		    return -1;
 		} /*  switch */
 	    } /*  while */
 	if (feof(fp))
-	    return(0);
+	    return 0;
 	else
-	    return(errno);
+	    return errno;
 	} /*  read_objects */
 
 static void
@@ -449,7 +451,7 @@ FILE	*fp;
 
 	if (NULL == (Arc_malloc(a))) {
 	    put_msg(Err_mem);
-	    return(NULL);
+	    return NULL;
 	    }
 	a->pen = 0;
 	a->fill_style = 0;
@@ -481,9 +483,9 @@ FILE	*fp;
 	if ((v30_flag && n != 21) || (!v30_flag && n != 19)) {
 	    put_msg(Err_incomp, "arc", line_no);
 	    free((char*)a);
-	    return(NULL);
+	    return NULL;
 	    }
-	a->thickness *= THICK_SCALE;
+	a->thickness *= round(THICK_SCALE);
 	a->fill_style = FILL_CONVERT(a->fill_style);
 	/* keep track if pattern is used */
 	note_pattern(a->fill_style);
@@ -494,7 +496,7 @@ FILE	*fp;
 	    line_no++;
 	    if (fscanf(fp, "%d%d%lf%lf%lf", &type, &style, &thickness, &wid, &ht) != 5) {
 		fprintf(stderr, Err_incomp, "arc", line_no);
-		return(NULL);
+		return NULL;
 		}
 	    skip_line(fp);
 	    a->for_arrow = make_arrow(type, style, thickness, wid, ht);
@@ -505,12 +507,12 @@ FILE	*fp;
 	    line_no++;
 	    if (fscanf(fp, "%d%d%lf%lf%lf", &type, &style, &thickness, &wid, &ht) != 5) {
 		fprintf(stderr, Err_incomp, "arc", line_no);
-		return(NULL);
+		return NULL;
 		}
 	    skip_line(fp);
 	    a->back_arrow = make_arrow(type, style, thickness, wid, ht);
 	    }
-	return(a);
+	return a;
 	}
 
 static F_compound *
@@ -538,19 +540,19 @@ FILE	*fp;
 	if (n != 4) {
 	    put_msg(Err_incomp, "compound", line_no);
 	    free((char*)com);
-	    return(NULL);
+	    return NULL;
 	    }
 	while (get_line(fp) > 0) {
 	    if (sscanf(buf, "%d", &object) != 1) {
 		put_msg(Err_incomp, "compound", line_no);
 		free_compound(&com);
-		return(NULL);
+		return NULL;
 		}
 	    switch (object) {
 		case O_POLYLINE :
 		    if ((l = read_lineobject(fp)) == NULL) { 
 			free_line(&l);
-			return(NULL);
+			return NULL;
 			}
 		    if (ll)
 			ll = (ll->next = l);
@@ -560,7 +562,7 @@ FILE	*fp;
 		case O_SPLINE :
 		    if ((s = read_splineobject(fp)) == NULL) { 
 			free_spline(&s);
-			return(NULL);
+			return NULL;
 			}
 		    if (v32_flag){ /* s is a line */
 		      if (ll)
@@ -577,7 +579,7 @@ FILE	*fp;
 		case O_ELLIPSE :
 		    if ((e = read_ellipseobject()) == NULL) { 
 			free_ellipse(&e);
-			return(NULL);
+			return NULL;
 			}
 		    if (le)
 			le = (le->next = e);
@@ -587,7 +589,7 @@ FILE	*fp;
 		case O_ARC :
 		    if ((a = read_arcobject(fp)) == NULL) { 
 			free_arc(&a);
-			return(NULL);
+			return NULL;
 			}
 		    if (la)
 			la = (la->next = a);
@@ -597,7 +599,7 @@ FILE	*fp;
 		case O_TEXT :
 		    if ((t = read_textobject(fp)) == NULL) { 
 			free_text(&t);
-			return(NULL);
+			return NULL;
 			}
 		    if (lt)
 			lt = (lt->next = t);
@@ -607,7 +609,7 @@ FILE	*fp;
 		case O_COMPOUND :
 		    if ((c = read_compoundobject(fp)) == NULL) { 
 			free_compound(&c);
-			return(NULL);
+			return NULL;
 			}
 		    if (lc)
 			lc = (lc->next = c);
@@ -615,16 +617,16 @@ FILE	*fp;
 			lc = com->compounds = c;
 		    break;
 		case O_END_COMPOUND :
-		    return(com);
+		    return com;
 		default :
 		    put_msg("Wrong object code at line %d", line_no);
-		    return(NULL);
+		    return NULL;
 		} /*  switch */
 	    }
 	if (feof(fp))
-	    return(com);
+	    return com;
 	else
-	    return(NULL);
+	    return NULL;
 	}
 
 static F_ellipse *
@@ -660,15 +662,15 @@ read_ellipseobject()
 	if ((v30_flag && n != 19) || (!v30_flag && n != 18)) {
 	    put_msg(Err_incomp, "ellipse", line_no);
 	    free((char*)e);
-	    return(NULL);
+	    return NULL;
 	    }
 	fix_color(&e->pen_color);
 	fix_color(&e->fill_color);
-	e->thickness *= THICK_SCALE;
+	e->thickness *= round(THICK_SCALE);
 	e->fill_style = FILL_CONVERT(e->fill_style);
 	/* keep track if pattern is used */
 	note_pattern(e->fill_style);
-	return(e);
+	return e;
 	}
 
 static F_line *
@@ -728,10 +730,10 @@ FILE	*fp;
 	     (radius_flag && ((!v30_flag && n!=11)||(v30_flag && n!=15)))) {
 	    put_msg(Err_incomp, "line", line_no);
 	    free((char*)l);
-	    return(NULL);
+	    return NULL;
 	    }
-	l->radius *= THICK_SCALE;
-	l->thickness *= THICK_SCALE;
+	l->radius *= round(THICK_SCALE);
+	l->thickness *= round(THICK_SCALE);
 	l->fill_style = FILL_CONVERT(l->fill_style);
 	/* keep track if pattern is used */
 	note_pattern(l->fill_style);
@@ -742,7 +744,7 @@ FILE	*fp;
 	    line_no++;
 	    if (fscanf(fp, "%d%d%lf%lf%lf", &type, &style, &thickness, &wid, &ht) != 5) {
 		fprintf(stderr, Err_incomp, "line", line_no);
-		return(NULL);
+		return NULL;
 		}
 	    skip_line(fp);
 	    l->for_arrow = make_arrow(type, style, thickness, wid, ht);
@@ -752,7 +754,7 @@ FILE	*fp;
 	    line_no++;
 	    if (fscanf(fp, "%d%d%lf%lf%lf", &type, &style, &thickness, &wid, &ht) != 5) {
 		fprintf(stderr, Err_incomp, "line", line_no);
-		return(NULL);
+		return NULL;
 		}
 	    skip_line(fp);
 	    l->back_arrow = make_arrow(type, style, thickness, wid, ht);
@@ -777,13 +779,13 @@ FILE	*fp;
 
 	if (NULL == (l->points = Point_malloc(p))) {
 	    put_msg(Err_mem);
-	    return(NULL);
+	    return NULL;
 	    }
 	p->next = NULL;
 	if (fscanf(fp, "%d%d", &p->x, &p->y) != 2) {
 	    put_msg(Err_incomp, "line", line_no);
 	    free_linestorage(l);
-	    return(NULL);
+	    return NULL;
 	    }
 	if (!v30_flag)
 		npts = 1000000;
@@ -791,14 +793,14 @@ FILE	*fp;
 	    if (fscanf(fp, "%d%d", &x, &y) != 2) {
 		put_msg(Err_incomp, "line", line_no);
 		free_linestorage(l);
-		return(NULL);
+		return NULL;
 		}
 	    if (!v30_flag && x == 9999) 
 		break;
 	    if (NULL == (Point_malloc(q))) {
 		put_msg(Err_mem);
 		free_linestorage(l);
-		return(NULL);
+		return NULL;
 		}
 	    q->x = x;
 	    q->y = y;
@@ -807,7 +809,7 @@ FILE	*fp;
 	    p = q;
 	    }
 	skip_line(fp);
-	return(l);
+	return l;
 	}
 
 static F_spline *
@@ -848,9 +850,9 @@ FILE	*fp;
 	if ((v30_flag && n != 13) || (!v30_flag && n != 10)) {
 	    put_msg(Err_incomp, "spline", line_no);
 	    free((char*)s);
-	    return(NULL);
+	    return NULL;
 	    }
-	s->thickness *= THICK_SCALE;
+	s->thickness *= round(THICK_SCALE);
 	s->fill_style = FILL_CONVERT(s->fill_style);
 	/* keep track if pattern is used */
 	note_pattern(s->fill_style);
@@ -861,7 +863,7 @@ FILE	*fp;
 	    line_no++;
 	    if (fscanf(fp, "%d%d%lf%lf%lf", &type, &style, &thickness, &wid, &ht) != 5) {
 		fprintf(stderr, Err_incomp, "spline", line_no);
-		return(NULL);
+		return NULL;
 		}
 	    skip_line(fp);
 	    s->for_arrow = make_arrow(type, style, thickness, wid, ht);
@@ -871,7 +873,7 @@ FILE	*fp;
 	    line_no++;
 	    if (fscanf(fp, "%d%d%lf%lf%lf", &type, &style, &thickness, &wid, &ht) != 5) {
 		fprintf(stderr, Err_incomp, "spline", line_no);
-		return(NULL);
+		return NULL;
 		}
 	    skip_line(fp);
 	    s->back_arrow = make_arrow(type, style, thickness, wid, ht);
@@ -882,12 +884,12 @@ FILE	*fp;
 	if ((n = fscanf(fp, "%d%d", &x, &y)) != 2) {
 	    put_msg(Err_incomp, "spline", line_no);
 	    free_splinestorage(s);
-	    return(NULL);
+	    return NULL;
 	    };
 	if (NULL == (s->points = Point_malloc(p))) {
 	    put_msg(Err_mem);
 	    free_splinestorage(s);
-	    return(NULL);
+	    return NULL;
 	    }
 	p->x = x; p->y = y;
 	c = 1;
@@ -898,14 +900,14 @@ FILE	*fp;
 		put_msg(Err_incomp, "spline", line_no);
 		p->next = NULL;
 		free_splinestorage(s);
-		return(NULL);
+		return NULL;
 		};
 	    if (!v30_flag && x == 9999) 
 		break;
 	    if (NULL == (Point_malloc(q))) {
 		put_msg(Err_mem);
 		free_splinestorage(s);
-		return(NULL);
+		return NULL;
 		}
 	    q->x = x;
 	    q->y = y;
@@ -930,31 +932,31 @@ FILE	*fp;
 		if ((n = fscanf(fp, "%lf", &control_s)) != 1) {
 		  put_msg(Err_incomp, "spline", line_no);
 		  free_splinestorage(s);
-		  return(NULL);
+		  return NULL;
 		}
 		ptr->s = control_s;
 		ptr = ptr->next;
 	      }
 
 	    l = create_line_with_spline(s);
-
-	    
 	    free_splinestorage(s);  
-	    return((F_spline *)l);   /* return the new line */
+	    if (l == NULL)
+		return NULL;
+	    return (F_spline *)l;   /* return the new line */
 	  }
 
-	if (approx_spline(s)) return(s);
+	if (approx_spline(s)) return s;
 	skip_comment(fp);
 	/* Read controls from older versions */
 	if ((n = fscanf(fp, "%lf%lf%lf%lf", &lx, &ly, &rx, &ry)) != 4) {
 	    put_msg(Err_incomp, "spline", line_no);
 	    free_splinestorage(s);
-	    return(NULL);
+	    return NULL;
 	    };
 	if (NULL == (s->controls = Control_malloc(cp))) {
 	    put_msg(Err_mem);
 	    free_splinestorage(s);
-	    return(NULL);
+	    return NULL;
 	    }
 	cp->lx = lx; cp->ly = ly;
 	cp->rx = rx; cp->ry = ry;
@@ -963,13 +965,13 @@ FILE	*fp;
 		put_msg(Err_incomp, "spline", line_no);
 		cp->next = NULL;
 		free_splinestorage(s);
-		return(NULL);
+		return NULL;
 		};
 	    if (NULL == (Control_malloc(cq))) {
 		put_msg(Err_mem);
 		cp->next = NULL;
 		free_splinestorage(s);
-		return(NULL);
+		return NULL;
 		}
 	    cq->lx = lx; cq->ly = ly;
 	    cq->rx = rx; cq->ry = ry;
@@ -979,7 +981,7 @@ FILE	*fp;
 	cp->next = NULL;
 
 	skip_line(fp);
-	return(s);
+	return s;
 	}
 
 /* strncasecmp and strcasecmp by Fred Appelman (Fred.Appelman@cv.ruu.nl) */
@@ -995,8 +997,8 @@ int strncasecmp(const char* s1, const char* s2, int n)
           /* Check for end of string, if either of the strings
            * is ended, we can terminate the test
            */
-          if (*s1=='\0' && s2!='\0') return -1; /* s1 ended premature */
-          if (*s1!='\0' && s2=='\0') return +1; /* s2 ended premature */
+          if (*s1=='\0' && *s2!='\0') return -1; /* s1 ended premature */
+          if (*s1!='\0' && *s2=='\0') return +1; /* s2 ended premature */
 
           c1=toupper(*s1++);
           c2=toupper(*s2++);
@@ -1023,8 +1025,8 @@ int strcasecmp(const char* s1, const char* s2)
    /* Check for end of string, if not both the strings ended they are
     * not the same.
         */
-   if (*s1=='\0' && s2!='\0') return -1; /* s1 ended premature */
-   if (*s1!='\0' && s2=='\0') return +1; /* s2 ended premature */
+   if (*s1=='\0' && *s2!='\0') return -1; /* s1 ended premature */
+   if (*s1!='\0' && *s2=='\0') return +1; /* s2 ended premature */
    return 0;
 }
 
@@ -1114,7 +1116,7 @@ FILE	*fp;
 	if ((n != 14) && (n != 13)) {
 	  put_msg(Err_incomp, "text", line_no);
 	  free((char*)t);
- 	  return(NULL);
+ 	  return NULL;
 	}
 #endif
 	if (font_size) {
@@ -1178,7 +1180,7 @@ FILE	*fp;
 			if (l < len && s[l+1] != '\\') {
 			    if (sscanf(&s[l+1],"%3o",&num)!=1) {
 				put_msg("Error in parsing text string on line",line_no);
-				return(NULL);
+				return NULL;
 			    }
 			    buf[n++]= (unsigned char) num;	/* put char in */
 			    l += 3;			/* skip over digits */
@@ -1199,7 +1201,7 @@ FILE	*fp;
 	if (NULL == t->cstring) {
 	    put_msg(Err_mem);
 	    free((char*)t);
-	    return(NULL);
+	    return NULL;
 	}
 	(void)strcpy(t->cstring, s+1);
 
@@ -1215,7 +1217,7 @@ FILE	*fp;
 	if (t->font > MAXFONT(t))
 		t->font = MAXFONT(t);
 	fix_color(&t->color);
-	return(t);
+	return t;
 }
 
 /* akm 28/2/95 - count consecutive backslashes backwards */
@@ -1240,11 +1242,11 @@ FILE	*fp;
 {
 	while (1) {
 	    if (NULL == fgets(buf, BUF_SIZE, fp)) {
-		return(-1);
+		return -1;
 		}
 	    line_no++;
 	    if (*buf != '\n' && *buf != '#') 
-		return(1);	/* Skip empty and comment lines */
+		return 1;	/* Skip empty and comment lines */
 	    }
 }
 

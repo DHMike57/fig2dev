@@ -66,8 +66,8 @@ argument *arg_list;
 		fprintf(tx, "\\typeout{TransFig: figures in %s.}\n",
 							lname[(int)to]);
 		if (to == eepicemu || to == eepic)
-			fprintf(tx, "\\documentstyle{epic}");
-		fprintf(tx, "\\documentstyle{%s}\n", lname[(int)to]);
+			fprintf(tx, "\\%s{epic}",INCLFIG);
+		fprintf(tx, "\\%s{%s}\n",INCLFIG, lname[(int)to]);
 		break;
 
 	case latex:
@@ -97,7 +97,7 @@ argument *arg_list;
 
 	case psfig:
 		fprintf(tx, "\\typeout{TransFig: figures in PostScript w/psfig.}\n");
-		fprintf(tx, "\\documentstyle{psfig}\n");
+		fprintf(tx, "\\%s{psfig}\n",INCLFIG);
 		texfonts = 0;
 		break;
 

@@ -52,7 +52,6 @@
 extern F_arrow		*forward_arrow(), *backward_arrow();
 extern int		figure_modified;
 #ifndef __NetBSD__
-extern int		errno;
 extern char		*sys_errlist[];
 extern int		sys_nerr, errno;
 #endif

@@ -36,44 +36,36 @@ extern struct driver dev_pstex_t;
 extern struct driver dev_textyl;
 extern struct driver dev_tpic;
 extern struct driver dev_mf;
+extern struct driver dev_bitmaps;
+
+/* all the bitmap formats use the dev_bitmaps driver */
 
 struct 
 	{char *name; struct driver *dev;}
 	drivers[]
 	= {
+		{"acad",	&dev_bitmaps},
 		{"box",		&dev_box}, 
-#ifdef EPIC
 		{"epic",	&dev_epic},
 		{"eepic",	&dev_epic},
 		{"eepicemu",	&dev_epic},
-#endif
-#ifdef IBMGL
+		{"gif",		&dev_bitmaps},
 		{"ibmgl",	&dev_ibmgl},
-#endif
-#ifdef LATEX
+		{"jpeg",	&dev_bitmaps},
 		{"latex",	&dev_latex},
-#endif
-#ifdef PIC
+		{"mf",		&dev_mf},
+		{"pcx",		&dev_bitmaps},
 		{"pic",		&dev_pic},
-#endif
-#ifdef PICTEX
 		{"pictex",	&dev_pictex},
-#endif
-#ifdef PS
+		{"png",		&dev_bitmaps},
+		{"ppm",		&dev_bitmaps},
 		{"ps",		&dev_ps},
-#endif
-#ifdef PSTEX
 		{"pstex",	&dev_pstex},
 		{"pstex_t",	&dev_pstex_t},
-#endif
-#ifdef TEXTYL
 		{"textyl",	&dev_textyl},
-#endif
-#ifdef TPIC
+		{"tiff",	&dev_bitmaps},
 		{"tpic",	&dev_tpic},
-#endif
-#ifdef MF
-		{"mf",		&dev_mf},
-#endif
+		{"xbm",		&dev_bitmaps},
+		{"xpm",		&dev_bitmaps},
 		{"",		NULL}
 	};
