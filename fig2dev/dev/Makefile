@@ -45,8 +45,8 @@
 
             SHELL = /bin/sh
 
-              TOP = ../../.
-      CURRENT_DIR = ./fig2dev/dev
+              TOP = ../.
+      CURRENT_DIR = ./dev
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
@@ -292,30 +292,37 @@ PICFLAGS = -pic
 # Also change RGB_FILE if necessary, to point to your rgb.txt color
 # database file (for X11).  This is needed for those XPM flies which
 # have named colors (e.g. "white").
+# You need version 3.4c of the XPM package.
+
+# XPMDEFINES = -DUSE_XPM
+# XPMINCDIR = -I/usr/local/X11/include/xpm
+
 # Finally, if your system doesn't have ndbm (the 'new' database subroutines)
 # remove the -DNDBM from the XPMRGB definition.
 
-XPMDEFINES = -DUSE_XPM
-XPMRGB = -DRGB_FILE=\"/usr/lib/X11/rgb\" -DNDBM
+# XPMRGB = -DRGB_FILE=\"/usr/lib/X11/rgb\" -DNDBM
 
 # to set paper size to A4 			add -DA4	to DEFINES list
 # to set IBM Graphics Enhancement Cartridge	add -DIBMGEC	to DEFINES list
 # to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEFINES list
+
+# add -DNFSS to DEFINES list to use NFSS2 font selection for LaTeX texts
+# add -DEPSF to DEFINES list to use epsfig macros as distributed w/ LaTeX2e
 #
-# HGS: -DNFSS: use NFSS2 font selection for LaTeX texts
-#      -DEPSF: use epsfig macros as distributed w/ LaTeX2e
+#     Hint: Users of LaTeX2e will probably want to include both of these
+#     options; users of LaTeX 2.09 will probably want to include neither.
 
-DEFINES = -DDVIPS -DNFSS -DEPSF $(XPMDEFINES)
-DEPLIBS =
+DEFINES = -DDVIPS -DEPSF $(XPMDEFINES)
+
 INCLUDES = -I..
-
-# For Solaris 2.x users uncomment the following to link with the nsl library.
-# SYS_LIBRARIES=	-lnsl
+EXTRA_INCLUDES = $(XPMINCDIR)
 
 SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genmf.c genpic.c genpictex.c \
-	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c readpics.c psencode.c
+	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c psencode.c \
+	readpics.c readgif.c readxbm.c readxpm.c readjpg.c
 LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genmf.o genpic.o genpictex.o \
-	genps.o genpstex.o gentextyl.o gentpic.o setfigfont.o readpics.o psencode.o
+	genps.o genpstex.o gentextyl.o gentpic.o setfigfont.o psencode.o \
+	readpics.o readgif.o readxbm.o readxpm.o readjpg.o
 
 LIB = transfig
 
@@ -326,7 +333,7 @@ lib$(LIB).a: $(LIBOBJS)
 	$(AR) $@ $(LIBOBJS)
 	$(RANLIB) $@
 
-readpics.o:
+readxpm.o:
 	$(RM) $@
 	$(CC) -c $(CFLAGS)  $(XPMRGB) $*.c
 

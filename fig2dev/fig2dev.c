@@ -39,11 +39,9 @@
 #include "object.h"
 #include "drivers.h"
 
-extern int getopt();
+extern int fig_getopt();
 extern char *optarg;
 extern int optind;
-
-#define DEFAULT_FONT_SIZE 11
 
 struct driver *dev = NULL;
 
@@ -87,13 +85,13 @@ char	*argv[];
 	prog = *argv;
 /* add :? */
 	/* sum of all arguments */
-	while ((c = getopt(argc, argv, "acC:d:f:l:L:Mm:n:Pp:s:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "acC:d:ef:l:L:Mm:n:Pp:s:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
 
 	  /* generic option handling */
 	  switch (c) {
 
 		case 'V': 
-			fprintf(stderr, "TransFig Version %s Patchlevel %s\n",
+			fprintf(stderr, "fig2dev Version %s Patchlevel %s\n",
 							VERSION, PATCHLEVEL);
 			exit(0);
 			break;
@@ -116,6 +114,10 @@ char	*argv[];
 
 		case 's':			/* set default font size */
 		    font_size = atoi(optarg);
+		    /* max size is checked in respective drivers */
+		    if (font_size <= 0)
+			font_size = DEFAULT_FONT_SIZE;
+		    font_size = round(font_size * mag);
 		    break;
 
 		case 'm':			/* set magnification */
@@ -138,10 +140,6 @@ char	*argv[];
 		fprintf(stderr, "No graphics language specified.\n");
 		exit(1);
       	}
-
-	/* default font size is scaled if not specified */
-	if (!font_size)
-		font_size = DEFAULT_FONT_SIZE*mag + 0.5;
 
 	if (optind < argc)
 		from = argv[optind++];  /*  from file  */

@@ -42,9 +42,35 @@
 /*====================================================================
   Changes:
 
-  Version 1.0d:<September 18, 1988>
-  1. Add the option -P for Page mode. Two more configurable parameter---
-     Preamble and Postamble.
+  Version 3.1.2: <Aug 17, 1995>
+  Changes from Andre Eickler (eickler@db.fmi.uni-passau.de)
+  1. Line thicknesses did not get scaled correctly. This was especially a
+	problem with dotted lines. 
+  2. Dashlines in Eepic do not work as documented. I included an option "-t"
+	to set the stretch of the dashlines. By default, it is set to a
+	reasonable value (30, before it defaulted to 0, which made dashlines
+	look very sparse).
+  3. Arc boxes are now implemented.
+
+  Known problems:
+	In the fig2dev documentation you should add a recommendation not to use
+	  the -w option of the driver. It does not work due to a bug in Eepic.
+	Polylines/Boxes cannot be shaded and have a dotted/dashed border
+	  simultaneously. In that case only the shading is used.
+	Arc Boxes can only be used with Eepic and Eepic_emu. They can only be
+	  solid/unfilled. In every other case, an ordinary box is used.
+
+  Version 1.1d: <March 30, 1989>
+  1. Add supports for Gould NP1 (Bsd4.3) (Recieve the changes from
+		mcvax!presto.irisa.fr!hleroy@uunet.uu.net. Sorry
+		I don't have his/her name)
+  2. Add exit(0) before exit in the main.
+
+  Version 1.1c: <Febrary 7, 1989>
+  1. Supports all 5 gray level in area fill.
+
+  Version 1.1b: <Febrary 2, 1989>
+  1. Draw outline for area-filled figures when using dvips.
 
   Version 1.1a: <January 18, 1989>
   1. Fix the bug in closed control splines. The routine convertCS(p) is being
@@ -53,17 +79,10 @@
   2. Add supports to Variable line width
   3. Add supports to black, white or shaded area fill.
 
-  Version 1.1b: <Febrary 2, 1989>
-  1. Draw outline for area-filled figures when using dvips.
+  Version 1.0d:<September 18, 1988>
+  1. Add the option -P for Page mode. Two more configurable parameter---
+     Preamble and Postamble.
 
-  Version 1.1c: <Febrary 7, 1989>
-  1. Supports all 5 gray level in area fill.
-
-  Version 1.1d: <March 30, 1989>
-  1. Add supports for Gould NP1 (Bsd4.3) (Recieve the changes from
-		mcvax!presto.irisa.fr!hleroy@uunet.uu.net. Sorry
-		I don't have his/her name)
-  2. Add exit(0) before exit in the main.
 ====================================================================*/
 
   
@@ -79,7 +98,6 @@
 extern float THICK_SCALE;	/* ratio of dpi/80 */
 
 #ifdef MSDOS
-#define getopt egetopt
 #define M_PI 3.14159265358979324
 #endif
 
@@ -93,8 +111,6 @@ int OutLine=0;
 #define PtPerLine 3
 #define ThinLines 0
 #define ThickLines 1
-#define FALSE 0
-#define TRUE 1
 #define Epic 0
 #define EEpic_emu 1
 #define EEpic 2
@@ -133,6 +149,7 @@ static int MaxCircleRadius;
 static double DashLen;
 static int PageMode = FALSE;
 static int PatternType=UNFILLED;
+static int PatternColor=WHITE_COLOR;
 static struct {
     double mag;
     int size;
@@ -157,16 +174,9 @@ char *EllCmdstr[] = {
     "\\%s%s{%d}{%d}}\n", "\\%s%s(%d,%d)}\n"
 };
 
-char *FillCommands[] = {
-    "", "\\whiten",
-    "\\shade", "\\shade", "\\shade",
-    "\\shade", "\\shade", "\\shade",
-    "\\shade", "\\shade", "\\shade",
-    "\\shade", "\\shade", "\\shade",
-    "\\shade", "\\shade", "\\shade",
-    "\\shade", "\\shade", "\\shade",
-    "\\shade", "\\blacken"
-};
+/* Shading that is used instead of hatchings */
+#define DEFAULT_SHADING 8
+char *FillCommands();
 
 #define TEXT_LINE_SEP '\n'
 /* The following two arrays are used to translate characters which
@@ -197,7 +207,7 @@ int Verbose = FALSE;
 int TopMargin = 5;
 int BottomMargin = 10;
 int DotDist = 5;
-int LineThick = 2;
+int LineThick = 0;	/* first use as flag to say whether user specified -l */
 int TeXLang = EEpic;
 double DashScale;
 int EllipseCmd=0;
@@ -206,6 +216,7 @@ int DashType=Normal;
 char *Preamble="\\documentstyle[epic,eepic]{article}\n\\begin{document}\n\\begin{center}\n";
 char *Postamble="\\end{center}\n\\end{document}\n";
 int VarWidth=FALSE;
+int DashStretch=30;
 
 void genepic_option(opt, optarg)
 char opt, *optarg;
@@ -238,7 +249,7 @@ char opt, *optarg;
 	    break;
 
         case 'l':
-            LineThick = atoi(optarg);
+            LineThick = atoi(optarg) * DPI/80;
             break;
 
 	case 'L':
@@ -249,19 +260,12 @@ char opt, *optarg;
 	    break;
 
 
+	case 's':
 	case 'm':
 	    break;
 
 	case 'P':
 	    PageMode = 1;
-	    break;
-
-	case 's':
-	    font_size = atoi(optarg);
-	    if (font_size <= 0 || font_size > MAXFONTSIZE) {
-		fprintf(stderr,
-			"warning: font size %d out of bounds\n", font_size);
-	    }
 	    break;
 
         case 'S':
@@ -282,6 +286,12 @@ char opt, *optarg;
 	case 'w':
 	case 'W':
 	    VarWidth = opt=='W';
+	    break;
+
+	case 't':
+	    DashStretch= atoi(optarg);
+	    if (DashStretch < -100)
+	      DashStretch = -100;
 	    break;
 
 	default:
@@ -323,7 +333,8 @@ F_compound *objects;
     F_spline *spl;
     F_text *text;
 
-    texfontsizes[0] = texfontsizes[1] = TEXFONTSIZE(font_size);
+    texfontsizes[0] = texfontsizes[1] =
+		TEXFONTSIZE(font_size?font_size:DEFAULT_FONT_SIZE);
 
     switch (TeXLang) {
     case Epic:
@@ -347,6 +358,8 @@ F_compound *objects;
         put_msg("Resolution has to be positive. Default to 80!\n");
         DPI = 80;
     }
+    if (LineThick == 0)
+	LineThick = 2*DPI/80;	/* user didn't specify -l */
     DashScale = (double)DPI/80.0;
     coord_system = objects->nwcorner.y;
     switch (coord_system) {
@@ -386,6 +399,8 @@ F_compound *objects;
     MaxCircleRadius = (int) (40 / 72.27 / Threshold);
     Threshold = SegLen / Threshold;
     define_setfigfont(tfp);
+    if (DashStretch)
+      fprintf(tfp, "{\\renewcommand{\\dashlinestretch}{%d}\n", DashStretch);
     fprintf(tfp, "\\begin{picture}(%d,%d)(%d,%d)\n",
            pt2.x-pt1.x, pt2.y-pt1.y + TopMargin + BottomMargin,
            LowerLeftX, LowerLeftY-BottomMargin);
@@ -394,6 +409,8 @@ F_compound *objects;
 void genepic_end()
 {
     fprintf(tfp, "\\end{picture}\n");
+    if (DashStretch)
+      fprintf(tfp, "}\n");
     if (PageMode)
         fputs(Postamble, stdout);
 }
@@ -404,6 +421,7 @@ int w;
     int old_width;
 
     if (w < 0) return;
+    w/= DashScale; /* Dashscale is also computed in 80th of an inch */
     old_width=CurWidth;
     CurWidth = (w >= LineThick) ? (VarWidth ? w : ThickLines) : ThinLines;
     if (old_width != CurWidth) {
@@ -417,28 +435,222 @@ int w;
     }
 }
 
-set_pattern(type)
-int type;
+set_pattern(type, color)
+int type, color;
 {
-    static unsigned long patterns[3][32] = {
-	{ 0xc0c0c0c0, 0, 0, 0, 0, 0, 0, 0,
-	  0xc0c0c0c0, 0, 0, 0, 0, 0, 0, 0,
-	  0xc0c0c0c0, 0, 0, 0, 0, 0, 0, 0,
-	  0xc0c0c0c0, 0, 0, 0, 0, 0, 0, 0},
-	{ 0xcccccccc, 0, 0, 0, 0xcccccccc, 0, 0, 0,
-	  0xcccccccc, 0, 0, 0, 0xcccccccc, 0, 0, 0,
-	  0xcccccccc, 0, 0, 0, 0xcccccccc, 0, 0, 0,
-	  0xcccccccc, 0, 0, 0, 0xcccccccc, 0, 0, 0},
-	{ 0x55555555, 0, 0x55555555, 0, 0x55555555, 0, 0x55555555, 0,
-	  0x55555555, 0, 0x55555555, 0, 0x55555555, 0, 0x55555555, 0,
-	  0x55555555, 0, 0x55555555, 0, 0x55555555, 0, 0x55555555, 0,
-	  0x55555555, 0, 0x55555555, 0, 0x55555555, 0, 0x55555555, 0}};
+    static unsigned long patterns[][32] = {
+
+      /* shading data */
+      {
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+      }, {
+	0x00000000, 0x00000000, 0x00000000, 0x00888888, 
+	0x88000000, 0x00000000, 0x00000000, 0x00080808, 
+	0x08000000, 0x00000000, 0x00000000, 0x00888888, 
+	0x88000000, 0x00000000, 0x00000000, 0x00080808, 
+	0x08000000, 0x00000000, 0x00000000, 0x00888888, 
+	0x88000000, 0x00000000, 0x00000000, 0x00080808, 
+	0x08000000, 0x00000000, 0x00000000, 0x00888888, 
+	0x88000000, 0x00000000, 0x00000000, 0x00080808, 
+      }, {
+	0x08101010, 0x10000000, 0x00444444, 0x44000000, 
+	0x00011101, 0x11000000, 0x00444444, 0x44000000, 
+	0x00101010, 0x10000000, 0x00444444, 0x44000000, 
+	0x00010101, 0x01000000, 0x00444444, 0x44000000, 
+	0x00101010, 0x10000000, 0x00444444, 0x44000000, 
+	0x00011101, 0x11000000, 0x00444444, 0x44000000, 
+	0x00101010, 0x10000000, 0x00444444, 0x44000000, 
+	0x00010101, 0x01000000, 0x00444444, 0x44000000, 
+      }, {
+	0x00000000, 0x00115111, 0x51000000, 0x00444444, 
+	0x44000000, 0x00151515, 0x15000000, 0x00444444, 
+	0x44000000, 0x00511151, 0x11000000, 0x00444444, 
+	0x44000000, 0x00151515, 0x15000000, 0x00444444, 
+	0x44000000, 0x00115111, 0x51000000, 0x00444444, 
+	0x44000000, 0x00151515, 0x15000000, 0x00444444, 
+	0x44000000, 0x00511151, 0x11000000, 0x00444444, 
+	0x44000000, 0x00151515, 0x15000000, 0x00444444, 
+      }, {
+	0x44000000, 0x00aaaaaa, 0xaa000000, 0x008a888a, 
+	0x88000000, 0x00aaaaaa, 0xaa000000, 0x00888888, 
+	0x88000000, 0x00aaaaaa, 0xaa000000, 0x008a8a8a, 
+	0x8a000000, 0x00aaaaaa, 0xaa000000, 0x00888888, 
+	0x88000000, 0x00aaaaaa, 0xaa000000, 0x008a888a, 
+	0x88000000, 0x00aaaaaa, 0xaa000000, 0x00888888, 
+	0x88000000, 0x00aaaaaa, 0xaa000000, 0x008a8a8a, 
+	0x8a000000, 0x00aaaaaa, 0xaa000000, 0x00888888, 
+      }, {
+	0x88555555, 0x55000000, 0x00555555, 0x55000000, 
+	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
+	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
+	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
+	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
+	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
+	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
+	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
+      }, {
+	0x00555555, 0x55000000, 0x00555555, 0x55888888, 
+	0x88555555, 0x55000000, 0x00555555, 0x55808080, 
+	0x80555555, 0x55000000, 0x00555555, 0x55888888, 
+	0x88555555, 0x55000000, 0x00555555, 0x55888088, 
+	0x80555555, 0x55000000, 0x00555555, 0x55888888, 
+	0x88555555, 0x55000000, 0x00555555, 0x55808080, 
+	0x80555555, 0x55000000, 0x00555555, 0x55888888, 
+	0x88555555, 0x55000000, 0x00555555, 0x55888088, 
+      }, {
+	0x80222222, 0x22555555, 0x55808080, 0x80555555, 
+	0x55222222, 0x22555555, 0x55880888, 0x08555555, 
+	0x55222222, 0x22555555, 0x55808080, 0x80555555, 
+	0x55222222, 0x22555555, 0x55080808, 0x08555555, 
+	0x55222222, 0x22555555, 0x55808080, 0x80555555, 
+	0x55222222, 0x22555555, 0x55880888, 0x08555555, 
+	0x55222222, 0x22555555, 0x55808080, 0x80555555, 
+	0x55222222, 0x22555555, 0x55080808, 0x08555555, 
+      }, {
+	0x55888888, 0x88555555, 0x5522a222, 0xa2555555, 
+	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555, 
+	0x55888888, 0x88555555, 0x55a222a2, 0x22555555, 
+	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555, 
+	0x55888888, 0x88555555, 0x5522a222, 0xa2555555, 
+	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555, 
+	0x55888888, 0x88555555, 0x55a222a2, 0x22555555, 
+	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555, 
+      }, {
+	0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa545454, 
+	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444, 
+	0x44aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa445444, 
+	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444, 
+	0x44aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa545454, 
+	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444, 
+	0x44aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa445444, 
+	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444, 
+      }, {
+	0x44555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
+      }, {
+	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaad5d5d5, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaaddd5dd, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaad5d5d5, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaaddd5dd, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa, 
+      }, {
+	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa, 
+	0xaa777777, 0x77aaaaaa, 0xaadd5ddd, 0x5daaaaaa, 
+	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa, 
+	0xaa777777, 0x77aaaaaa, 0xaa5ddd5d, 0xddaaaaaa, 
+	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa, 
+	0xaa777777, 0x77aaaaaa, 0xaadd5ddd, 0x5daaaaaa, 
+	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa, 
+	0xaa777777, 0x77aaaaaa, 0xaa5ddd5d, 0xddaaaaaa, 
+      }, {
+	0xaa555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe, 
+	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55eeefee, 
+	0xef555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe, 
+	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55efefef, 
+	0xef555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe, 
+	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55eeefee, 
+	0xef555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe, 
+	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55efefef, 
+      }, {
+	0xefffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaa777f77, 0x7faaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaa7f7f7f, 0x7faaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaa777f77, 0x7faaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaa7f7f7f, 0x7faaaaaa, 
+      }, {
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
+      }, {
+	0xaa555555, 0x55ffffff, 0xffdddddd, 0xddffffff, 
+	0xff555555, 0x55ffffff, 0xff5ddd5d, 0xddffffff, 
+	0xff555555, 0x55ffffff, 0xffdddddd, 0xddffffff, 
+	0xff555555, 0x55ffffff, 0xff5d5d5d, 0x5dffffff, 
+	0xff555555, 0x55ffffff, 0xffdddddd, 0xddffffff, 
+	0xff555555, 0x55ffffff, 0xff5ddd5d, 0xddffffff, 
+	0xff555555, 0x55ffffff, 0xffdddddd, 0xddffffff, 
+	0xff555555, 0x55ffffff, 0xff5d5d5d, 0x5dffffff, 
+      }, {
+	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff, 
+	0xffeeeeee, 0xeeffffff, 0xffabbbab, 0xbbffffff, 
+	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff, 
+	0xffeeeeee, 0xeeffffff, 0xffbbabbb, 0xabffffff, 
+	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff, 
+	0xffeeeeee, 0xeeffffff, 0xffabbbab, 0xbbffffff, 
+	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff, 
+	0xffeeeeee, 0xeeffffff, 0xffbbabbb, 0xabffffff, 
+      }, {
+	0xffffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb, 
+	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbbbf, 
+	0xbbffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb, 
+	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbfbf, 
+	0xbfffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb, 
+	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbbbf, 
+	0xbbffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb, 
+	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbfbf, 
+      }, {
+	0xbfffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb, 
+	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb, 
+	0xfbffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb, 
+	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb, 
+	0xfbffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb, 
+	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb, 
+	0xfbffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb, 
+	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb, 
+      }, {
+	0xfbffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
+      }
+    };
+
     int count, loop1, loop2, i;
 
-    if (type <= WHITE_FILL || type >= BLACK_FILL) return;
-    if (type != PatternType) {
+    if ( type <= WHITE_FILL || 
+	(type >= BLACK_FILL && type < NUMSHADES + NUMTINTS) ||
+	type >= NUMSHADES + NUMTINTS + NUMPATTERNS )
+      return;
+
+    if (type != PatternType || color != PatternColor) {
 	PatternType=type;
-	i = ((int) PatternType - WHITE_FILL - 1) / 6;
+	PatternColor=color;
+	if (type < NUMSHADES + NUMTINTS)
+	  if (color == BLACK_COLOR || color == DEFAULT)
+	    i = type;
+	  else 
+	    i= NUMSHADES - type - 1;
+	else
+	  i= DEFAULT_SHADING;
+
 	fprintf(tfp, "\\texture{");
 	count=0;
 	for (loop1=4; loop1>0;) {
@@ -458,6 +670,7 @@ F_line *line;
     F_point *p, *q;
     int pt_count = 0, temp;
     int boxflag = FALSE, llx, lly, urx, ury;
+    int r;
     double dtemp;
 
     set_linewidth(line->thickness);
@@ -470,8 +683,44 @@ F_line *line;
 	return;
     }
     if (line->type == T_ARC_BOX) { /* A box with rounded corners */
-	  fprintf(stderr, "Arc box not implemented; substituting box.\n");
-	  line->type = T_BOX;
+
+      if (TeXLang == Epic || /* Sorry, can't do more */
+	  LineStyle != SOLID_LINE || 
+	  line->fill_style != UNFILLED) { 
+	fprintf(stderr, "Arc box not implemented; substituting box.\n");
+	line->type = T_BOX;
+      } else {
+	if (Verbose) {
+	    fprintf(tfp, "%%\n%% An arcbox\n%%\n");
+	}
+	/* borrowed from below */
+	llx = urx = p->x;
+	lly = ury = p->y;
+	while (q != NULL) {
+	  convertCS(q);
+	  if (q->x < llx) {
+	    llx = q->x;
+	  } else if (q->x > urx) {
+	    urx = q->x;
+	  }
+	  if (q->y < lly) {
+	    lly = q->y;
+	  } else if (q->y > ury) {
+	    ury = q->y;
+	  }
+	  q = q->next;
+	}
+	r= line->radius;
+	fprintf(tfp, "\\put(%d,%d){\\arc{%d}{1.5708}{3.1416}}\n", llx+r, lly+r, 2*r);
+	fprintf(tfp, "\\put(%d,%d){\\arc{%d}{3.1416}{4.7124}}\n", llx+r, ury-r, 2*r);
+	fprintf(tfp, "\\put(%d,%d){\\arc{%d}{4.7124}{6.2832}}\n", urx-r, ury-r, 2*r);
+	fprintf(tfp, "\\put(%d,%d){\\arc{%d}{0}{1.5708}}\n", urx-r, lly+r, 2*r);
+	fprintf(tfp, "\\%s(%d,%d)(%d,%d)\n", LnCmd, llx, lly+r, llx, ury-r);
+	fprintf(tfp, "\\%s(%d,%d)(%d,%d)\n", LnCmd, llx+r, ury, urx-r, ury);
+	fprintf(tfp, "\\%s(%d,%d)(%d,%d)\n", LnCmd, urx, ury-r, urx, lly+r);
+	fprintf(tfp, "\\%s(%d,%d)(%d,%d)\n", LnCmd, urx-r, lly, llx+r, lly);
+	return;
+      }
     }
     if (line->type == T_BOX) {
 	if (Verbose) {
@@ -523,19 +772,17 @@ F_line *line;
 	    }
 	    return;
 	  }
+    } else if (line->type != T_ARC_BOX && Verbose) {
+      fprintf(tfp, "%%\n%% A polyline\n%%\n");
     }
-    set_pattern(line->fill_style);
+    set_pattern(line->fill_style, line->fill_color);
     convertCS(q);
-    if (line->back_arrow) {
-	draw_arrow_head(q, p, line->back_arrow->ht, line->back_arrow->wid);
-    	if (Verbose) fprintf(tfp, "%%\n");
-    }
     switch (LineStyle) {
     case SOLID_LINE:
 	if (q->next != NULL && strcmp(LnCmd,"path")==0) {
 	    if (line->fill_style < UNFILLED)
 		line->fill_style = UNFILLED;
-	    fprintf(tfp, "%s", FillCommands[line->fill_style+1]);
+	    fprintf(tfp, "%s", FillCommands(line->fill_style, line->fill_color));
 	}
 	fprintf(tfp, "\\%s", LnCmd);
 #ifdef DrawOutLine
@@ -591,8 +838,16 @@ F_line *line;
 	fprintf(tfp, "(%d,%d)\n", q->x, q->y);
     }
 #endif
+    if (line->back_arrow) {
+	draw_arrow_head(q, p, line->back_arrow->ht, line->back_arrow->wid,
+			line->back_arrow->type, line->back_arrow->style, 
+			line->back_arrow->thickness);
+    	if (Verbose) fprintf(tfp, "%%\n");
+    }
     if (line->for_arrow) {
-	draw_arrow_head(p, q, line->for_arrow->ht, line->for_arrow->wid);
+	draw_arrow_head(p, q, line->for_arrow->ht, line->for_arrow->wid,
+			line->for_arrow->type,line->for_arrow->style,
+			line->for_arrow->thickness);
     	if (Verbose) fprintf(tfp, "%%\n");
     }
 }
@@ -653,10 +908,6 @@ F_spline *spl;
     q = p->next;
     convertCS(p);
     convertCS(q);
-    if (spl->back_arrow) {
-	draw_arrow_head(q, p, spl->back_arrow->ht, spl->back_arrow->wid);
-    	if (Verbose) fprintf(tfp, "%%\n");
-    }
     if (q->next == NULL) {
 	fprintf(tfp, "\\%s(%d,%d)(%d,%d)\n", LnCmd,
 	       p->x, p->y, q->x, q->y);
@@ -698,8 +949,16 @@ F_spline *spl;
         q=r;
 	fprintf(tfp, "\n");
     }
+    if (spl->back_arrow) {
+	draw_arrow_head(q, p, spl->back_arrow->ht, spl->back_arrow->wid,
+			spl->back_arrow->type,spl->back_arrow->style,
+			spl->back_arrow->thickness);
+    	if (Verbose) fprintf(tfp, "%%\n");
+    }
     if (spl->for_arrow) {
-	draw_arrow_head(p, q, spl->for_arrow->ht, spl->for_arrow->wid);
+	draw_arrow_head(p, q, spl->for_arrow->ht, spl->for_arrow->wid,
+			spl->for_arrow->type, spl->for_arrow->style,
+			spl->for_arrow->thickness);
     	if (Verbose) fprintf(tfp, "%%\n");
     }
 }
@@ -803,14 +1062,6 @@ F_spline *spl;
     fconvertCS(&pt1l);
     fconvertCS(&pt1r);
 
-    if (spl->back_arrow) {
-	tmpfpt.x = p1->x;
-	tmpfpt.y = p1->y;
-	fdraw_arrow_head(&pt1r, &tmpfpt, 
-		spl->back_arrow->ht, spl->back_arrow->wid);
-    	if (Verbose) fprintf(tfp, "%%\n");
-    }
-
     for (p2 = p1->next, cp2 = cp1->next; p2 != NULL;
 	 p1 = p2, pt1r = pt2r, p2 = p2->next, cp2 = cp2->next) {
 	fprintf(tfp, "\\%s(%d,%d)", LnCmd, p1->x, p1->y);
@@ -828,11 +1079,23 @@ F_spline *spl;
 	fprintf(tfp, "\n");
     }
 
+    if (spl->back_arrow) {
+	tmpfpt.x = p1->x;
+	tmpfpt.y = p1->y;
+	fdraw_arrow_head(&pt1r, &tmpfpt, 
+			 spl->back_arrow->ht, spl->back_arrow->wid,
+			 spl->back_arrow->type, spl->back_arrow->style,
+			 spl->back_arrow->thickness);
+    	if (Verbose) fprintf(tfp, "%%\n");
+    }
+
     if (spl->for_arrow) {
 	tmpfpt.x = p1->x;
 	tmpfpt.y = p1->y;
 	fdraw_arrow_head(&pt2l, &tmpfpt, 
-			 spl->for_arrow->ht, spl->for_arrow->wid);
+			 spl->for_arrow->ht, spl->for_arrow->wid,
+			 spl->for_arrow->type, spl->for_arrow->style,
+			 spl->for_arrow->thickness);
 	if (Verbose) fprintf(tfp, "%%\n");
     }
 }
@@ -872,13 +1135,13 @@ F_ellipse *ell;
     if (TeXLang == EEpic || TeXLang == EEpic_emu ||
 	  ell->radiuses.x != ell->radiuses.y ||
           ell->radiuses.x > MaxCircleRadius) {
-	set_pattern(ell->fill_style);
+	set_pattern(ell->fill_style, ell->fill_color);
         fprintf(tfp, "\\put(%d,%d){", pt.x, pt.y );
 #ifndef OLDCODE
         if (EllipseCmd == 0) {
 	    if (ell->fill_style < UNFILLED)
 		ell->fill_style = UNFILLED;
-	    fprintf(tfp, "%s", FillCommands[ell->fill_style+1]);
+	    fprintf(tfp, "%s", FillCommands(ell->fill_style, ell->fill_color));
 #  ifdef DrawOutLine
 	    if (ell->fill_style != UNFILLED && OutLine == 0)
 		OutLine = 1;
@@ -1072,22 +1335,8 @@ F_arc *arc;
     arrowfactor = (r1+r2) / 30.0;
     if (arrowfactor > 1) arrowfactor = 1;
     set_linewidth(arc->thickness);
-    if (arc->for_arrow) {
-	arc_tangent(&ctr, &pt2, arc->direction, &tmp);
-	fdraw_arrow_head(&tmp, &pt2,
-			 arc->for_arrow->ht*arrowfactor,
-			 arc->for_arrow->wid*arrowfactor);
-    	if (Verbose) fprintf(tfp, "%%\n");
-    }
-    if (arc->back_arrow) {
-	arc_tangent(&ctr, &pt1, !arc->direction, &tmp);
-	fdraw_arrow_head(&tmp, &pt1,
-			 arc->back_arrow->ht*arrowfactor,
-			 arc->back_arrow->wid*arrowfactor);
-    	if (Verbose) fprintf(tfp, "%%\n");
-    }
     if (TeXLang == EEpic) {
-	set_pattern(arc->fill_style);
+	set_pattern(arc->fill_style, arc->fill_color);
         fprintf(tfp, "\\put(%4.3lf,%4.3lf){", ctr.x, ctr.y);
     } else {
 	fprintf(tfp, "\\drawline");
@@ -1095,7 +1344,7 @@ F_arc *arc;
     if (TeXLang == EEpic) {
 	if (arc->fill_style < UNFILLED)
 	    arc->fill_style = UNFILLED;
-	fprintf(tfp, "%s", FillCommands[arc->fill_style+1]);
+	fprintf(tfp, "%s", FillCommands(arc->fill_style, arc->fill_color));
 #ifdef DrawOutLine
 	if (arc->fill_style != UNFILLED && OutLine==0)
 	    OutLine=1;
@@ -1133,6 +1382,26 @@ F_arc *arc;
 	} else {
             drawarc(&ctr, r2, 2*M_PI - th1 - theta, theta);
         }
+    }
+    if (arc->for_arrow) {
+	arc_tangent(&ctr, &pt2, arc->direction, &tmp);
+	fdraw_arrow_head(&tmp, &pt2,
+			 arc->for_arrow->ht*arrowfactor,
+			 arc->for_arrow->wid*arrowfactor,
+			 arc->for_arrow->type,
+			 arc->for_arrow->style,
+			 arc->for_arrow->thickness);
+    	if (Verbose) fprintf(tfp, "%%\n");
+    }
+    if (arc->back_arrow) {
+	arc_tangent(&ctr, &pt1, !arc->direction, &tmp);
+	fdraw_arrow_head(&tmp, &pt1,
+			 arc->back_arrow->ht*arrowfactor,
+			 arc->back_arrow->wid*arrowfactor,
+			 arc->back_arrow->type,
+			 arc->back_arrow->style,
+			 arc->back_arrow->thickness);
+    	if (Verbose) fprintf(tfp, "%%\n");
     }
 }
 
@@ -1181,9 +1450,10 @@ double x, y, *r, *th;
     if (y < 0) *th = 2*M_PI - *th;
 }
 
-static draw_arrow_head(pt1, pt2, arrowht, arrowwid)
+static draw_arrow_head(pt1, pt2, arrowht, arrowwid, type, style, thickness)
 F_point *pt1, *pt2;
-double arrowht, arrowwid;
+int type, style;
+double arrowht, arrowwid, thickness;
 {
     FPoint fpt1, fpt2;
 
@@ -1191,12 +1461,13 @@ double arrowht, arrowwid;
     fpt1.y = pt1->y;
     fpt2.x = pt2->x;
     fpt2.y = pt2->y;
-    fdraw_arrow_head(&fpt1, &fpt2, arrowht, arrowwid);
+    fdraw_arrow_head(&fpt1, &fpt2, arrowht, arrowwid, type, style, thickness);
 }
 
-fdraw_arrow_head(pt1, pt2, arrowht, arrowwid)
+fdraw_arrow_head(pt1, pt2, arrowht, arrowwid, type, style, thickness)
 FPoint *pt1, *pt2;
-double arrowht, arrowwid;
+int type, style;
+double arrowht, arrowwid, thickness;
 {
     double x1, y1, x2, y2;
     double x,y, xb,yb,dx,dy,l,sina,cosa;
@@ -1227,8 +1498,57 @@ double arrowht, arrowwid;
 
     if (Verbose) fprintf(tfp, "%%\n%% arrow head\n%%\n");
 
-    fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
-		xc, yc, x2, y2, xd, yd);
+    if (type)
+      if (style == 1)
+	fprintf(tfp, "\\blacken");
+      else
+	fprintf(tfp, "\\whiten");
+    set_linewidth((int) thickness);
+
+    switch(type) {
+    case 0:
+      fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
+	      xc, yc, x2, y2, xd, yd);
+      break;
+    case 1:
+      fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
+	      xc, yc, x2, y2, xd, yd, xc, yc);
+      break;
+    case 2:
+      fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
+	      xc, yc, x2, y2, xd, yd, x2 - (x2-x1)/l*arrowht*0.7, y2 - (y2-y1)/l*arrowht*0.7, xc, yc);
+      break;
+    case 3:
+      fprintf(tfp, "\\%s(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)(%4.3f,%4.3f)\n", LnCmd,
+	      xc, yc, x2, y2, xd, yd, x2 - (x2-x1)/l*arrowht*1.3, y2 - (y2-y1)/l*arrowht*1.3, xc, yc);
+      break;
+    }
+}
+
+char* FillCommands(style, color)
+int style, color;
+{
+  static char empty[]= "";
+  static char shaded[]= "\\shade";
+  static char whiten[]= "\\whiten";
+  static char blacken[]= "\\blacken";
+  
+  if (style == UNFILLED)
+    return empty;
+
+  if (style == WHITE_FILL)
+    if (color == BLACK_COLOR || color == DEFAULT)
+      return whiten;
+    else
+      return blacken;
+
+  if (style == BLACK_FILL)
+    if (color == BLACK_COLOR || color == DEFAULT)
+      return blacken;
+    else
+      return whiten;
+
+  return shaded;
 }
 
 #ifndef MSDOS

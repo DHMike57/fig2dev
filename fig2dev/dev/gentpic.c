@@ -172,7 +172,7 @@ int	w;
 	if (w == 0) return;
 	if (w != cur_thickness) {
 	    cur_thickness = w;
-	    fprintf(tfp, ".ps %d\n", cur_thickness * line_width);
+	    fprintf(tfp, ".ps %d\n", round(cur_thickness * line_width * 80/ppi));
 	    }
 	}
 
@@ -546,13 +546,6 @@ F_text	*t;
 	float	y;
         char	*tpos;
 	int	virtual_font = 0;
-
-	/*
-	 * If a font size is specified and the current text font size
-	 * is the default, then use the specified font size.
-	 */
-	if (t->size == 0 && font_size)
-		t->size = font_size;
 
 	/*
 	 * tpic is informed of the baseline spacing here. Not particularly

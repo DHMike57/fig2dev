@@ -1,4 +1,4 @@
-.TH FIG2DEV 1 "Release 3.1(.0) (Protocol 3.1) Jan 9, 1995"
+.TH FIG2DEV 1 "Release 3.1(.2) (Protocol 3.1) Aug 16, 1995"
 .SH NAME
 fig2dev \- translates Fig code to various graphics languages
 
@@ -38,7 +38,7 @@ Fig (Facility for Interactive Generation of figures) is a screen-oriented
 tool which allows the user to draw and manipulate objects interactively.
 Various versions of Fig run under the Suntools/Sunview window environment
 and under version 11 of the X Windows System.
-Fig2dev is compatible with Fig versions 1.3, 1.4, 2.0, 2.1 and 3.0.
+Fig2dev is compatible with Fig versions 1.3, 1.4, 2.0, 2.1, 3.0 and 3.1.
 
 .SH OPTIONS
 .TP
@@ -286,8 +286,7 @@ As a result, it is best to use PiCTeX to generate small pictures.
 .SH POSTSCRIPT OPTIONS
 With PostScript, Fig can be used to create large posters. The figure
 will be created by printing multiple pages which can be glued together.
-Simply by not specifying the -c (centering) option and by specifying
-the -P (add showpage) option you will get a multi-page output.
+Simply specify the -M option to produce a multi-page output.
 Due to memory limitations of most laser printers, the figure should not
 be too complicated. Great for text with very big letters.
 .LP
@@ -317,6 +316,9 @@ The centering may not be accurate if there are texts in the
 .I fig_file
 that extends too far to the right of other objects.
 .TP
+.B -e
+option puts the figure against the edge (not centered) of the page.
+.TP
 .B -l dummy_arg
 Generate figure in landscape mode.  The dummy argument is ignored,
 but must appear on the command line for reasons of compatibility.
@@ -338,7 +340,7 @@ indicates that the figure describes a full page which will not
 necessarily be inserted into a document, but can be sent directly
 to a PS printer.
 This ensures that a showpage command is inserted at the end of
-the figure, and inhibits translation of the figure coordinate system.
+the figure.
 .TP
 .B -n name
 Set the Title part of the PostScript output to

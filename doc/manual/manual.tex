@@ -946,7 +946,7 @@ int +	& {\tt font}		& {\tt DEFAULT}		& 	\\
 	&			& {\tt ROMAN}		& 1	\\
 	&			& {\tt BOLD}		& 2	\\
 	&			& {\tt ITALICS}		& 3	\\
-	&			& {\tt MODERN}		& 4	\\
+	&			& {\tt SANSSERIF}	& 4	\\
 	&			& {\tt TYPEWRITER}	& 5	\\ \hline
 %
 float +	& {\tt font\_size}	& points		&	\\ \hline
@@ -998,7 +998,7 @@ Flag			& Bit mask	& Description		\\
 \hline
 %
 {\tt RIGID\_TEXT}	& 0001 	&
-			Font size doesn't scale with magnification\\ \hline
+			Font size doesn't scale inside compound\\ \hline
 %
 {\tt SPECIAL\_TEXT}	& 0010	&  Text includes formatting commands \\ \hline
 %
@@ -1009,7 +1009,7 @@ Flag			& Bit mask	& Description		\\
 \end{center}
 
 The {\tt RIGID\_TEXT} flag is used to preserve the absolute size of text
-	objects as the figure is scaled.
+	objects when inside compound and that compound is scaled (xfig only).
 The {\tt SPECIAL\_TEXT} flag is used to inhibit the ``escaping'' of formatting
 	commands when translating text to \LaTeX or Troff, in order to allow
 	the user to inject such commands directly into the figure.

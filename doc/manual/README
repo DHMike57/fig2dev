@@ -1,12 +1,8 @@
-PLEASE NOTE:  This guide has not been updated to the current 3.0 file
-protocol.  Please refer to the xfig document FORMAT3.0 for a complete
+PLEASE NOTE:  This guide has not been updated to the current 3.1 file
+protocol.  Please refer to the xfig document FORMAT3.1 for a complete
 description.
 
 This directory contains a manual which describes TransFig and how to use it.
 The manual includes TransFig figures, which have been translated into
 LaTeX picture environment commands.  To generate the manual, just run
 "latex manual".
-
-For purposes of mailing, the Fig code file trans.fig may have been 
-ommited from this directory.  In its place is the uuencoded version
-trans.fig.uu.  To unpack it, just run "uudecode <trans.fig.uu".

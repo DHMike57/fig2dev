@@ -222,17 +222,11 @@ char opt, *optarg;
 	    thick_width = atoi(optarg);
 	    break;
 
-	case 's':
-	    if (font_size <= 0 || font_size > MAXFONTSIZE) {
-		fprintf(stderr,
-			"warning: font size %d out of bounds\n", font_size);
-	    }
-	    break;
-
 	case 'v':
 	    verbose = 1;		/* verbose mode */
 	    break;
 
+	case 's':
 	case 'm':
 	case 'L':
 	    break;
@@ -249,10 +243,12 @@ F_compound	*objects;
 {
 	int tmp;
 
-	texfontsizes[0] = texfontsizes[1] = TEXFONTSIZE(font_size);
+	texfontsizes[0] = texfontsizes[1] = 
+		TEXFONTSIZE(font_size?font_size:DEFAULT_FONT_SIZE);
 
 	coord_system = objects->nwcorner.y;
  	unitlength = mag/objects->nwcorner.x;
+	dash_mag /= unitlength;
 
 	switch (coord_system) {
 	    case 1:

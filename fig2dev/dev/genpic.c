@@ -83,12 +83,6 @@ char opt, *optarg;
 		break;
 
 	case 's':
-		if (font_size <= 0 || font_size > MAXFONTSIZE) {
-			fprintf(stderr,
-				"warning: font size %d out of bounds\n", font_size);
-		}
-		break;
-
 	case 'm':
 	case 'L':
 		break;
@@ -142,7 +136,8 @@ F_compound	*objects;
 	coord_system = objects->nwcorner.y;
 	if (coord_system == 2) CONV = 1;
 
-	fprintf(tfp, ".PS\n.ps %d\n", font_size);	/* PIC preamble */
+	fprintf(tfp, ".PS\n.ps %d\n", 		/* PIC preamble */
+		font_size?font_size:DEFAULT_FONT_SIZE);
 }
 
 void
@@ -166,7 +161,7 @@ int	w;
 {
 	static int	cur_thickness = -1;
 
-	LineThickness = w;
+	LineThickness = w*80/ppi;
 
 	/*
 	if (w == 0) return;
@@ -195,7 +190,7 @@ float	v;
 	    if (v == style_val) return;
 	    if (v == 0.0) return;
 	    style_val = v;
-	    fprintf(tfp, "dashwid = %.3fi\n", style_val/ppi);
+	    fprintf(tfp, "dashwid = %.3fi\n", style_val/80.0);
 	    }
 }
 

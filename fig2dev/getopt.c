@@ -32,11 +32,6 @@
 	index(s,c) was added because too many people could
 	not compile getopt without it.
 
-	A test main program was added, ifdeffed by GETOPT.
-	This main program is a public domain implementation
-	of the getopt(1) program like in System V.  The getopt
-	program can be used to standardize shell option handling.
-		e.g.  cc -DGETOPT getopt.c -o getopt
 */
 #include <stdio.h>
 
@@ -72,9 +67,8 @@ char	*optarg;		/* argument associated with option */
 
 #define tell(s)	fputs(*nargv,stderr);fputs(s,stderr); \
 		fputc(optopt,stderr);fputc('\n',stderr);return(BADCH);
-
 
-getopt(nargc,nargv,ostr)
+fig_getopt(nargc,nargv,ostr)
 int	nargc;
 char	**nargv,
 	*ostr;
@@ -111,45 +105,3 @@ char	**nargv,
 	return(optopt);			/* dump back option letter */
 }
 
-
-#ifdef GETOPT
-
-#ifndef lint
-static	char	sccspid[] = "@(#) getopt.c 5.1 (WangInst) 6/15/85";
-#endif
-
-main (argc, argv) char **argv;
-	{
-	char	*optstring = argv[1];
-	char	*argv0 = argv[0];
-	extern	int 	optind;
-	extern	char	*optarg;
-	int 	opterr = 0;
-	int 	C;
-	char	*opi;
-	if (argc == 1)
-		{
-		fprintf (stderr, "Usage: %s optstring args\n", argv0);
-		exit (1);
-		}
-	argv++;
-	argc--;
-	argv[0] = argv0;
-	while ((C = getopt (argc, argv, optstring)) != EOF)
-		{
-		if (C == BADCH) opterr++;
-		printf ("-%c ", C);
-		opi = index (optstring, C);
-		if (opi && opi[1] == ARGCH)
-			if (optarg)
-				printf ("\"%s\" ", optarg);
-			else opterr++;
-		}
-	printf ("%s", ENDARGS);
-	while (optind < argc)
-		printf (" \"%s\"", argv[optind++]);
-	putchar ('\n');
-	exit (opterr);
-	}
-
-#endif

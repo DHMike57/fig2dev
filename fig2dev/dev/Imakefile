@@ -19,43 +19,44 @@ XCOMM that this copyright notice remain intact.  This license includes without
 XCOMM limitation a license to do the foregoing actions under any patents of
 XCOMM the party supplying this software to the X Consortium.
 
-XCOMM Uncomment the following section here AND the similar section in
-XCOMM ../Imakefile if you have the XPM (color pixmap) package and you
+XCOMM Uncomment the following XPM variables here AND in the similar section
+XCOMM in ../Imakefile if you have the XPM (color pixmap) package and you
 XCOMM would like to allow XPM files.
 XCOMM Also change RGB_FILE if necessary, to point to your rgb.txt color
 XCOMM database file (for X11).  This is needed for those XPM flies which
 XCOMM have named colors (e.g. "white").
 XCOMM You need version 3.4c of the XPM package.
-
-XCOMM XPMDEFINES = -DUSE_XPM
-XCOMM XPMINCDIR = -I/usr/local/X11/include/xpm
-
 XCOMM Finally, if your system doesn't have ndbm (the 'new' database subroutines)
 XCOMM remove the -DNDBM from the XPMRGB definition.
 
-XPMRGB = -DRGB_FILE=\"/usr/lib/X11/rgb\" -DNDBM
+XCOMM XPMDEFINES = -DUSE_XPM
+XCOMM XPMINCDIR = /usr/local/X11/include/xpm
+XCOMM XPMRGB = -DRGB_FILE=\"/usr/lib/X11/rgb\" -DNDBM
 
 XCOMM to set paper size to A4 			add -DA4	to DEFINES list
 XCOMM to set IBM Graphics Enhancement Cartridge	add -DIBMGEC	to DEFINES list
 XCOMM to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEFINES list
 
 XCOMM add -DNFSS to DEFINES list to use NFSS2 font selection for LaTeX texts
-XCOMM OR  -DEPSF to DEFINES list to use epsfig macros as distributed w/ LaTeX2e
-XCOMM DON'T use both -DNFSS and -DEPSF
+XCOMM add -DEPSF to DEFINES list to use epsfig macros as distributed w/ LaTeX2e
+XCOMM
+XCOMM     Hint: Users of LaTeX2e will probably want to include both of these
+XCOMM     options; users of LaTeX 2.09 will probably want to include neither.
 
 DEFINES = -DDVIPS -DEPSF $(XPMDEFINES)
 
-DEPLIBS =
 INCLUDES = -I..
-EXTRA_INCLUDES = $(XPMINCDIR)
+EXTRA_INCLUDES = -I$(JPEGINCDIR) -I$(XPMINCDIR)
 
 SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genmf.c genpic.c genpictex.c \
-	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c readpics.c psencode.c
+	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c psencode.c \
+	readpics.c readgif.c readxbm.c readxpm.c readjpg.c
 LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genmf.o genpic.o genpictex.o \
-	genps.o genpstex.o gentextyl.o gentpic.o setfigfont.o readpics.o psencode.o
+	genps.o genpstex.o gentextyl.o gentpic.o setfigfont.o psencode.o \
+	readpics.o readgif.o readxbm.o readxpm.o readjpg.o
 
 LIB = transfig
 
 NormalLibraryTarget($(LIB),$(LIBOBJS))
-SpecialObjectRule(readpics.o, , $(XPMRGB))
+SpecialObjectRule(readxpm.o, , $(XPMRGB))
 DependTarget()

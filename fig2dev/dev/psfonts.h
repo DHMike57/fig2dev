@@ -42,10 +42,6 @@ extern int v2_flag, v21_flag, v30_flag;
 #define PSFONT(T) \
  ((T->font) <= MAXFONT(T) ? PS_FONTNAMES(T)[T->font+1] : PS_FONTNAMES(T)[0])
 
-/* notice the conversion of resolution/80 for font sizes */
-
-#define PSFONTMAG(T)	(((T->size) > 0 ? \
-				((T->size) <= ULIMIT_FONT_SIZE ? \
-			 		(T->size*resolution/80) : \
-					ULIMIT_FONT_SIZE*resolution/80) : \
-				font_size)/(rigid_text(T) ? mag : 1.0))
+#define PSFONTMAG(T)  (((T->size) <= ULIMIT_FONT_SIZE ? \
+				     T->size :  ULIMIT_FONT_SIZE) \
+				       * resolution/80)

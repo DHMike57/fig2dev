@@ -25,7 +25,7 @@ XCOMM to make fig2dev:         type "make Makefiles" then "make"
 #define PassCDebugFlags 'CDEBUGFLAGS=$(CDEBUGFLAGS)'
 
 DEPLIBS =
-SUBDIRS = transfig fig2dev/dev fig2dev
+SUBDIRS = fig2dev transfig
 MakeSubdirs($(SUBDIRS))
 DependSubdirs($(SUBDIRS))
 

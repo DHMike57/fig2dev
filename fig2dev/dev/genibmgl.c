@@ -56,14 +56,11 @@ static set_style();
 #include "object.h"
 #include "pi.h"
 
-#define		FALSE			0
-#define		TRUE			1
 #define		FONTS 			35
 #define		COLORS 			8
 #define		PATTERNS 		21
 #define		DPR	 	180.0/M_PI	/* degrees/radian	*/
 #define		DELTA	 	M_PI/36.0	/* radians		*/
-#define		DEFAULT_FONT_SIZE	11	/* points		*/
 #define		POINT_PER_INCH		72.27	/* points/inch		*/
 #define		CMPP		254.0/7227.0	/* centimeters/point	*/
 #define		UNITS_PER_INCH		 1016.0	/* plotter units/inch	*/
@@ -182,6 +179,7 @@ char opt, *optarg;
 		}
 		break;
 
+	    case 's':
 	    case 'L':				/* language		*/
 		break;
 
@@ -208,11 +206,6 @@ char opt, *optarg;
 	    case 'P':				/* portrait mode	*/
 		landscape	 = FALSE;
 		orientspec	 = TRUE;	/* user-specified	*/
-		break;
-
-	    case 's':				/* set default font size */
-		font_size	 = atoi(optarg) ?
-			atoi(optarg): DEFAULT_FONT_SIZE;
 		break;
 
 	    case 'S':				/* select pen velocity	*/
@@ -470,6 +463,7 @@ double	length;
 
 /* 
  * set_width - issue line width commands as appropriate
+ *		NOTE: for HP plotters we can't do anything
  */
 static set_width(w)
 int	w;
@@ -943,7 +937,6 @@ F_text	*t;
 {
 static	int	font	 = DEFAULT;	/* font				*/
 static	int	size	 = DEFAULT;	/* font size	    in points	*/
-static	int	rigid	 = 0;		/* rigid text			*/
 static	int	cs	 = 0;		/* standard  character set	*/
 static	int	ca	 = 0;		/* alternate character set	*/
 static	double	theta	 = 0.0;		/* character slant  in degrees	*/
@@ -966,16 +959,11 @@ static	double	angle	 = 0.0;		/* label direction  in radians	*/
 		fprintf(tfp, "SL%.4f;", tan(theta*M_PI/180.0));
 		}
 	    }
-	if (size != t->size || rigid != t->flags&RIGID_TEXT) {
-	    size  = t->size ? t->size: font_size;
-	    rigid  = (t->flags&RIGID_TEXT);
+	if (size != t->size) {
+	    size  = t->size;
 	    width	 = size*wcmpp*wide[font];
 	    height	 = size*hcmpp*high[font];
-	    rigid	 = (t->flags&RIGID_TEXT);
-	    if (rigid)
-		fprintf(tfp, "SI%.4f,%.4f;", width, height);
-	    else
-		fprintf(tfp, "SI%.4f,%.4f;", width*mag, height*mag);
+	    fprintf(tfp, "SI%.4f,%.4f;", width*mag, height*mag);
 	    }
 	if (angle != t->angle) {
 	    angle  = t->angle;

@@ -4,15 +4,18 @@ To make TransFig:
 	noted below
 2. Do a "xmkmf" to create the top level Makefile from the Imakefile
 3. Do a "make Makefiles"
-4. Do a "make" to create the executables
+4. Do a "make" to make the programs 
+	**** This MUST be done before "make install" ****
 5. Do a "make install" to install them in the system
 6. Do a "make install.man" to put the manual pages in the proper directories
 
 Set the following flags in fig2dev/dev/Imakefile for the described features:
 
 Add -DNFSS to DEFINES list to use NFSS2 font selection for LaTeX texts
-OR  -DEPSF to DEFINES list to use epsfig macros as distributed w/ LaTeX2e
-DON'T use both -DNFSS and -DEPSF
+Add -DEPSF to DEFINES list to use epsfig macros as distributed w/ LaTeX2e
+
+    Hint: Users of LaTeX2e will probably want to include both of these
+    options; users of LaTeX 2.09 will probably want to include neither.
 
 -DNOSTRSTR: define this if your system doesn't have strstr(3)
 
@@ -53,28 +56,33 @@ documents with portable graphics.  The manual also contains a reference
 guide describing Fig code in detail, and a description of TFX, an extension to
 Fig code which is supported by the translators in this package.
 
-Micah Beck				
-Dept of Computer Science
-Cornell University
+Please send any contributions, bug reports etc to:
 
-1 May 1990
-----------
-Version 2.0 note: The PostScript translation implemented by fig2dev
-now supports both the TFX version of Fig code and the V2.0, the dialect
-used by XFig Version 2.0.  The other translations support only TFX.
+Brian V. Smith
+BVSmith@lbl.gov
+Lawrence Berkeley Laboratory
 
-1 September 1990
-----------------
-Version 2.1 note: fig2dev now supports Fig code V2.1, which implements
-the features of both TFX and V2.0.  V2.1 has some options which are
-implemented only in the PS output mode, most notably the use of PS font
-names in specifying text objects.  However, unlike V2.0, this feature
-is optional in V2.1; TFX-style font specifiers are also supported and
-can be translated in all output modes.  TFX and V2.0 are still supported.
+Note that although I work at Lawrence Berkeley Laboratory (LBL) I don't speak 
+for LBL nor do I represent LBL with respect to my work on TransFig and xfig,
+nor does LBL make any representations about the suitability of this software 
+for any purpose.
+Here is the legal part:
+
+THE LAWRENCE BERKELEY LABORATORY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS 
+SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
+EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL 
+DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, 
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING 
+OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 
 ********************************
 PROBLEMS and POSSIBLE SOLUTIONS:
 ********************************
+
+--------------------------------------------------------------------------------
+Pattern shading (e.g. bricks, shingles, etc.) only work for PostScript output.
+--------------------------------------------------------------------------------
 
 Solaris 2.x users:
 
@@ -84,4 +92,3 @@ You you must link with -lnsl because gethostname() is used.
 HP systems:
 
 You may need to reduce optimization to +O2 instead of +O3.
---------------------------------------------------------------------------------

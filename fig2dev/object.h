@@ -88,10 +88,12 @@ typedef		struct f_arc {
 			int			pen;
 			int			fill_style;
 			double			style_val;
-			int			direction;
 			struct f_arrow		*for_arrow;
 			struct f_arrow		*back_arrow;
 			int			cap_style;
+/* IMPORTANT: everything above this point must be in the same order 
+	      for ARC, LINE and SPLINE (LINE has join_style following cap_style */
+			int			direction;
 			struct {double x, y;}	center;
 			struct f_pos		point[3];
 			struct f_arc		*next;
@@ -114,11 +116,13 @@ typedef		struct f_line {
 			int			pen;
  			int			fill_style;
 			double			style_val;
- 			int			join_style;
-			int			cap_style;
-			int			radius;	/* for T_ARC_BOX */
 			struct f_arrow		*for_arrow;
 			struct f_arrow		*back_arrow;
+			int			cap_style;
+/* IMPORTANT: everything above this point must be in the same order 
+	      for ARC, LINE and SPLINE (LINE has join_style following cap_style */
+ 			int			join_style;
+			int			radius;	/* for T_ARC_BOX */
 			struct f_point		*points;
 		    	struct f_pic   		*pic;
 			struct f_line		*next;
@@ -131,10 +135,11 @@ typedef struct f_pic {
 #define	P_XBM	1	/* X11 bitmap picture type */
 #define	P_XPM	2	/* X11 pixmap (XPM) picture type */
 #define	P_GIF	3	/* GIF picture type */
+#define	P_JPEG	4	/* JPEG picture type */
     char            file[256];
     int             flipped;
     unsigned char  *bitmap;
-    unsigned char   cmap[3][MAXCOLORMAPSIZE]; /* for GIF files */
+    unsigned char   cmap[3][MAXCOLORMAPSIZE]; /* for color files */
     int		    numcols;		/* number of colors in cmap */
     float	    hw_ratio;
     struct f_pos    bit_size;
@@ -175,7 +180,7 @@ typedef		struct f_text {
 			}
 		F_text;
 
-#define MAX_PSFONT	35
+#define MAX_PSFONT	34
 #define MAXFONT(T) (psfont_text(T) ? MAX_PSFONT : MAX_FONT)
 
 #define		rigid_text(t) \
@@ -218,6 +223,8 @@ typedef		struct f_spline {
 			struct f_arrow		*for_arrow;
 			struct f_arrow		*back_arrow;
 			int			cap_style;
+/* IMPORTANT: everything above this point must be in the same order 
+	      for ARC, LINE and SPLINE (LINE has join_style following cap_style */
 			/*
 			For T_OPEN_NORMAL and T_CLOSED_NORMAL points
 			are control points while they are knots for

@@ -74,27 +74,27 @@ F_compound	*objects;
 	ppi = objects->nwcorner.x/mag;
 	curchar = (int)code;
 
-	printf("%%\n%% fig2dev -L mf version %.2lf --- Preamble\n%%\n",
+	fprintf(tfp,"%%\n%% fig2dev -L mf version %.2lf --- Preamble\n%%\n",
 		VERSION);
-	printf("mag:=%g/1000; input graphbase.mf; code:=%g;\n",
+	fprintf(tfp,"mag:=%g/1000; input graphbase.mf; code:=%g;\n",
 		mag, code);
-	printf("mfpicenv;\ninterim hdwdr:=1; interim hdten:=1;\n");
-	printf("interim penwd:=%.2lfpt;\npickup pencircle scaled penwd;\n", mfpen);
+	fprintf(tfp,"mfpicenv;\ninterim hdwdr:=1; interim hdten:=1;\n");
+	fprintf(tfp,"interim penwd:=%.2lfpt;\npickup pencircle scaled penwd;\n", mfpen);
 
-	printf("%%\n%% %s (char %d)\n%%\n",
+	fprintf(tfp,"%%\n%% %s (char %d)\n%%\n",
 		(name? name: ((from) ? from : "stdin")), ++curchar);
-	printf("xscale:=%.3lf; yscale:=%.3lf; bounds(%.3lf,%.3lf,%.3lf,%.3lf);\n",
+	fprintf(tfp,"xscale:=%.3lf; yscale:=%.3lf; bounds(%.3lf,%.3lf,%.3lf,%.3lf);\n",
 		xscale, yscale, xl, xu, yl, yu);
-	printf("beginchar(incr code,xscale*(xpos-xneg)*in#,yscale*(ypos-yneg)*in#,0);\n");
-	printf("  setztr;\n");
-	printf("  pickup pencircle scaled %.2lfpt;\n", mfpen);
+	fprintf(tfp,"beginchar(incr code,xscale*(xpos-xneg)*in#,yscale*(ypos-yneg)*in#,0);\n");
+	fprintf(tfp,"  setztr;\n");
+	fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n", mfpen);
 }
 
 
 void
 genmf_end()
 {
-	printf("endmfpicenv;\nend.\n");
+	fprintf(tfp,"endmfpicenv;\nend.\n");
 }
 
 void
@@ -137,22 +137,22 @@ F_line *l;
 {
 	F_point	*p;
 	if (l->thickness > 1)
-		printf("  pickup pencircle scaled %.2lfpt;\n",
+		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
 			dopen(l->thickness));
 	if (l->fill_style == BLACK_FILL)
-		printf("  cycleshade(0, false,\n");
+		fprintf(tfp,"  cycleshade(0, false,\n");
 	else if (l->fill_style < BLACK_FILL && l->fill_style > 0)
-		printf("  cycleshade(%lfpt, false,\n", dofill(l));
+		fprintf(tfp,"  cycleshade(%lfpt, false,\n", dofill(l));
 	else
-		printf("  curve(false, false,\n");
+		fprintf(tfp,"  curve(false, false,\n");
 	p = l->points;
-	printf("       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
+	fprintf(tfp,"       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
 	p = p->next;
 	for ( ; p != NULL; p=p->next) {
-	    printf(",\n       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
+	    fprintf(tfp,",\n       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
 	}
 	if (l->thickness > 1)
-		printf("  pickup pencircle scaled %.2lfpt;\n",
+		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
 			mfpen);
 
 	cfin();
@@ -166,22 +166,22 @@ F_spline *s;
 {
 	F_point	*p;
 	if (s->thickness > 1)
-		printf("  pickup pencircle scaled %.2lfpt;\n",
+		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
 			dopen(s->thickness));
 	if (s->fill_style == BLACK_FILL)
-		printf("  cycleshade(0, true,\n");
+		fprintf(tfp,"  cycleshade(0, true,\n");
 	else if (s->fill_style < BLACK_FILL && s->fill_style > 0)
-		printf("  cycleshade(%lfpt, true,\n", dofill(s));
+		fprintf(tfp,"  cycleshade(%lfpt, true,\n", dofill(s));
 	else
-		printf("  curve(true, false,\n");
+		fprintf(tfp,"  curve(true, false,\n");
 	p = s->points;
-	printf("       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
+	fprintf(tfp,"       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
 	p = p->next;
 	for ( ; p != NULL; p=p->next) {
-	    printf(",\n       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
+	    fprintf(tfp,",\n       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
 	}
 	if (s->thickness > 1)
-		printf("  pickup pencircle scaled %.2lfpt;\n", mfpen);
+		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n", mfpen);
 	cfin();
 	return;
 }
@@ -192,34 +192,34 @@ genmf_ellipse(e)
 F_ellipse *e;
 {
 	if (e->thickness > 1)
-		printf("  pickup pencircle scaled %.2lfpt;\n",
+		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
 			dopen(e->thickness));
 
 	if (e->type == 3 || e->type == 4)
 	{
 		if (e->fill_style == BLACK_FILL)
-			printf("  circshade(0, ");
+			fprintf(tfp,"  circshade(0, ");
 		else if (e->fill_style < BLACK_FILL && e->fill_style > 0)
-			printf("  circshade(%lfpt, ", dofill(e));
+			fprintf(tfp,"  circshade(%lfpt, ", dofill(e));
 		else
-			printf("  circle(");
-		printf("(%lf,%lf),%lf);\n",
+			fprintf(tfp,"  circle(");
+		fprintf(tfp,"(%lf,%lf),%lf);\n",
 			e->center.x/ppi, maxy-(e->center.y/ppi), e->radiuses.x/ppi);
 	}
 	else if (e->type == 1 || e->type == 2)
 	{
 		if (e->fill_style == BLACK_FILL)
-			printf("  ellshade(0, ");
+			fprintf(tfp,"  ellshade(0, ");
 		else if (e->fill_style < BLACK_FILL && e->fill_style > 0)
-			printf("  ellshade(%lfpt, ", dofill(e));
+			fprintf(tfp,"  ellshade(%lfpt, ", dofill(e));
 		else
-			printf("  ellipse(");
-		printf("(%lf,%lf),%lf,%lf,0);\n",
+			fprintf(tfp,"  ellipse(");
+		fprintf(tfp,"(%lf,%lf),%lf,%lf,0);\n",
 			e->center.x/ppi, maxy-(e->center.y/ppi), 
 			e->radiuses.x/ppi, e->radiuses.y/ppi);
 	}
 	if (e->thickness > 1)
-		printf("  pickup pencircle scaled %.2lfpt;\n", mfpen);
+		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n", mfpen);
 
 }
 
@@ -229,16 +229,16 @@ F_arc *a;
 {
 
 	if (a->thickness > 1)
-		printf("  pickup pencircle scaled %.2lfpt;\n",
+		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
 			dopen(a->thickness));
 
-	printf("  arcthree((%lf,%lf), (%lf,%lf), (%lf,%lf));\n",
+	fprintf(tfp,"  arcthree((%lf,%lf), (%lf,%lf), (%lf,%lf));\n",
 		a->point[0].x/ppi, maxy-(a->point[0].y/ppi),
 		a->point[1].x/ppi, maxy-(a->point[1].y/ppi),
 		a->point[2].x/ppi, maxy-(a->point[2].y/ppi));
 
 	if (a->thickness > 1)
-		printf("  pickup pencircle scaled %.2lfpt;\n",
+		fprintf(tfp,"  pickup pencircle scaled %.2lfpt;\n",
 			mfpen);
 
 	cfin();
@@ -250,7 +250,7 @@ void
 genmf_text(t)
 F_text *t;
 {
-	printf("%% label((%lf,%lf),%s)\n", t->base_x/ppi,
+	fprintf(tfp,"%% label((%lf,%lf),%s)\n", t->base_x/ppi,
 		maxy-(t->base_y/ppi), t->cstring);
 	cfin();
 	return;
@@ -258,7 +258,7 @@ F_text *t;
 
 cfin()
 {
-	printf("endchar;\n");
+	fprintf(tfp,"endchar;\n");
 }
 
 struct driver dev_mf = {

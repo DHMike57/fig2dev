@@ -28,7 +28,7 @@ XCOMM that this copyright notice remain intact.  This license includes without
 XCOMM limitation a license to do the foregoing actions under any patents of
 XCOMM the party supplying this software to the X Consortium.
 
-XCOMM Uncomment the XPMDEFINES variable here AND in dev/Imakefile if you have
+XCOMM Uncomment the XPM variables here AND in dev/Imakefile if you have
 XCOMM the XPM (color pixmap) package and you would like to allow XPM files.
 XCOMM You need version 3.4c of the XPM package.
 
@@ -48,7 +48,6 @@ XCOMM -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
 XCOMM
 
 DEFINES = $(XPMDEFINES) -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF
-DEPLIBS =
 
 #if (defined(VaxArchitecture) && !defined(UltrixArchitecture)) || \
     (defined(RtArchitecture) && !defined(AIXArchitecture)) || \
@@ -59,24 +58,68 @@ STRSTRC=	strstr.c
 STRSTRO=	strstr.o
 #endif
 
+XCOMM If you have installed the jpeg library on your system, uncomment the
+XCOMM USEINSTALLEDJPEG variable, change the JPEGLIBDIR variable to the directory
+XCOMM where your jpeg library resides and change the JPEGINCDIR to the 
+XCOMM directory where your jpeg header files (include) reside.
+XCOMM You must have version 5b or newer of the jpeg library.
+XCOMM If you haven't installed the jpeg library leave the XCOMM comment in and
+XCOMM set JPEGLIBDIR after the #else to the directory where you have the source
+XCOMM for jpeg.
+
+XCOMM #define USEINSTALLEDJPEG
+
 #define IHaveSubdirs
 #define PassCDebugFlags 'CDEBUGFLAGS=$(CDEBUGFLAGS)'
 
-SUBDIRS = dev
+DEVDIR = dev
+
+SUBDIRS = $(DEVDIR)
+
+#ifdef USEINSTALLEDJPEG
+JPEGLIBDIR = /usr/local/lib
+JPEGINCDIR = /usr/include/X11
+#else
+JPEGLIBDIR = ../../jpeg
+XCOMM You shouldn't need to change JPEGINCDIR here.
+XCOMM AND it must be relative to the dev directory.
+JPEGINCDIR = ../$(JPEGLIBDIR)
+DEPLIBJPEG = $(JPEGLIBDIR)/libjpeg.a
+#endif
+
+XCOMM *** You shouldn't have to change anything below this point ***
+
+LIBTRANSFIG = $(DEVDIR)/libtransfig.a
 
 INCLUDES = -I..
 EXTRA_INCLUDES = $(XPMINCDIR)
 
-SRCS = fig2dev.c getopt.c psfonts.c iso2tex.c \
-	arrow.c bound.c free.c read.c read1_3.c latex_line.c $(STRSTRC)
-OBJS = fig2dev.o getopt.o psfonts.o iso2tex.o \
-	arrow.o bound.o free.o read.o read1_3.o latex_line.o $(STRSTRO) \
-	dev/libtransfig.a
-
+LOCAL_LIBRARIES = $(LIBTRANSFIG) -L$(JPEGLIBDIR) -ljpeg
 SYS_LIBRARIES = $(XPMLIB) $(DBMLIB) -lm
+DEPLIBS = $(LIBTRANSFIG)
 
-MakeSubdirs($(SUBDIRS))
-DependSubdirs($(SUBDIRS))
+SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c\
+	free.c read.c read1_3.c latex_line.c getopt.c $(STRSTRC)
+OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o\
+	free.o read.o read1_3.o latex_line.o getopt.o $(STRSTRO)
+
+fig2dev: $(DEPLIBJPEG) $(DEPLIBS)
+
+XCOMM only compile our jpeg if the use doesn't have one installed
+
+#ifndef USEINSTALLEDJPEG
+$(JPEGLIBDIR)/libjpeg.a: $(JPEGLIBDIR)/jconfig.h
+	cd $(JPEGLIBDIR); $(MAKE) libjpeg.a
+
+$(JPEGLIBDIR)/jconfig.h:
+	cd $(JPEGLIBDIR) ; ./configure CC='$(CC)'
+#endif
+
+$(LIBTRANSFIG): 
+	cd $(DEVDIR); $(MAKE) JPEGINCDIR=$(JPEGINCDIR) libtransfig.a
+
+PROGRAM = fig2dev
+AllTarget(fig2dev)
 
 ComplexProgramTarget(fig2dev)
 

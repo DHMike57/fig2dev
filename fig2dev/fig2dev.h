@@ -29,6 +29,7 @@ typedef char Boolean;
 #define	FALSE	0
 #define	TRUE	1
 
+#define DEFAULT_FONT_SIZE 11
 
 #if defined(SYSV) || defined(SVR4)
 #include <string.h>

@@ -126,7 +126,7 @@ void genpstex_t_text(t)
 F_text	*t;
 {
 
-	if (!special_text(t) && !psfont_text(t))
+	if (!special_text(t))
 	  gendev_null(t);
 	else genlatex_text(t);
 }
@@ -135,7 +135,7 @@ void genpstex_text(t)
 F_text	*t;
 {
 
-	if (!special_text(t) && !psfont_text(t))
+	if (!special_text(t))
 	  genps_text(t);
 	else gendev_null(t);
 }

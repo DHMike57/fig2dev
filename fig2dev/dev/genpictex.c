@@ -115,12 +115,6 @@ char opt, *optarg;
 		    break;
 
 		case 's':
-		    if (font_size <= 0 || font_size > MAXFONTSIZE) {
-			fprintf(stderr,
-				"warning: font size %d out of bounds\n", font_size);
-		    }
-		    break;
-
 		case 'm':
 		case 'L':
 		    break;
@@ -145,7 +139,8 @@ double	a;
 void genpictex_start(objects)
 F_compound	*objects;
 {
-	texfontsizes[0] = texfontsizes[1] = TEXFONTSIZE(font_size);
+	texfontsizes[0] = texfontsizes[1] = 
+		TEXFONTSIZE(font_size?font_size:DEFAULT_FONT_SIZE);
 
 	coord_system = objects->nwcorner.y;
 	ppi = objects->nwcorner.x;
@@ -185,7 +180,7 @@ int	w;
 		cur_thickness = 0;
 		}
 	    else {
-		cur_thickness = round(w*mag);
+		cur_thickness = round(w*mag*80/ppi);
 
 		if (!cur_thickness || cur_thickness == 1) {
 		    cur_thickness = 1;
@@ -434,13 +429,13 @@ double dash_len;
 	case DASH_LINE:
 	    if (line_style == DASH_LINE && dash_length == dash_len)
 		break;
-	    fprintf(tfp, "\\setdashes <%7.4f%s>\n", (0.5*dash_len*(cur_thickness+1)/ppi)*CONVUNIT, UNIT);
+	    fprintf(tfp, "\\setdashes <%7.4f%s>\n", (0.5*dash_len*(cur_thickness+1)/80.0)*CONVUNIT, UNIT);
 	    break;
 
 	case DOTTED_LINE:
 	    if (line_style == DOTTED_LINE)
 		break;
-	    fprintf(tfp, "\\setdots <%7.4f%s>\n", (0.5*dash_len*(cur_thickness+1)/ppi)*CONVUNIT, UNIT);
+	    fprintf(tfp, "\\setdots <%7.4f%s>\n", (0.5*dash_len*(cur_thickness+1)/80.0)*CONVUNIT, UNIT);
 	    break;
 	    }
 

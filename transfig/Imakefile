@@ -42,3 +42,6 @@ fig2ps2tex.man: ../doc/fig2ps2tex.1
 
 pic2tpic.man: ../doc/pic2tpic.1
 	ln -s ../doc/pic2tpic.1 pic2tpic.man
+
+clean::
+	rm -f *.man

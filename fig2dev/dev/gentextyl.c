@@ -149,7 +149,8 @@ void gentextyl_start(objects)
 F_compound	*objects;
 {
 
-	texfontsizes[0] = texfontsizes[1] = texfontsizes[font_size+1];
+	texfontsizes[0] = texfontsizes[1] = 
+		texfontsizes[(font_size?font_size:DEFAULT_FONT_SIZE)+1];
 	coord_system = objects->nwcorner.y;
 	ppi = objects->nwcorner.x;
 

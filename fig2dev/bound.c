@@ -34,7 +34,6 @@
 #define		One_eighty_deg		M_PI
 #define		Two_seventy_deg		(M_PI + M_PI_2)
 #define		Three_sixty_deg		(M_PI + M_PI)
-#define		round(x)		((int) ((x) + ((x >= 0)? 0.5: -0.5)))
 #define		half(z1 ,z2)		((z1+z2)/2.0)
 #define		max(a, b)		(((a) > (b)) ? (a) : (b))
 #define		min(a, b)		(((a) < (b)) ? (a) : (b))
@@ -132,8 +131,7 @@ int		include;
 	int		llx, lly, urx, ury;
 	int	        half_wd;
 
-    while(compound != NULL)
-    {
+    while(compound != NULL) {
 	for (a = compound->arcs; a != NULL; a = a->next) {
 	    arc_bound(a, &sx, &sy, &bx, &by);
             half_wd = (a->thickness + 1) / 2;
@@ -148,8 +146,8 @@ int		include;
 		}
 	    }
 
-	for (c = compound->compounds; c != NULL; c = c->next) {
-	    compound_bound(c, &sx, &sy, &bx, &by);
+	if (compound->compounds) {
+	    compound_bound(compound->compounds, &sx, &sy, &bx, &by, include);
 	    if (first) {
 		first = 0;
 		llx = sx; lly = sy;
@@ -435,7 +433,7 @@ int	*xmin, *ymin, *xmax, *ymax;
 int	include;
 {
     double dx1, dx2, dx3, dx4, dy1, dy2, dy3, dy4;
-/* characters hav some extend downside */
+	/* characters have some extent downside */
 	if (t->type == T_CENTER_JUSTIFIED) {
 	    dx1 = (t->length/1.95);     dy1 =  0.2*t->height;
 	    dx2 = -(t->length/1.95);    dy2 =  0.2*t->height;

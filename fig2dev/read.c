@@ -942,13 +942,21 @@ FILE	*fp;
  	  return(NULL);
 	}
 #endif
+	if (font_size) {
+	    /* scale length/height of text by ratio of requested font size to actual size */
+	    t->length = t->length * font_size/t->size;
+	    t->height = t->height * font_size/t->size;
+	    t->size = font_size;	/* and set to requested size */
+	}
+	if (t->size <= 0.0)
+	    t->size = (float) DEFAULT_FONT_SIZE;
 	more = 0;
 	if (!v30_flag && n == 13)
 	    more = 1;  /* in older xfig there is more if ^A wasn't found yet */
 	else if (v30_flag) {	/* in 3.0 there is more if \001 wasn't found */
 	    len = strlen(s);
 	    if ((strcmp(&s[len-4],"\\001") == 0) &&	/* if we find '\000' */
-		(len >= 4 && s[len-5] != '\\')) {	/* and not '\\000' */
+	        !(backslash_count(s, len-5) % 2)) {	/* and not '\\000' */
 		    more = 0;				/* then there are no more lines */
 		    s[len-4]='\0';			/* and get rid of the '\001' */
 	    } else {
@@ -967,7 +975,7 @@ FILE	*fp;
 		    break;
 		len = strlen(s_temp)-1;
 		if ((strncmp(&s_temp[len-4],"\\001",4) == 0) &&
-		    (len >= 4 && s_temp[len-5] != '\\')) {
+		    !(backslash_count(s, len-5) % 2)) {
 			n=0;			/* found the '\001', set n to stop */
 			s_temp[len-4]='\0';	/* and get rid of the '\001' */
 		} else {
@@ -994,7 +1002,7 @@ FILE	*fp;
 		for (l=0,n=0; l < len; l++) {
 		    if (s[l]=='\\') {
 			if (l < len && s[l+1] != '\\') {
-			    if (sscanf(&s[l+1],"%o",&num)!=1) {
+			    if (sscanf(&s[l+1],"%3o",&num)!=1) {
 				put_msg("Error in parsing text string on line",line_no);
 				return(NULL);
 			    }
@@ -1029,8 +1037,28 @@ FILE	*fp;
 		t->flags = ((t->flags != DEFAULT) ? t->flags : 0)
 				| PSFONT_TEXT;
 
+	/* keep the font number reasonable */
+	if (t->font > MAXFONT(t))
+		t->font = MAXFONT(t);
 	fix_color(&t->color);
 	return(t);
+}
+
+/* akm 28/2/95 - count consecutive backslashes backwards */
+int
+backslash_count(cp, start)
+char cp[];
+int start;
+{
+  int i, count = 0;
+
+  for(i=start; i>=0; i--) {
+    if (cp[i] == '\\')
+	count++;
+    else
+	break;
+  }
+  return count;
 }
 
 get_line(fp)

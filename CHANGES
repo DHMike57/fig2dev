@@ -1,6 +1,63 @@
 ===============================================================================
 Version 3.1
 ===============================================================================
+Patchlevel 2 (Aug 16, 1995)
+Changes from patchlevel 1:
+
+New Features:
+
+o JPEG (JFIF) pictures objects supported for PostScript output
+o %Magnification: comment added to PostScript output showing magnification
+o the points of arrow heads don't protrude past the endpoints of the object
+
+Bugs Fixed:
+
+o the radius of arc-box corners is limited to the half of the smaller of the
+	two sides of the box to avoid PostScript errors
+o pstex driver incorrectly omitted postscript text in pstex output
+o set_linewidth was passed double instead of int from fdraw_arrow_head
+	in genepic.c
+o length of dotted line dots too small for high resolution printers
+o recursion bug fixed where run-time would increase exponentially with nesting
+	of compound objects
+o %%BeginDocument:/EndDocument now surrounds imported EPS files
+o open arrowheads on arcs were overwritten by arc lines 
+o bug in pattern fill code which made patterns appear solid black when
+	using dvips
+	Thanks to Tomas Rokicki (rokicki@CS.Stanford.EDU) for finding the fix
+o line thickness wasn't adjusted for new resolution in epic, eepic, pic, tpic
+	and pictex drivers
+o dash length incorrect for Fig 3.x files in pic and pictex drivers
+o -s option to fix text pointsize wasn't being honored
+o documentation typo with regard to rigid text.  Rigid text means that the font
+	size doesn't change when text is inside a compound object and that
+	object is scaled in xfig.  Not used for fig2dev.
+o certain machines don't handle atan2(y,0.0) so arcs with endpoints having the
+	same x value were incorrectly calculated
+o some machines don't calculate hypot(x,y) correctly so changed to sqrt(x*x+y*y)
+	in arc_bound()
+o bug in calculating BoundingBox for PostScript in compound objects
+o cleared up confusion about -DNFSS and -DEPSF.  Here is the final word:
+
+  Add -DNFSS to DEFINES list to use NFSS2 font selection for LaTeX texts
+  Add -DEPSF to DEFINES list to use epsfig macros as distributed w/ LaTeX2e
+ 
+ 	Hint: Users of LaTeX2e will probably want to include both of these
+ 	options; users of LaTeX 2.09 will probably want to include neither.
+
+o new tints added (fill values 21-40) for epic driver
+     from Andre Eickler (eickler@db.fmi.uni-passau.de)
+o pattern fill seg faulted for epic/eepic output (only PostScript has patterns)
+o sanity check for font number
+o font name "Modern" changed to more correct "Sans Serif" in documentation
+o MetaFont driver only sent output to stdout
+o version information (fig2dev -V) said "TransFig" instead of "fig2dev"
+o getopt.c not needed for Solaris 2.x - #if (defined(...)) added in Imakefile
+	for this
+o removed duplicate #define of FALSE, TRUE and DEFAULT_FONT_SIZE in various
+	drivers
+
+---------------------------------------------------------------------------
 Patchlevel 1 (Jan 24, 1995)
 Changes from patchlevel 0:
 

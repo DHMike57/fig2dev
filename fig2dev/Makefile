@@ -45,8 +45,8 @@
 
             SHELL = /bin/sh
 
-              TOP = ../.
-      CURRENT_DIR = ./fig2dev
+              TOP = .
+      CURRENT_DIR = .
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
@@ -295,49 +295,80 @@ PICFLAGS = -pic
 # limitation a license to do the foregoing actions under any patents of
 # the party supplying this software to the X Consortium.
 
-# Uncomment the XPMDEFINES variable here AND in dev/Imakefile if you have
+# Uncomment the XPM variables here AND in dev/Imakefile if you have
 # the XPM (color pixmap) package and you would like to allow XPM files.
+# You need version 3.4c of the XPM package.
 
-XPMDEFINES = -DUSE_XPM
-XPMLIBDIR = -L/usr/local/X11/lib
-XPMLIB = $(XPMLIBDIR) -lXpm -lX11
+# XPMDEFINES = -DUSE_XPM
+# XPMLIBDIR = -L/usr/local/X11/lib
+# XPMINCDIR = -I/usr/local/X11/include/xpm
+# XPMLIB = $(XPMLIBDIR) -lXpm -lX11
+
+# For Linux machines or any machines that have a separate library for
+# the database management routines, uncomment the following line
+# DBMLIB = -ldbm
 
 # To include drivers for the following languages,
 # add the corresponding symbol to the DEFINES list:
 #
 # -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
 #
-DEFINES = $(XPMDEFINES) -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF
-DEPLIBS =
 
-SUBDIRS = dev
+DEFINES = $(XPMDEFINES) -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF
+
+# If you have installed the jpeg libraries on your system, uncomment the
+# USEINSTALLEDJPEG variable, change the JPEGLIBDIR variable to the directory
+# where your jpeg library resides and change the JPEGINCDIR to the
+# directory where your jpeg header files (include) reside.
+# If you want to use xfig's jpeg library leave the XCOMM comment in and
+# leave JPEGLIBDIR=../jpeg.
+
+# #define USEINSTALLEDJPEG
+
+# *** You shouldn't have to change anything below this point ***
+
+DEVDIR = dev
+
+SUBDIRS = $(DEVDIR)
+
+JPEGLIBDIR = ../jpeg
+JPEGINCDIR = -I$(JPEGLIBDIR)
+LIBJPEG = $(JPEGLIBDIR)/libjpeg.a
+DEPLIBJPEG = $(LIBJPEG)
+
+LIBTRANSFIG = $(DEVDIR)/libtransfig.a
 
 INCLUDES = -I..
+EXTRA_INCLUDES = $(XPMINCDIR)
 
-SRCS = fig2dev.c getopt.c psfonts.c iso2tex.c \
-	arrow.c bound.c free.c read.c read1_3.c latex_line.c $(STRSTRC)
-OBJS = fig2dev.o getopt.o psfonts.o iso2tex.o \
-	arrow.o bound.o free.o read.o read1_3.o latex_line.o $(STRSTRO) \
-	dev/libtransfig.a
+LOCAL_LIBRARIES = $(LIBTRANSFIG) $(LIBJPEG)
+SYS_LIBRARIES = $(XPMLIB) $(DBMLIB) -lm
+DEPLIBS = $(LIBTRANSFIG)
 
-SYS_LIBRARIES = -lm
-LOCAL_LIBRARIES = $(XPMLIB)
+GETOPTC=   getopt.c
+GETOPTO=   getopt.c
 
-all::
-	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
-	for i in $(SUBDIRS) ;\
-	do \
-	(cd $$i ; echo "making" all "in $(CURRENT_DIR)/$$i..."; \
-	$(MAKE) $(MFLAGS) 'CDEBUGFLAGS=$(CDEBUGFLAGS)' all); \
-	done
+SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c\
+	free.c read.c read1_3.c latex_line.c $(STRSTRC) $(GETOPTC)
+OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o\
+	free.o read.o read1_3.o latex_line.o $(STRSTRO) $(GETOPTO)
 
-depend::
-	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
-	for i in $(SUBDIRS) ;\
-	do \
-	(cd $$i ; echo "depending" "in $(CURRENT_DIR)/$$i..."; \
-	$(MAKE) $(MFLAGS)  depend); \
-	done
+fig2dev: $(DEPLIBJPEG) $(DEPLIBS)
+
+# only compile our jpeg if the use doesn't have one installed
+
+$(LIBJPEG): $(JPEGLIBDIR)/jconfig.h
+	cd $(JPEGLIBDIR); $(MAKE) libjpeg.a
+
+$(JPEGLIBDIR)/jconfig.h:
+	cd $(JPEGLIBDIR) ; ./configure CC='$(CC)'
+
+$(LIBTRANSFIG):
+	cd $(DEVDIR); $(MAKE) libtransfig.a
+
+PROGRAM = fig2dev
+
+all:: fig2dev
 
  PROGRAM = fig2dev
 
