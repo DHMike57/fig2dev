@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,21 +11,32 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 /* 
  *	Fig2dev : General Fig code translation program
  *
 */
-#if defined(hpux) || defined(SYSV)
+#if defined(hpux) || defined(SYSV) || defined(SVR4)
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
 #include <stdio.h>
 #include <ctype.h>
 #include "patchlevel.h"
-#include "object.h"
 #include "fig2dev.h"
+#include "object.h"
 #include "drivers.h"
 
 extern int getopt();
@@ -45,16 +48,21 @@ extern int optind;
 struct driver *dev = NULL;
 
 char		Usage[] = "Usage: %s [-L language] [-f font] [-s size] [-m scale] [input [output]]\n";
-char		Err_badarg[] = "Argument -%c unkown to %s driver.";
+char		Err_badarg[] = "Argument -%c unknown to %s driver.";
 char		Err_incomp[] = "Incomplete %s object at line %d.";
 char		Err_mem[] = "Running out of memory.";
 
 char		*prog;
 char		*from = NULL, *to = NULL;
+char		*name = NULL;
 int		font_size = 0;
 double		mag = 1.0;
 FILE		*tfp = NULL;
 int		llx = 0, lly = 0, urx = 0, ury = 0;
+int		landscape;
+int		center;
+int		orientspec=0;		/* set it the user-specifies the orientation */
+Boolean		pats_used, pattern_used[NUMPATTERNS];
 
 struct obj_rec {
 	void (*gendev)();
@@ -78,7 +86,8 @@ char	*argv[];
 
 	prog = *argv;
 /* add :? */
-	while ((c = getopt(argc, argv, "acd:f:l:L:m:Pp:s:S:vVwW?")) != EOF) {
+	/* sum of all arguments */
+	while ((c = getopt(argc, argv, "acC:d:f:l:L:Mm:n:Pp:s:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
 
 	  /* generic option handling */
 	  switch (c) {
@@ -131,10 +140,13 @@ char	*argv[];
       	}
 
 	/* default font size is scaled if not specified */
-	if (!font_size) font_size = DEFAULT_FONT_SIZE*mag + 0.5;
+	if (!font_size)
+		font_size = DEFAULT_FONT_SIZE*mag + 0.5;
 
-	if (optind < argc) from = argv[optind++];  /*  from file  */
-	if (optind < argc) to   = argv[optind];  /*  to file    */
+	if (optind < argc)
+		from = argv[optind++];  /*  from file  */
+	if (optind < argc)
+		to   = argv[optind];  /*  to file    */
 }
 
 main(argc, argv)
@@ -232,13 +244,6 @@ gendev_objects(objects, dev)
 F_compound	*objects;
 struct driver *dev;
 {
-	F_arc		*a;
-	F_compound	*c;
-	F_ellipse	*e;
-	F_line		*l;
-	F_spline	*s;
-	F_text		*t;
-
 	int obj_count, rec_comp();
 	struct obj_rec *rec_array, *r; 
 
@@ -284,4 +289,4 @@ struct obj_rec *r1, *r2;
 }
 
 /* null operation */
-void gendev_null() {};
+void gendev_null() {;}

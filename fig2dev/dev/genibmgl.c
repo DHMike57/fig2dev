@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,6 +11,17 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 /* 
@@ -36,19 +39,21 @@
  *	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
 */
 
-#if defined(hpux) || defined(SYSV)
+static set_style();
+
+#if defined(hpux) || defined(SYSV) || defined(SVR4)
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
-#ifdef SYSV
+#if defined(SYSV) || defined(SVR4)
 #include <string.h>
 #else
 #include <strings.h>
 #endif
 #include <stdio.h>
 #include <math.h>
-#include "object.h"
 #include "fig2dev.h"
+#include "object.h"
 #include "pi.h"
 
 #define		FALSE			0
@@ -56,11 +61,11 @@
 #define		FONTS 			35
 #define		COLORS 			8
 #define		PATTERNS 		21
-#define		DPR	 	180.0/M_PI	/*       degrees/radian	*/
+#define		DPR	 	180.0/M_PI	/* degrees/radian	*/
 #define		DELTA	 	M_PI/36.0	/* radians		*/
 #define		DEFAULT_FONT_SIZE	11	/* points		*/
-#define		POINT_PER_INCH		72.27	/*	  points/inch	*/
-#define		CMPP		254.0/7227.0	/*   centimeters/point	*/
+#define		POINT_PER_INCH		72.27	/* points/inch		*/
+#define		CMPP		254.0/7227.0	/* centimeters/point	*/
 #define		UNITS_PER_INCH		 1016.0	/* plotter units/inch	*/
 #define		HEIGHT			 7650.0	/* plotter units	*/
 #define		ISO_A4			10900.0	/* plotter units	*/
@@ -72,7 +77,6 @@ static	int	ibmgec		 = TRUE;
 #else
 static	int	ibmgec		 = FALSE;
 #endif
-static	int	portrait	 = FALSE;
 static	int	reflected	 = FALSE;
 static	int	fonts		 = FONTS;
 static	int	colors		 = COLORS;
@@ -99,15 +103,15 @@ static	int	pen_number[]	 = { 1, 2, 3, 4, 5, 6, 7, 8, 1};
 static	double	pen_thickness[]	 = {.3,.3,.3,.3,.3,.3,.3,.3,.3};
 
 static	int	line_type[]	 =
-	   {-1, 1, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6,-1,-1,-1,-1,-1,-1,-1,-1};
+	   {1, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6,-1,-1,-1,-1,-1,-1,-1,-1};
 static	double	line_space[]	 =
-	   {.3,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.3,.3};
+	   {.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.3,.3};
 static	int	fill_type[]	 =
-	   { 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 1, 2};
+	   {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 1, 2};
 static	double	fill_space[]	 =
-	   {.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1};
+	   {.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1,.1};
 static	double	fill_angle[]	 =
-	   { 0, 0,-45,0,45,90,-45,0,45,90,-45,0,45,90,-45,0,45,90, 0, 0, 0, 0};
+	   {0,-45,0,45,90,-45,0,45,90,-45,0,45,90,-45,0,45,90, 0, 0, 0, 0};
 
 static	int	standard[]	 = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -167,7 +171,7 @@ char opt, *optarg;
 		    if ((ffp = fopen(optarg, "r")) == NULL)
 			fprintf(stderr, "Couldn't open %s\n", optarg);
 		    else
-			for (pattern = 1; pattern <= patterns; pattern++)
+			for (pattern = 0; pattern < patterns; pattern++)
 			    fscanf(ffp, "%d%lf%d%lf%lf",
 				&line_type[pattern],	/*    -1-6	*/
 				&line_space[pattern],	/*   inches	*/
@@ -202,7 +206,8 @@ char opt, *optarg;
 		break;
 
 	    case 'P':				/* portrait mode	*/
-		portrait	 = TRUE;
+		landscape	 = FALSE;
+		orientspec	 = TRUE;	/* user-specified	*/
 		break;
 
 	    case 's':				/* set default font size */
@@ -292,7 +297,7 @@ F_compound	*objects;
 	/* IBMGL start */
 	fprintf(tfp, "IN;\n");			/* initialize plotter	*/
 
-	if (portrait) {				/* portrait mode	*/
+	if (!landscape) {			/* portrait mode	*/
 	    fprintf(tfp, "RO90;\n");		/* rotate 90 degrees	*/
 	    Xll	 = yl*UNITS_PER_INCH;
 	    Xur	 = yu*UNITS_PER_INCH;
@@ -495,12 +500,15 @@ static	double	thickness	 = 0.3;	/* pen thickness in millimeters	*/
 	    }
 	}
 
-static fill_polygon(pattern)
+static fill_polygon(pattern, color)
 int	pattern;
+int	color;
 {
-	if (1 < pattern && pattern <= patterns) {
+	if (0 < pattern && pattern < patterns) {
 	    int		style;
 	    double	length;
+
+	    set_color(color);
 	    if (fill_pattern != pattern) {
 		fill_pattern  = pattern;
 		fprintf(tfp, "FT%d,%.4f,%.4f;", fill_type[pattern],
@@ -550,14 +558,14 @@ void genibmgl_arc(a)
 F_arc	*a;
 {
 	if (a->thickness != 0 ||
-		ibmgec && 1 <= a->area_fill && a->area_fill <= patterns) {
+		ibmgec && 0 <= a->fill_style && a->fill_style < patterns) {
 	    double	x, y;
 	    double	cx, cy, sx, sy, ex, ey;
 	    double	dx1, dy1, dx2, dy2, theta;
 
 	    set_style(a->style, a->style_val);
 	    set_width(a->thickness);
-	    set_color(a->color);
+	    set_color(a->pen_color);
 
 	    cx		 = a->center.x/ppi;
 	    cy		 = a->center.y/ppi;
@@ -600,8 +608,8 @@ F_arc	*a;
 			a->for_arrow->ht/ppi, a->for_arrow->wid/ppi);
 		}
 
-	    if (1 < a->area_fill && a->area_fill <= patterns)
-		fill_polygon(a->area_fill);
+	    if (0 < a->fill_style && a->fill_style < patterns)
+		fill_polygon(a->fill_style, a->fill_color);
 	    }
 	}
 
@@ -609,7 +617,7 @@ void genibmgl_ellipse(e)
 F_ellipse	*e;
 {
 	if (e->thickness != 0 ||
-		ibmgec && 1 <= e->area_fill && e->area_fill <= patterns) {
+		ibmgec && 0 <= e->fill_style && e->fill_style < patterns) {
 	    int		j;
 	    double	alpha	 = 0.0;
 	    double	angle;
@@ -620,7 +628,7 @@ F_ellipse	*e;
 
 	    set_style(e->style, e->style_val);
 	    set_width(e->thickness);
-	    set_color(e->color);
+	    set_color(e->pen_color);
 
 	    a		 = e->radiuses.x/ppi;
 	    b		 = e->radiuses.y/ppi;
@@ -644,8 +652,8 @@ F_ellipse	*e;
 	    if (e->thickness != 0)
 		fprintf(tfp, "EP;\n");
 
-	    if (1 < e->area_fill && e->area_fill <= patterns)
-		fill_polygon((int)e->area_fill);
+	    if (0 < e->fill_style && e->fill_style < patterns)
+		fill_polygon((int)e->fill_style, e->fill_color);
 	    }
 	}
 
@@ -657,12 +665,12 @@ void genibmgl_line(l)
 F_line	*l;
 {
 	if (l->thickness != 0 ||
-		ibmgec && 1 <= l->area_fill && l->area_fill <= patterns) {
+		ibmgec && 0 <= l->fill_style && l->fill_style < patterns) {
 	    F_point	*p, *q;
 
 	    set_style(l->style, l->style_val);
 	    set_width(l->thickness);
-	    set_color(l->color);
+	    set_color(l->pen_color);
 
 	    p	 = l->points;
 	    q	 = p->next;
@@ -701,8 +709,8 @@ F_line	*l;
 				    l->for_arrow->ht/ppi,
 				    l->for_arrow->wid/ppi);
 
-			if (1 < l->area_fill && l->area_fill <= patterns)
-			    fill_polygon((int)l->area_fill);
+			if (0 < l->fill_style && l->fill_style < patterns)
+			    fill_polygon((int)l->fill_style, l->fill_color);
 			}
 		    break;
 
@@ -753,12 +761,12 @@ F_line	*l;
 		    if (l->thickness != 0)
 			fprintf(tfp, "EP;\n");
 
-		    if (1 < l->area_fill && l->area_fill <= patterns)
-			fill_polygon((int)l->area_fill);
+		    if (0 < l->fill_style && l->fill_style < patterns)
+			fill_polygon((int)l->fill_style, l->fill_color);
 		    }
 		    break;
 
-		case	T_EPS_BOX:
+		case	T_PIC_BOX:
 		    break;
 		}
 	    }
@@ -917,7 +925,7 @@ F_spline	*s;
 	if (s->thickness != 0) {
 	    set_style(s->style, s->style_val);
 	    set_width(s->thickness);
-	    set_color(s->color);
+	    set_color(s->pen_color);
 
 	    if (int_spline(s))
 		genibmgl_itp_spline(s);
@@ -925,7 +933,7 @@ F_spline	*s;
 		genibmgl_ctl_spline(s);
 
 	    }
-	if (1 < s->area_fill && s->area_fill <= patterns)
+	if (0 < s->fill_style && s->fill_style < patterns)
 	    fprintf(stderr, "Spline area fill not implemented\n");
 }
 

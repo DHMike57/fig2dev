@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,6 +11,17 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 /* 
@@ -29,14 +32,14 @@
  * 	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
  *
  */
-#if defined(hpux) || defined(SYSV)
+#if defined(hpux) || defined(SYSV) || defined(SVR4)
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
 #include <stdio.h>
 #include <math.h>
-#include "object.h"
 #include "fig2dev.h"
+#include "object.h"
 #include "texfonts.h"
 #include "pi.h"
 
@@ -58,6 +61,13 @@ extern double atan();
 extern double rad2deg;
 extern void unpsfont();
 
+static put_box();
+static single_line();
+static put_solidline();
+static put_dashline();
+static put_dotline();
+static put_quarter();
+
 #define rint(a) floor((a)+0.5)     /* close enough? */
 
 /* 
@@ -71,14 +81,24 @@ extern void unpsfont();
  *		lines if line width = \thinlines
  *  THIN_LDOT	...  if line width = \thicklines
  */
+#ifdef NFSS
+#define THICKDOT	"\\SetFigFont{10}{12}{\\rmdefault}{\\mddefault}{\\updefault}."
+#define THINDOT	"\\SetFigFont{7}{8.4}{\\rmdefault}{\\mddefault}{\\updefault}."
+#else
 #define THICKDOT	"\\SetFigFont{10}{12}{rm}."
-#define THINDOT		"\\SetFigFont{7}{8.4}{rm}."
+#define THINDOT	"\\SetFigFont{7}{8.4}{rm}."
+#endif
 double	THIN_XOFF =	(0.1/72.0);
 double	THIN_YOFF =	(0.7/72.0);
 double	THICK_XOFF =	(0.4/72.0);
 double	THICK_YOFF =	(0.6/72.0);
+#ifdef NFSS
+#define THICK_LDOT	"\\SetFigFont{7}{8.4}{\\rmdefault}{\\mddefault}{\\updefault}."
+#define THIN_LDOT	"\\SetFigFont{5}{6}{\\rmdefault}{\\mddefault}{\\updefault}."
+#else
 #define THICK_LDOT	"\\SetFigFont{7}{8.4}{rm}."
 #define THIN_LDOT	"\\SetFigFont{5}{6}{rm}."
+#endif
 double	THIN_LXOFF =	(0.1/72.0);
 double	THIN_LYOFF =	(0.7/72.0);
 double	THICK_LXOFF =	(0.4/72.0);
@@ -116,7 +136,7 @@ char		thin_ldot [] = THIN_LDOT;
 char		thick_ldot[] = THICK_LDOT;
 
 static	int	coord_system;
-int		verbose = 0;
+static	int	verbose = 0;
 double		dash_mag = 1.0;
 int		thick_width = 2;
 double		tolerance = 2.0;
@@ -183,10 +203,19 @@ char opt, *optarg;
 		if ( !strcmp(optarg, texfontnames[i]) ) break;
 
 	    if ( i > MAX_FONT)
-		fprintf(stderr,
-			"warning: non-standard font name %s\n", optarg);
-		
-	    texfontnames[0] = texfontnames[1] = optarg;
+			{
+			  fprintf(stderr,
+						 "warning: non-standard font name %s ignored\n", optarg);
+			}
+		 else
+			{
+			  texfontnames[0] = texfontnames[i];
+#ifdef NFSS
+			  texfontfamily[0] = texfontfamily[i];
+			  texfontseries[0] = texfontseries[i];
+			  texfontshape[0] = texfontshape[i];
+#endif
+			}
 	    break;
 
 	case 'l':		/* set thin/thick line threshold */
@@ -298,7 +327,7 @@ F_line	*l;
 	if (verbose) fprintf(tfp, "%%\n%% Fig POLYLINE object\n%%\n");
 
 	set_linewidth(l->thickness);
-	set_color(l->color);
+	set_color(l->pen_color);
 
 	p = l->points;
 	q = p->next;
@@ -345,9 +374,9 @@ F_line	*l;
 	    q = q->next;
 	    }
 
-	if (l->area_fill && (int)l->area_fill != DEFAULT)
+	if (l->fill_style != UNFILLED)
 		fprintf(stderr, "Line area fill not implemented\n");
-	reset_color(l->color);
+	reset_color(l->pen_color);
 	}
 
 static single_line (x1, y1, x2, y2, arrow, style, val)
@@ -558,6 +587,8 @@ double	val;
 	/*** compute step width ***/
 	nd = l / (3*val*cosine);
 	n = rint(nd);
+	if (n == 0)
+		n = 1;		/* sanity check */
 	dx = l / (double)n;
 	if (sx) {
 	    dx = l / (double)n;
@@ -626,11 +657,11 @@ F_ellipse	*e;
 			&& e->radiuses.x*unitlength <= MAXCIRCLERAD) {
 
 	    d = 2 * e->radiuses.x;
-	    if (e->area_fill == BLACK_FILL)
+	    if (e->fill_style == BLACK_FILL)
 	    	fprintf(tfp, "\\put(%3d,%3d){\\circle*{%d}}\n", x, y, d);
 	    else {
 	      	fprintf(tfp, "\\put(%3d,%3d){\\circle{%d}}\n", x, y, d);
-		if (e->area_fill && (int)e->area_fill != DEFAULT)
+		if (e->fill_style != UNFILLED)
 			fprintf(stderr, "Circle area fill not implemented\n");
 	    }
 
@@ -638,7 +669,7 @@ F_ellipse	*e;
 	    dx = 2 * e->radiuses.x;
 	    dy = 2 * e->radiuses.y;
 	    fprintf(tfp, "\\put(%3d,%3d){\\oval(%d,%d)}\n", x, y, dx, dy);
-	    if (e->area_fill && (int)e->area_fill != DEFAULT)
+	    if (e->fill_style != UNFILLED)
 		fprintf(stderr, "Ellipse area fill not implemented\n");
 	}
       }
@@ -692,8 +723,14 @@ F_text	*t;
 	  texsize = TEXFONTMAG(t);
 	  baselineskip = (texsize * 1.2);
 
+#ifdef NFSS
+ 	  fprintf(tfp, "\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
+				 texsize, baselineskip,
+				 TEXFAMILY(t->font),TEXSERIES(t->font),TEXSHAPE(t->font));
+#else
  	  fprintf(tfp, "\\SetFigFont{%d}{%.1f}{%s}",
 		texsize, baselineskip, TEXFONT(t->font));
+#endif
 	}
 
 	set_color(t->color);
@@ -770,7 +807,7 @@ F_arc	*a;
 	static char	*ad2[4] = { "-1, 0", " 0,-1", " 1, 0", " 0, 1" };
 
 	set_linewidth(a->thickness);
-	set_color(a->color);
+	set_color(a->pen_color);
 	switch (a->style) {
 	    case SOLID_LINE:
 		break;
@@ -837,9 +874,9 @@ F_arc	*a;
 	if (p2_arrow)
 	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%s){0}}\n", p2.x, p2.y, ad2[q2]);
 
-	if (a->area_fill && (int)a->area_fill != DEFAULT)
+	if (a->fill_style != UNFILLED)
 		fprintf(stderr, "Arc area fill not implemented\n");
-	reset_color(a->color);
+	reset_color(a->pen_color);
 	}
 
 static put_quarter(p1, p2, q)
@@ -881,7 +918,7 @@ int	q;
 	fprintf(tfp, "\\put(%3d,%3d){\\oval(%3d,%3d)[%s]}\n", px, py, dx, dy, opt);
 	}
 
-#define  MAXCOLORS 8
+#define  MAXCOLORS 32
 
 set_color(col)
 int col;
@@ -895,11 +932,43 @@ int col;
    "1 0 1",    /* magenta */
    "1 1 0",    /* yellow */
    "1 1 1",    /* white */
+   "1 .84 0",	/* gold */
+   "0 0 .56",	/* dk blue */
+   "0 0 .69",	/* md blue */
+   "0 0 .82",	/* lt blue */
+   "0 .56 0",	/* dk green */
+   "0 .69 0",	/* md green */
+   "0 .82 0",	/* lt green */
+   "0 .56 .56",	/* dk cyan */
+   "0 .69 .69",	/* md cyan */
+   "0 .82 .82",	/* lt cyan */
+   ".56 0 0",	/* dk red */
+   ".69 0 0",	/* md red */
+   ".82 0 0",	/* lt red */
+   ".56 0 .56",	/* dk magenta */
+   ".69 0 .69",	/* md magenta */
+   ".82 0 .82",	/* lt magenta */
+   ".5 .17 0",	/* dk brown */
+   ".63 .25 0",	/* md brown1 */
+   ".75 .38 0",	/* md brown1 */
+   ".88 .44 0",	/* lt brown */
+   "1 .5 .5",	/* dk pink */
+   "1 .63 .63",	/* md pink1 */
+   "1 .75 .75",	/* md pink2 */
+   "1 .88 .88",	/* lt pink */
    };
    
 #ifdef DVIPS
-   if (col != -1 && col < MAXCOLORS)
-      fprintf(tfp, "\\special{ps: gsave %s setrgbcolor}", colors[col]);
+   if (col != -1) {
+	if (col < NUM_STD_COLS)
+	    fprintf(tfp, "\\special{ps: gsave %s setrgbcolor}",
+				colors[col]);
+	else
+	    fprintf(tfp, "\\special{ps: gsave %.3f %.3f %.3f setrgbcolor}",
+				user_colors[col-NUM_STD_COLS].r/256.0,
+				user_colors[col-NUM_STD_COLS].g/256.0,
+				user_colors[col-NUM_STD_COLS].b/256.0);
+   }
 #endif
    return;
 }
@@ -908,7 +977,7 @@ reset_color(col)
 int col;
 {
 #ifdef DVIPS
-   if (col != -1 && col < MAXCOLORS)
+   if (col != -1 && col < NUM_STD_COLS + MAX_USR_COLS)
       fprintf(tfp, "\\special{ps: grestore}");
 #endif
    return;

@@ -7,7 +7,7 @@
 #
 
 # -------------------------------------------------------------------------
-# Makefile generated from "Imake.tmpl" and </tmp/IIf.a21026>
+# Makefile generated from "Imake.tmpl" and <Imakefile>
 # $XConsortium: Imake.tmpl,v 1.139 91/09/16 08:52:48 rws Exp $
 #
 # Platform-specific parameters may be set in the appropriate <vendor>.cf
@@ -34,6 +34,9 @@
 
 # $XConsortium: sunLib.rules,v 1.7 91/12/20 11:19:47 rws Exp $
 
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
 # -------------------------------------------------------------------------
 # site-specific configuration parameters that go after
 # the platform-specific parameters - edit site.def to change
@@ -47,12 +50,12 @@
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
-               CC = cc
+               CC = gcc -fstrength-reduce -fpcc-struct-return
                AS = as
 
          COMPRESS = compress
               CPP = /lib/cpp $(STD_CPP_DEFINES)
-    PREPROCESSCMD = cc -E $(STD_CPP_DEFINES)
+    PREPROCESSCMD = gcc -fstrength-reduce -fpcc-struct-return -E $(STD_CPP_DEFINES)
           INSTALL = install
                LD = ld
              LINT = lint
@@ -74,7 +77,7 @@
      STD_INCLUDES =
   STD_CPP_DEFINES =
       STD_DEFINES =
- EXTRA_LOAD_FLAGS =
+ EXTRA_LOAD_FLAGS = -B/usr/bin/
   EXTRA_LIBRARIES =
              TAGS = ctags
 
@@ -269,18 +272,50 @@ PICFLAGS = -pic
 #
 #	Fig2dev Driver Library Makefile
 #
-# to set paper size to A4 			add -DA4d	to DEFINES list
+# Copyright (c) 1994 Micah Beck
+#
+# The X Consortium, and any party obtaining a copy of these files from
+# the X Consortium, directly or indirectly, is granted, free of charge, a
+# full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+# nonexclusive right and license to deal in this software and
+# documentation files (the "Software"), including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons who receive
+# copies from any such party to do so, with the only requirement being
+# that this copyright notice remain intact.  This license includes without
+# limitation a license to do the foregoing actions under any patents of
+# the party supplying this software to the X Consortium.
+
+# Uncomment the following section here AND the similar section in
+# ../Imakefile if you have the XPM (color pixmap) package and you
+# would like to allow XPM files.
+# Also change RGB_FILE if necessary, to point to your rgb.txt color
+# database file (for X11).  This is needed for those XPM flies which
+# have named colors (e.g. "white").
+# Finally, if your system doesn't have ndbm (the 'new' database subroutines)
+# remove the -DNDBM from the XPMRGB definition.
+
+XPMDEFINES = -DUSE_XPM
+XPMRGB = -DRGB_FILE=\"/usr/lib/X11/rgb\" -DNDBM
+
+# to set paper size to A4 			add -DA4	to DEFINES list
 # to set IBM Graphics Enhancement Cartridge	add -DIBMGEC	to DEFINES list
 # to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEFINES list
 #
-DEFINES = -DDVIPS
+# HGS: -DNFSS: use NFSS2 font selection for LaTeX texts
+#      -DEPSF: use epsfig macros as distributed w/ LaTeX2e
+
+DEFINES = -DDVIPS -DNFSS -DEPSF $(XPMDEFINES)
 DEPLIBS =
 INCLUDES = -I..
 
-SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genpic.c genpictex.c \
-	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c
-LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genpic.o genpictex.o \
-	genps.o genpstex.o gentextyl.o gentpic.o setfigfont.o
+# For Solaris 2.x users uncomment the following to link with the nsl library.
+# SYS_LIBRARIES=	-lnsl
+
+SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genmf.c genpic.c genpictex.c \
+	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c readpics.c psencode.c
+LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genmf.o genpic.o genpictex.o \
+	genps.o genpstex.o gentextyl.o gentpic.o setfigfont.o readpics.o psencode.o
 
 LIB = transfig
 
@@ -290,6 +325,10 @@ lib$(LIB).a: $(LIBOBJS)
 	$(RM) $@
 	$(AR) $@ $(LIBOBJS)
 	$(RANLIB) $@
+
+readpics.o:
+	$(RM) $@
+	$(CC) -c $(CFLAGS)  $(XPMRGB) $*.c
 
 depend::
 	$(DEPEND) $(DEPENDFLAGS) -s "# DO NOT DELETE" -- $(ALLDEFINES) -- $(SRCS)

@@ -7,7 +7,7 @@
 #
 
 # -------------------------------------------------------------------------
-# Makefile generated from "Imake.tmpl" and </tmp/IIf.a20985>
+# Makefile generated from "Imake.tmpl" and <Imakefile>
 # $XConsortium: Imake.tmpl,v 1.139 91/09/16 08:52:48 rws Exp $
 #
 # Platform-specific parameters may be set in the appropriate <vendor>.cf
@@ -34,6 +34,9 @@
 
 # $XConsortium: sunLib.rules,v 1.7 91/12/20 11:19:47 rws Exp $
 
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
 # -------------------------------------------------------------------------
 # site-specific configuration parameters that go after
 # the platform-specific parameters - edit site.def to change
@@ -47,12 +50,12 @@
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
-               CC = cc
+               CC = gcc -fstrength-reduce -fpcc-struct-return
                AS = as
 
          COMPRESS = compress
               CPP = /lib/cpp $(STD_CPP_DEFINES)
-    PREPROCESSCMD = cc -E $(STD_CPP_DEFINES)
+    PREPROCESSCMD = gcc -fstrength-reduce -fpcc-struct-return -E $(STD_CPP_DEFINES)
           INSTALL = install
                LD = ld
              LINT = lint
@@ -74,7 +77,7 @@
      STD_INCLUDES =
   STD_CPP_DEFINES =
       STD_DEFINES =
- EXTRA_LOAD_FLAGS =
+ EXTRA_LOAD_FLAGS = -B/usr/bin/
   EXTRA_LIBRARIES =
              TAGS = ctags
 
@@ -268,8 +271,19 @@ PICFLAGS = -pic
 
 #	TransFig : Fig code translation Makefile creation program
 #
-#	Micah Beck
+#	Copyright (c) 1994 Micah Beck
 #
+# The X Consortium, and any party obtaining a copy of these files from
+# the X Consortium, directly or indirectly, is granted, free of charge, a
+# full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+# nonexclusive right and license to deal in this software and
+# documentation files (the "Software"), including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons who receive
+# copies from any such party to do so, with the only requirement being
+# that this copyright notice remain intact.  This license includes without
+# limitation a license to do the foregoing actions under any patents of
+# the party supplying this software to the X Consortium.
 
 DEPLIBS =
 INCLUDES = -I..
@@ -311,6 +325,8 @@ lint1:
 
 clean::
 	$(RM) $(PROGRAM)
+
+all:: transfig.man fig2dev.man fig2ps2tex.man pic2tpic.man
 
 transfig.man: ../doc/transfig.1
 	ln -s ../doc/transfig.1 transfig.man

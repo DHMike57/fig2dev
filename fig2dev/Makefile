@@ -7,7 +7,7 @@
 #
 
 # -------------------------------------------------------------------------
-# Makefile generated from "Imake.tmpl" and </tmp/IIf.a21005>
+# Makefile generated from "Imake.tmpl" and <Imakefile>
 # $XConsortium: Imake.tmpl,v 1.139 91/09/16 08:52:48 rws Exp $
 #
 # Platform-specific parameters may be set in the appropriate <vendor>.cf
@@ -34,6 +34,9 @@
 
 # $XConsortium: sunLib.rules,v 1.7 91/12/20 11:19:47 rws Exp $
 
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
 # -------------------------------------------------------------------------
 # site-specific configuration parameters that go after
 # the platform-specific parameters - edit site.def to change
@@ -47,12 +50,12 @@
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
-               CC = cc
+               CC = gcc -fstrength-reduce -fpcc-struct-return
                AS = as
 
          COMPRESS = compress
               CPP = /lib/cpp $(STD_CPP_DEFINES)
-    PREPROCESSCMD = cc -E $(STD_CPP_DEFINES)
+    PREPROCESSCMD = gcc -fstrength-reduce -fpcc-struct-return -E $(STD_CPP_DEFINES)
           INSTALL = install
                LD = ld
              LINT = lint
@@ -74,7 +77,7 @@
      STD_INCLUDES =
   STD_CPP_DEFINES =
       STD_DEFINES =
- EXTRA_LOAD_FLAGS =
+ EXTRA_LOAD_FLAGS = -B/usr/bin/
   EXTRA_LIBRARIES =
              TAGS = ctags
 
@@ -267,19 +270,11 @@ PICFLAGS = -pic
 # start of Imakefile
 
 #	Fig2dev : General Fig code translation program
-#
+
 # TransFig: Facility for Translating Fig code
 # Copyright (c) 1985 Supoj Sutantavibul
 # Copyright (c) 1991 Micah Beck
-#
-# Permission to use, copy, modify, distribute, and sell this software and its
-# documentation for any purpose is hereby granted without fee, provided that
-# the above copyright notice appear in all copies and that both that
-# copyright notice and this permission notice appear in supporting
-# documentation. The authors make no representations about the suitability
-# of this software for any purpose.  It is provided "as is" without express
-# or implied warranty.
-#
+
 # THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
 # INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN 0
 # EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -288,13 +283,31 @@ PICFLAGS = -pic
 # TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 # PERFORMANCE OF THIS SOFTWARE.
 #
-#
-# to include drivers for the following languages,
+# The X Consortium, and any party obtaining a copy of these files from
+# the X Consortium, directly or indirectly, is granted, free of charge, a
+# full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+# nonexclusive right and license to deal in this software and
+# documentation files (the "Software"), including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons who receive
+# copies from any such party to do so, with the only requirement being
+# that this copyright notice remain intact.  This license includes without
+# limitation a license to do the foregoing actions under any patents of
+# the party supplying this software to the X Consortium.
+
+# Uncomment the XPMDEFINES variable here AND in dev/Imakefile if you have
+# the XPM (color pixmap) package and you would like to allow XPM files.
+
+XPMDEFINES = -DUSE_XPM
+XPMLIBDIR = -L/usr/local/X11/lib
+XPMLIB = $(XPMLIBDIR) -lXpm -lX11
+
+# To include drivers for the following languages,
 # add the corresponding symbol to the DEFINES list:
 #
 # -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
 #
-DEFINES = -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
+DEFINES = $(XPMDEFINES) -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF
 DEPLIBS =
 
 SUBDIRS = dev
@@ -307,7 +320,8 @@ OBJS = fig2dev.o getopt.o psfonts.o iso2tex.o \
 	arrow.o bound.o free.o read.o read1_3.o latex_line.o $(STRSTRO) \
 	dev/libtransfig.a
 
-EXTRA_LIBRARIES = -lm
+SYS_LIBRARIES = -lm
+LOCAL_LIBRARIES = $(XPMLIB)
 
 all::
 	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
@@ -360,10 +374,17 @@ lint1:
 clean::
 	$(RM) $(PROGRAM)
 
+all:: fig2dev.man fig2ps2tex.man pic2tpic.man
+
 install:: fig2ps2tex.script
 	@if [ -d $(DESTDIR)$(BINDIR) ]; then set +x; \
 	else (set -x; $(MKDIRHIER) $(DESTDIR)$(BINDIR)); fi
 	$(INSTALL) -c $(INSTBINFLAGS) fig2ps2tex.script $(DESTDIR)$(BINDIR)/fig2ps2tex
+
+install:: fig2ps2tex.sh.script
+	@if [ -d $(DESTDIR)$(BINDIR) ]; then set +x; \
+	else (set -x; $(MKDIRHIER) $(DESTDIR)$(BINDIR)); fi
+	$(INSTALL) -c $(INSTBINFLAGS) fig2ps2tex.sh.script $(DESTDIR)$(BINDIR)/fig2ps2tex.sh
 
 install:: pic2tpic.script
 	@if [ -d $(DESTDIR)$(BINDIR) ]; then set +x; \

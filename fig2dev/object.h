@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,7 +11,21 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
+
+#define	BLACK_COLOR	0
+#define	WHITE_COLOR	7
 
 #define		DEFAULT				(-1)
 
@@ -51,22 +57,15 @@ typedef		struct f_ellipse {
 #define					T_CIRCLE_BY_DIA		4
 			int			style;
 			int			thickness;
-			int			color;
-#define 	 			BLACK_COLOR		0
-#define					BLUE_COLOR		1
-#define					GREEN_COLOR		2
-#define					CYAN_COLOR		3
-#define					RED_COLOR		4
-#define					MAGENTA_COLOR		5
-#define					YELLOW_COLOR		6
-#define					WHITE_COLOR		7
+			int			pen_color;
+			int			fill_color;
 			int			depth;
-			int			direction;
-			double			style_val;
-			double			angle;
 			int			pen;
-			int			area_fill;
-#define		       			UNFILLED	0
+			int			fill_style;
+			double			style_val;
+			int			direction;
+			double			angle;
+#define		       			UNFILLED	-1
 #define		       			WHITE_FILL	1
 #define		       			BLACK_FILL	21
 			struct f_pos		center;
@@ -79,17 +78,20 @@ typedef		struct f_ellipse {
 
 typedef		struct f_arc {
 			int			type;
-#define					T_3_POINTS_ARC		1
+#define					T_OPEN_ARC		1
+#define					T_PIE_WEDGE_ARC		2
 			int			style;
 			int			thickness;
-			int			color;
+			int			pen_color;
+			int			fill_color;
 			int			depth;
 			int			pen;
-			int			area_fill;
+			int			fill_style;
 			double			style_val;
 			int			direction;
 			struct f_arrow		*for_arrow;
 			struct f_arrow		*back_arrow;
+			int			cap_style;
 			struct {double x, y;}	center;
 			struct f_pos		point[3];
 			struct f_arc		*next;
@@ -102,35 +104,45 @@ typedef		struct f_line {
 #define					T_BOX		2
 #define					T_POLYGON	3
 #define	                                T_ARC_BOX       4
-#define	                                T_EPS_BOX       5 
+#define	                                T_PIC_BOX       5 
 
 			int			style;
 			int			thickness;
-			int			color;
+			int			pen_color;
+			int			fill_color;
 			int			depth;
-			double			style_val;
 			int			pen;
- 			int			area_fill;
+ 			int			fill_style;
+			double			style_val;
+ 			int			join_style;
+			int			cap_style;
 			int			radius;	/* for T_ARC_BOX */
 			struct f_arrow		*for_arrow;
 			struct f_arrow		*back_arrow;
 			struct f_point		*points;
-		    	struct f_eps   		*eps;
+		    	struct f_pic   		*pic;
 			struct f_line		*next;
 			}
 		F_line;
 
-typedef struct f_eps {
+typedef struct f_pic {
+    int		    subtype;
+#define	P_EPS	0	/* EPS picture type */
+#define	P_XBM	1	/* X11 bitmap picture type */
+#define	P_XPM	2	/* X11 pixmap (XPM) picture type */
+#define	P_GIF	3	/* GIF picture type */
     char            file[256];
     int             flipped;
     unsigned char  *bitmap;
+    unsigned char   cmap[3][MAXCOLORMAPSIZE]; /* for GIF files */
+    int		    numcols;		/* number of colors in cmap */
     float	    hw_ratio;
     struct f_pos    bit_size;
     int             pix_rotation, pix_width, pix_height, pix_flipped;
 }
-		F_eps;
+		F_pic;
 
-extern char EMPTY_EPS[];
+extern char EMPTY_PIC[];
 
 typedef		struct f_text {
 			int			type;
@@ -197,13 +209,15 @@ typedef		struct f_spline {
 #define					T_CLOSED_INTERPOLATED	3
 			int			style;
 			int			thickness;
-			int			color;
+			int			pen_color;
+			int			fill_color;
 			int			depth;
-			double			style_val;
 			int			pen;
-			int			area_fill;
+			int			fill_style;
+			double			style_val;
 			struct f_arrow		*for_arrow;
 			struct f_arrow		*back_arrow;
+			int			cap_style;
 			/*
 			For T_OPEN_NORMAL and T_CLOSED_NORMAL points
 			are control points while they are knots for
@@ -235,13 +249,14 @@ typedef		struct f_compound {
 #define		ELLOBJ_SIZE		sizeof(struct f_ellipse)
 #define		ARCOBJ_SIZE		sizeof(struct f_arc)
 #define		LINOBJ_SIZE		sizeof(struct f_line)
-#define		EPS_SIZE		sizeof(struct f_eps)
+#define		PIC_SIZE		sizeof(struct f_pic)
 #define		TEXOBJ_SIZE		sizeof(struct f_text)
 #define		SPLOBJ_SIZE		sizeof(struct f_spline)
 #define		COMOBJ_SIZE		sizeof(struct f_compound)
 
 /**********************  object codes  **********************/
 
+#define		O_COLOR_DEF		0
 #define		O_ELLIPSE		1
 #define		O_POLYLINE		2
 #define		O_SPLINE		3

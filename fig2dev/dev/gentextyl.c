@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,6 +11,17 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 /* 
@@ -31,15 +34,15 @@
  *
  */
 
-#if defined(hpux) || defined(SYSV)
+#if defined(hpux) || defined(SYSV) || defined(SVR4)
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
 #include <stdio.h>
 #include <math.h>
 #include "pi.h"
-#include "object.h"
 #include "fig2dev.h"
+#include "object.h"
 #include "texfonts.h"
 
 #ifndef sin
@@ -55,7 +58,16 @@ extern double acos();
 extern double fabs();
 #endif
 
-void gentextyl_ctl_spline(), gentextyl_itp_spline();
+static putline();
+
+#define rint(a) floor((a)+0.5)     /* close enough? */
+
+static void gentextyl_ctl_spline(), gentextyl_itp_spline();
+static bezier_spline();
+static draw_arrow_head();
+static set_style();
+static arc_tangent();
+static rtop();
 
 static int		coord_system;
 static double		dash_length = -1;
@@ -66,13 +78,31 @@ static int 		linethick = 2;  /* Range is 1-12 `pixels' */
 static void gentextyl_option(opt, optarg)
 char opt, *optarg;
 {
+  int i;
+
 	switch (opt) {
 		case 'a':
 		    /* capfonts = 1; */
 		    break;
 
 		case 'f':			/* set default text font */
-		    texfontnames[0] = texfontnames[1] = optarg;
+	    for ( i = 1; i <= MAX_FONT; i++ )
+		if ( !strcmp(optarg, texfontnames[i]) ) break;
+
+	    if ( i > MAX_FONT)
+			{
+			  fprintf(stderr,
+						 "warning: non-standard font name %s ignored\n", optarg);
+			}
+		 else
+			{
+			  texfontnames[0] = texfontnames[i];
+#ifdef NFSS
+			  texfontfamily[0] = texfontfamily[i];
+			  texfontseries[0] = texfontseries[i];
+			  texfontshape[0] = texfontshape[i];
+#endif
+			}
 		    break;
 
 		case 'l':			/* set line thickness */
@@ -178,7 +208,7 @@ F_line	*l;
 	    draw_arrow_head((double)p->x, (double)p->y, (double)q->x,
 		(double)q->y, l->for_arrow->ht, l->for_arrow->wid);
 
-	if (l->area_fill && (int)l->area_fill != DEFAULT)
+	if (l->fill_style && (int)l->fill_style != DEFAULT)
 		fprintf(stderr, "Line area fill not implemented\n");
 	}
 
@@ -232,7 +262,7 @@ F_spline	*s;
 	else
 	    gentextyl_ctl_spline(s);
 
-	if (s->area_fill && (int)s->area_fill != DEFAULT)
+	if (s->fill_style && (int)s->fill_style != DEFAULT)
 		fprintf(stderr, "Spline area fill not implemented\n");
 }
 
@@ -266,7 +296,7 @@ F_ellipse	*e;
                  "\\special{tyl arc %c T %u %u 0 0 0 %d L 0 %u @ %u,%u 0 360}\n",
                   measure,sx,sy,linethick,convx((double)radius),
             convx((double)e->center.x),convy((double)e->center.y));
-		if (e->area_fill && (int)e->area_fill != DEFAULT)
+		if (e->fill_style && (int)e->fill_style != DEFAULT)
 			fprintf(stderr, "Ellipse area fill not implemented\n");
 		}
 	}
@@ -356,7 +386,7 @@ F_arc	*a;
                 (int)(180/M_PI * th2), (int)(180/M_PI * th1));
 	      }
 
-	if (a->area_fill && (int)a->area_fill != DEFAULT)
+	if (a->fill_style && (int)a->fill_style != DEFAULT)
 		fprintf(stderr, "Arc area fill not implemented\n");
 	}
 

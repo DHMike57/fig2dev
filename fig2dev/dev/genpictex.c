@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,6 +11,17 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 /* 
@@ -27,15 +30,15 @@
  * 	Author Micah Beck, Cornell University, 4/88
  *    Color, rotated text and ISO-chars added by Herbert Bauer 11/91
 */
-#if defined(hpux) || defined(SYSV)
+#if defined(hpux) || defined(SYSV) || defined(SVR4)
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
 #include <stdio.h>
 #include <math.h>
 #include "pi.h"
-#include "object.h"
 #include "fig2dev.h"
+#include "object.h"
 #include "texfonts.h"
 
 #define UNIT "cm"       /* dip */
@@ -55,8 +58,16 @@ extern double acos();
 #endif
 extern char *ISOtoTeX[];
 
-void genpictex_ctl_spline(), genpictex_itp_spline();
+static void genpictex_ctl_spline(), genpictex_itp_spline();
+static bezier_spline();
+static put_box();
+static set_style();
+static putline();
+static arc_tangent();
+static rtop();
+static draw_arrow_head();
 
+#define rint(a) floor((a)+0.5)     /* close enough? */
 static int		coord_system;
 static double		dash_length = -1;
 static int		line_style = SOLID_LINE;
@@ -79,11 +90,20 @@ char opt, *optarg;
 		    for ( i = 1; i <= MAX_FONT; i++ )
 			if ( !strcmp(optarg, texfontnames[i]) ) break;
 
-		    if ( i > MAX_FONT)
-			fprintf(stderr,
-			"warning: non-standard font name %s\n", optarg);
-		
-		    texfontnames[0] = texfontnames[1] = optarg;
+	    if ( i > MAX_FONT)
+			{
+			  fprintf(stderr,
+						 "warning: non-standard font name %s ignored\n", optarg);
+			}
+		 else
+			{
+			  texfontnames[0] = texfontnames[i];
+#ifdef NFSS
+			  texfontfamily[0] = texfontfamily[i];
+			  texfontseries[0] = texfontseries[i];
+			  texfontshape[0] = texfontshape[i];
+#endif
+			}
 		    break;
 
 		case 'l':			/* set line thickness */
@@ -135,9 +155,9 @@ F_compound	*objects;
 	fprintf(tfp, "\\font\\thinlinefont=cmr5\n");
 	define_setfigfont(tfp);
 	fprintf(tfp, "\\mbox{\\beginpicture\n");
-	fprintf(tfp, "\\setcoordinatesystem units <%6.3f%s,%6.3f%s>\n",
+	fprintf(tfp, "\\setcoordinatesystem units <%6.5f%s,%6.5f%s>\n",
 			mag, UNIT, mag, UNIT);
-	fprintf(tfp, "\\unitlength=%6.3f%s\n", mag, UNIT);
+	fprintf(tfp, "\\unitlength=%6.5f%s\n", mag, UNIT);
 	fprintf(tfp, "\\linethickness=%s\n", linethick);
 	fprintf(tfp, "\\setplotsymbol ({%s})\n", plotsymbol);
 	fprintf(tfp, "\\setshadesymbol ({\\thinlinefont .})\n");
@@ -250,7 +270,7 @@ F_line	*l;
 
 	set_linewidth(l->thickness);
 	set_style(l->style, l->style_val);
-	set_color(l->color);
+	set_color(l->pen_color);
 
 	p = l->points;
 	q = p->next;
@@ -299,9 +319,9 @@ F_line	*l;
 	    draw_arrow_head(p->x/ppi, convy(p->y/ppi), q->x/ppi,
 		convy(q->y/ppi), l->for_arrow->ht/ppi, l->for_arrow->wid/ppi);
 
-	if (l->area_fill && (int)l->area_fill != DEFAULT)
+	if (l->fill_style != UNFILLED)
 		fprintf(stderr, "Line area fill not implemented\n");
-	reset_color(l->color);
+	reset_color(l->pen_color);
 	}
 
 
@@ -314,10 +334,10 @@ F_line	*l;
 {
 	int radius;
 
-	set_color(l->color);
+	set_color(l->pen_color);
 	if (l->type == T_BOX)
 	{
-	   if (l->area_fill && l->area_fill == BLACK_FILL)
+	   if (l->fill_style == BLACK_FILL)
 	   {
 	       fprintf(tfp,"\\linethickness=%6.3f%s\n", 
 	   	    ((convy(lly/ppi))-(convy(ury/ppi)))*CONVUNIT*mag, UNIT);
@@ -329,22 +349,22 @@ F_line	*l;
 	   	    ((convy(lly/ppi)+convy(ury/ppi))/2)*CONVUNIT);
 	       fprintf(tfp,"\\linethickness=%dpt\n", l->thickness);
 	   }
-	   else if (l->area_fill && l->area_fill > 15)
+	   else if (l->fill_style != UNFILLED && l->fill_style > 15)
 	   {
 	       fprintf(tfp,"\\setshadegrid span <1pt>\n");
 	       fprintf(tfp,"\\shaderectangleson\n");
 	   }
-	   else if (l->area_fill && l->area_fill > 10)
+	   else if (l->fill_style != UNFILLED && l->fill_style > 10)
 	   {
 	       fprintf(tfp,"\\setshadegrid span <2pt>\n");
 	       fprintf(tfp,"\\shaderectangleson\n");
 	   }
-	   else if (l->area_fill && l->area_fill > 5)
+	   else if (l->fill_style != UNFILLED && l->fill_style > 5)
 	   {
 	       fprintf(tfp,"\\setshadegrid span <4pt>\n");
 	       fprintf(tfp,"\\shaderectangleson\n");
 	   }
-	   else if (l->area_fill && l->area_fill == WHITE_FILL)
+	   else if (l->fill_style && l->fill_style == WHITE_FILL)
 	   {
 	       fprintf(stderr,"WHITE_FILL not implemeted for boxes\n");
 	   }
@@ -353,8 +373,8 @@ F_line	*l;
 	   	(llx/ppi)*CONVUNIT, (convy(lly/ppi))*CONVUNIT,
 	   	(urx/ppi)*CONVUNIT, (convy(ury/ppi))*CONVUNIT);
 
-	   if (l->area_fill
-		&& l->area_fill != WHITE_FILL && l->area_fill != BLACK_FILL)
+	   if (l->fill_style != UNFILLED
+		&& l->fill_style != WHITE_FILL && l->fill_style != BLACK_FILL)
 	   {
 	       fprintf(tfp,"\\setshadegrid span <5pt>\n");
 	       fprintf(tfp,"\\shaderectanglesoff\n");
@@ -364,7 +384,7 @@ F_line	*l;
 	{
 	   radius = l->radius;
 
-	   if (l->area_fill)
+	   if (l->fill_style != UNFILLED)
 	   {
 	       fprintf(stderr,"area fill not implemeted for rounded corner boxes\n");
 	   }
@@ -394,15 +414,8 @@ F_line	*l;
 		   (llx/ppi)*CONVUNIT, (convy((lly+radius)/ppi))*CONVUNIT,
 		   ((llx+radius)/ppi)*CONVUNIT, (convy((lly+radius)/ppi))*CONVUNIT);
 	}
-	reset_color(l->color);
+	reset_color(l->pen_color);
 }
-
-
-
-
-
-
-
 
 
 /* 
@@ -490,16 +503,16 @@ F_spline	*s;
 {
 	set_linewidth(s->thickness);
 	set_style(s->style, s->style_val);
-	set_color(s->color);
+	set_color(s->pen_color);
 
 	if (int_spline(s))
 	    genpictex_itp_spline(s);
 	else
 	    genpictex_ctl_spline(s);
 
-	if (s->area_fill && (int)s->area_fill != DEFAULT)
+	if (s->fill_style != UNFILLED)
 		fprintf(stderr, "Spline area fill not implemented\n");
-	reset_color(s->color);
+	reset_color(s->pen_color);
 }
 
 #define MAXBLACKDIAM 15 /* pt */
@@ -511,9 +524,9 @@ F_ellipse	*e;
 
 	set_linewidth(e->thickness);
 	set_style(e->style, e->style_val);
-	set_color(e->color);
+	set_color(e->pen_color);
 
-	if ((e->area_fill == BLACK_FILL) && (e->radiuses.x == e->radiuses.y)) {
+	if ((e->fill_style == BLACK_FILL) && (e->radiuses.x == e->radiuses.y)) {
 		if (mag*e->radiuses.x > 0.5*ppi/72*MAXBLACKDIAM)
 			fprintf(stderr, "Too big black filled circle substituted by a diameter of %dpt\n", MAXBLACKDIAM);
  		fprintf(tfp, "\\put{\\makebox(0,0)[l]{\\circle*{%6.3f}}} at %6.3f %6.3f\n",
@@ -528,10 +541,10 @@ F_ellipse	*e;
 		fprintf(tfp, "\tfrom %6.3f %6.3f center at %6.3f %6.3f\n",
 		    ((e->center.x+e->radiuses.x)/ppi)*CONVUNIT, (convy(e->center.y/ppi))*CONVUNIT,
 		    (e->center.x/ppi)*CONVUNIT, (convy(e->center.y/ppi))*CONVUNIT);
-		if (e->area_fill && (int)e->area_fill != DEFAULT)
+		if (e->fill_style != UNFILLED)
 			fprintf(stderr, "Ellipse area fill not implemented\n");
 		}
-	reset_color(e->color);
+	reset_color(e->pen_color);
 	}
 
 #define			HT_OFFSET	(0.2 / 72.0)
@@ -575,8 +588,14 @@ F_text	*t;
 	  texsize = TEXFONTMAG(t);
 	  baselineskip = (texsize * 1.2);
 
+#ifdef NFSS
+ 	  fprintf(tfp, "\\put{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
+				 texsize, baselineskip,
+				 TEXFAMILY(t->font),TEXSERIES(t->font),TEXSHAPE(t->font));
+#else
  	  fprintf(tfp, "\\put{\\SetFigFont{%d}{%.1f}{%s}",
 		texsize, baselineskip, TEXFONT(t->font));
+#endif
 	}
 
 #ifdef DVIPS
@@ -632,7 +651,7 @@ F_arc	*a;
 
 	set_linewidth(a->thickness);
 	set_style(a->style, a->style_val);
-	set_color(a->color);
+	set_color(a->pen_color);
 
 	cx = a->center.x/ppi; cy = convy(a->center.y/ppi);
 	sx = a->point[0].x/ppi; sy = convy(a->point[0].y/ppi);
@@ -668,9 +687,9 @@ F_arc	*a;
 		fprintf(tfp, "\\circulararc %6.3f degrees from %6.3f %6.3f center at %6.3f %6.3f\n",
 			-180/M_PI * theta, (ex)*CONVUNIT, (ey)*CONVUNIT, (cx)*CONVUNIT, (cy)*CONVUNIT);
 
-	if (a->area_fill && (int)a->area_fill != DEFAULT)
+	if (a->fill_style != UNFILLED)
 		fprintf(stderr, "Arc area fill not implemented\n");
-	reset_color(a->color);
+	reset_color(a->pen_color);
 	}
 
 

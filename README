@@ -1,10 +1,17 @@
 To make TransFig:
 
-1. Do a "make Makefiles"
-2. Do a "make install" to create the executables and install them in the system
+1. Do a "xmkmf" to create the top level Makefile from the Imakefile
+2. Do a "make Makefiles"
+3. Do a "make install" to create the executables and install them in the system
   or
    do a "make" to create the executables only
-3. Do a "make install.man" to put the manual pages in the proper directories
+4. Do a "make install.man" to put the manual pages in the proper directories
+
+Set the following flags in fig2dev/dev/Imakefile for the described features:
+
+ -DNFSS: use NFSS2 font selection fpr LaTeX texts
+ -DEPSF: use epsfig macros as distributed w/ LaTeX2e
+ -DNOSTRSTR: define this if your system doesn't have strstr(3)
 
 ------------------------------------------------------------------------------------
 General information:
@@ -57,4 +64,4 @@ PROBLEMS and POSSIBLE SOLUTIONS:
 
 Solaris 2.x users:
 
-You must use the /usr/ucb/cc compiler because gethosename() is used.
+You you must link with -lnsl because gethostname() is used.

@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,11 +11,23 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 #include <stdio.h>
 #include <math.h>
 #include "pi.h"
+#include "fig2dev.h"
 #include "object.h"
 
 #define		Ninety_deg		M_PI_2
@@ -126,19 +130,21 @@ int		include;
 	F_text		*t;
 	int		bx, by, sx, sy, first = 1;
 	int		llx, lly, urx, ury;
+	int	        half_wd;
 
-   while(compound != NULL)
-   {
+    while(compound != NULL)
+    {
 	for (a = compound->arcs; a != NULL; a = a->next) {
 	    arc_bound(a, &sx, &sy, &bx, &by);
+            half_wd = (a->thickness + 1) / 2;
 	    if (first) {
 		first = 0;
-		llx = sx; lly = sy;
-		urx = bx; ury = by;
+		llx = sx - half_wd; lly = sy - half_wd;
+		urx = bx + half_wd; ury = by + half_wd;
 		}
 	    else {
-		llx = min(llx, sx); lly = min(lly, sy);
-		urx = max(urx, bx); ury = max(ury, by);
+		llx = min(llx, sx - half_wd); lly = min(lly, sy - half_wd);
+		urx = max(urx, bx + half_wd); ury = max(ury, by + half_wd);
 		}
 	    }
 
@@ -170,27 +176,30 @@ int		include;
 
 	for (l = compound->lines; l != NULL; l = l->next) {
 	    line_bound(l, &sx, &sy, &bx, &by);
+            half_wd = ceil((double)(l->thickness+1) / sqrt(2.0)); 
+            /* leave space for corners, better approach needs much more math! */
 	    if (first) {
 		first = 0;
-		llx = sx; lly = sy;
-		urx = bx; ury = by;
+		llx = sx - half_wd; lly = sy - half_wd;
+		urx = bx + half_wd; ury = by + half_wd;
 		}
 	    else {
-		llx = min(llx, sx); lly = min(lly, sy);
-		urx = max(urx, bx); ury = max(ury, by);
+		llx = min(llx, sx - half_wd); lly = min(lly, sy - half_wd);
+		urx = max(urx, bx + half_wd); ury = max(ury, by + half_wd);
 		}
 	    }
 
 	for (s = compound->splines; s != NULL; s = s->next) {
 	    spline_bound(s, &sx, &sy, &bx, &by);
+            half_wd = (s->thickness+1) / 2;
 	    if (first) {
 		first = 0;
-		llx = sx; lly = sy;
-		urx = bx; ury = by;
+		llx = sx - half_wd; lly = sy - half_wd;
+		urx = bx + half_wd; ury = by + half_wd;
 		}
 	    else {
-		llx = min(llx, sx); lly = min(lly, sy);
-		urx = max(urx, bx); ury = max(ury, by);
+		llx = min(llx, sx - half_wd); lly = min(lly, sy - half_wd);
+		urx = max(urx, bx + half_wd); ury = max(ury, by + half_wd);
 		}
 	    }
 
@@ -207,20 +216,90 @@ int		include;
 		}
 	    }
         compound = compound->next;
-     }
+    }
 
-	*xmin = llx; *ymin = lly;
-	*xmax = urx; *ymax = ury;
-	}
+    *xmin = llx; *ymin = lly;
+    *xmax = urx; *ymax = ury;
+}
 
 ellipse_bound(e, xmin, ymin, xmax, ymax)
 F_ellipse	*e;
 int		*xmin, *ymin, *xmax, *ymax;
-{
-	*xmin = e->center.x - e->radiuses.x;
-	*ymin = e->center.y - e->radiuses.y;
-	*xmax = e->center.x + e->radiuses.x;
-	*ymax = e->center.y + e->radiuses.y;
+{ 
+	/* stolen from xfig-2.1.8 max2 from xfig == max here*/
+
+	int	    half_wd;
+	double	    c1, c2, c3, c4, c5, c6, v1, cphi, sphi, cphisqr, sphisqr;
+	double	    xleft, xright, d, asqr, bsqr;
+	int	    yymax, yy=0;
+	float	    xcen, ycen, a, b; 
+
+	xcen = e->center.x;
+	ycen = e->center.y;
+	a = e->radiuses.x;
+	b = e->radiuses.y;
+	if (a==0 || b==0) {
+		*xmin = *xmax = xcen;
+		*ymin = *ymax = ycen;
+		return;
+	}
+
+	cphi = cos((double)e->angle);
+	sphi = sin((double)e->angle);
+	cphisqr = cphi*cphi;
+	sphisqr = sphi*sphi;
+	asqr = a*a;
+	bsqr = b*b;
+	
+	c1 = (cphisqr/asqr)+(sphisqr/bsqr);
+	c2 = ((cphi*sphi/asqr)-(cphi*sphi/bsqr))/c1;
+	c3 = (bsqr*cphisqr) + (asqr*sphisqr);
+	yymax = sqrt(c3);
+	c4 = a*b/c3;
+	c5 = 0;
+	v1 = c4*c4;
+	c6 = 2*v1;
+	c3 = c3*v1-v1;
+	/* odd first points */
+	*xmin = *ymin =  100000;
+	*xmax = *ymax = -100000;
+	if (yymax % 2) {
+		d = sqrt(c3);
+		*xmin = min(*xmin,xcen-ceil(d));
+		*xmax = max(*xmax,xcen+ceil(d));
+		*ymin = min(*ymin,ycen);
+		*ymax = max(*ymax,ycen);
+		c5 = c2;
+		yy=1;
+	}
+	while (c3>=0) {
+		d = sqrt(c3);
+		xleft = c5-d;
+		xright = c5+d;                        
+		*xmin = min(*xmin,xcen+floor(xleft));
+		*xmax = max(*xmax,xcen+ceil(xleft));
+		*ymax = max(*ymax,ycen+yy);
+		*xmin = min(*xmin,xcen+floor(xright));
+		*xmax = max(*xmax,xcen+ceil(xright));
+		*ymax = max(*ymax,ycen+yy);
+		*xmin = min(*xmin,xcen-ceil(xright));
+		*xmax = max(*xmax,xcen-floor(xright));
+		*ymin = min(*ymin,ycen-yy);
+		*xmin = min(*xmin,xcen-ceil(xleft));
+		*xmax = max(*xmax,xcen-floor(xleft));
+		*ymin = min(*ymin,ycen-yy);
+		c5+=c2;
+		v1+=c6;
+		c3-=v1;
+		yy=yy+1;
+	}
+	/* for simplicity, just add half the line thickness to xmax and ymax
+	   and subtract half from xmin and ymin */
+	half_wd = (e->thickness+1)/2; /*correct for integer division */
+	*xmax += half_wd;
+	*ymax += half_wd;
+	*xmin -= half_wd;
+	*ymin -= half_wd;
 	}
 
 line_bound(l, xmin, ymin, xmax, ymax)
@@ -324,12 +403,16 @@ int		*xmin, *ymin, *xmax, *ymax;
 	    bx = max(bx, qx); by = max(by, qy);
 	    }
 	if (closed_spline(s)) {
-	    *xmin = round(sx); *ymin = round(sy);
-	    *xmax = round(bx); *ymax = round(by);
+	    *xmin = floor(sx );
+	    *ymin = floor(sy );
+	    *xmax = ceil (bx );
+	    *ymax = ceil (by );
 	    }
 	else {
-	    *xmin = round(min(sx, x2)); *ymin = round(min(sy, y2));
-	    *xmax = round(max(bx, x2)); *ymax = round(max(by, y2));
+	    *xmin = floor(min(sx, x2) );
+	    *ymin = floor(min(sy, y2) );
+	    *xmax = ceil (max(bx, x2) );
+	    *ymax = ceil (max(by, y2) );
 	    }
 	}
 
@@ -352,22 +435,22 @@ int	*xmin, *ymin, *xmax, *ymax;
 int	include;
 {
     double dx1, dx2, dx3, dx4, dy1, dy2, dy3, dy4;
-
+/* characters hav some extend downside */
 	if (t->type == T_CENTER_JUSTIFIED) {
-	    dx1 = (t->length/2);     dy1 = 0.0;
-	    dx2 = -(t->length/2);    dy2 = 0.0;
-	    dx3 = (t->length/2);     dy3 = -t->height;
-	    dx4 = -(t->length/2);    dy4 = -t->height;
+	    dx1 = (t->length/1.95);     dy1 =  0.2*t->height;
+	    dx2 = -(t->length/1.95);    dy2 =  0.2*t->height;
+	    dx3 = (t->length/1.95);     dy3 = -0.8*t->height;
+	    dx4 = -(t->length/1.95);    dy4 = -0.8*t->height;
 	} else if (t->type == T_RIGHT_JUSTIFIED) {
-	    dx1 = 0.0;               dy1 = 0.0;
-	    dx2 = -t->length;        dy2 = 0.0;
-	    dx3 = 0.0;               dy3 = -t->height;
-	    dx4 = -t->length;        dy4 = -t->height;
+	    dx1 = 0.0;                      dy1 =  0.2*t->height;
+	    dx2 = -t->length*1.0256;        dy2 =  0.2*t->height;
+	    dx3 = 0.0;                      dy3 = -0.8*t->height;
+	    dx4 = -t->length*1.0256;        dy4 = -0.8*t->height;
 	} else {
-	    dx1 = (include ? t->length : 0); dy1 = 0.0;
-	    dx2 = 0.0;                       dy2 = 0.0;
-	    dx3 = (include ? t->length : 0); dy3 = -t->height;
-	    dx4 = 0.0;                       dy4 = -t->height;
+	    dx1 = (include ? t->length*1.0256 : 0); dy1 =  0.2*t->height;
+	    dx2 = 0.0;                              dy2 =  0.2*t->height;
+	    dx3 = (include ? t->length*1.0256 : 0); dy3 = -0.8*t->height;
+	    dx4 = 0.0;                              dy4 = -0.8*t->height;
 	}
     *xmax= t->base_x +
            max( max( rot_x(dx1,dy1,t->angle), rot_x(dx2,dy2,t->angle) ), 

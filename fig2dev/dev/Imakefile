@@ -1,20 +1,53 @@
-#
-#	Fig2dev Driver Library Makefile
-#
-# to set paper size to A4 			add -DA4d	to DEFINES list
-# to set IBM Graphics Enhancement Cartridge	add -DIBMGEC	to DEFINES list
-# to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEFINES list
-#
-DEFINES = -DDVIPS
+XCOMM
+XCOMM	Fig2dev Driver Library Makefile
+XCOMM
+XCOMM Copyright (c) 1994 Micah Beck
+XCOMM
+XCOMM The X Consortium, and any party obtaining a copy of these files from
+XCOMM the X Consortium, directly or indirectly, is granted, free of charge, a
+XCOMM full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+XCOMM nonexclusive right and license to deal in this software and
+XCOMM documentation files (the "Software"), including without limitation the
+XCOMM rights to use, copy, modify, merge, publish, distribute, sublicense,
+XCOMM and/or sell copies of the Software, and to permit persons who receive
+XCOMM copies from any such party to do so, with the only requirement being
+XCOMM that this copyright notice remain intact.  This license includes without
+XCOMM limitation a license to do the foregoing actions under any patents of
+XCOMM the party supplying this software to the X Consortium.
+
+XCOMM Uncomment the following section here AND the similar section in
+XCOMM ../Imakefile if you have the XPM (color pixmap) package and you
+XCOMM would like to allow XPM files.
+XCOMM Also change RGB_FILE if necessary, to point to your rgb.txt color
+XCOMM database file (for X11).  This is needed for those XPM flies which
+XCOMM have named colors (e.g. "white").
+XCOMM Finally, if your system doesn't have ndbm (the 'new' database subroutines)
+XCOMM remove the -DNDBM from the XPMRGB definition.
+
+XPMDEFINES = -DUSE_XPM
+XPMRGB = -DRGB_FILE=\"/usr/lib/X11/rgb\" -DNDBM
+
+XCOMM to set paper size to A4 			add -DA4	to DEFINES list
+XCOMM to set IBM Graphics Enhancement Cartridge	add -DIBMGEC	to DEFINES list
+XCOMM to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEFINES list
+XCOMM
+XCOMM HGS: -DNFSS: use NFSS2 font selection for LaTeX texts
+XCOMM      -DEPSF: use epsfig macros as distributed w/ LaTeX2e
+
+DEFINES = -DDVIPS -DNFSS -DEPSF $(XPMDEFINES)
 DEPLIBS =
 INCLUDES = -I..
 
-SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genpic.c genpictex.c \
-	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c
-LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genpic.o genpictex.o \
-	genps.o genpstex.o gentextyl.o gentpic.o setfigfont.o
+XCOMM For Solaris 2.x users uncomment the following to link with the nsl library.
+XCOMM SYS_LIBRARIES=	-lnsl
+
+SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genmf.c genpic.c genpictex.c \
+	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c readpics.c psencode.c
+LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genmf.o genpic.o genpictex.o \
+	genps.o genpstex.o gentextyl.o gentpic.o setfigfont.o readpics.o psencode.o
 
 LIB = transfig
 
 NormalLibraryTarget($(LIB),$(LIBOBJS))
+SpecialObjectRule(readpics.o, , $(XPMRGB))
 DependTarget()

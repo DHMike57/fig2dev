@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,11 +11,25 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 #include <stdio.h>
 #include "alloc.h"
+#include "fig2dev.h"
 #include "object.h"
+
+extern float		THICK_SCALE;
 
 static double		forward_arrow_wid = 4;
 static double		forward_arrow_ht = 8;
@@ -48,7 +54,7 @@ forward_arrow()
 	    }
 	a->type = forward_arrow_type;
 	a->style = forward_arrow_style;
-	a->thickness = forward_arrow_thickness;
+	a->thickness = forward_arrow_thickness*THICK_SCALE;
 	a->wid = forward_arrow_wid;
 	a->ht = forward_arrow_ht;
 	return(a);
@@ -65,7 +71,7 @@ backward_arrow()
 	    }
 	a->type = backward_arrow_type;
 	a->style = backward_arrow_style;
-	a->thickness = backward_arrow_thickness;
+	a->thickness = backward_arrow_thickness*THICK_SCALE;
 	a->wid = backward_arrow_wid;
 	a->ht = backward_arrow_ht;
 	return(a);
@@ -84,7 +90,7 @@ double	thickness, wid, ht;
 	    }
 	a->type = type;
 	a->style = style;
-	a->thickness = thickness;
+	a->thickness = thickness*THICK_SCALE;
 	a->wid = wid;
 	a->ht = ht;
 	return(a);

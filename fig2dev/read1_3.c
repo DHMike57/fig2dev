@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,6 +11,17 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 /*******************************************************************/
@@ -29,6 +32,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include "alloc.h"
+#include "fig2dev.h"
 #include "object.h"
 
 /*******    Fig 1.3 subtype of objects    *******/
@@ -151,8 +155,7 @@ FILE	*fp;
 	int	f, b, h, w, n;
 
 	Arc_malloc(a);
-	a->type = T_3_POINTS_ARC;
-      	a->color = BLACK_COLOR;
+      	a->pen_color = a->fill_color = BLACK_COLOR;
 	a->depth = 0;
 	a->pen = 0;
 	a->for_arrow = NULL;
@@ -165,6 +168,7 @@ FILE	*fp;
 		&a->point[0].x, &a->point[0].y, 
 		&a->point[1].x, &a->point[1].y, 
 		&a->point[2].x, &a->point[2].y);
+	a->type = T_OPEN_ARC;
 	if (n != 17) {
 	    put_msg("incomplete arc data");
 	    free((char*)a);
@@ -291,11 +295,11 @@ FILE	*fp;
 	int		n, t;
 
 	Ellipse_malloc(e);
-      	e->color = BLACK_COLOR;
+      	e->pen_color = e->fill_color = BLACK_COLOR;
 	e->angle = 0.0;
 	e->depth = 0;
 	e->pen = 0;
-	e->area_fill = 0;
+	e->fill_style = UNFILLED;
 	e->next = NULL;
 	n = fscanf(fp," %d %d %d %lf %d %d %d %d %d %d %d %d %d\n", 
 		&t, &e->style,
@@ -329,10 +333,10 @@ FILE			*fp;
 	int	f, b, h, w, n, t, x, y;
 
 	Line_malloc(l);
-      	l->color = BLACK_COLOR;
+      	l->pen_color = l->fill_color = BLACK_COLOR;
 	l->depth = 0;
 	l->pen = 0;
-	l->area_fill = 0;
+	l->fill_style = UNFILLED;
 	l->for_arrow = NULL;
 	l->back_arrow = NULL;
 	l->next = NULL;
@@ -387,10 +391,10 @@ FILE	*fp;
 	int		f, b, h, w, n, t, x, y;
 
 	Spline_malloc(s);
-      	s->color = BLACK_COLOR;
+      	s->pen_color = s->fill_color = BLACK_COLOR;
 	s->depth = 0;
 	s->pen = 0;
-	s->area_fill = 0;
+	s->fill_style = UNFILLED;
 	s->for_arrow = NULL;
 	s->back_arrow = NULL;
 	s->controls = NULL;

@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,6 +11,17 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 /* 
@@ -41,14 +44,14 @@
  * Jose Alberto.
  */
 
-#if defined(hpux) || defined(SYSV)
+#if defined(hpux) || defined(SYSV) || defined(SVR4)
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
 #include <stdio.h>
 #include <math.h>
-#include "object.h"
 #include "fig2dev.h"
+#include "object.h"
 #include "texfonts.h"
 
 #ifndef fabs
@@ -107,7 +110,12 @@ F_compound	*objects;
         if (pstex_file[0] != '\0')
         {
 		fprintf(tfp, "\\begin{picture}(0,0)%%\n");
+/* changed to use epsfig-macros April 13, 94 HGS*/
+#ifdef EPSF
+		fprintf(tfp, "\\epsfig{file=%s}%%\n",pstex_file); 
+#else
 		fprintf(tfp, "\\special{psfile=%s}%%\n",pstex_file);
+#endif
 		fprintf(tfp, "\\end{picture}%%\n");
 	}
         genlatex_start(objects);
@@ -118,7 +126,7 @@ void genpstex_t_text(t)
 F_text	*t;
 {
 
-	if (!special_text(t))
+	if (!special_text(t) && !psfont_text(t))
 	  gendev_null(t);
 	else genlatex_text(t);
 }
@@ -127,7 +135,7 @@ void genpstex_text(t)
 F_text	*t;
 {
 
-	if (!special_text(t))
+	if (!special_text(t) && !psfont_text(t))
 	  genps_text(t);
 	else gendev_null(t);
 }
@@ -139,7 +147,7 @@ char opt, *optarg;
 }
 
 struct driver dev_pstex_t = {
-     	genpstex_t_option,
+  	genpstex_t_option,
 	genpstex_t_start,
 	gendev_null,
 	gendev_null,
@@ -151,7 +159,7 @@ struct driver dev_pstex_t = {
 };
 
 struct driver dev_pstex = {
-     	genpstex_option,
+  	genps_option, /*HGS was genpstex_option, which complains about PS fonts*/
 	genps_start,
 	genps_arc,
 	genps_ellipse,

@@ -1,3 +1,7 @@
+% PLEASE NOTE:  This guide has not been updated to the current 3.0 file
+% protocol.  Please refer to the xfig document FORMAT3.0 for a complete
+% description.
+
 % Master File: manual.tex
 % Document Type: LaTeX
 %
@@ -550,6 +554,11 @@ Xpic was developed by Mark Moraes at the University of Toronto
 
 \section{Fig Code V2.1 Reference Guide}
 \label{s:guide}
+
+PLEASE NOTE:  This guide has not been updated to the current 3.0 file
+protocol.  Please refer to the xfig document FORMAT3.0 for a complete
+description.
+
 A Fig code version V2.1 file has the following structure:
 %
 \begin{quote}
@@ -667,7 +676,7 @@ int  	& {\tt depth}		& no units		&	\\ \hline
 %
 int +	& {\tt pen}		& {\tt DEFAULT}		&	\\ \hline
 %
-int +	& {\tt area\_fill}	& {\tt DEFAULT}		& 	\\
+int +	& {\tt fill\_style}	& {\tt DEFAULT}		& 	\\
 	&			& {\tt WHITE\_FILL}	&   1	\\
 	&			& {\tt BLACK\_FILL}	&   21	\\ \hline
 %
@@ -806,7 +815,7 @@ int	& {\tt forward\_arrow},	& 0: no arrow		&	\\
 \end{tabular}
 \end{center}
 %
-The Polyline object description has an addition {\em points line} following
+The Polyline object description has an additional {\em points line} following
 	any arrow lines.
 The line consists of a sequence of coordinate pairs followed by the
 	pair 9999 9999 which marks the end of the line.
@@ -843,10 +852,11 @@ Many output modes draw {\tt T\_ARC\_BOX} object as simple boxes.
 
 The {\em T\_EPS\_BOX} object is a simple box filled with a figure
 	described by an imported Encapsulated PostScript (EPS) file.
-In addition to the points line, this object is followed by an EPS
+Following any arrow lines (which are ignored) is an EPS
 	{\em file specification} line, consisting of a flag indicating
 	the vertical orientation of the figure, and the name of the EPS file
-	to import.
+	to import. Following that is a points line describing the two
+	opposite corners of the figure.
 %
 \begin{center}
 \begin{tabular} {|l|l|ll|}
@@ -891,6 +901,8 @@ If the {\tt sub\_type} of the spline is	{\tt T\_OPEN\_INTERPOLATED} or
 	{\em control points line} follows the points line.
 The line consists of a sequence of coordinate pairs, two coordinate pairs
 	for each point in the points line.
+Note that whereas the points line contains integers, the control line
+consists of floating point numbers.
 %
 \begin{quote}
 $

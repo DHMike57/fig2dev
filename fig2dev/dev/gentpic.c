@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,6 +11,17 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 /* 
@@ -81,8 +84,8 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "object.h"
 #include "fig2dev.h"
+#include "object.h"
 #include "tpicfonts.h"
 
 /*
@@ -101,6 +104,8 @@ void gentpic_ctl_spline(), gentpic_itp_spline();
 void gentpic_open_spline(), gentpic_closed_spline();
 void gentpic_spline(), gentpic_ellipse(), gentpic_text();
 void gentpic_arc(), gentpic_line(), newline();
+static bezier_spline();
+static void newline();
 
 void gentpic_option(opt, optarg)
 char opt, *optarg;
@@ -246,7 +251,7 @@ F_line	*l;
 
 	set_linewidth(l->thickness);
 	set_style(l->style, l->style_val);
-	set_texture(l->area_fill);
+	set_texture(l->fill_style);
 	p = l->points;
 	q = p->next;
 	if (q == NULL) { /* A single point line */
@@ -291,7 +296,7 @@ F_line	*l;
 		if (l->thickness == 0)
 			fprintf(tfp, " invis");
 		fprintf(tfp, " radius %.3f", l->radius/ppi);
-		set_fill(l->area_fill);
+		set_fill(l->fill_style);
 		fprintf(tfp, " with .nw at %.3f,%.3f", llx/ppi, convy(lly/ppi));
 		newline();
 		return;
@@ -324,7 +329,7 @@ F_line	*l;
 	if (l->thickness == 0)
 		fprintf(tfp, " invis");
 	if (l->type == T_POLYGON)
-		set_fill(l->area_fill);
+		set_fill(l->fill_style);
 	newline();
 	}
 
@@ -339,7 +344,7 @@ F_line	*l;
 	attr[0] = '\0';
 	set_linewidth(l->thickness);
 	set_style(l->style, l->style_val);
-	set_texture(l->area_fill);
+	set_texture(l->fill_style);
 	p = l->points;
 	q = p->next;
 	if (q == NULL) { /* A single point line */
@@ -417,7 +422,7 @@ F_line	*l;
 		fprintf(tfp, " %.3f,%.3f", q->x/ppi, convy(q->y/ppi));
 	}
 	if (l->type != T_POLYLINE)
-		set_fill(l->area_fill);
+		set_fill(l->fill_style);
 	newline();
 	}
 #endif
@@ -503,7 +508,7 @@ void gentpic_ellipse(e)
 F_ellipse	*e;
 {
 	set_linewidth(e->thickness);
-	set_texture(e->area_fill);
+	set_texture(e->fill_style);
 	set_style(e->style, e->style_val);
 
 	fprintf(tfp, "ellipse");
@@ -518,7 +523,7 @@ F_ellipse	*e;
 		2 * e->radiuses.x/ppi, 2 * e->radiuses.y/ppi);
 	if (e->thickness == 0)
 		fprintf(tfp, " invis");
-	set_fill(e->area_fill);
+	set_fill(e->fill_style);
 	newline();
 	}
 
@@ -608,7 +613,7 @@ F_arc	*a;
 	sx = a->point[0].x/ppi; sy = convy(a->point[0].y/ppi);
 	ex = a->point[2].x/ppi; ey = convy(a->point[2].y/ppi);
 
-	set_texture(a->area_fill);
+	set_texture(a->fill_style);
 	set_linewidth(a->thickness);
 	set_style(a->style, a->style_val);
 
@@ -636,7 +641,7 @@ F_arc	*a;
 			cx, cy, sx, sy, ex, ey);
 	if (a->thickness == 0)
 		fprintf(tfp, " invis");
-	set_fill(a->area_fill);
+	set_fill(a->fill_style);
 	newline();
 
 	}
@@ -700,7 +705,7 @@ F_spline	*s;
 	cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
 
 	set_linewidth(s->thickness);
-	set_texture(s->area_fill); /* probably won't work! */
+	set_texture(s->fill_style); /* probably won't work! */
 	set_style(s->style, s->style_val);
 
 	for (p = p->next; p != NULL; p = p->next) {
@@ -724,7 +729,7 @@ F_spline	*s;
 	quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
 	if (s->thickness == 0)
 		fprintf(tfp, " invis");
-	set_fill(s->area_fill);
+	set_fill(s->fill_style);
 	newline();
 	/* fprintf(tfp, "\n"); */
 	}
@@ -737,7 +742,7 @@ F_spline	*s;
 	double		x1, x2, y1, y2;
 
 	set_style(s->style, s->style_val);
-	set_texture(s->area_fill); /* probably won't work! */
+	set_texture(s->fill_style); /* probably won't work! */
 	set_linewidth(s->thickness);
 
 	p1 = s->points;

@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,6 +11,17 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
 /*
@@ -68,8 +71,8 @@
 #include <math.h>
 #include <varargs.h>
 #include <ctype.h>
-#include "object.h"
 #include "fig2dev.h"
+#include "object.h"
 #include "texfonts.h"
 #include "pi.h"
 
@@ -101,8 +104,12 @@ int OutLine=0;
 #define Economic 1
 #define DottedDash 2
 
-void genepic_ctl_spline(), genepic_int_spline(); 
-void genepic_open_spline(), genepic_closed_spline(); 
+static void genepic_ctl_spline(), genepic_int_spline(); 
+static void genepic_open_spline(), genepic_closed_spline(); 
+static quadratic_spline();
+static bezier_spline();
+static arc_tangent();
+static draw_arrow_head();
 
 /* Structure for Point with "double" values */
 struct fp_struct {
@@ -213,10 +220,19 @@ char opt, *optarg;
 		if ( !strcmp(optarg, texfontnames[i]) ) break;
 
 	    if ( i > MAX_FONT)
-		fprintf(stderr,
-			"warning: non-standard font name %s\n", optarg);
-	
-    	    texfontnames[0] = texfontnames[1] = optarg;
+			{
+			  fprintf(stderr,
+						 "warning: non-standard font name %s ignored\n", optarg);
+			}
+		 else
+			{
+			  texfontnames[0] = texfontnames[i];
+#ifdef NFSS
+			  texfontfamily[0] = texfontfamily[i];
+			  texfontseries[0] = texfontseries[i];
+			  texfontshape[0] = texfontshape[i];
+#endif
+			}
 	    break;
 
         case 'l':
@@ -505,7 +521,7 @@ F_line *line;
 	    return;
 	  }
     }
-    set_pattern(line->area_fill);
+    set_pattern(line->fill_style);
     convertCS(q);
     if (line->back_arrow) {
 	draw_arrow_head(q, p, line->back_arrow->ht, line->back_arrow->wid);
@@ -514,12 +530,12 @@ F_line *line;
     switch (LineStyle) {
     case SOLID_LINE:
 	if (q->next != NULL && strcmp(LnCmd,"path")==0) {
-	    if (line->area_fill < UNFILLED) line->area_fill = UNFILLED;
-	    fprintf(tfp, "%s", FillCommands[line->area_fill]);
+	    if (line->fill_style < UNFILLED) line->fill_style = UNFILLED;
+	    fprintf(tfp, "%s", FillCommands[line->fill_style]);
 	}
 	fprintf(tfp, "\\%s", LnCmd);
 #ifdef DrawOutLine
-	if (line->area_fill != UNFILLED && OutLine == 0) OutLine=1;
+	if (line->fill_style != UNFILLED && OutLine == 0) OutLine=1;
 #endif
 	break;
     case DASH_LINE:
@@ -606,6 +622,7 @@ F_spline *spl;
     }
 }
 
+static
 void genepic_ctl_spline(spl)
 F_spline *spl;
 {
@@ -846,14 +863,14 @@ F_ellipse *ell;
     if (TeXLang == EEpic || TeXLang == EEpic_emu ||
 	  ell->radiuses.x != ell->radiuses.y ||
           ell->radiuses.x > MaxCircleRadius) {
-	set_pattern(ell->area_fill);
+	set_pattern(ell->fill_style);
         fprintf(tfp, "\\put(%d,%d){", pt.x, pt.y );
 #ifndef OLDCODE
         if (EllipseCmd == 0) {
-	    if (ell->area_fill < UNFILLED) ell->area_fill = UNFILLED;
-	    fprintf(tfp, "%s", FillCommands[ell->area_fill]);
+	    if (ell->fill_style < UNFILLED) ell->fill_style = UNFILLED;
+	    fprintf(tfp, "%s", FillCommands[ell->fill_style]);
 #  ifdef DrawOutLine
-	    if (ell->area_fill != UNFILLED && OutLine == 0) OutLine = 1;
+	    if (ell->fill_style != UNFILLED && OutLine == 0) OutLine = 1;
 #  endif
         }
  	fprintf(tfp, EllCmdstr[EllipseCmd],EllCmdkw[EllipseCmd], "",
@@ -868,12 +885,12 @@ F_ellipse *ell;
 #  endif
 #else
 	fprintf(tfp, EllCmdstr[EllipseCmd], EllCmdkw[EllipseCmd],
-	       (EllipseCmd==0 && ell->area_fill==BLACK_FILL ? "*" : ""),
+	       (EllipseCmd==0 && ell->fill_style==BLACK_FILL ? "*" : ""),
 	       2 * ell->radiuses.x, 2 * ell->radiuses.y);
 #endif
     } else {
         fprintf(tfp, "\\put(%d,%d){\\circle", pt.x, pt.y);
-        if (ell->area_fill == BLACK_FILL) {
+        if (ell->fill_style == BLACK_FILL) {
             fputc('*', tfp);
         }
         fprintf(tfp, "{%d}}\n", 2*ell->radiuses.x);
@@ -938,8 +955,14 @@ F_text *text;
       texsize = TEXFONTMAG(text);
       baselineskip = (texsize * 1.2);
 
-      fprintf(tfp, "{{\\SetFigFont{%d}{%.1f}{%s}",
-	      texsize, baselineskip, TEXFONT(text->font));
+#ifdef NFSS
+ 	  fprintf(tfp, "{{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
+				 texsize, baselineskip,
+				 TEXFAMILY(text->font),TEXSERIES(text->font),TEXSHAPE(text->font));
+#else
+ 	  fprintf(tfp, "{{\\SetFigFont{%d}{%.1f}{%s}",
+		texsize, baselineskip, TEXFONT(text->font));
+#endif
     }
 
     if (!special_text(text))
@@ -966,8 +989,14 @@ F_text *text;
  		texsize = TEXFONTMAG(text);
  		baselineskip = (texsize * 1.2);
  		
- 		fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}",
- 			texsize, baselineskip, TEXFONT(text->font));
+#ifdef NFSS
+ 	  fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
+				 texsize, baselineskip,
+				 TEXFAMILY(text->font),TEXSERIES(text->font),TEXSHAPE(text->font));
+#else
+ 	  fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}",
+		texsize, baselineskip, TEXFONT(text->font));
+#endif
   	      }
 	    }
 	    else
@@ -985,8 +1014,14 @@ F_text *text;
 		texsize = TEXFONTMAG(text);
 		baselineskip = (texsize * 1.2);
 		
-		fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}",
-			texsize, baselineskip, TEXFONT(text->font));
+#ifdef NFSS
+ 	  fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
+				 texsize, baselineskip,
+				 TEXFAMILY(text->font),TEXSERIES(text->font),TEXSHAPE(text->font));
+#else
+ 	  fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}",
+		texsize, baselineskip, TEXFONT(text->font));
+#endif
 	      }
 	    }
 	    else
@@ -1041,16 +1076,16 @@ F_arc *arc;
     	if (Verbose) fprintf(tfp, "%%\n");
     }
     if (TeXLang == EEpic) {
-	set_pattern(arc->area_fill);
+	set_pattern(arc->fill_style);
         fprintf(tfp, "\\put(%4.3lf,%4.3lf){", ctr.x, ctr.y);
     } else {
 	fprintf(tfp, "\\drawline");
     }
     if (TeXLang == EEpic) {
-	if (arc->area_fill < UNFILLED) arc->area_fill = UNFILLED;
-	fprintf(tfp, "%s", FillCommands[arc->area_fill]);
+	if (arc->fill_style < UNFILLED) arc->fill_style = UNFILLED;
+	fprintf(tfp, "%s", FillCommands[arc->fill_style]);
 #ifdef DrawOutLine
-	if (arc->area_fill != UNFILLED && OutLine==0) OutLine=1;
+	if (arc->fill_style != UNFILLED && OutLine==0) OutLine=1;
 #endif
     }
     if (arc->direction) {

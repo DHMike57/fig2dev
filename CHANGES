@@ -1,3 +1,96 @@
+===============================================================================
+Version 3.0
+===============================================================================
+Transfig version 3.0.0 (Dec 22, 1994)
+
+Changes from 2.1.8:
+
+New Features:
+
+o "-n name" option to specify filename for PostScript Title (e.g. when using
+	stdin)
+o -x <offset> and -y <offset> options for PostScript output to shift figure on
+	page.
+o fig2dev/dev/Imakefile settings to:
+     1. Use LaTeX2e commands for setting fonts. As LaTeX2e will become the
+	official release by spring this year (we redefined the start of
+	spring to be the date the LaTeX is released). This is a subtle
+	problem in the outcome of transfig, but some old font changing
+	commands behave differnet now.
+     2. To use the \epsfig-package distributed with LaTeX2e instead
+	of \special{psfile... for included PS-figures.
+   They use two new defines in the dev/Imakefile: -DNFSS for 1., -DEPSF for 2.
+   From Hendrik G. Seliger (hank@blimp.automat.uni-essen.de)
+o arrow heads are pointed now for PostScript (they were blunt before)
+o EPS Objects have been generalized to Picture Objects. Currently EPS, XBM
+	XPM (X11 color pixmap) and GIF formats are recognized.
+	Compressed (.Z) and gzipped (.z or .gz) files are also handled.
+o new command-line option '-z' for PostScript output used to select a paper
+	size from the list of A4, B5, Letter, Legal.
+	from Jon Roma (roma@ux1.cso.uiuc.edu)
+o change to the pstex driver so that when it sees text with a LaTeX font it
+	handles it using the LaTeX text object routine, but not treating it
+	as "special" text. This allows the pstex driver to take the "hint"
+	the since the user is using LaTeX font specifiers, those should be
+	used. The only people who could be adversely affected by the change
+	would be those using LaTeX font names as convenient synonyms for
+	PS font names who would now get LaTeX fonts instead. Probably not
+	a problem.
+	from Micah Beck (beck@cs.utk.ecu)
+o fig2ps2tex.sh for systems which don't have csh or dc.  Uses bc and awk.
+	from Dave Raymond (raymond@kestrel.nmt.edu)
+
+
+o changes to the file format (protocol).  See *xfig* Doc/FORMAT3.0 for details.
+	Transfig will still read older Fig file formats.
+Here are the features involving change to the protocol:
+   o portrait/landscape, justification (center or flush left) and metric/inches
+	indicators saved with figure file so is not necessary to supply the
+	command-line args to specify them.  However they will override the file
+	specification if given.
+   o separate border and fill colors.
+   o resolution is increased from 80 ppi to 1200 ppi.  This decreases jaggies.
+	A side effect is that fig2dev can now read Fig files of any resolution.
+   o there are now 32 colors - new ones are: gold, three shades each of blue,
+	green, cyan, red, magenta, brown and pink.
+   o in addition, there are now user-definable colors which are stored in the
+	figure file as pseudo-objects of type 0 which define the rgb values
+	in hexadecimal.  The color numbers range from 32 to 543 for a maximum
+	of 512 user-defined colors.
+   o more fill options - colors transition from black to full saturation
+	(shades) and on to full white (tints, i.e. pastels).
+	Or you can use one of 16 fill patterns - diagonal lines, bricks,
+	shingles, crosshatch etc.
+   o three line-join styles: miter (current style), round and bevel (see
+	PostScript or Xlib reference for description)
+   o three line-cap styles: butt (current style), round and projecting (see
+	PostScript or Xlib reference for description)
+
+Bugs fixed:
+
+o circles/ellipses paths weren't being closed in postscript output - gap closed
+o "%%Page: 1 1" added for single-page output for Document Structuring Compliancy
+	(previously, Page: comment only appeared in multi-page figures)
+o coord_system was declared extern in fig2dev/fig2dev.h.  This was incorrect.
+o even/odd rule fill now used for filled objects as per xfig (PostScript)
+o typo in fig2dev/dev/Imakefile said include -DA4d instead of -DA4 for A4 paper
+o all orientations of rotated/flipped EPS objects correctly done now
+o man pages for transfig claims to be able to read postscript files - this was
+	never finished so it has been removed from the man pages.
+o dotted lines with very small length caused SIGFPE
+o typo in error message about unknown option
+o added check for #if defined(SVR4) in addition to defined(SYSV)
+o misplaced ';' in fig2dev.c gendev_null() proc
+o added static declarations in genlatex.c genpictex.c and gentextyl.c
+o better bounding box calculation
+	from Uwe Bonnes (bon@lte.e-technik.uni-erlangen.de)
+o Tpic TeX font position 5 was "sl" (slanted) which doesn't exist
+	from Edward Wang (edward@cs.berkeley.edu)
+
+===============================================================================
+Version 2.1
+===============================================================================
+
 Transfig version 2.1.8 (Oct 1, 1993)
 Changes from 2.1.7:
 

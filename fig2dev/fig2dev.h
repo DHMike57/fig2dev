@@ -3,14 +3,6 @@
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation. The authors make no representations about the suitability 
- * of this software for any purpose.  It is provided "as is" without express 
- * or implied warranty.
- *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -19,9 +11,26 @@
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  *
+ * The X Consortium, and any party obtaining a copy of these files from
+ * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.  This license includes without
+ * limitation a license to do the foregoing actions under any patents of
+ * the party supplying this software to the X Consortium.
  */
 
-#ifdef SYSV
+typedef char Boolean;
+#define	NO	2
+#define	FALSE	0
+#define	TRUE	1
+
+
+#if defined(SYSV) || defined(SVR4)
 #include <string.h>
 #else
 #include <strings.h>
@@ -34,7 +43,16 @@ extern char *strchr();
 #endif
 #endif
 
+extern	double	atof();
+
 #define round(x)	((int) ((x) + ((x >= 0)? 0.5: -0.5)))
+
+#define	NUM_STD_COLS	32
+#define	MAX_USR_COLS	512
+
+#define NUMSHADES	21
+#define NUMTINTS	20
+#define NUMPATTERNS     22
 
 /* 
  * Device driver interface structure
@@ -59,13 +77,36 @@ extern char Err_mem[];
 
 extern char *PSfontnames[];
 
-extern int  PSisomap[];
+extern int   PSisomap[];
 
 extern char	*prog, *from;
+extern char	*name;
 extern int	font_size;
 extern double	mag;
 extern FILE	*tfp;
 
-extern int llx, lly, urx, ury, coord_system;
+extern int	llx, lly, urx, ury;
+extern int	landscape;
+extern int	center;
+extern int	orientspec;	/* true of the command-line args specified land or port */
+
+/* user-defined colors */
+typedef		struct{
+			int c,r,g,b;
+			}
+		User_color;
+
+extern User_color	user_colors[MAX_USR_COLS];
+extern int		user_col_indx[MAX_USR_COLS];
+extern int		num_usr_cols;
+extern Boolean		pats_used, pattern_used[NUMPATTERNS];
 
 extern void gendev_null();
+
+/* for GIF files */
+#define	MAXCOLORMAPSIZE 256
+
+struct Cmap {
+	unsigned short red, green, blue;
+	unsigned long pixel;
+};

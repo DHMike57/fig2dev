@@ -1,4 +1,4 @@
-.TH FIG2DEV 1 "Release 2.1(.8) (Protocol 2.1) Oct 1, 1993"
+.TH FIG2DEV 1 "Release 3.0(.0) (Protocol 3.0) XXX X, 1994"
 .SH NAME
 fig2dev \- translates Fig code to various graphics languages
 
@@ -46,7 +46,7 @@ Fig2dev is compatible with Fig versions 1.3, 1.4, 2.0, and 2.1.
 Set the output graphics language.
 Valid languages are
 \fBbox, epic, eepic, eepicemu, ibmgl, latex, null, pic, pictex,
-ps, pstex, pstex_t, textyl,\fR
+ps, pstex, pstex_t, textyl, mf (METAFONT)\fR
 and
 .B tpic.
 .TP
@@ -62,7 +62,7 @@ The default is Roman; the format of this option depends on the graphics
 .I language
 in use.
 In TeX-based languages, the font is the base of the name given in lfonts.tex,
-for instance \"cmr\" for Roman, or \"tt\" for teletype.
+for instance "cmr" for Roman, or "tt" for teletype.
 In PostScript, it is any font name known to the printer or interpreter.
 .TP
 .B \-s
@@ -286,6 +286,8 @@ As a result, it is best to use PiCTeX to generate small pictures.
 .SH POSTSCRIPT OPTIONS
 With PostScript, Fig can be used to create large posters. The figure
 will be created by printing multiple pages which can be glued together.
+Simply by not specifying the -c (centering) option and by specifying
+the -P (add showpage) option you will get a multi-page output.
 Due to memory limitations of most laser printers, the figure should not
 be too complicated. Great for text with very big letters.
 .LP
@@ -294,13 +296,20 @@ useful for language specific characters to be printed directly.
 Not all ISO-characters are implemented.
 .LP
 Color support: Colored objects created by Fig can be printed
-on a color postscript printer. Currently 8 colors are
-supported: black, blue, green, cyan, red, magenta, yellow, white.
+on a color postscript printer. There are 32 standard colors:
+black, yellow, white, gold,
+five shades of blue, four shades of green,
+four shades of cyan, four shades of red, five shades of magenta,
+four shades of brown, and four shades of pink.
+In addition there may be user-defined colors in the file.  See the
+xfig FORMAT3.0 file for the definition of these colors.
 On a monochrome printer, colored objects will be mapped into different
-grayscales.
-Filled objects are printed using the given grayscale. If filled
-with grayscale set to 100%, the object will be filled with the same
-color as the enclosing line.
+grayscales by the printer.
+Filled objects are printed using the given area fill and color.
+There are 21 "shades" going from black to full saturation of the fill color,
+and 21 more "tints" from full saturation + 1 to white.
+In addition, there are 16 patterns such as bricks, diagonal lines, 
+crosshatch, etc.
 .TP
 .B -c
 option centers the figure on the page.
@@ -309,8 +318,20 @@ The centering may not be accurate if there are texts in the
 that extends too far to the right of other objects.
 .TP
 .B -l dummy_arg
-Rotate figure to landscape mode.  The dummy argument is ignored,
+Generate figure in landscape mode.  The dummy argument is ignored,
 but must appear on the command line for reasons of compatibility.
+This option will override the orientation specification in the
+file (for file versions 3.0 and higher).
+.TP
+.B -M
+Gemerate multiple pages if figure exceeds page size.
+.TP
+.B -p dummy_arg
+Generate figure in portrait mode.  The dummy argument is ignored,
+but must appear on the command line for reasons of compatibility.
+This option will override the orientation specification in the
+file (for file versions 3.0 and higher).
+This is the default for Fig files of version 2.1 or lower.
 .TP
 .B -P
 indicates that the figure describes a full page which will not
@@ -318,6 +339,33 @@ necessarily be inserted into a document, but can be sent directly
 to a PS printer.
 This ensures that a showpage command is inserted at the end of
 the figure, and inhibits translation of the figure coordinate system.
+.TP
+.B -n name
+Set the Title part of the PostScript output to
+.I name.
+This is useful when the input to
+.I fig2dev
+comes from standard input.
+.TP
+.B -x offset
+shift the figure in the X direction by
+.I offset
+units (1/72 inch).
+A negative value shifts the figure to the left and a positive value to the right.
+.TP
+.B -y offset
+shift the figure in the Y direction by
+.I offset
+units (1/72 inch).
+A negative value shifts the figure up and a positive value down.
+.TP
+.B -z pagesize
+Sets the pagesize. Available page sizes are
+"Letter" (8.5" x 11"),
+"Legal" (11" x 14")
+"Ledger" (11" x 17"),
+"A4" (21cm x 29.7cm),
+and "B5" (18.2cm x 25.7cm).
 .LP
 
 .SH PSTEX OPTIONS
@@ -347,6 +395,33 @@ If not set or its value is null then no PS file will be inserted.
 
 .SH TEXTYL OPTIONS
 There are no TeXtyl-specific options.
+
+.SH METAFONT OPTIONS
+.TP
+.B -C code
+specifies the starting METAFONT font code.
+.TP
+.B -n name
+specifies the name to use in the output file.
+.TP
+.B -p pen
+specifies the size of the METAFONT pen.
+.TP
+.B -t top
+specifies the top of the whole coordinate system.
+.TP
+.B -x xneg
+specifies the minimum x coordinate value of the figure (inches).
+.TP
+.B -y yneg
+specifies the minumum y coordinate value of the figure (inches).
+.TP
+.B -X xpos
+specifies the maximum x coordinate value of the figure (inches).
+.TP
+.B -Y ypos
+specifies the maximum y coordinate value of the figure (inches).
+
 
 .SH TPIC OPTIONS
 There are no tpic-specific options.
