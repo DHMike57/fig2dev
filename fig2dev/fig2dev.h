@@ -40,18 +40,19 @@ typedef char Boolean;
 /* include ctype.h for isascii() and isxdigit() macros */
 #include <ctype.h>
 
-#if defined(SYSV) || defined(SVR4)
+#ifdef X_NOT_STDC_ENV
+#ifdef SYSV
 #include <string.h>
-#else
+#else  /* NOT SYSV */
 #include <strings.h>
 #ifndef strchr
-extern char *strchr();
+#define strchr index
 #endif
-#if !defined(NeXT) && !defined(SYSV) && !defined(SVR4)
-#define	strchr	index
-#define	strrchr	rindex
+#ifndef strrchr
+#define strrchr rindex
 #endif
-#endif
+#endif  /* SYSV */
+#endif  /* X_NOT_STDC_ENV */
 
 #if defined(hpux) || defined(SYSV) || defined(SVR4)
 #define bzero(s,n) memset((s),'\0',(n))

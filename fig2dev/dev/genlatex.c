@@ -225,7 +225,7 @@ genlatex_start(objects)
 	texfontsizes[0] = texfontsizes[1] = 
 		TEXFONTSIZE(font_size?font_size:DEFAULT_FONT_SIZE);
 
- 	unitlength = mag/objects->nwcorner.x;
+ 	unitlength = mag/ppi;
 	dash_mag /= unitlength*80.0;
 
 	translate_coordinates = translate2;

@@ -16,4 +16,4 @@
  */
 
 #define VERSION		"3.2"
-#define PATCHLEVEL	"3b"
+#define PATCHLEVEL	"3c"

@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
+#include <signal.h>
 #include "fig2dev.h"
 #include "genps.h"
 #include "object.h"

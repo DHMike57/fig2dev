@@ -267,7 +267,6 @@ F_compound	*objects;
 	    exit(1);
 	    }
 
-	ppi	 = objects->nwcorner.x;
 	cpi	 = mag*100.0/sqrt((xu-xl)*(xu-xl) + (yu-yl)*(yu-yl));
 	cpp	 = cpi/ppi;
 

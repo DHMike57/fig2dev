@@ -146,22 +146,21 @@ XCOMM #define I18N
 #ifdef I18N
 I18N_DEFS = -DI18N 
 FIG2DEV_LIBDIR = /usr/local/lib/fig2dev
-I18N_DEV_DEFS = $(I18N_DEFS) -DFIG2DEV_LIBDIR=\\\"$(DESTDIR)$(FIG2DEV_LIBDIR)\\\"
+I18N_DEV_DEFS = $(I18N_DEFS) -DFIG2DEV_LIBDIR=\\\"$(FIG2DEV_LIBDIR)\\\"
 
 install::
 	[ -d $(DESTDIR)$(FIG2DEV_LIBDIR) ] || mkdir $(DESTDIR)$(FIG2DEV_LIBDIR)
-	$(INSTALL) -c dev/japanese.ps $(DESTDIR)$(FIG2DEV_LIBDIR)
+	$(INSTALL) -m 644 -c dev/japanese.ps $(DESTDIR)$(FIG2DEV_LIBDIR)
 	( cd $(DESTDIR)$(FIG2DEV_LIBDIR); \
 	  rm -f ja.ps ja_JP.ps ja_JP.ujis.ps ja_JP.eucJP.ps ja_JP.EUC.ps; \
 	  ln -s japanese.ps ja.ps; ln -s japanese.ps ja_JP.ps; \
 	  ln -s japanese.ps ja_JP.ujis.ps; ln -s japanese.ps ja_JP.eucJP.ps; \
 	  ln -s japanese.ps ja_JP.EUC.ps )
-	$(INSTALL) -c  dev/korean.ps $(DESTDIR)$(FIG2DEV_LIBDIR)
+	$(INSTALL) -m 644 -c  dev/korean.ps $(DESTDIR)$(FIG2DEV_LIBDIR)
 	( cd $(DESTDIR)$(FIG2DEV_LIBDIR); \
-	  rm -f ko.ps ko_KR.ps ko_KR.ujis.ps ko_KR.eucKR.ps ko_KR.EUC.ps; \
+	  rm -f ko.ps ko_KR.ps ko_KR.eucKR.ps ko_KR.EUC.ps; \
 	  ln -s korean.ps ko.ps; ln -s korean.ps ko_KR.ps; \
-	  ln -s korean.ps ko_KR.ujis.ps; ln -s korean.ps ko_KR.eucKR.ps; \
-	  ln -s korean.ps ko_KR.EUC.ps )
+	  ln -s korean.ps ko_KR.eucKR.ps; ln -s korean.ps ko_KR.EUC.ps )
 #endif
 
 DEFINES = $(NEED_STRERROR) $(HAVE_NO_STRCASECMP) $(HAVE_NO_STRNCASECMP) $(USEINLINE) \
@@ -266,7 +265,7 @@ install::
 	else (set -x; $(MKDIRHIER) $(DESTDIR)$(XFIGLIBDIR)/bitmaps ); fi ; \
 	echo Copying bitmap files for tk to $(DESTDIR)$(XFIGLIBDIR)/bitmaps ; \
 	for f in * ; do \
-	      $(INSTALL) -c $$f $(DESTDIR)$(XFIGLIBDIR)/bitmaps ; \
+	      $(INSTALL) -m 644 -c $$f $(DESTDIR)$(XFIGLIBDIR)/bitmaps ; \
 	done) ; 
 
 InstallScript(fig2ps2tex,$(BINDIR))

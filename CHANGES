@@ -3,6 +3,22 @@ Changes to Transfig/fig2dev
 Version 3.2
 ===============================================================================
 
+Patchlevel 3c  (July 25, 2000)
+
+NEW FEATURES
+
+BUGS FIXED
+	o TransFig manual Makefile now calls ../../fig2dev/fig2dev preventing
+	  the Catch-22 problem of having to install TransFig before you can
+	  compile it 
+	o fig2dev/dev/genpdf.c needs "#include <signal.h>" for some systems
+	o Added -m 644 to "install" directives in Imakefile to make updates
+	  easier in future (no read-only files)
+	o LaTeX and pstex_t driver produced bogus \unitlength and \dashbox
+	  values
+	o File ko_KR.ujis.ps removed because it is not needed
+
+----------------------------
 Patchlevel 3b  (July 19, 2000)
 
 N.B. There was no transfig 3.2.3a - I want to keep the release number identical
