@@ -1559,11 +1559,10 @@ F_compound	*objects;
 	fprintf(tfp, "$F2psBegin\n");
 	fprintf(tfp, "10 setmiterlimit\n");	/* make like X server (11 degrees) */
 
- 	if ( pages <= 1 ) {
-	    multi_page = FALSE;
-	    fprintf(tfp, " %.5f %.5f sc\n", scalex, scaley );
-	} else {
+ 	if ( multi_page ) {
 	    fprintf(tfp, "initmatrix\n");
+	} else {
+	    fprintf(tfp, " %.5f %.5f sc\n", scalex, scaley );
 	}
 }
 

@@ -103,7 +103,7 @@ static int		vfont = 0; /* true if using a virtual TeX font */
 void gentpic_ctl_spline(), gentpic_itp_spline();
 void gentpic_open_spline(), gentpic_closed_spline();
 void gentpic_spline(), gentpic_ellipse(), gentpic_text();
-void gentpic_arc(), gentpic_line(), newline();
+void gentpic_arc(), gentpic_line();
 static bezier_spline();
 static void newline();
 

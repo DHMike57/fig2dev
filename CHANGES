@@ -1,4 +1,25 @@
 ===============================================================================
+Version 3.1
+===============================================================================
+Transfig version 3.1.0 (Jan 9, 1995)
+Changes from 3.0.0:
+
+o NOTE:	An error in xfig version 3.0.0 incorrectly positioned objects on the
+	canvas when reading older fig files.  New objects entered with 3.0 are
+	correctly positioned.  
+	I apologize for the inconvenience.
+*****	This is the only reason why the file protocol number has changed.
+
+Bugs Fixed:
+
+o error when figure was larger or partially off the page and user did not
+	select multipage option (-M)
+o newline() declared twice (inconsistently) in dev/gentpic.c
+o errors in read.c for linux machines
+o Linux machines need LOCAL_LDFLAGS = -ldbm in fig2dev/Imakefile
+o sys/types.h needed in dev/readpics.c for BSD machines
+
+===============================================================================
 Version 3.0
 ===============================================================================
 Transfig version 3.0.0 (Dec 22, 1994)
@@ -7,6 +28,8 @@ Changes from 2.1.8:
 
 New Features:
 
+o MetaFont driver added (from fig2mf)
+	from Anthony Starks (ajs@merck.com)
 o "-n name" option to specify filename for PostScript Title (e.g. when using
 	stdin)
 o -x <offset> and -y <offset> options for PostScript output to shift figure on

@@ -74,7 +74,7 @@ int			line_no = 0;
 int			num_object;
 int			v2_flag;	/* Protocol V2.0 or higher */
 int			v21_flag;	/* Protocol V2.1 or higher */
-int			v30_flag;	/* Protocol V3.0 */
+int			v30_flag;	/* Protocol V3.0 or higher */
 float			THICK_SCALE;	/* convert line thickness from screen res. */
 
 read_fail_message(file, err)
@@ -174,7 +174,7 @@ F_compound	*obj;
 	/* v21_flag is for version 2.1 or higher */
 	v21_flag = (!strncmp(buf, "#FIG 2.1", 8) || !strncmp(buf, "#FIG 3", 6));
 	/* version 2.2 was only beta - 3.0 is the official release (they are identical) */
-	v30_flag = (!strncmp(buf, "#FIG 3.0", 8) || !strncmp(buf, "#FIG 2.2", 8));
+	v30_flag = (!strncmp(buf, "#FIG 3", 6) || !strncmp(buf, "#FIG 2.2", 8));
 	if (strncmp(&buf[5],VERSION,3) > 0) {
 	    put_msg("Fig file format (%s) newer than this version of fig2dev (%s), exiting",
 			&buf[5],VERSION);
@@ -882,14 +882,14 @@ FILE	*fp;
 	if (v30_flag) {	/* order of parms is more like other objects now */
 	    n = sscanf(buf, "%*d%d%d%d%d%d%f%f%d%f%f%d%d%[^f]%[f]",
 		&t->type, &t->color, &t->depth, &t->pen,
-		&t->font, &tx_size, &t->angle,
-		&t->flags, &tx_height, &tx_length,
+		&t->font, &t->size, &t->angle,
+		&t->flags, &t->height, &t->length,
 		&t->base_x, &t->base_y, s, junk);
 	} else {
 	    n = sscanf(buf, "%*d%d%d%f%d%d%d%f%d%f%f%d%d%[^f]%[f]",
-		&t->type, &t->font, &tx_size, &t->pen,
+		&t->type, &t->font, &t->size, &t->pen,
 		&t->color, &t->depth, &t->angle,
-		&t->flags, &tx_height, &tx_length,
+		&t->flags, &t->height, &t->length,
 		&t->base_x, &t->base_y, s, junk);
 	}
 	n--;

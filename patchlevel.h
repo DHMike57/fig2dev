@@ -17,5 +17,5 @@
  * the party supplying this software to the X Consortium.
  */
 
-#define VERSION		"3.0"
+#define VERSION		"3.1"
 #define PATCHLEVEL	"0"

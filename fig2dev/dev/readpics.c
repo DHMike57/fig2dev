@@ -29,6 +29,7 @@
 #define False 0
 
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include "fig2dev.h"
 #include "object.h"

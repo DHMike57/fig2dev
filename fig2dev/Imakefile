@@ -31,6 +31,10 @@ XPMDEFINES = -DUSE_XPM
 XPMLIBDIR = -L/usr/local/X11/lib
 XPMLIB = $(XPMLIBDIR) -lXpm -lX11
 
+XCOMM For Linux machines or any machines that have a separate library for
+XCOMM the database management routines, uncomment the following line
+XCOMM LOCAL_LDFLAGS = -ldbm
+
 XCOMM To include drivers for the following languages, 
 XCOMM add the corresponding symbol to the DEFINES list:
 XCOMM

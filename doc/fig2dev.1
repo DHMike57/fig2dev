@@ -1,4 +1,4 @@
-.TH FIG2DEV 1 "Release 3.0(.0) (Protocol 3.0) XXX X, 1994"
+.TH FIG2DEV 1 "Release 3.1(.0) (Protocol 3.1) Jan 9, 1995"
 .SH NAME
 fig2dev \- translates Fig code to various graphics languages
 
@@ -38,7 +38,7 @@ Fig (Facility for Interactive Generation of figures) is a screen-oriented
 tool which allows the user to draw and manipulate objects interactively.
 Various versions of Fig run under the Suntools/Sunview window environment
 and under version 11 of the X Windows System.
-Fig2dev is compatible with Fig versions 1.3, 1.4, 2.0, and 2.1.
+Fig2dev is compatible with Fig versions 1.3, 1.4, 2.0, 2.1 and 3.0.
 
 .SH OPTIONS
 .TP
@@ -302,7 +302,7 @@ five shades of blue, four shades of green,
 four shades of cyan, four shades of red, five shades of magenta,
 four shades of brown, and four shades of pink.
 In addition there may be user-defined colors in the file.  See the
-xfig FORMAT3.0 file for the definition of these colors.
+xfig FORMAT3.1 file for the definition of these colors.
 On a monochrome printer, colored objects will be mapped into different
 grayscales by the printer.
 Filled objects are printed using the given area fill and color.
@@ -324,7 +324,7 @@ This option will override the orientation specification in the
 file (for file versions 3.0 and higher).
 .TP
 .B -M
-Gemerate multiple pages if figure exceeds page size.
+Generate multiple pages if figure exceeds page size.
 .TP
 .B -p dummy_arg
 Generate figure in portrait mode.  The dummy argument is ignored,
@@ -477,4 +477,7 @@ Modified from f2p (fig to PIC), by the author of Fig
 Supoj Sutanthavibul (supoj@sally.utexas.edu)
 .br
 University of Texas at Austin. 
-
+.sp
+MetaFont driver by
+.br
+Anthony Starks (ajs@merck.com)
