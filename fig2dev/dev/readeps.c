@@ -16,8 +16,27 @@
 #include "fig2dev.h"
 #include "object.h"
 
-/* return codes:  1 : success
-		  0 : failure
+/* for both procedures:
+     return codes:  1 : success
+		    0 : failure
+*/
+
+/* read a PDF file */
+
+int
+read_pdf(file, filetype, pic, llx, lly)
+    FILE	   *file;
+    int		    filetype;
+    F_pic	   *pic;
+    int		   *llx, *lly;
+{
+    return read_eps_pdf(file,filetype,pic,llx,lly,True);
+}
+
+/* read an EPS file */
+
+/* return codes:  PicSuccess (1) : success
+		  FileInvalid (-2) : invalid file
 */
 
 int
@@ -27,8 +46,20 @@ read_eps(file, filetype, pic, llx, lly)
     F_pic	   *pic;
     int		   *llx, *lly;
 {
+    return read_eps_pdf(file,filetype,pic,llx,lly,False);
+}
+
+int
+read_eps_pdf(file, filetype, pic, llx, lly, pdf_flag)
+    FILE	   *file;
+    int		    filetype;
+    F_pic	   *pic;
+    int		   *llx, *lly;
+    Boolean	    pdf_flag;
+{
 	char	    buf[512];
 	double	    fllx, flly, furx, fury;
+	int	    nested;
 
 	pic->bit_size.x = pic->bit_size.y = 0;
 	pic->subtype = P_EPS;
@@ -38,11 +69,26 @@ read_eps(file, filetype, pic, llx, lly)
 	*lly = 0;
 	pic->bit_size.x = 10;
 	pic->bit_size.y = 10;
+	nested = 0;
 
 	while (fgets(buf, 512, file) != NULL) {
 	    char *c;
 
-	    if (!strncmp(buf, "%%BoundingBox:", 14)) {
+	    /* look for /MediaBox for pdf file */
+	    if (pdf_flag) {
+		if (!strncmp(buf, "/MediaBox", 8)) {	/* look for the MediaBox spec */
+		    char *c;
+		    c = strchr(buf,'[')+1;
+		    if (c && sscanf(c,"%d %d %d %d",&llx,&lly,&urx,&ury) < 4) {
+			llx = lly = 0;
+			urx = paperdef[0].width*72;
+			ury = paperdef[0].height*72;
+			put_msg("Bad MediaBox in imported PDF file %s, assuming %s size", 
+				pic->file, metric? "A4" : "Letter" );
+		    }
+		}
+	    /* look for bounding box for EPS file */
+	    } else if (!nested && !strncmp(buf, "%%BoundingBox:", 14)) {
 		c=buf+14;
 		/* skip past white space */
 		while (*c == ' ' || *c == '\t') 
@@ -59,9 +105,14 @@ read_eps(file, filetype, pic, llx, lly)
 		    pic->bit_size.y = (fury-flly);
 		    break;
 		}
+	    } else if (!strncmp(buf, "%%Begin", 7)) {
+		++nested;
+	    } else if (nested && !strncmp(buf, "%%End", 5)) {
+		--nested;
 	    }
 	}
-	fprintf(tfp, "%% Begin Imported EPS File: %s\n", pic->file);
+	fprintf(tfp, "%% Begin Imported %s File: %s\n", 
+				pdf_flag? "PDF" : "EPS", pic->file);
 	fprintf(tfp, "%%%%BeginDocument: %s\n", pic->file);
 	fprintf(tfp, "%%\n");
 	return 1;

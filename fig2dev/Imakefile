@@ -4,7 +4,7 @@
 
 XCOMM Fig2dev : General Fig code translation program
 XCOMM Copyright (c) 1991 Micah Beck
-XCOMM Parts Copyright (c) 1995-1999 by Brian V. Smith
+XCOMM Parts Copyright (c) 1995-2000 by Brian V. Smith
 XCOMM Parts Copyright (c) 1999 by T. Sato
 
 XCOMM THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
@@ -58,14 +58,14 @@ XCOMM #define USEXPM
 
 #ifdef USEXPM
 XPMLIBDIR = $(USRLIBDIR)
-XPMINC = -I$(INCDIR)
+XPMINC = -I/usr/include/X11
 #endif
 
 XCOMM For Linux machines or any machines that have a separate library for
 XCOMM the database management routines, uncomment the following line.
 XCOMM For the Redhat distributions of Linux you may have to change DBMLIB to -ldb.
 XCOMM For other Linux versions you may need -ldbm instead of -lgdbm.
-XCOMM Slackware Linuxes use -lgdbm.
+XCOMM Slackware and RedHat Linuxes use -lgdbm.
 
 XCOMM DBMLIB = -lgdbm
 
@@ -136,13 +136,13 @@ I18N_DEV_DEFS = $(I18N_DEFS) -DFIG2DEV_LIBDIR='\"/usr/local/lib/fig2dev\"'
 
 install::
 	[ -d $(FIG2DEV_LIBDIR) ] || mkdir $(FIG2DEV_LIBDIR)
-	cp japanese.ps $(FIG2DEV_LIBDIR)
+	$(INSTALL) -c dev/japanese.ps $(FIG2DEV_LIBDIR)
 	( cd $(FIG2DEV_LIBDIR); \
 	  rm -f ja.ps ja_JP.ps ja_JP.ujis.ps ja_JP.eucJP.ps ja_JP.EUC.ps; \
 	  ln -s japanese.ps ja.ps; ln -s japanese.ps ja_JP.ps; \
 	  ln -s japanese.ps ja_JP.ujis.ps; ln -s japanese.ps ja_JP.eucJP.ps; \
 	  ln -s japanese.ps ja_JP.EUC.ps )
-	cp korean.ps $(FIG2DEV_LIBDIR)
+	$(INSTALL) -c  dev/korean.ps $(FIG2DEV_LIBDIR)
 	( cd $(FIG2DEV_LIBDIR); \
 	  rm -f ko.ps ko_KR.ps ko_KR.ujis.ps ko_KR.eucKR.ps ko_KR.EUC.ps; \
 	  ln -s korean.ps ko.ps; ln -s korean.ps ko_KR.ps; \

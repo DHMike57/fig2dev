@@ -26,8 +26,8 @@
 
 typedef char Boolean;
 #define	NO	2
-#define	FALSE	0
-#define	TRUE	1
+#define	False	0
+#define	True	1
 
 #define DEFAULT_FONT_SIZE 11
 
@@ -182,7 +182,7 @@ struct Cmap {
 extern int		sys_nerr, errno;
 #endif
 
-#if ((! (defined(BSD) && (BSD >= 199306)) && !defined(__NetBSD__)) && \
-	!defined(__GNU_LIBRARY__) && !defined(__GLIBC__))
+#if ( !(defined(BSD) && (BSD >= 199306)) && !defined(__NetBSD__) && \
+	!defined(__GNU_LIBRARY__) && !defined(__FreeBSD__) && !defined(__GLIBC__))
 	    extern char *sys_errlist[];
 #endif

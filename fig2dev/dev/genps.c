@@ -52,7 +52,7 @@ int	XpmReadFileToXpmImage();
 #ifdef I18N
 #include <stdlib.h>
 extern Boolean support_i18n;  /* enable i18n support? */
-static Boolean enable_composite_font = FALSE;
+static Boolean enable_composite_font = False;
 #endif /* I18N */
 
 /* for the version nubmer */
@@ -60,8 +60,6 @@ static Boolean enable_composite_font = FALSE;
 
 /* include the PostScript preamble, patterns etc */
 #include "genps.h"
-
-int	ReadFromBitmapFile();
 
 typedef struct _point
 {
@@ -75,7 +73,7 @@ typedef struct _point
 
 void		gen_ps_eps_option();
 
-Boolean		epsflag = FALSE;	/* to distinguish PS and EPS */
+Boolean		epsflag = False;	/* to distinguish PS and EPS */
 
 int		pagewidth = -1;
 int		pageheight = -1;
@@ -208,7 +206,7 @@ static struct _arrow_shape arrow_shapes[NUM_ARROW_TYPES+1] = {
 		   /* type 0 */
 		   { 3, 1, 2.15, {{-1,0.5}, {0,0}, {-1,-0.5}}},
 		   /* place holder for what would be type 0 filled */
-		   { },
+		   { 0 },
 		   /* type 1 simple triangle */
 		   { 4, 1, 2.1, {{-1.0,0.5}, {0,0}, {-1.0,-0.5}, {-1.0,0.5}}},
 		   /* type 1 filled simple triangle*/
@@ -254,7 +252,7 @@ geneps_option(opt, optarg)
 char opt;
 char *optarg;
 {
-	epsflag = TRUE;
+	epsflag = True;
 	gen_ps_eps_option(opt, optarg);
 }
 
@@ -263,7 +261,7 @@ genps_option(opt, optarg)
 char opt;
 char *optarg;
 {
-	epsflag = FALSE;
+	epsflag = False;
 	gen_ps_eps_option(opt, optarg);
 }
 
@@ -282,15 +280,15 @@ char *optarg;
 
 	  case 'c':			/* center figure */
 		if (!epsflag) {
-		    center = TRUE;
-		    centerspec = TRUE;	/* user-specified */
+		    center = True;
+		    centerspec = True;	/* user-specified */
 		}
 		break;
 
 	  case 'e':			/* don't center ('e' means edge) figure */
 		if (!epsflag) {
-		    center = FALSE;
-		    centerspec = TRUE;	/* user-specified */
+		    center = False;
+		    centerspec = True;	/* user-specified */
 		}
 		break;
 
@@ -308,7 +306,7 @@ char *optarg;
 
 	  case 'g':			/* background color */
 		if (lookup_db_color(optarg,&background) >= 0) {
-		    bgspec = TRUE;
+		    bgspec = True;
 		} else {
 		    fprintf(stderr,"Can't parse color '%s', ignoring background option\n",
 				optarg);
@@ -317,20 +315,20 @@ char *optarg;
 
 	  case 'M':			/* multi-page option */
 		if (!epsflag) {
-		    multi_page = TRUE;
-		    multispec = TRUE;	/* user has overridden anything in file */
+		    multi_page = True;
+		    multispec = True;	/* user has overridden anything in file */
 		}
 		break;
 
 	  case 'S':			/* turn off multi-page option */
 		if (!epsflag) {
-		    multi_page = FALSE;
-		    multispec = TRUE;	/* user has overridden anything in file */
+		    multi_page = False;
+		    multispec = True;	/* user has overridden anything in file */
 		}
 		break;
 
       	  case 'm':			/* magnification (already parsed in main) */
-		magspec = TRUE;		/* user-specified */
+		magspec = True;		/* user-specified */
 		break;
 
 	  /* don't do anything for language and font size (already parsed in main) */
@@ -345,15 +343,15 @@ char *optarg;
 
       	  case 'l':			/* landscape mode */
 		if (!epsflag) {
-		    landscape = TRUE;	/* override the figure file setting */
-		    orientspec = TRUE;	/* user-specified */
+		    landscape = True;	/* override the figure file setting */
+		    orientspec = True;	/* user-specified */
 		}
 		break;
 
       	  case 'p':			/* portrait mode */
 		if (!epsflag) {
-		    landscape = FALSE;	/* override the figure file setting */
-		    orientspec = TRUE;	/* user-specified */
+		    landscape = False;	/* override the figure file setting */
+		    orientspec = True;	/* user-specified */
 		}
 		break;
 
@@ -372,7 +370,7 @@ char *optarg;
 	  case 'z':			/* papersize */
 		if (!epsflag) {
 		    (void) strcpy (papersize, optarg);
-		    paperspec = TRUE;	/* user-specified */
+		    paperspec = True;	/* user-specified */
 		}
 		break;
 
@@ -390,7 +388,7 @@ F_compound	*objects;
 	struct passwd	*who;
 	time_t		when;
 	int		itmp;
-	int		clipx, clipy;
+	int		cliplx, cliply, clipux, clipuy;
 	struct paperdef	*pd;
 	float		bd;
 
@@ -409,9 +407,6 @@ F_compound	*objects;
 	/* convert to point unit */
 	llx = (int)floor(llx * scalex);
 	lly = (int)floor(lly * scaley);
-	/* save upper bounds before scaling for clipping later */
-	clipx = urx;
-	clipy = ury;
 	urx = (int)ceil(urx * scalex);
 	ury = (int)ceil(ury * scaley);
 
@@ -493,25 +488,30 @@ F_compound	*objects;
 	   fprintf(tfp, "%%%%For: %s@%s (%s)\n",
 			who->pw_name, host, who->pw_gecos);
 
+	/* calc initial clipping area to size of the bounding box (this is needed
+		for later clipping by arrowheads */
+	cliplx = cliply = 0;
 	if (epsflag) {
-	   pages = 1;
-	   fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n",
-	      (int)origx+llx, (int)origy-ury, (int)origx+urx, (int)origy-lly);
+	    clipux = urx-llx;
+	    clipuy = ury-lly;
+	    pages = 1;
 	} else {
 	    if (landscape) {
+		clipux = pageheight;
+		clipuy = pagewidth;
 		pages = (urx/pageheight+1)*(ury/pagewidth+1);
 		fprintf(tfp, "%%%%Orientation: Landscape\n");
-		fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n",
-			(int)origx+llx, (int)origy+lly, (int)origx+urx, (int)origy+ury);
 	    } else {
+		clipux = pagewidth;
+		clipuy = pageheight;
 		pages = (urx/pagewidth+1)*(ury/pageheight+1);
 		fprintf(tfp, "%%%%Orientation: Portrait\n");
-		fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n",
-			(int)origx+llx, (int)origy-ury, (int)origx+urx, (int)origy-lly);
 	    }
 	    /* only print Pages if PostScript */
 	    fprintf(tfp, "%%%%Pages: %d\n", pages );
 	}
+	fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n",
+			cliplx, cliply, clipux, clipuy);
 
 	/* only include a pagesize command if not EPS */
 	if (!epsflag) {
@@ -559,6 +559,24 @@ F_compound	*objects;
 
 	/* must specify translation/rotation before definition of fill patterns */
 	fprintf(tfp, "save\n");
+ 
+	/* now make the clipping path for the BoundingBox */
+	fprintf(tfp, "newpath %d %d moveto %d %d lineto %d %d lineto %d %d lineto closepath clip newpath\n",
+		cliplx,clipuy, cliplx,cliply, clipux,cliply, clipux,clipuy);
+
+	/* fill the Background now if specified */
+ 	if (bgspec) {
+ 	    fprintf(tfp, "%% Fill background color\n");
+ 	    fprintf(tfp, "%d %d moveto %d %d lineto ",
+					cliplx, cliply, clipux, cliply);
+ 	    fprintf(tfp, "%d %d lineto %d %d lineto\n",
+					clipux, clipuy, cliplx, clipuy);
+ 	    fprintf(tfp, "closepath %.2f %.2f %.2f setrgbcolor fill\n\n",
+ 		    background.red/65536.0,
+ 		    background.green/65536.0,
+ 		    background.blue/65536.0);
+ 	}
+
 	fprintf(tfp, "%.1f %.1f translate\n", origx, origy);
 	/* also flip y if necessary, but *only* if to PostScript and not EPS */
 	if (landscape && !epsflag) {
@@ -609,7 +627,7 @@ F_compound	*objects;
 		fprintf(stderr, "fig2dev: can't open file: %s\n", filename);
 	    } else {
 		while (fgets(str, sizeof(str), fp)) {
-		    if (strstr(str, "CompositeRoman")) enable_composite_font = TRUE;
+		    if (strstr(str, "CompositeRoman")) enable_composite_font = True;
 		    fputs(str, tfp);
 		}
 	        fclose(fp);
@@ -623,20 +641,6 @@ F_compound	*objects;
 
 	fprintf(tfp, "%%%%Page: 1 1\n");
 	fprintf(tfp, "10 setmiterlimit\n");	/* make like X server (11 degrees) */
-
-	/* fill the background with the bg color, if it was specified */
-	if (bgspec) {		
-	    fprintf(tfp,"%% Fill background color\n");
-	    fprintf(tfp,"clippath %.2f %.2f %.2f srgb fill\n\n", 
-			background.red/65536.0,
-			background.green/65536.0,
-			background.blue/65536.0);
-	}
-
-	/* set initial clipping area to size of the bounding box plus a margin
-	   (this is needed for later clipping by arrowheads */
-	fprintf(tfp, "n %d %d m %d %d l %d %d l %d %d l cp clip n\n",
-			-1000,clipy+1000,-1000,-1000,clipx+1000,-1000,clipx+1000,clipy+1000);
 
  	if ( multi_page ) {
 	    fprintf(tfp, "initmatrix\n");
@@ -785,6 +789,7 @@ int	filtype;
 extern	int	read_gif();
 extern	int	read_pcx();
 extern	int	read_eps();
+extern	int	read_pdf();
 extern	int	read_ppm();
 extern	int	read_tif();
 extern	int	read_xbm();
@@ -806,10 +811,11 @@ static	 struct hdr {
 	}
 	headers[]= {    {"GIF", "GIF",		    3, read_gif,	True},
 #ifdef V4_0
-			{"FIG", "#FIG",		    4, read_figure, True},
+			{"FIG", "#FIG",		    4, read_figure,	True},
 #endif /* V4_0 */
 			{"PCX", "\012\005\001",	    3, read_pcx,	True},
 			{"EPS", "%!",		    2, read_eps,	True},
+			{"PDF", "%PDF",		    4, read_pdf,	True},
 			{"PPM", "P3",		    2, read_ppm,	True},
 			{"PPM", "P6",		    2, read_ppm,	True},
 			{"TIFF", "DD*\000",	    4, read_tif,	False},
@@ -973,9 +979,10 @@ F_line	*l;
 		} else {
 		    /* none of the above */
 		    fprintf(stderr,"%s: Unknown image format\n",l->pic->file);
+		    return;
 		}
-		urx = l->pic->bit_size.x;	/* size of image from the file */
-		ury = l->pic->bit_size.y;
+		urx = l->pic->bit_size.x+llx;	/* calc upper-right from size and lower-left */
+		ury = l->pic->bit_size.y+lly;
 
 		fprintf(tfp, "n gs\n");
 		if (((rotation == 90 || rotation == 270) && !l->pic->flipped) ||
@@ -1360,7 +1367,7 @@ F_spline	*s;
 	F_point		*p, *q;
 	double		xx,yy;
 	int		xmin, ymin;
-	Boolean		first = TRUE;
+	Boolean		first = True;
 
 	if (closed_spline(s))
 	    fprintf(tfp, "%% Closed spline\n");
@@ -1601,8 +1608,8 @@ F_text	*t;
 	unsigned char		*cp;
 #ifdef I18N
 #define LINE_LENGTH_LIMIT 200
-	Boolean composite = FALSE;
-	Boolean state_gr = FALSE;
+	Boolean composite = False;
+	Boolean state_gr = False;
 	int chars = 0;
         int gr_chars = 0;
 	unsigned char ch;
@@ -1622,14 +1629,14 @@ F_text	*t;
 	if (enable_composite_font
 	    && ((t->flags & PSFONT_TEXT) ? (t->font <= 0 || t->font == 2)
 		 : (t->font <= 2))) {
-	  composite = TRUE;
+	  composite = True;
 	  if (t->font <= 0)
 	    fprintf(tfp, TEXT_PS, "CompositeRoman", "", PSFONTMAG(t));
 	  else
 	    fprintf(tfp, TEXT_PS, "CompositeBold", "", PSFONTMAG(t));
 	} else
 #endif /* I18N */
-	if (PSisomap[t->font+1] == TRUE)
+	if (PSisomap[t->font+1] == True)
 	   fprintf(tfp, TEXT_PS, PSFONT(t), "-iso", PSFONTMAG(t));
 	else
 	   fprintf(tfp, TEXT_PS, PSFONT(t), "", PSFONTMAG(t));
@@ -1654,7 +1661,7 @@ F_text	*t;
 		if (!state_gr) {
 		  fprintf(tfp, "\\377\\001");
 		  chars += 8;
-		  state_gr = TRUE;
+		  state_gr = True;
 		  gr_chars = 0;
 		}
 		gr_chars++;
@@ -1667,7 +1674,7 @@ F_text	*t;
 		  }
 		  fprintf(tfp, "\\377\\000");
 		  chars += 8;
-		  state_gr = FALSE;
+		  state_gr = False;
 		}
 	      }
             }
@@ -1794,7 +1801,7 @@ clip_arrows(obj, objtype)
 				a->direction, a->for_arrow, &lpntx2, &lpnty2);
 	}
 	calc_arrow(lpntx2, lpnty2, lpntx1, lpnty1, &fcx1, &fcy1, &fcx2, &fcy2,
-		   obj->thickness, obj->for_arrow, fpoints, &nfpoints, &nbndpts);
+		   obj->for_arrow, fpoints, &nfpoints, &nbndpts);
 	/* set clipping to the *outside* of the first nbndpts points of the 
 	   arrowhead and the box surrounding it */
 	/* draw the box clockwise */
@@ -1817,7 +1824,7 @@ clip_arrows(obj, objtype)
 				a->direction ^ 1, a->back_arrow, &fpntx2, &fpnty2);
 	}
 	calc_arrow(fpntx2, fpnty2, fpntx1, fpnty1, &bcx1, &bcy1, &bcx2, &bcy2,
-		    obj->thickness, obj->back_arrow, bpoints, &nbpoints, &nbndpts);
+		    obj->back_arrow, bpoints, &nbpoints, &nbndpts);
 	/* set clipping to the *outside* of the first three points of the 
 	   arrowhead and the box surrounding it */
 	/* draw the box clockwise */
@@ -1855,10 +1862,9 @@ clip_arrows(obj, objtype)
 ****************************************************************/
 
 static
-calc_arrow(x1, y1, x2, y2, c1x, c1y, c2x, c2y, thick, arrow, points, npoints, nboundpts)
+calc_arrow(x1, y1, x2, y2, c1x, c1y, c2x, c2y, arrow, points, npoints, nboundpts)
     int		    x1, y1, x2, y2;
     int		   *c1x, *c1y, *c2x, *c2y;
-    int		    thick;
     F_arrow	   *arrow;
     Point	    points[];
     int		   *npoints, *nboundpts;
@@ -1868,6 +1874,7 @@ calc_arrow(x1, y1, x2, y2, c1x, c1y, c2x, c2y, thick, arrow, points, npoints, nb
     double	    ddx, ddy, lpt, tipmv;
     double	    alpha;
     double	    miny, maxy;
+    double	    thick;
     int		    xa, ya, xs, ys;
     double	    xt, yt;
     float	    wd = arrow->wid;
@@ -1893,10 +1900,14 @@ calc_arrow(x1, y1, x2, y2, c1x, c1y, c2x, c2y, thick, arrow, points, npoints, nb
 
     tipmv = arrow_shapes[indx].tipmv;
     lpt = 0.0;
+    /* lines are made a little thinner in set_linewidth */
+    thick = (arrow->thickness <= THICK_SCALE) ? 	
+		0.5* arrow->thickness :
+		arrow->thickness - THICK_SCALE;
     if (tipmv > 0.0)
-        lpt = arrow->thickness / (2.0 * sin(atan(wd / (tipmv * ht))));
+        lpt = thick / (2.0 * sin(atan(wd / (tipmv * ht))));
     else if (tipmv == 0.0)
-	lpt = arrow->thickness/3.0;	 /* types which have blunt end */
+	lpt = thick / 3.0;	 /* types which have blunt end */
     /* (Don't adjust those with tipmv < 0) */
 
     /* alpha is the angle the line is relative to horizontal */
@@ -2079,21 +2090,25 @@ int	direction;
 /* the circumference of a circle on which the arc lies.                */
 
 compute_arcarrow_angle(x1, y1, x2, y2, direction, arrow, x, y)
-    double	x1, y1;
-    double	x2, y2;
+    double	 x1, y1;
+    double	 x2, y2;
     int		*x, *y;
-    int		direction;
+    int		 direction;
     F_arrow	*arrow;
 {
-    double	r, alpha, beta, dy, dx;
-    double	lpt,h;
+    double	 r, alpha, beta, dy, dx;
+    double	 lpt,h;
+    double	 thick;
 
     dy=y2-y1;
     dx=x2-x1;
     r=sqrt(dx*dx+dy*dy);
     h = (double) arrow->ht;
+    thick <= THICK_SCALE ? 	/* lines are made a little thinner in set_linewidth */
+		0.5* arrow->thickness :
+		arrow->thickness - THICK_SCALE;
     /* lpt is the amount the arrowhead extends beyond the end of the line */
-    lpt = arrow->thickness/2.0/(arrow->wid/h/2.0);
+    lpt = thick/2.0/(arrow->wid/h/2.0);
     /* add this to the length */
     h += lpt;
 
@@ -2234,9 +2249,9 @@ F_compound	*ob;
 
    if (ob->texts != NULL) {
 	for (t = ob->texts; t != NULL; t = t->next)
-	    if (PSisomap[t->font+1] == FALSE) {
+	    if (PSisomap[t->font+1] == False) {
 		fprintf(tfp, "/%s /%s-iso isovec ReEncode\n", PSFONT(t), PSFONT(t));
-		PSisomap[t->font+1] = TRUE;
+		PSisomap[t->font+1] = True;
 	}
    }
 

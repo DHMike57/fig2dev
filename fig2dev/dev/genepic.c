@@ -100,7 +100,7 @@ int OutLine=0;
 #define Epic 0
 #define EEpic_emu 1
 #define EEpic 2
-#define None 0
+#define BoxTypeNone 0
 #define SolidLineBox 1
 #define DashLineBox 2
 #define BothBoxType 3
@@ -135,7 +135,7 @@ static int	LLX = 0, LLY = 0;
 static char	*LnCmd;
 static int	MaxCircleRadius;
 static double	DashLen;
-static int	PageMode = FALSE;
+static int	PageMode = False;
 static int	PatternType=UNFILLED;
 static int	PatternColor=WHITE_COLOR;
 static struct {
@@ -191,7 +191,7 @@ char *latex_text_mappings[] = {
 /* Configurable parameters */
 int	LowerLeftX=0, LowerLeftY=0;
 double	SegLen = 0.0625; /* inch */
-int	Verbose = FALSE;
+int	Verbose = False;
 int	TopMargin = 5;
 int	BottomMargin = 10;
 int	DotDist = 5;
@@ -199,11 +199,11 @@ int	LineThick = 0;	/* first use as flag to say whether user specified -l */
 int	TeXLang = EEpic;
 double	DashScale;
 int	EllipseCmd=0;
-int	UseBox=None;
+int	UseBox=BoxTypeNone;
 int	DashType=Normal;
 char	*Preamble="\\documentstyle[epic,eepic]{article}\n\\begin{document}\n\\begin{center}\n";
 char	*Postamble="\\end{center}\n\\end{document}\n";
-int	VarWidth=FALSE;
+int	VarWidth=False;
 int	DashStretch=30;
 double	ArrowScale=1.0;
 
@@ -213,7 +213,7 @@ char opt, *optarg;
 {
   	int loop, i;
 
-        linew_spec = FALSE;
+        linew_spec = False;
 
         switch (opt) {
 	case 'A':
@@ -245,7 +245,7 @@ char opt, *optarg;
 	    break;
 
         case 'l':
-	    linew_spec = TRUE;
+	    linew_spec = True;
             LineThick = atoi(optarg);	/* save user's argument here */
             break;
 
@@ -277,7 +277,7 @@ char opt, *optarg;
             break;
 
         case 'v':
-            Verbose = TRUE;
+            Verbose = True;
             break;
 
 	case 'w':
@@ -682,7 +682,7 @@ F_line *line;
 {
     F_point *p, *q;
     int pt_count = 0, temp;
-    int boxflag = FALSE, llx, lly, urx, ury;
+    int boxflag = False, llx, lly, urx, ury;
     int r;
     double dtemp;
 
@@ -752,12 +752,12 @@ F_line *line;
 	switch (LineStyle) {
 	case SOLID_LINE:
 	    if (UseBox == BothBoxType || UseBox == SolidLineBox) {
-	        boxflag = TRUE;
+	        boxflag = True;
 	    }
 	    break;
 	case DASH_LINE:
 	    if (UseBox == BothBoxType || UseBox == DashLineBox) {
-	        boxflag = TRUE;
+	        boxflag = True;
 	    }
 	    break;
 	}

@@ -56,7 +56,7 @@ extern double rad2deg;
 extern void
 	genlatex_start (),
 	gendev_null (),
-     	genps_option (),
+     	geneps_option (),
 	genps_start (),
 	genps_arc (),
 	genps_ellipse (),
@@ -140,7 +140,7 @@ struct driver dev_pstex_t = {
 };
 
 struct driver dev_pstex = {
-  	genps_option, /*HGS was genpstex_option, which complains about PS fonts*/
+  	geneps_option, 	/* use eps so always exported in Portrait mode */
 	genps_start,
 	genps_arc,
 	genps_ellipse,

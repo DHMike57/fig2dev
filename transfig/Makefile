@@ -342,6 +342,7 @@ clean::
 all:: transfig.man fig2dev.man fig2ps2tex.man pic2tpic.man
 
 transfig.man:: ../doc/transfig.1
+	rm -f transfig.man
 	-ln -s ../doc/transfig.1 transfig.man
 
 install.man:: fig2ps2tex.man

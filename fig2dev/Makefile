@@ -45,8 +45,8 @@
 
             SHELL = /bin/sh
 
-              TOP = .
-      CURRENT_DIR = .
+              TOP = ../.
+      CURRENT_DIR = ./fig2dev
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
@@ -271,7 +271,7 @@ PICFLAGS = -pic
 
 # Fig2dev : General Fig code translation program
 # Copyright (c) 1991 Micah Beck
-# Parts Copyright (c) 1995-1999 by Brian V. Smith
+# Parts Copyright (c) 1995-2000 by Brian V. Smith
 # Parts Copyright (c) 1999 by T. Sato
 
 # THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
@@ -327,7 +327,7 @@ RGB = $(LIBDIR)/rgb
 # the database management routines, uncomment the following line.
 # For the Redhat distributions of Linux you may have to change DBMLIB to -ldb.
 # For other Linux versions you may need -ldbm instead of -lgdbm.
-# Slackware Linuxes use -lgdbm.
+# Slackware and RedHat Linuxes use -lgdbm.
 
 # DBMLIB = -lgdbm
 

@@ -45,6 +45,7 @@ char *lname[] = {
 	"latex",
 	"pictex",
 	"ps",
+	"eps",
 	"psfig",
 	"pstex",
 	"textyl",
@@ -224,6 +225,14 @@ char *arg_f, *arg_s, *arg_m, *arg_o, *arg;
   {
   	a->name = mksuff(arg, "");
   	a->type = ps;
+ 	return a;
+  }
+
+  /* EPS format */
+  if (strip(arg, ".eps"))
+  {
+  	a->name = mksuff(arg, "");
+  	a->type = eps;
  	return a;
   }
 

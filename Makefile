@@ -274,7 +274,7 @@ PICFLAGS = -pic
 # TransFig: Facility for Translating Fig code
 # Copyright (c) 1985-1988 Supoj Sutantavibul
 # Copyright (c) 1991 Micah Beck
-# Copyright (c) 1994-1998 Brian V. Smith
+# Copyright (c) 1994-2000 Brian V. Smith
 
 # THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
 # INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN 0

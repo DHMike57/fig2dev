@@ -50,7 +50,7 @@ struct driver *dev = NULL;
 
 #ifdef I18N
 char		Usage[] = "Usage: %s [-L language] [-f font] [-s size] [-m scale] [-j] [input [output]]\n";
-Boolean support_i18n = FALSE;
+Boolean support_i18n = False;
 #else
 char		Usage[] = "Usage: %s [-L language] [-f font] [-s size] [-m scale] [input [output]]\n";
 #endif  /* I18N */
@@ -66,14 +66,14 @@ FILE		*tfp = NULL;
 int		llx = 0, lly = 0, urx = 0, ury = 0;
 Boolean		landscape;
 Boolean		center;
-Boolean		orientspec=FALSE;	/* set if the user specs. the orientation */
-Boolean		centerspec=FALSE;	/* set if the user specs. the justification */
-Boolean		magspec=FALSE;		/* set if the user specs. the magnification */
-Boolean		transspec=FALSE;	/* set if the user specs. the GIF transparent color */
-Boolean		multispec=FALSE;	/* set if the user specs. multiple pages */
-Boolean		paperspec=FALSE;	/* set if the user specs. the paper size */
+Boolean		orientspec = False;	/* set if the user specs. the orientation */
+Boolean		centerspec = False;	/* set if the user specs. the justification */
+Boolean		magspec = False;	/* set if the user specs. the magnification */
+Boolean		transspec = False;	/* set if the user specs. the GIF transparent color */
+Boolean		multispec = False;	/* set if the user specs. multiple pages */
+Boolean		paperspec = False;	/* set if the user specs. the paper size */
 Boolean		pats_used, pattern_used[NUMPATTERNS];
-Boolean		multi_page = FALSE;	/* multiple page option for PostScript */
+Boolean		multi_page = False;	/* multiple page option for PostScript */
 Boolean		metric;			/* true if file specifies Metric */
 char		gif_transparent[20]="\0"; /* GIF transp color hex name (e.g. #ff00dd) */
 char		papersize[20];		/* paper size */
@@ -81,7 +81,7 @@ float		THICK_SCALE;		/* convert line thickness from screen res. */
 					/* calculated in read_objects() */
 char		lang[40];		/* selected output language */
 RGB		background;		/* background (if specified by -g) */
-Boolean		bgspec = FALSE;		/* flag to say -g was specified */
+Boolean		bgspec = False;		/* flag to say -g was specified */
 
 struct obj_rec {
 	void (*gendev)();
@@ -189,12 +189,12 @@ char	*argv[];
 
 		case 'm':			/* set magnification */
 		    mag = atof(optarg);
-		    magspec = TRUE;		/* user-specified */
+		    magspec = True;		/* user-specified */
 		    break;
 
 #ifdef I18N
 		case 'j':			/* set magnification */
-		    support_i18n = TRUE;
+		    support_i18n = True;
 		    continue;  /* don't pass this option to driver */
 #endif /* I18N */
 		case '?':			/* usage 		*/

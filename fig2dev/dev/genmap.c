@@ -83,7 +83,7 @@ is_link(comment)
      F_comment  *comment;
 {
   char *cp1, *cp2;
-  Boolean have_alt = FALSE;
+  Boolean have_alt = False;
   int i;
 
   url[0] = '\0';
@@ -104,7 +104,7 @@ is_link(comment)
       while (isspace(*cp2)) cp2++;  /* spaces */
       if (*cp2 != '\0') {
         if (strncasecmp(cp2, "ALT=", 4) == 0) {
-          have_alt = TRUE;
+          have_alt = True;
 	  cp2 = cp2 + 4;
 	  while (isspace(*cp2)) cp2++;  /* spaces */
 	  i = 0;

@@ -7,7 +7,7 @@ XCOMM Top level Makefile for TransFig
 XCOMM TransFig: Facility for Translating Fig code
 XCOMM Copyright (c) 1985-1988 Supoj Sutantavibul
 XCOMM Copyright (c) 1991 Micah Beck
-XCOMM Copyright (c) 1994-1998 Brian V. Smith
+XCOMM Copyright (c) 1994-2000 Brian V. Smith
 
 XCOMM THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
 XCOMM INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO

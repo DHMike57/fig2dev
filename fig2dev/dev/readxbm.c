@@ -71,7 +71,7 @@ read_xbm(file,filetype,pic,llx,lly)
     *llx = *lly = 0;
     /* first try for a X Bitmap file format */
     status = ReadFromBitmapFile(file, &x, &y, &pic->bitmap);
-    if (status == BitmapSuccess) {
+    if (status == 1) {
 	pic->subtype = P_XBM;
 	pic->hw_ratio = (float) y / x;
 	pic->numcols = 0;
@@ -205,7 +205,7 @@ ReadFromBitmapFile (file, width, height, data_ret)
 
     while (fgets(line, MAX_SIZE, file)) {
 	if (strlen(line) == MAX_SIZE-1) {
-	    RETURN (BitmapFileInvalid);
+	    RETURN (0);
 	}
 	if (sscanf(line,"#define %s %d",name_and_type,&value) == 2) {
 	    if (!(type = strrchr(name_and_type, '_')))
@@ -238,7 +238,7 @@ ReadFromBitmapFile (file, width, height, data_ret)
 	  continue;
 
 	if (!ww || !hh)
-	  RETURN (BitmapFileInvalid);
+	  RETURN (0);
 
 	if ((ww % 16) && ((ww % 16) < 9) && version10p)
 	  padding = 1;
@@ -250,7 +250,7 @@ ReadFromBitmapFile (file, width, height, data_ret)
 	size = bytes_per_line * hh;
 	data = (unsigned char *) malloc ((unsigned int) size);
 	if (!data)
-	  RETURN (BitmapFileInvalid);
+	  RETURN (0);
 
 	if (version10p) {
 	    unsigned char *ptr;
@@ -258,7 +258,7 @@ ReadFromBitmapFile (file, width, height, data_ret)
 
 	    for (bytes=0, ptr=data; bytes<size; (bytes += 2)) {
 		if ((value = NextInt(file)) < 0)
-		  RETURN (BitmapFileInvalid);
+		  RETURN (0);
 		*(ptr++) = value;
 		if (!padding || ((bytes+2) % bytes_per_line))
 		  *(ptr++) = value >> 8;
@@ -269,19 +269,19 @@ ReadFromBitmapFile (file, width, height, data_ret)
 
 	    for (bytes=0, ptr=data; bytes<size; bytes++, ptr++) {
 		if ((value = NextInt(file)) < 0)
-		  RETURN (BitmapFileInvalid);
+		  RETURN (0);
 		*ptr=value;
 	    }
 	}
     }					/* end while */
 
     if (data == NULL) {
-	RETURN (BitmapFileInvalid);
+	RETURN (0);
     }
 
     *data_ret = data;
     *width = ww;
     *height = hh;
 
-    RETURN (BitmapSuccess);
+    RETURN (1);
 }

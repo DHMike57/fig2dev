@@ -38,9 +38,8 @@ argument *arg_list;
   argument *a;
   char *i;
   enum language to;
-  int needps, needpic, needfig;
+  int needps, needeps, needpic, needfig;
   
-
   fprintf(mk, "#\n# TransFig makefile\n#\n");
 
   fprintf(mk, "\nall: ");
@@ -87,6 +86,12 @@ argument *arg_list;
 		needps = 1;
                 break;
 
+	case eps:
+                puttarget(mk, i, "tex", "eps");
+                fprintf(mk, "\tfig2ps2tex %s.eps >%s.tex\n", i, i);
+		needeps = 1;
+                break;
+
         case psfig:
                 puttarget(mk, i, "tex", "ps");
 		fprintf(mk,"\techo '\\strut\\psfig{figure=%s.ps}' >%s.tex\n",
@@ -98,13 +103,13 @@ argument *arg_list;
 
 		/*
 		 * The makefile for the pstex need to update two files.
-		 * file.ps with is created using fig2dev -L texps file.fig
+		 * file.eps with is created using fig2dev -L pstex file.fig
 		 * and
-		 * file.tex with fig2dev -L pstex -p file.ps file.fig
+		 * file.tex with fig2dev -L pstex_t -p file.eps file.fig
 		 * 
 		 */
-		puttarget(mk, i, "tex", "ps");
-		fprintf(mk, "\tfig2dev -L pstex_t -p %s.ps ", i);
+		puttarget(mk, i, "tex", "eps");
+		fprintf(mk, "\tfig2dev -L pstex_t -p %s.eps ", i);
 		putoptions(mk, altfonts, a->f, a->s, a->m, a->o, i, "tex");
 		needps = 1;
 		break;
@@ -139,6 +144,21 @@ argument *arg_list;
 		    needfig = 1;
 		}
 		putclean(mk, i, "ps" );
+	}
+
+	/* conversion to eps */
+	if (needeps && a->type != eps) {
+		if ( a->tops ) {
+		    puttarget(mk, i, "eps", iname[(int)a->type]);
+		    fprintf(mk, "\t%s %s.%s > %s.eps\n", a->tops, i, iname[(int)a->type], i);
+		}
+		else {
+                    putfig(mk, (to == pstex ? pstex : eps), 
+			   altfonts, a->f, a->s, a->m, a->o, i, "eps");
+                    a->interm = mksuff(i, ".eps");
+		    needfig = 1;
+		}
+		putclean(mk, i, "eps" );
 	}
 
 	/* conversion to pic */

@@ -59,11 +59,11 @@ static set_style();
 #define		SPEED_LIMIT		128.0	/* centimeters/second	*/
 
 #ifdef IBMGEC
-static	int	ibmgec		 = TRUE;
+static	int	ibmgec		 = True;
 #else
-static	int	ibmgec		 = FALSE;
+static	int	ibmgec		 = False;
 #endif
-static	int	reflected	 = FALSE;
+static	int	reflected	 = False;
 static	int	fonts		 = FONTS;
 static	int	colors		 = COLORS;
 static	int	patterns	 = PATTERNS;
@@ -193,8 +193,8 @@ char opt, *optarg;
 		break;
 
 	    case 'P':				/* portrait mode	*/
-		landscape	 = FALSE;
-		orientspec	 = TRUE;	/* user-specified	*/
+		landscape	 = False;
+		orientspec	 = True;	/* user-specified	*/
 		break;
 
 	    case 'S':				/* select pen velocity	*/
@@ -202,7 +202,7 @@ char opt, *optarg;
 		break;
 
 	    case 'v':
-		reflected	 = TRUE;	/* mirror image		*/
+		reflected	 = True;	/* mirror image		*/
 		break;
 
 	    default:
@@ -216,7 +216,7 @@ static double		cpi;			/*       cent/inch	*/
 static double		cpp;			/*       cent/pixel	*/
 static double		wcmpp	 = CMPP;	/* centimeter/point	*/
 static double		hcmpp	 = CMPP;	/* centimeter/point	*/
-static int		flipped	 = FALSE;	/* flip Y coordinate	*/
+static int		flipped	 = False;	/* flip Y coordinate	*/
 
 void genibmgl_start(objects)
 F_compound	*objects;
@@ -273,7 +273,7 @@ F_compound	*objects;
 	cpi	 = mag*100.0/sqrt((xu-xl)*(xu-xl) + (yu-yl)*(yu-yl));
 	cpp	 = cpi/ppi;
 	if (objects->nwcorner.y == 2)
-	    flipped	 = TRUE;
+	    flipped	 = True;
 
 	/* IBMGL start */
 	fprintf(tfp, "IN;\n");			/* initialize plotter	*/
@@ -746,6 +746,7 @@ F_line	*l;
 		    break;
 
 		case	T_PIC_BOX:
+		    fprintf(stderr,"Warning: Pictures not supported in IBMGL language\n");
 		    break;
 		}
 	    }

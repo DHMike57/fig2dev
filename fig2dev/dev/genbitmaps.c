@@ -17,12 +17,12 @@
  *	genbitmaps.c : bitmap driver for fig2dev 
  *
  *	Author: Brian V. Smith
- *		Handles SLD, GIF, PCX, JPEG, TIFF, XBM and XPM.
+ *		Handles AutoCad Slide, GIF, JPEG, TIFF, PCX, PNG, XBM and XPM.
  *		Uses genps functions to generate PostScript output then
  *		calls ghostscript to convert it to the output language
  *		if ghostscript has a driver for that language, or to ppm
- *		if ghostscript otherwise. If the latter, ppmtoxxx is then
- *		called to make the final XXX file.
+ *		if otherwise. If the latter, ppmtoxxx is then called to make
+ *		the final XXX file.
  */
 
 #if defined(hpux) || defined(SYSV) || defined(SVR4)
@@ -73,7 +73,7 @@ char *optarg;
 
 	case 'g':			/* background color (handled in postscript gen) */
 	    if (lookup_db_color(optarg,&background) >= 0) {
-		bgspec = TRUE;
+		bgspec = True;
 	    } else {
 		fprintf(stderr,"Can't parse color '%s', ignoring background option\n",
 				optarg);
@@ -90,7 +90,7 @@ char *optarg;
 	    if (strcmp(lang,"gif") != 0)
 		fprintf(stderr,"-t option only allowed for GIF transparent color; ignored\n");
 	    (void) strcpy(gif_transparent,optarg);
-	    transspec = TRUE;
+	    transspec = True;
 	    break;
 
 	case 'S':			/* smoothing factor */
@@ -134,14 +134,15 @@ F_compound	*objects;
     /* Add conditionals here if gs has a driver built-in */
     /* gs has a driver for png, ppm, pcx, jpeg and tiff */
 
-    direct = TRUE;
+    direct = True;
     ofile = to;
     extra_options[0]='\0';
 
     gsdev = NULL;
+    /* if we're smoothing, we'll generate magnified ppm then convert it later */
     if (smooth == 1) {
 	if (strcmp(lang,"png")==0) {
-	    gsdev="png256";
+	    gsdev="png16m";
 	} else if (strcmp(lang,"pcx")==0) {
 	    gsdev="pcx256";
 	} else if (strcmp(lang,"ppm")==0) {
@@ -155,14 +156,13 @@ F_compound	*objects;
 	    sprintf(extra_options,"-dJPEGQ=%d",jpeg_quality);
 	}
     }
+    /* no driver in gs or we're smoothing, use ppm output then use ppmtoxxx later */
     if (gsdev == NULL) {
-
-	/* no driver in gs, use ppm output then use ppmtoxxx later */
 	gsdev="ppmraw";
 	/* make a unique name for the temporary ppm file */
 	sprintf(tmpname,"%s/f2d%d.ppm",TMPDIR,getpid());
 	ofile = tmpname;
-	direct = FALSE;
+	direct = False;
     }
     /* make up the command for gs */
     sprintf(gscom, "gs -q -dSAFER -sDEVICE=%s -r%d -g%dx%d -sOutputFile=%s %s -",
@@ -180,7 +180,7 @@ F_compound	*objects;
 	exit(1);
     }
     /* generate eps and not ps */
-    epsflag = TRUE;
+    epsflag = True;
     genps_start(objects);
 }
 
@@ -190,7 +190,6 @@ genbitmaps_end()
 	char	 com[PATH_MAX+200],com1[200];
 	char	 errfname[PATH_MAX];
 	char	*tmpname1;
-	Boolean	 pnmdepth;
 	int	 status;
 
 	/* wrap up the postscript output */
@@ -214,7 +213,6 @@ genbitmaps_end()
 	/* and pipe through the ppm converter for that format */
 	if (!direct) {
 	    tmpname1 = tmpname;
-	    pnmdepth = FALSE;
 	    if (smooth == 1) {
 		strcpy(com, "(");
 	    } else {
@@ -229,31 +227,26 @@ genbitmaps_end()
 		} else {
 		    sprintf(com1,"ppmquant 256 %s | ppmtogif",tmpname1);
 		}
-		pnmdepth = TRUE;
 	    } else if (strcmp(lang, "jpeg")==0) {
 		sprintf(com1, "cjpeg -quality %d %s", jpeg_quality, tmpname1);
 	    } else if (strcmp(lang, "xbm")==0) {
-		sprintf(com1,"(ppmtopgm %s | pgmtopbm | pbmtoxbm",tmpname1);
+		sprintf(com1,"ppmtopgm %s | pgmtopbm | pbmtoxbm",tmpname1);
 	    } else if (strcmp(lang, "xpm")==0) {
-		sprintf(com1,"(ppmquant 256 %s | ppmtoxpm",tmpname1);
-		pnmdepth = TRUE;
+		sprintf(com1,"ppmquant 256 %s | ppmtoxpm",tmpname1);
 	    } else if (strcmp(lang, "sld")==0) {
-		sprintf(com1,"(ppmtoacad %s",tmpname1);
-	    } else if (strcmp(lang, "png")==0) {
-		sprintf(com1, "pnmtopng %s", tmpname1);
+		sprintf(com1,"ppmtoacad %s",tmpname1);
 	    } else if (strcmp(lang, "pcx")==0) {
 		sprintf(com1, "ppmtopcx %s", tmpname1);
+	    } else if (strcmp(lang, "png")==0) {
+		sprintf(com1, "pnmtopng %s", tmpname1);
 	    } else if (strcmp(lang, "ppm")==0) {
 		sprintf(com1, "cat %s", tmpname1);
 	    } else if (strcmp(lang, "tiff")==0) {
 		sprintf(com1, "pnmtotiff %s", tmpname1);
-		pnmdepth = TRUE;
 	    } else {
 		fprintf(stderr, "fig2dev: unsupported image format: %s\n", lang);
 		exit(1);
 	    }
-	    if (smooth != 1 && pnmdepth) 
-		strcat(com, "pnmdepth 255 | ");
 	    strcat(com, com1);
 
 	    if (saveofile != stdout) {

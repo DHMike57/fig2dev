@@ -106,9 +106,9 @@ init_point_array(init_size, step_size)
     }
     if ((points = (zXPoint *) malloc(max_points * sizeof(zXPoint))) == 0) {
 	fprintf(stderr, "xfig: insufficient memory to allocate point array\n");
-	return FALSE;
+	return False;
     }
-    return TRUE;
+    return True;
 }
 
 
@@ -130,7 +130,7 @@ add_point(x, y)
 
 	if (max_points >= MAXNUMPTS) {
 	    max_points = MAXNUMPTS;
-	    return FALSE;		/* stop; it is not closing */
+	    return False;		/* stop; it is not closing */
 	}
 	max_points += allocstep;
 	if (max_points >= MAXNUMPTS)
@@ -140,18 +140,18 @@ add_point(x, y)
 					max_points * sizeof(zXPoint))) == 0) {
 	    fprintf(stderr,
 		    "xfig: insufficient memory to reallocate point array\n");
-	    return FALSE;
+	    return False;
 	}
 	points = tmp_p;
     }
     /* ignore identical points */
     if (npoints > 0 &&
 	points[npoints-1].x == x && points[npoints-1].y == y)
-		return TRUE;
+		return True;
     points[npoints].x = x;
     points[npoints].y = y;
     npoints++;
-    return TRUE;
+    return True;
 }
 
 

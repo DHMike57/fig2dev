@@ -39,8 +39,6 @@ strerror(e)
 extern int            errno;
 
 extern F_arrow		*make_arrow();
-extern char		*calloc();
-extern double		 floor(), ceil();
 
 static void		 read_colordef();
 static F_ellipse	*read_ellipseobject();
@@ -77,7 +75,7 @@ int		 v30_flag;		/* Protocol V3.0 or higher */
 int		 v32_flag;		/* Protocol V3.2 or higher */
 char		*comments[MAXCOMMENTS];	/* comments saved for current object */
 int		 numcom;		/* current comment index */
-Boolean		 com_alloc = FALSE;	/* whether or not the comment array has been init. */
+Boolean		 com_alloc = False;	/* whether or not the comment array has been init. */
 
 read_fail_message(file, err)
 char	*file;
@@ -148,7 +146,7 @@ F_compound	*obj;
 	if (!com_alloc)
 	    for (i=0; i<MAXCOMMENTS; i++)
 		comments[i] = (char *) NULL;
-	com_alloc = TRUE;
+	com_alloc = True;
 	bzero((char*)obj, COMOBJ_SIZE);
 
 	/* read first character to see if it is "#" (#FIG 1.4 and newer) */
@@ -1370,17 +1368,17 @@ note_pattern(fill_style)
 int	 fill_style;
 {
 	if (fill_style >= NUMSHADES+NUMTINTS) {
-	    pattern_used[fill_style-NUMSHADES-NUMTINTS] = TRUE;
-	    pats_used = TRUE;
+	    pattern_used[fill_style-NUMSHADES-NUMTINTS] = True;
+	    pats_used = True;
 	}
 }
 	
 init_pats_used()
 {
 	int i;
-	pats_used = FALSE;
+	pats_used = False;
 	for (i=0; i<NUMPATTERNS; i++)
-	    pattern_used[i] = FALSE;
+	    pattern_used[i] = False;
 }
 
 #ifdef V4_0

@@ -74,8 +74,8 @@
 				 * see fillshade() and conv_color(). */
 #define EPSILON		1e-4	/* small floating point value */
 
-static int Ypointsdown;		/* TRUE for Y axis pointing downward */
-static int rounded_arrows;	/* If rounded_arrows is FALSE, the position
+static int Ypointsdown;		/* True for Y axis pointing downward */
+static int rounded_arrows;	/* If rounded_arrows is False, the position
 				 * of arrows will be corrected for
 				 * compensating line width effects. This
 				 * correction is not needed if arrows appear
@@ -233,10 +233,10 @@ gencgm_option(opt, optarg)
    char		 opt;
    char		*optarg;
 {
-    rounded_arrows = FALSE;
+    rounded_arrows = False;
     switch (opt) {
 	case 'r': 
-	    rounded_arrows = TRUE;
+	    rounded_arrows = True;
 	    break;
 
 	case 'f':		/* ignore magnification, font sizes and lang here */
@@ -775,7 +775,7 @@ arrow_length(a)
 }
 
 /* Computes distance and normalized direction vector from q to p.
- * Returns TRUE if the points do not coincide and FALSE if they do. */
+ * Returns True if the points do not coincide and False if they do. */
 
 static int
 direction(p, q, dir, dist)
@@ -788,14 +788,14 @@ direction(p, q, dir, dist)
   dir->y = p->y - q->y;
   *dist = sqrt((dir->x) * (dir->x) + (dir->y) * (dir->y));
   if (*dist < EPSILON)
-    return FALSE;
+    return False;
   dir->x /= *dist;
   dir->y /= *dist;
-  return TRUE;
+  return True;
 }
 
 /* Replaces P by the starting point of the arrow pointing from q to P.
- * Returns TRUE if the arrow is shorter than the line segment [qP]. In
+ * Returns True if the arrow is shorter than the line segment [qP]. In
  * this case, we shorten the polyline in order to achieve a better fit with
  * the arrow. If the arrow is longer than the line segment, shortening
  * the segment wont help, and the polyline needs to be erased under the
@@ -817,7 +817,7 @@ polyline_arrow_adjust(P, q, a)
     return (L < D);
   }
   fprintf(stderr, "Warning: arrow at zero-length line segment omitted.\n");
-  return TRUE;
+  return True;
 }
 
 static void
@@ -842,7 +842,7 @@ polyline(l)
     F_line *l;
 {
   F_point *p, *q, P0, Pn;
-  int count, erase_head=FALSE, erase_tail=FALSE;
+  int count, erase_head=False, erase_tail=False;
   Dir dir;
   double d;
 
@@ -1035,7 +1035,7 @@ picbox(l)
 {
   static int wgiv = 0;
   if (!wgiv) {
-    fprintf(stderr, "Warning: the CGM driver doesn't support FIG picture boxes.\n");
+    fprintf(stderr,"Warning: Pictures not supported in CGM language\n");
     wgiv = 1;
   }
   polyline(l);
@@ -1202,7 +1202,7 @@ static int icprod(x1, y1, x2, y2)
   return x1 * y2 - y1 * x2;
 }
 
-/* Returns TRUE if the arc is a clockwise arc. */
+/* Returns True if the arc is a clockwise arc. */
 static int cwarc(a)
     F_arc *a;
 {

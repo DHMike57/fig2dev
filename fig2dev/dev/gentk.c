@@ -58,7 +58,7 @@ static char *xbmPathName = BITMAPDIR;
 #define		TOP	8.5 /* inches */
 static double   ppi;
 static int      CONV = 0;
-static int	full_page = FALSE;
+static int	full_page = False;
 
 /*
  *   g e n T k O p t i o n ( )
@@ -70,22 +70,22 @@ char opt, *optarg;
 {
     switch (opt) {
 	case 'l':			/* landscape mode */
-		landscape = TRUE;	/* override the figure file setting */
-		orientspec = TRUE;	/* user-specified */
+		landscape = True;	/* override the figure file setting */
+		orientspec = True;	/* user-specified */
 		break;
 
 	case 'p':			/* portrait mode */
-		landscape = FALSE;	/* override the figure file setting */
-		orientspec = TRUE;	/* user-specified */
+		landscape = False;	/* override the figure file setting */
+		orientspec = True;	/* user-specified */
 		break;
 
 	case 'P':			/* use full page instead of bounding box */
-		full_page = TRUE;
+		full_page = True;
 		break;
 
 	case 'z':			/* papersize */
 		(void) strcpy (papersize, optarg);
-		paperspec = TRUE;	/* user-specified */
+		paperspec = True;	/* user-specified */
 		break;
 
 	case 'f':			/* ignore magnification, font sizes and lang here */

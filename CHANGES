@@ -3,10 +3,13 @@ Changes to Transfig/fig2dev
 Version 3.2
 ===============================================================================
 
-Patchlevel 3-beta  (Dec 14, 1999)
+Patchlevel 3  (Jan 14, 2000)
 [N.B. There was no transfig/fig2dev 3.2 patchlevel 2]
 
 NEW FEATURES
+	o Adapted the transfig manual from LaTeX 2.09 to LaTeX 2e and uses
+	  Times/Helvetica/Courier instead of Computer Modern fonts. 
+	  From Roland Rosenfeld (roland@spinnaker.de)
 	o If DBM file for RGB databse does not exist, read "rgb.txt" instead.
 	o If a file such as /usr/local/lib/fig2dev/A3.ps exists, insert it
 	  when generating PostScript output to select paper tray, for example.
@@ -32,6 +35,30 @@ NEW FEATURES
 	o New import picture formats supported - TIFF and PPM 
 
 BUGS FIXED
+	o clipping and background filling incorrect for some Postscript/EPS
+	  output
+	o pstex driver now uses EPS driver for figure part instead of PostScript
+	  for proper bounding box and orientation (this is what caused rotation
+	  of the figure relative to the LaTeX text part when the Fig file spec-
+	  ified Landscape)
+	o TransFig now takes -L eps for Encapsulated PostScript language
+	o Imported EPS file bounding box wasn't read correctly
+	o readjpg.c and readjpg.o included in fig2dev/dev/Imakefile even without
+	  JPEG support
+	o calloc() declaration wrong for some systems (fig2dev/read.c)
+	o Bug in importing EPS files - strange aspect ratios resulted
+	o Used "True" and "False" instead of "TRUE" and "FALSE" in several
+	  driver files.  Have converted all TRUE to True and FALSE to False
+	o Some applications don't set clipping path when they import EPSF file,
+	  and not only the background of the figure but whole paper may be
+	  painted with the -g (background) option.
+	o BitmapSuccess and BitmapFileInvalid were not defined in
+	  fig2dev/dev/genxbm.c
+	o Digital's compiler doesn't like "{ }" as initializer (genps.c)
+	o Declarations of malloc() and calloc() removed from alloc.h, as they
+	  are declared in <stdlib.h>
+	o Arrowheads didn't quite extend far enough
+	o Extra parenthesis in shell script when exporting to SLD, XBM, and XPM
 	o splines were interpolated slightly differently than in xfig
 	o Add description about "-j" option to help message (when I18N is enabled)
 	o if imported PCX image file couldn't be opened, fig2dev tried to close
@@ -72,7 +99,7 @@ BUGS FIXED
 	  the arrow tip modified so that it works properly with ghostscript 5.50.
 	o Allocation error in reading some pcx files
 
-------------------------------
+----------------------------
 Patchlevel 1  (July 1, 1998)
 
 NEW FEATURES

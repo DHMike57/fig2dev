@@ -27,7 +27,7 @@
 #endif
 
 enum language  {box, epic, eepic, eepicemu, latex,
-	pictex, postscript, psfig, pstex, textyl, tpic};
+	pictex, postscript, eps, psfig, pstex, textyl, tpic};
 #define MAXLANG tpic
 
 enum input {apg, fig, pic, ps};

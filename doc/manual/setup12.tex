@@ -3,8 +3,9 @@
 % This file contains everything up to
 % the \begin{document} command,
 % and should be read in with an \input command.
-\documentstyle[12pt,threepart]{article}
-
+\documentclass[12pt]{article}
+\usepackage{threepart}
+\usepackage{times}
 % Formatting niceties.
 
 % ensure that all pages are the same length
@@ -36,7 +37,7 @@
 \setlength{\unitlength}{1mm}
 
 % Number footnotes with symbols.
-\fnsymbol{footnote}
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}{Lemma}

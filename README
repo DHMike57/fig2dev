@@ -1,6 +1,4 @@
-Announcing the release of TransFig version 3.2.3-beta    December 14, 1999
-
-This is a BETA release.  
+Announcing the release of TransFig version 3.2.3 January 14, 2000
 
 TransFig is a set of tools for creating TeX documents with graphics
 which are portable, in the sense that they can be printed in a wide
@@ -44,13 +42,13 @@ To make TransFig:
 	will be used to hold the bitmaps directory for the tk fill patterns.
 2. Do a "xmkmf" to create the top level Makefile from the Imakefile
 3. Do a "make Makefiles"
-4. Do a "make" to make the programs 
+4. Do a "make" to make the programs
 	**** This MUST be done before "make install" ****
 5. Do a "make install" to install them in the system
 6. Do a "make install.man" to put the manual pages in the proper directories
 
 Uncomment the USELATEX2E flag in the transfig/Imakefile file to use the
-\\usepackage{} command for LaTeX2e. 
+\\usepackage{} command for LaTeX2e.
 The default is to use \\documentstyle{} for LaTeX209.
 
 In fig2dev/Imakefile for the described features:
@@ -138,9 +136,9 @@ Lawrence Berkeley National Laboratory
 xfig-bugs@epb1.lbl.gov
 *************************************************************************
 
-Note that although I work at Lawrence Berkeley Laboratory (LBL) I don't speak 
+Note that although I work at Lawrence Berkeley Laboratory (LBL) I don't speak
 for LBL nor do I represent LBL with respect to my work on TransFig and xfig,
-nor does LBNL make any representations about the suitability of this software 
+nor does LBNL make any representations about the suitability of this software
 for any purpose.
 Here is the legal part:
 
@@ -175,7 +173,7 @@ You may need to reduce optimization to +O2 instead of +O3.
 The symptom is that not all of the objects in compound objects print.
 ________________________________________________________________________________
 PROBLEM:
-	Arc-boxes don't appear correct when viewing exported PostScript with 
+	Arc-boxes don't appear correct when viewing exported PostScript with
 	ghostview or ghostscript.
 
 POSSIBLE CAUSE AND SOLUTION:

@@ -16,4 +16,4 @@
  */
 
 #define VERSION		"3.2.3"
-#define PATCHLEVEL	"beta-1"
+#define PATCHLEVEL	""

@@ -68,7 +68,7 @@ typedef struct error_mgr * error_ptr;
  * OK, here is the main function that actually causes everything to happen.
  * We assume here that the JPEG file is already open and that all
  * decompression parameters can be default values.
- * The routine returns TRUE if successful, FALSE if not.
+ * The routine returns True if successful, False if not.
  */
 
 static Boolean
@@ -98,7 +98,7 @@ read_JPEG_file (file)
 	   * We need to clean up the JPEG object and return.
 	   */
 	  jpeg_destroy_decompress(&cinfo);
-	  return FALSE;
+	  return False;
 	}
 	/* Now we can initialize the JPEG decompression object. */
 	jpeg_create_decompress(&cinfo);
@@ -109,16 +109,16 @@ read_JPEG_file (file)
 
 	/* Step 3: read file parameters with jpeg_read_header() */
 
-	(void) jpeg_read_header(&cinfo, TRUE);
+	(void) jpeg_read_header(&cinfo, True);
 	/* We can ignore the return value from jpeg_read_header since
 	 *   (a) suspension is not possible with the stdio data source, and
-	 *   (b) we passed TRUE to reject a tables-only JPEG file as an error.
+	 *   (b) we passed True to reject a tables-only JPEG file as an error.
 	 * See libjpeg.doc for more info.
 	 */
 
 	/* We want a colormapped color space */
 	/* Let the jpeg library do a two-pass over the image to make nice colors */
-	cinfo.quantize_colors = TRUE;
+	cinfo.quantize_colors = True;
 
 	/* Now fill in the pict parameters */
 
@@ -195,7 +195,7 @@ read_JPEG_file (file)
 	 */
 
 	/* And we're done! */
-	return TRUE;
+	return True;
 }
 
 /*

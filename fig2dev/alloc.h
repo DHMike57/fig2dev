@@ -24,9 +24,6 @@
  * the party supplying this software to the X Consortium.
  */
 
-extern char	*malloc();
-extern char	*calloc();
-
 #define		Line_malloc(z)		z = (F_line*)malloc(LINOBJ_SIZE)
 #define		Pic_malloc(z)		z = (F_pic*)malloc(PIC_SIZE)
 #define		Spline_malloc(z)	z = (F_spline*)malloc(SPLOBJ_SIZE)

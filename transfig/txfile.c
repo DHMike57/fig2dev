@@ -80,6 +80,11 @@ argument *arg_list;
 		texfonts = 0;
 		break;
 
+	case eps:
+		fprintf(tx, "\\typeout{TransFig: figures in EPS.}\n");
+		texfonts = 0;
+		break;
+
 	case pstex: 
 		fprintf(tx, "\\typeout{TransFig: figure text in LaTeX.}\n");
 		fprintf(tx, "\\typeout{TransFig: figures in PostScript.}\n");

@@ -126,7 +126,7 @@ F_line	*l;
 	
 	/* ge has no picture object yet */
 	if (l->type == T_PIC_BOX) {  
-		fprintf(stderr,"Picture objects not supported in ge driver\n");
+		fprintf(stderr,"Warning: Pictures not supported in GE language\n");
 		return;
 	}
 
@@ -255,7 +255,7 @@ F_spline	*s;
 	F_point		*p, *q;
 	double		xx,yy;
 	int		xmin, ymin;
-	Boolean		first = TRUE;
+	Boolean		first = True;
 
 	if (closed_spline(s))
 	    fprintf(tfp, "%% Closed spline\n");

@@ -100,78 +100,78 @@ static int	PSfontmap[] = {
 		};
 
 static int	PSmapwarn[] = {
-		FALSE, FALSE,		/* Times-Roman */
-		FALSE,			/* Times-Italic */
-		FALSE,			/* Times-Bold */
-		FALSE,			/* Times-BoldItalic */
-		TRUE,			/* AvantGarde */
-		TRUE,			/* AvantGarde-BookOblique */
-		TRUE,			/* AvantGarde-Demi */
-		TRUE,			/* AvantGarde-DemiOblique */
-		TRUE,			/* Bookman-Light */
-		TRUE,			/* Bookman-LightItalic */
-		TRUE,			/* Bookman-Demi */
-		TRUE,			/* Bookman-DemiItalic */
-		FALSE,			/* Courier */
-		TRUE,			/* Courier-Oblique */
-		TRUE,			/* Courier-Bold */
-		TRUE,			/* Courier-BoldItalic */
-		FALSE,			/* Helvetica */
-		TRUE,			/* Helvetica-Oblique */
-		TRUE,			/* Helvetica-Bold */
-		TRUE,			/* Helvetica-BoldOblique */
-		TRUE,			/* Helvetica-Narrow */
-		TRUE,			/* Helvetica-Narrow-Oblique */
-		TRUE,			/* Helvetica-Narrow-Bold */
-		TRUE,			/* Helvetica-Narrow-BoldOblique */
-		TRUE,			/* NewCenturySchlbk-Roman */
-		TRUE,			/* NewCenturySchlbk-Italic */
-		TRUE,			/* NewCenturySchlbk-Bold */
-		TRUE,			/* NewCenturySchlbk-BoldItalic */
-		TRUE,			/* Palatino-Roman */
-		TRUE,			/* Palatino-Italic */
-		TRUE,			/* Palatino-Bold */
-		TRUE,			/* Palatino-BoldItalic */
-		TRUE,			/* Symbol */
-		TRUE,			/* ZapfChancery-MediumItalic */
-		TRUE			/* ZapfDingbats */
+		False, False,		/* Times-Roman */
+		False,			/* Times-Italic */
+		False,			/* Times-Bold */
+		False,			/* Times-BoldItalic */
+		True,			/* AvantGarde */
+		True,			/* AvantGarde-BookOblique */
+		True,			/* AvantGarde-Demi */
+		True,			/* AvantGarde-DemiOblique */
+		True,			/* Bookman-Light */
+		True,			/* Bookman-LightItalic */
+		True,			/* Bookman-Demi */
+		True,			/* Bookman-DemiItalic */
+		False,			/* Courier */
+		True,			/* Courier-Oblique */
+		True,			/* Courier-Bold */
+		True,			/* Courier-BoldItalic */
+		False,			/* Helvetica */
+		True,			/* Helvetica-Oblique */
+		True,			/* Helvetica-Bold */
+		True,			/* Helvetica-BoldOblique */
+		True,			/* Helvetica-Narrow */
+		True,			/* Helvetica-Narrow-Oblique */
+		True,			/* Helvetica-Narrow-Bold */
+		True,			/* Helvetica-Narrow-BoldOblique */
+		True,			/* NewCenturySchlbk-Roman */
+		True,			/* NewCenturySchlbk-Italic */
+		True,			/* NewCenturySchlbk-Bold */
+		True,			/* NewCenturySchlbk-BoldItalic */
+		True,			/* Palatino-Roman */
+		True,			/* Palatino-Italic */
+		True,			/* Palatino-Bold */
+		True,			/* Palatino-BoldItalic */
+		True,			/* Symbol */
+		True,			/* ZapfChancery-MediumItalic */
+		True			/* ZapfDingbats */
 		};
 
 int	        PSisomap[] = {
-		FALSE, FALSE,		/* Times-Roman */
-		FALSE,			/* Times-Italic */
-		FALSE,			/* Times-Bold */
-		FALSE,			/* Times-BoldItalic */
-		FALSE,			/* AvantGarde */
-		FALSE,			/* AvantGarde-BookOblique */
-		FALSE,			/* AvantGarde-Demi */
-		FALSE,			/* AvantGarde-DemiOblique */
-		FALSE,			/* Bookman-Light */
-		FALSE,			/* Bookman-LightItalic */
-		FALSE,			/* Bookman-Demi */
-		FALSE,			/* Bookman-DemiItalic */
-		FALSE,			/* Courier */
-		FALSE,			/* Courier-Oblique */
-		FALSE,			/* Courier-Bold */
-		FALSE,			/* Courier-BoldItalic */
-		FALSE,			/* Helvetica */
-		FALSE,			/* Helvetica-Oblique */
-		FALSE,			/* Helvetica-Bold */
-		FALSE,			/* Helvetica-BoldOblique */
-		FALSE,			/* Helvetica-Narrow */
-		FALSE,			/* Helvetica-Narrow-Oblique */
-		FALSE,			/* Helvetica-Narrow-Bold */
-		FALSE,			/* Helvetica-Narrow-BoldOblique */
-		FALSE,			/* NewCenturySchlbk-Roman */
-		FALSE,			/* NewCenturySchlbk-Italic */
-		FALSE,			/* NewCenturySchlbk-Bold */
-		FALSE,			/* NewCenturySchlbk-BoldItalic */
-		FALSE,			/* Palatino-Roman */
-		FALSE,			/* Palatino-Italic */
-		FALSE,			/* Palatino-Bold */
-		FALSE,			/* Palatino-BoldItalic */
+		False, False,		/* Times-Roman */
+		False,			/* Times-Italic */
+		False,			/* Times-Bold */
+		False,			/* Times-BoldItalic */
+		False,			/* AvantGarde */
+		False,			/* AvantGarde-BookOblique */
+		False,			/* AvantGarde-Demi */
+		False,			/* AvantGarde-DemiOblique */
+		False,			/* Bookman-Light */
+		False,			/* Bookman-LightItalic */
+		False,			/* Bookman-Demi */
+		False,			/* Bookman-DemiItalic */
+		False,			/* Courier */
+		False,			/* Courier-Oblique */
+		False,			/* Courier-Bold */
+		False,			/* Courier-BoldItalic */
+		False,			/* Helvetica */
+		False,			/* Helvetica-Oblique */
+		False,			/* Helvetica-Bold */
+		False,			/* Helvetica-BoldOblique */
+		False,			/* Helvetica-Narrow */
+		False,			/* Helvetica-Narrow-Oblique */
+		False,			/* Helvetica-Narrow-Bold */
+		False,			/* Helvetica-Narrow-BoldOblique */
+		False,			/* NewCenturySchlbk-Roman */
+		False,			/* NewCenturySchlbk-Italic */
+		False,			/* NewCenturySchlbk-Bold */
+		False,			/* NewCenturySchlbk-BoldItalic */
+		False,			/* Palatino-Roman */
+		False,			/* Palatino-Italic */
+		False,			/* Palatino-Bold */
+		False,			/* Palatino-BoldItalic */
 		NO,			/* Symbol */
-		FALSE,			/* ZapfChancery-MediumItalic */
+		False,			/* ZapfChancery-MediumItalic */
 		NO			/* ZapfDingbats */
 		};
 
