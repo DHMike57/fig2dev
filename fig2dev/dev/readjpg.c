@@ -186,6 +186,13 @@ read_JPEG_file (file)
 	    pict->cmap[1][i] = cinfo.colormap[1][i];
 	    pict->cmap[2][i] = cinfo.colormap[2][i];
 	}
+	    /* set other colors to first if grayscale */
+	    if (cinfo.jpeg_color_space == JCS_GRAYSCALE) {
+		pict->cmap[1][i] = pict->cmap[2][i] = pict->cmap[0][i];
+	    } else {
+		pict->cmap[1][i] = cinfo.colormap[1][i];
+		pict->cmap[2][i] = cinfo.colormap[2][i];
+	    }
 
 	/* Step 8: Finish decompression */
 

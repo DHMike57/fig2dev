@@ -1,7 +1,7 @@
 ===============================================================================
 Version 3.1
 ===============================================================================
-Patchlevel 3 (XXX XX, XXXX)
+Patchlevel 2a (Jun 4, 1996)
 
 NEW FEATURES
 
@@ -39,6 +39,7 @@ o figure was clipped to pagesize even in EPS mode
 o if paper size specified as "Ledger" in landscape mode fig2dev switches to
 	"Tabloid" paper size and vice versa (Tabloid in portrait mode switches
 	to Ledger)
+o segfault when importing jpeg picture with grayscale colormap fixed
 o colormap must be saved before jpeg_finish_decompress or
 	jpeg_destroy_decompress are called in read_JPEG_file()
 o #include <jpeglib.h> changed to #include "jpeglib.h" to ensure corrrect path
