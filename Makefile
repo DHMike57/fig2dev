@@ -288,7 +288,7 @@ PICFLAGS = -pic
 # to make fig2dev:         type "make Makefiles" then "make"
 
 DEPLIBS =
-SUBDIRS = transfig fig2dev/dev fig2dev
+SUBDIRS = fig2dev transfig
 
 all::
 	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
@@ -308,8 +308,8 @@ depend::
 
 manual:
 
-transfig.man: ../doc/transfig.1
-	ln -s ../doc/transfig.1 transfig.man
+transfig.man:: doc/transfig.1
+	-ln -s ../doc/transfig.1 transfig.man
 	cd doc/manual; make; latex manual; latex manual
 
 clean::

@@ -40,7 +40,7 @@ To make TransFig:
 5. Do a "make install" to install them in the system
 6. Do a "make install.man" to put the manual pages in the proper directories
 
-Set the following flags in fig2dev/dev/Imakefile for the described features:
+Set the following flags in fig2dev/Imakefile for the described features:
 
 Add -DNFSS to DEFINES list to use NFSS2 font selection for LaTeX texts
 Add -DEPSF to DEFINES list to use epsfig macros as distributed w/ LaTeX2e

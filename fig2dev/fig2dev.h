@@ -92,8 +92,23 @@ extern FILE	*tfp;
 extern int	llx, lly, urx, ury;
 extern Boolean	landscape;
 extern Boolean	center;
+extern Boolean	multi_page;	/* multiple page option for PostScript */
 extern Boolean	orientspec;	/* true of the command-line args specified land or port */
 extern Boolean	centerspec;	/* true of the command-line args specified -c or -e */
+extern Boolean	magspec;	/* true of the command-line args specified -m */
+extern Boolean	paperspec;	/* true of the command-line args specified -z */
+extern Boolean	multispec;	/* true of the command-line args specified -M */
+extern char	papersize[];	/* paper size */
+
+struct paperdef
+{
+    char *name;			/* name for paper size */
+    int width;			/* paper width in points */
+    int height;			/* paper height in points */
+};
+
+#define NUMPAPERSIZES 15
+extern struct paperdef paperdef[];
 
 /* user-defined colors */
 typedef		struct{

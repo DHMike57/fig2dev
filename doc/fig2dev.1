@@ -1,4 +1,4 @@
-.TH FIG2DEV 1 "Release 3.1(.2a) (Protocol 3.1) Jun 4, 1996"
+.TH FIG2DEV 1 "Release 3.2(0) (Protocol 3.2) XXX X, 1996"
 .SH NAME
 fig2dev \- translates Fig code to various graphics languages
 
@@ -322,7 +322,7 @@ five shades of blue, four shades of green,
 four shades of cyan, four shades of red, five shades of magenta,
 four shades of brown, and four shades of pink.
 In addition there may be user-defined colors in the file.  See the
-xfig FORMAT3.1 file for the definition of these colors.
+xfig FORMAT3.2 file for the definition of these colors.
 On a monochrome printer, colored objects will be mapped into different
 grayscales by the printer.
 Filled objects are printed using the given area fill and color.
@@ -351,7 +351,7 @@ This is because the figure doesn't need to be rotated when generating
 Encapsulated PostScript (EPS).
 .TP
 .B -M
-Generate multiple pages if figure exceeds page size.
+Generate multiple pages if figure exceeds paper size.
 .TP
 .B -p dummy_arg
 Generate figure in portrait mode.  The dummy argument is ignored,
@@ -386,8 +386,8 @@ shift the figure in the Y direction by
 units (1/72 inch).
 A negative value shifts the figure up and a positive value down.
 .TP
-.B -z pagesize
-Sets the pagesize. Available page sizes are:
+.B -z papersize
+Sets the papersize. Available paper sizes are:
 .nf
 .in +.4i
 "Letter" (8.5" x 11" also "A"),
@@ -522,3 +522,13 @@ University of Texas at Austin.
 MetaFont driver by
 .br
 Anthony Starks (ajs@merck.com)
+.sp
+X-splines code by
+.br
+Carole Blanc (blanc@labri.u-bordeaux.fr)
+.br
+Christophe Schlick (schlick@labri.u-bordeaux.fr)
+.br
+The initial implementation was done by C. Feuille, S. Grobois, L. Maziere
+and L. Minihot as a student practice (Universite Bordeaux, France).
+

@@ -208,3 +208,43 @@ have .ps files.
 =================================================================
   Eric Masson - ericm@finnegan.ee.mcgill.ca - FAX: 514 398 4470
 =================================================================
+
+
+=================================================================
+Some more notes from Stephen Eglen <stephene@cogs.susx.ac.uk>
+
+* changing the size of pictures in pstex_t
+
+If you just include the picture using 
+\input{file.psttext_t}
+you have no way of specifying the size of the picture. There are two
+solutions to this.
+
+1. Draw it the right size in xfig to start with.  Or, when you are
+   exporting the figure, change the magnification of the picture by
+   using the magnification box in the export window.  Either way you
+   have to go back into xfig if you dont like the size of the image in
+   your latex document.
+
+2. Get latex to change the size of the picture, using either \scalebox
+   or \resizebox.  These are general functions for scaling text or
+   pictures from the graphics package:
+
+   \scalebox{factor}{object}
+   Will scale the object by any factor.  
+   Factor is just a number (<1 = reduction; >1 = enlargement)
+   Object is normally some text or graphics
+
+   eg: \scalebox{2}{ \input{file.pstex_t} }
+   will scale the picture by 2, dependent on driver (.ps works, but xdvi
+   wont).  Scaling bitmap fonts may produce ugly results, so try and
+   avoid them!
+
+   \resizebox{width}{ht} {stuff}
+
+   will resize "stuff" to be of size width x ht.  Using "!" as an argument
+   retains the aspect ratio of the box.
+   eg \resizebox{5cm}{!}{fat cat} will make "fat cat" appear 5 cm wide,
+   and suitably high.
+   (From p129, Lamport)
+

@@ -412,9 +412,9 @@ FILE	*fp;
 	    return(NULL);
 	    }
 	if (t == DRAW_CLOSEDSPLINE)
-	    s->type = T_CLOSED_NORMAL;
+	    s->type = T_CLOSED_APPROX;
 	else
-	    s->type = T_OPEN_NORMAL;
+	    s->type = T_OPEN_APPROX;
 	if (f) {
 	    s->for_arrow = forward_arrow();
 	    s->for_arrow->wid = w;

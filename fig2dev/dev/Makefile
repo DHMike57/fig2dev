@@ -45,8 +45,8 @@
 
             SHELL = /bin/sh
 
-              TOP = ../.
-      CURRENT_DIR = ./dev
+              TOP = ../../.
+      CURRENT_DIR = ./fig2dev/dev
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
@@ -97,6 +97,7 @@
     INSTKMEMFLAGS = -g kmem -m 2755
 
       CDEBUGFLAGS = -O
+      CDEBUGFLAGS = -g
         CCOPTIONS =
 
       ALLINCLUDES = $(INCLUDES) $(EXTRA_INCLUDES) $(TOP_INCLUDES) $(STD_INCLUDES)

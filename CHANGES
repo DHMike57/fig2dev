@@ -1,14 +1,21 @@
 ===============================================================================
-Version 3.1
+Version 3.2
 ===============================================================================
-Patchlevel 3 (XXX XX 1996)
+Patchlevel 0 (Jan 9, 1997)
 
 NEW FEATURES
 
+o multi-page, paper size, magnification and transparent color stored in Fig
+	file now.  (transparent color is only used by xfig when exporting 
+	to GIF format)
 o comment that Redhat Linux users may have to change DBMLIB to -ldb in
 	fig2dev/Imakefile
 o figures in landscape are only rotated when showpage command is NOT used 
 	(-P).  This is because it doesn't need to be rotated for EPS,
+o previous spline models (interpolated splines and approximated splines) are
+  replaced by one single model (x-splines) which allows the user to mix
+  interpolated and approximated control points (see the "FORMAT3.2" file
+  from the "xfig" package for details).
 
 BUGS FIXED
 
@@ -16,7 +23,12 @@ o added second % to %%BeginDocument and %%EndDocument
 o garbage values for arrowhead produced when last two points in line were at
 	same coordinate
 o bug in reading multi-line text object
+o showpage now follows restore as per standard
+	from Christopher R. Wren (chris@wren.cambridge.ma.us)
 
+===============================================================================
+Version 3.1
+===============================================================================
 Patchlevel 2a (Jun 4, 1996)
 
 NEW FEATURES

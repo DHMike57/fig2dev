@@ -81,39 +81,6 @@ typedef struct _point
     int x,y;
 } Point;
 
-struct pagedef
-{
-    char *name;			/* name for page size */
-    int width;			/* page width in points */
-    int height;			/* page height in points */
-};
-
-struct pagedef pagedef[] =
-{
-    {"Letter", 612, 792}, 	/* 8.5" x 11" */
-    {"Legal", 612, 1008}, 	/* 8.5" x 14" */
-    {"Ledger", 1224, 792}, 	/*  17" x 11" */
-    {"Tabloid", 792, 1224}, 	/*  11" x 17" */
-    {"A", 612, 792},		/* 8.5" x 11" (letter) */
-    {"B", 792, 1224},		/*  11" x 17" (tabloid) */
-    {"C", 1224, 1584},		/*  17" x 22" */
-    {"D", 1584, 2448},		/*  22" x 34" */
-    {"E", 2448, 3168},		/*  34" x 44" */
-    {"B5", 516, 729}, 		/* 18.2cm x 25.7cm */
-    {"A4", 595, 842}, 		/* 21cm x 29.7cm */
-    {"A3", 842, 1190},		/* 29.7cm x 42cm*/
-    {"A2", 1190, 1684},		/* 42cm x 59.4 */
-    {"A1", 1684, 2380},		/* 59.4cm x 84cm */
-    {"A0", 2380, 3368},		/* 84cm x 118.8 */ 
-    {NULL, 0, 0}
-};
-
-#ifdef A4
-char *pagesize = "A4";
-#else
-char *pagesize = "Letter";
-#endif
-
 #define		POINT_PER_INCH		72
 #define		ULIMIT_FONT_SIZE	300
 
@@ -131,7 +98,6 @@ static int	cur_joinstyle = 0;
 static int	cur_capstyle = 0;
 int		pages;
 int		no_obj = 0;
-int		multi_page = FALSE;
 
 /* arrowhead arrays */
 Point		bpoints[5], fpoints[5];
@@ -149,7 +115,7 @@ static		draw_arrow();
 static		iso_text_exist();
 static		encode_all_fonts();
 static		ellipse_exist();
-static		normal_spline_exist();
+static		approx_spline_exist();
 
 #define SHADEVAL(F)	1.0*(F)/(NUMSHADES-1)
 #define TINTVAL(F)	1.0*(F-NUMSHADES+1)/NUMTINTS
@@ -262,14 +228,24 @@ char *optarg;
 
 	case 'M':			/* multi-page option */
 		multi_page = TRUE;
+		multispec = TRUE;	/* user has overridden anything in file */
+		break;
+
+	case 'S':			/* turn off multi-page option */
+		multi_page = FALSE;
+		multispec = TRUE;	/* user has overridden anything in file */
 		break;
 
 	case 'P':			/* add showpage */
 		show_page = TRUE;
 		break;
 
+      	case 'm':			/* magnification (already parsed in main) */
+		magspec = TRUE;		/* user-specified */
+		break;
+
+	/* don't do anything for language and font size (already parsed in main) */
       	case 'L':			/* language */
-      	case 'm':			/* magnification */
 	case 's':			/* default font size */
 		break;
 
@@ -295,13 +271,9 @@ char *optarg;
 		yoff = atoi(optarg);
 		break;
 
-	case 'z':			/* pagesize */
-		if ((pagesize = (char *) malloc (strlen (optarg) + 1)) == NULL)
-		   {
-		   (void) fprintf (stderr, "No memory\n");
-		   exit (1);
-		   }
-		(void) strcpy (pagesize, optarg);
+	case 'z':			/* papersize */
+		(void) strcpy (papersize, optarg);
+		paperspec = TRUE;	/* user-specified */
 		break;
 
 	default:
@@ -320,7 +292,7 @@ F_compound	*objects;
 	time_t		when;
 	int		itmp;
 	int		clipx, clipy;
-	struct pagedef	*pd;
+	struct paperdef	*pd;
 
 	resolution = objects->nwcorner.x;
 	coord_system = objects->nwcorner.y;
@@ -332,50 +304,51 @@ F_compound	*objects;
 	clipy = ury;
 	urx = (int)ceil(urx * scalex); ury = (int)ceil(ury * scaley);
 
-        for (pd = pagedef; pd->name != NULL; pd++)
-	   if (strcasecmp (pagesize, pd->name) == 0)
-	      {
-	      pagewidth = pd->width;
-	      pageheight = pd->height;
-	      pagesize = pd->name;	/* use the "nice" form */
-	      }
+        for (pd = paperdef; pd->name != NULL; pd++)
+	    if (strcasecmp (papersize, pd->name) == 0) {
+		pagewidth = pd->width;
+		pageheight = pd->height;
+		strcpy(papersize,pd->name);	/* use the "nice" form */
+		break;
+	    }
 	
-	if (pagewidth < 0 || pageheight < 0)
-	   {
-	   (void) fprintf (stderr, "Unknown page size `%s'\n", pagesize);
-	   exit (1);
-	   }
+	if (pagewidth < 0 || pageheight < 0) {
+	    (void) fprintf (stderr, "Unknown paper size `%s'\n", papersize);
+	    exit (1);
+	}
 
-	if (landscape && show_page) {
-	   if (strcasecmp(pagesize,"ledger")==0) {
-		fprintf(stderr, "'Ledger' page size specified with landscape, switching to 'Tabloid'\n");
-		pagesize = "Tabloid";
-	   }
-	   itmp = pageheight; pageheight = pagewidth; pagewidth = itmp;
-	   itmp = llx; llx = lly; lly = itmp;
-	   itmp = urx; urx = ury; ury = itmp;
+	if (landscape) {
+	    if (strcasecmp(papersize,"ledger")==0) {
+		fprintf(stderr, "'Ledger' paper size specified with landscape, switching to 'Tabloid'\n");
+		strcpy(papersize,"Tabloid");
+	    }
+	    if (show_page) {
+		itmp = pageheight; pageheight = pagewidth; pagewidth = itmp;
+		itmp = llx; llx = lly; lly = itmp;
+		itmp = urx; urx = ury; ury = itmp;
+	    }
 	} else {
-	   if (strcasecmp(pagesize,"tabloid")==0) {
-		fprintf(stderr, "'Tabloid' page size specified with portrait, switching to 'Ledger'\n");
-		pagesize = "Ledger";
-	   }
+	    if (strcasecmp(papersize,"tabloid")==0) {
+		fprintf(stderr, "'Tabloid' paper size specified with portrait, switching to 'Ledger'\n");
+		strcpy(papersize,"Ledger");
+	    }
 	}
 	if (show_page) {
-	   if (center) {
-	      if (landscape) {
-		 origx = (pageheight - urx - llx)/2.0;
-		 origy = (pagewidth - ury - lly)/2.0;
-	      } else {
-		 origx = (pagewidth - urx - llx)/2.0;
-		 origy = (pageheight + ury + lly)/2.0;
-	      }
-	   } else {
-	      origx = 0.0;
-	      origy = landscape ? 0.0 : pageheight;
+	    if (center) {
+		if (landscape) {
+		    origx = (pageheight - urx - llx)/2.0;
+		    origy = (pagewidth - ury - lly)/2.0;
+		} else {
+		    origx = (pagewidth - urx - llx)/2.0;
+		    origy = (pageheight + ury + lly)/2.0;
+		}
+	    } else {
+		origx = 0.0;
+		origy = landscape ? 0.0 : pageheight;
 	   }
 	} else {
-	   origx = -llx;
-	   origy = (landscape && show_page) ? -lly : ury;
+	    origx = -llx;
+	    origy = (landscape && show_page) ? -lly : ury;
 	}
 
 	/* finally, adjust by any offset the user wants */
@@ -423,7 +396,7 @@ F_compound	*objects;
 	}
 	fprintf(tfp, "%%%%Pages: %d\n", show_page ? pages : 0 );
 	fprintf(tfp, "%%%%BeginSetup\n");
-	fprintf(tfp, "%%%%IncludeFeature: *PageSize %s\n", pagesize);
+	fprintf(tfp, "%%%%IncludeFeature: *PageSize %s\n", papersize);
 	fprintf(tfp, "%%%%EndSetup\n");
 
 	/* put in the magnification for information purposes */
@@ -470,7 +443,7 @@ F_compound	*objects;
 	}
 	if (ellipse_exist(objects))
 		fprintf(tfp, "%s\n", ELLIPSE_PS);
-	if (normal_spline_exist(objects))
+	if (approx_spline_exist(objects))
 		fprintf(tfp, "%s\n", SPLINE_PS);
 	
 	fprintf(tfp, "%s\n", END_PROLOG);
@@ -521,15 +494,14 @@ genps_end()
 	    page++;
 	 }
        }
-    } else {
-	if (show_page) {
-	    fprintf(tfp, "showpage\n");
-	}
-    }
+    } 
     fprintf(tfp, "$F2psEnd\n");
     fprintf(tfp, "rs\n");
     if (pats_used)
 	fprintf(tfp, "end\n");		/* close off MyAppDict */
+    /* add showpage if requested */
+    if (!multi_page && show_page)
+	fprintf(tfp, "showpage\n");
 }
 
 static
@@ -1527,9 +1499,8 @@ clip_arrows(obj, objtype)
 	for (i=0; i<3; i++) {
 	    fprintf(tfp,"%d %d %c ",fpoints[i].x,fpoints[i].y,i==0? 'm':'l');
 	}
-	fprintf(tfp, "%d %d l %d %d l ",fcx2, fcy2, fcx1, fcy1);
-	/* intersect this with current clip path */
-	fprintf(tfp, " cp clip\n");
+	/* clip path for the forward arrow */
+	fprintf(tfp, "%d %d l %d %d l cp\n",fcx2, fcy2, fcx1, fcy1);
     }
 	
     /* get points for any backward arrowhead */
@@ -1551,10 +1522,11 @@ clip_arrows(obj, objtype)
 	for (i=0; i<3; i++) {
 	    fprintf(tfp,"%d %d %c ",bpoints[i].x,bpoints[i].y,i==0? 'm':'l');
 	}
-	fprintf(tfp, "%d %d l %d %d l ",bcx2, bcy2, bcx1, bcy1);
-	/* intersect this with current clip path */
-	fprintf(tfp, " cp clip\n");
+	/* clip path for the backward arrow */
+	fprintf(tfp, "%d %d l %d %d l cp\n",bcx2, bcy2, bcx1, bcy1);
     }
+    /* intersect the arrowhead clip path(s) with current clip path */
+    fprintf(tfp, "clip\n");
 }
 
 /****************************************************************
@@ -1886,18 +1858,18 @@ F_compound	*ob;
 	}
 
 static
-normal_spline_exist(ob)
+approx_spline_exist(ob)
 F_compound	*ob;
 {
 	F_spline	*s;
 	F_compound	*c;
 
 	for (s = ob->splines; s != NULL; s = s->next) {
-	    if (normal_spline(s)) return(1);
+	    if (approx_spline(s)) return(1);
 	    }
 
 	for (c = ob->compounds; c != NULL; c = c->next) {
-	    if (normal_spline_exist(c)) return(1);
+	    if (approx_spline_exist(c)) return(1);
 	    }
 
 	return(0);

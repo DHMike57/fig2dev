@@ -131,7 +131,7 @@ JPEGINCDIR = /usr/include/X11
 JPEGLIB = -L$(JPEGLIBDIR) -ljpeg
 #else
 JPEGLIBDIR = ../../jpeg
-JPEGCONF = configur
+JPEGCONF = configure
 XCOMM You shouldn't need to change JPEGINCDIR here.
 XCOMM AND it must be relative to the dev directory.
 JPEGINCDIR = ../$(JPEGLIBDIR)
@@ -172,9 +172,9 @@ GETOPTC=   getopt.c
 GETOPTO=   getopt.c
 #endif
 
-SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c\
+SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c trans_spline.c \
 	free.c read.c read1_3.c latex_line.c $(STRSTRC) $(GETOPTC)
-OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o\
+OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o trans_spline.o \
 	free.o read.o read1_3.o latex_line.o $(STRSTRO) $(GETOPTO)
 
 

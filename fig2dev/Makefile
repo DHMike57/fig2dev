@@ -45,8 +45,8 @@
 
             SHELL = /bin/sh
 
-              TOP = .
-      CURRENT_DIR = .
+              TOP = ../.
+      CURRENT_DIR = ./fig2dev
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
@@ -97,6 +97,7 @@
     INSTKMEMFLAGS = -g kmem -m 2755
 
       CDEBUGFLAGS = -O
+      CDEBUGFLAGS = -g
         CCOPTIONS =
 
       ALLINCLUDES = $(INCLUDES) $(EXTRA_INCLUDES) $(TOP_INCLUDES) $(STD_INCLUDES)
@@ -295,9 +296,17 @@ PICFLAGS = -pic
 # limitation a license to do the foregoing actions under any patents of
 # the party supplying this software to the X Consortium.
 
+# If your system has the strerror() function (doesn't have sys_errlist) then
+# comment out NEED_STRERROR with an # comment.
+
+NEED_STRERROR = -DNEED_STRERROR
+
 # Uncomment the XPM variables here  if you have the XPM (color pixmap)
 # package and you would like to allow XPM files.
 # You need version 3.4c or newer of the XPM package.
+#
+# Change XPMLIB if necessary to point to the xpm library (libXpm)
+# Change XPMINC if necessary to point to the include file for xpm (xpm.h)
 #
 # Also change XPMRGB if necessary, to point to your rgb.txt color
 # database file (for X11).  This is needed for those XPM flies which
@@ -307,27 +316,34 @@ PICFLAGS = -pic
 # Finally, if your system doesn't have ndbm (the 'new' database subroutines)
 # remove the -DNDBM from the XPMDBM definition.
 
-XPMDEFINES = -DUSE_XPM
-XPMLIBDIR = -L/usr/local/X11/lib
+DUSEXPM = -DUSE_XPM
+XPMLIBDIR = /usr/lib
 XPMINC = -I/usr/include/X11
-XPMLIB = $(XPMLIBDIR) -lXpm -lX11
+XPMLIB = -L$(XPMLIBDIR) -lXpm -lX11
 XPMRGB = XPMRGB=/usr/lib/X11/rgb
 XPMDBM = -DNDBM
 
-# to set paper size to A4 			add -DA4	to DEVDEFINES list
-# to set IBM Graphics Enhancement Cartridge	add -DIBMGEC	to DEVDEFINES list
-# to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEVDEFINES list
+# uncomment the following to set paper size to A4
+# DDA4 = -DA4
 
-# add -DNFSS to DEVDEFINES list to use NFSS2 font selection for LaTeX texts
-# add -DEPSF to DEVDEFINES list to use epsfig macros as distributed w/ LaTeX2e
+# uncomment the following to set IBM Graphics Enhancement Cartridge
+# DDIBMGEC = -DIBMGEC
+
+# uncomment the following to set DVI-to-PostScript driver to dvip
+# DDDVIPS = -DDVIPS
+
+# uncomment the DDNFSS = ... line to use NFSS2 font selection for LaTeX texts
+# uncomment the DDEPSF = ... line to use epsfig macros as distributed w/ LaTeX2e
 #
 #     Hint: Users of LaTeX2e will probably want to include both of these
 #     options; users of LaTeX 2.09 will probably want to include neither.
 
-DEVDEFINES = -DDVIPS -DEPSF $(XPMDEFINES) $(XPMINC) $(XPMDBM)
+# DDNFSS = -DNFSS
+# DDEPSF = -DEPSF
 
 # For Linux machines or any machines that have a separate library for
 # the database management routines, uncomment the following line
+# For Redhat distributions of Linux you may have to change DBMLIB to -ldb
 # DBMLIB = -ldbm
 
 # To include drivers for the following languages,
@@ -336,7 +352,16 @@ DEVDEFINES = -DDVIPS -DEPSF $(XPMDEFINES) $(XPMINC) $(XPMDBM)
 # -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
 #
 
-DEFINES = -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF
+# If your system doesn't have strcasecmp and/or strncasecmp
+# undefine the following two definitions
+
+# HAVE_NO_STRCASECMP = -DHAVE_NO_STRCASECMP
+# HAVE_NO_STRNCASECMP = -DHAVE_NO_STRNCASECMP
+
+DEFINES = -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DMF $(NEED_STRERROR) $(HAVE_NO_STRCASECMP) $(HAVE_NO_STRNCASECMP)
+
+# If your system doesn't have strstr() then uncomment the following line
+# #define NOSTRSTR
 
 # If you have installed the jpeg library on your system, uncomment the
 # USEINSTALLEDJPEG variable, change the JPEGLIBDIR variable to the directory
@@ -346,46 +371,50 @@ DEFINES = -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC -DM
 # If you haven't installed the jpeg library leave the XCOMM comment in and
 # set JPEGLIBDIR after the #else to the directory where you have the source
 # for jpeg.
+# ** Important:  If you use a version earlier than 6a, you must change
+# the name of the configuration program from "configur" to "configure" in
+# the JPEGCONF variable.
 
-# #define USEINSTALLEDJPEG
+JPEGLIBDIR = /usr/local/lib
+JPEGINCDIR = /usr/include/X11
+JPEGLIB = -L$(JPEGLIBDIR) -ljpeg
+
+# *** You shouldn't have to change anything below this point ***
+
+DUSEGIF = -DUSE_GIF
+
+DEVDEFINES = $(DUSEGIF) $(DUSEXPM) $(XPMINC) $(XPMDBM) $(DDNFSS) $(DDEPSF) \
+		$(DDA4) $(DDIBMGEC) $(DDDVIPS)
 
 DEVDIR = dev
 
 SUBDIRS = $(DEVDIR)
 
-JPEGLIBDIR = ../../jpeg
-# You shouldn't need to change JPEGINCDIR here.
-# AND it must be relative to the dev directory.
-JPEGINCDIR = ../$(JPEGLIBDIR)
-DEPLIBJPEG = $(JPEGLIBDIR)/libjpeg.a
-
-# *** You shouldn't have to change anything below this point ***
-
 LIBTRANSFIG = $(DEVDIR)/libtransfig.a
 
-INCLUDES = -I..
+INCLUDES = -I.. -I$(JPEGINCDIR)
 
-LOCAL_LIBRARIES = $(LIBTRANSFIG) -L$(JPEGLIBDIR) -ljpeg
+LOCAL_LIBRARIES = $(LIBTRANSFIG) $(JPEGLIB)
+
 SYS_LIBRARIES = $(XPMLIB) $(DBMLIB) -lm
+
 DEPLIBS = $(LIBTRANSFIG)
 
-SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c\
-	free.c read.c read1_3.c latex_line.c getopt.c $(STRSTRC)
-OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o\
-	free.o read.o read1_3.o latex_line.o getopt.o $(STRSTRO)
+GETOPTC=   getopt.c
+GETOPTO=   getopt.c
+
+SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c trans_spline.c \
+	free.c read.c read1_3.c latex_line.c $(STRSTRC) $(GETOPTC)
+OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o trans_spline.o \
+	free.o read.o read1_3.o latex_line.o $(STRSTRO) $(GETOPTO)
 
 fig2dev: $(DEPLIBJPEG) $(DEPLIBS)
 
 # only compile our jpeg if the use doesn't have one installed
 
-$(JPEGLIBDIR)/libjpeg.a: $(JPEGLIBDIR)/jconfig.h
-	cd $(JPEGLIBDIR); $(MAKE) libjpeg.a
-
-$(JPEGLIBDIR)/jconfig.h:
-	cd $(JPEGLIBDIR) ; ./configure CC='$(CC)'
-
 $(LIBTRANSFIG)::
-	cd $(DEVDIR); $(MAKE) JPEGINCDIR=$(JPEGINCDIR) DEFINES="$(DEVDEFINES)" $(XPMRGB) libtransfig.a
+	cd $(DEVDIR); $(MAKE) JPEGINCDIR=$(JPEGINCDIR) \
+		DEFINES="$(DEVDEFINES)" $(XPMRGB) libtransfig.a
 
 PROGRAM = fig2dev
 
@@ -469,13 +498,13 @@ install.man:: pic2tpic.man
 	else (set -x; $(MKDIRHIER) $(DESTDIR)$(MANDIR)); fi
 	$(INSTALL) -c $(INSTMANFLAGS) pic2tpic.man $(DESTDIR)$(MANDIR)/pic2tpic.$(MANSUFFIX)
 
-fig2dev.man: ../doc/fig2dev.1
+fig2dev.man:: ../doc/fig2dev.1
 	-ln -s ../doc/fig2dev.1 fig2dev.man
 
-fig2ps2tex.man: ../doc/fig2ps2tex.1
+fig2ps2tex.man:: ../doc/fig2ps2tex.1
 	-ln -s ../doc/fig2ps2tex.1 fig2ps2tex.man
 
-pic2tpic.man: ../doc/pic2tpic.1
+pic2tpic.man:: ../doc/pic2tpic.1
 	-ln -s ../doc/pic2tpic.1 pic2tpic.man
 
 # -------------------------------------------------------------------------

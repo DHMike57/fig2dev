@@ -60,13 +60,41 @@ Boolean		landscape;
 Boolean		center;
 Boolean		orientspec=FALSE;	/* set if the user specifies the orientation */
 Boolean		centerspec=FALSE;	/* set if the user specifies the justification */
+Boolean		magspec=FALSE;		/* set if the user specifies the magnification */
+Boolean		multispec=FALSE;	/* set if the user specifies multiple pages */
+Boolean		paperspec=FALSE;	/* set if the user specifies the paper size */
 Boolean		pats_used, pattern_used[NUMPATTERNS];
+Boolean		multi_page = FALSE;	/* multiple page option for PostScript */
+char		papersize[20];
 
 struct obj_rec {
 	void (*gendev)();
 	char *obj;
 	int depth;
 };
+
+/* be sure to update NUMPAPERSIZES in fig2dev.h if this table changes */
+
+struct paperdef paperdef[] =
+{
+    {"Letter", 612, 792}, 	/* 8.5" x 11" */
+    {"Legal", 612, 1008}, 	/* 8.5" x 14" */
+    {"Ledger", 1224, 792}, 	/*  17" x 11" */
+    {"Tabloid", 792, 1224}, 	/*  11" x 17" */
+    {"A", 612, 792},		/* 8.5" x 11" (letter) */
+    {"B", 792, 1224},		/*  11" x 17" (tabloid) */
+    {"C", 1224, 1584},		/*  17" x 22" */
+    {"D", 1584, 2448},		/*  22" x 34" */
+    {"E", 2448, 3168},		/*  34" x 44" */
+    {"B5", 516, 729}, 		/* 18.2cm x 25.7cm */
+    {"A4", 595, 842}, 		/* 21cm x 29.7cm */
+    {"A3", 842, 1190},		/* 29.7cm x 42cm*/
+    {"A2", 1190, 1684},		/* 42cm x 59.4 */
+    {"A1", 1684, 2380},		/* 59.4cm x 84cm */
+    {"A0", 2380, 3368},		/* 84cm x 118.8 */ 
+    {NULL, 0, 0}
+};
+
 
 put_msg(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
 char   *format, *arg1, *arg2, *arg3, *arg4, *arg5, *arg6, *arg7, *arg8;

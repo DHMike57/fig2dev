@@ -197,21 +197,34 @@ typedef		struct f_text {
 
 typedef		struct f_control {
 			double			lx, ly, rx, ry;
+			          /* used by older versions*/
 			struct f_control	*next;
+			double                  s;
+			         /* used by 3.2 version */
 			}
 		F_control;
 
 #define		int_spline(s)		(s->type & 0x2)
-#define		normal_spline(s)	(!(s->type & 0x2))
+#define         x_spline(s)	        (s->type & 0x4)
+#define		approx_spline(s)	(!(int_spline(s)|x_spline(s)))
 #define		closed_spline(s)	(s->type & 0x1)
 #define		open_spline(s)		(!(s->type & 0x1))
 
+
+#define S_SPLINE_ANGULAR 0.0
+#define S_SPLINE_APPROX 1.0
+#define S_SPLINE_INTERP (-1.0)
+
+
 typedef		struct f_spline {
 			int			type;
-#define					T_OPEN_NORMAL		0
-#define					T_CLOSED_NORMAL		1
+#define					T_OPEN_APPROX		0
+#define					T_CLOSED_APPROX		1
 #define					T_OPEN_INTERPOLATED	2
 #define					T_CLOSED_INTERPOLATED	3
+#define                                 T_OPEN_XSPLINE          4
+#define                                 T_CLOSED_XSPLINE        5
+
 			int			style;
 			int			thickness;
 			int			pen_color;
@@ -225,12 +238,7 @@ typedef		struct f_spline {
 			int			cap_style;
 /* IMPORTANT: everything above this point must be in the same order 
 	      for ARC, LINE and SPLINE (LINE has join_style following cap_style */
-			/*
-			For T_OPEN_NORMAL and T_CLOSED_NORMAL points
-			are control points while they are knots for
-			T_OPEN_INTERPOLATED and T_CLOSED_INTERPOLTED
-			whose control points are stored in controls.
-			*/
+
 			struct f_point		*points;
 			struct f_control	*controls;
 			struct f_spline		*next;

@@ -44,6 +44,7 @@
 #include "alloc.h"
 #include "fig2dev.h"
 #include "object.h"
+#include "trans_spline.h"
 #include "../patchlevel.h"
 
 #if defined(hpux) || defined(SYSV) || defined(SVR4)
@@ -91,6 +92,7 @@ int			num_object;
 int			v2_flag;	/* Protocol V2.0 or higher */
 int			v21_flag;	/* Protocol V2.1 or higher */
 int			v30_flag;	/* Protocol V3.0 or higher */
+int			v32_flag;	/* Protocol V3.2 or higher */
 float			THICK_SCALE;	/* convert line thickness from screen res. */
 
 read_fail_message(file, err)
@@ -179,6 +181,7 @@ F_compound	*obj;
 	F_arc		*a, *la = NULL;
 	F_compound	*c, *lc = NULL;
 	int		object, ppi, coord_sys;
+	int		metric;
 
 	bzero((char*)obj, COMOBJ_SIZE);
 	(void)fgets(buf, BUF_SIZE, fp);	/* get the version line */
@@ -191,6 +194,9 @@ F_compound	*obj;
 	v21_flag = (!strncmp(buf, "#FIG 2.1", 8) || !strncmp(buf, "#FIG 3", 6));
 	/* version 2.2 was only beta - 3.0 is the official release (they are identical) */
 	v30_flag = (!strncmp(buf, "#FIG 3", 6) || !strncmp(buf, "#FIG 2.2", 8));
+	/* version 3.2 contains paper size, magnif, multiple page and transparent color
+	   in Fig file */
+	v32_flag = (!strncmp(buf, "#FIG 3.2", 8));
 	if (strncmp(&buf[5],VERSION,3) > 0) {
 	    put_msg("Fig file format (%s) newer than this version of fig2dev (%s), exiting",
 			&buf[5],VERSION);
@@ -204,7 +210,7 @@ F_compound	*obj;
 		put_msg("File is truncated at landscape/portrait specification.");
 		return(-1);
 	    }
-	    /* but set only of the user didn't specify the orientation
+	    /* but set only if the user didn't specify the orientation
 	       on the command line */
 	    if (!orientspec)
 		landscape = !strncasecmp(buf,"land",4);
@@ -228,9 +234,70 @@ F_compound	*obj;
 		    return(-1);
 		}
 	    }
+	
+	    /* new stuff in 3.2 */
+	    if (v32_flag) {
+		char *p;
+		/* read the paper size */
+		line_no++;
+		if (get_line(fp) < 0) {
+		    put_msg("File is truncated at paper size specification.");
+		    return(-1);
+		}
+		if (!paperspec) {
+		    /* copy all except newline */
+		    strncpy(papersize,buf,strlen(buf)-1);
+		    /* and truncate at first blank, if any */
+		    if (p=strchr(papersize,' '))
+			*p = '\0';
+		}
+
+		/* read the magnification */
+		line_no++;
+		if (get_line(fp) < 0) {
+		    put_msg("File is truncated at magnification specification.");
+		    return(-1);
+		}
+		if (!magspec)
+		    mag = atof(buf)/100.0;
+
+		/* read the multiple page flag */
+		line_no++;
+		if (get_line(fp) < 0) {
+		    put_msg("File is truncated at multiple page specification.");
+		    return(-1);
+		}
+		if (!multispec)
+		    multi_page = (strncasecmp(buf,"multiple",8) == 0);
+
+		/* read the transparent color.  This is ignored because it is
+		   only used by xfig when exporting to GIF */
+		line_no++;
+		if (get_line(fp) < 0) {
+		    put_msg("File is truncated at transparent color specification.");
+		    return(-1);
+		}
+	    } 
 	    /* if metric, scale magnification to correct for xfig display error */
-	    if (strncasecmp(buf,"metric",5)==0)
+	    if (strncasecmp(buf,"metric",5)==0) {
+		metric = 1;
 		mag *= 80.0/76.2;
+	    } else {
+		metric = 0;
+	    }
+	} else {
+	/* older than 3.1, no metric/inch flag */
+	    metric = 0;
+	}
+
+	/* v 3.1 or older, set paper size unless user asked with -z */
+	if (!v32_flag) {
+	    if (!paperspec) {
+		if (metric)
+		    strcpy(papersize,"A4");
+		else
+		    strcpy(papersize,"Letter");
+	    }
 	}
 
 	line_no++;
@@ -272,8 +339,17 @@ F_compound	*obj;
 		    num_object++;
 		    break;
 		case O_SPLINE :
-		    if ((s = read_splineobject(fp)) == NULL) 
+		    if ((s = read_splineobject(fp)) == NULL) { 
 			return(-1);
+			}
+		    if (v32_flag){ /* s is a line */
+		      if (ll)
+			ll = (ll->next = (F_line *) s);
+		      else 
+			ll = obj->lines = (F_line *) s;
+		      num_object++;
+		      break;		      
+		    }
 		    if (ls)
 			ls = (ls->next = s);
 		    else 
@@ -486,6 +562,13 @@ FILE	*fp;
 			free_spline(&s);
 			return(NULL);
 			}
+		    if (v32_flag){ /* s is a line */
+		      if (ll)
+			ll = (ll->next = (F_line *) s);
+		      else 
+			ll = com->lines = (F_line *) s;
+		      break;		      
+		    }
 		    if (ls)
 			ls = (ls->next = s);
 		    else 
@@ -732,6 +815,7 @@ read_splineobject(fp)
 FILE	*fp;
 {
 	F_spline	*s;
+	F_line          *l;
 	F_point		*p, *q;
 	F_control	*cp, *cq;
 	int		c, n, x, y, fa, ba;
@@ -832,10 +916,36 @@ FILE	*fp;
 	p->next = NULL;
 	skip_line(fp);
 
-	if (normal_spline(s)) return(s);
+	if (v32_flag)
+	  {
+	    /* transform x-splines into lines */
 
+	    F_control * ptr;
+	    double control_s;
+
+	    make_control_factors(s);
+	    ptr = s->controls;
+	    while (ptr)    /* read controls */
+	      {
+		if ((n = fscanf(fp, "%lf", &control_s)) != 1) {
+		  put_msg(Err_incomp, "spline", line_no);
+		  free_splinestorage(s);
+		  return(NULL);
+		}
+		ptr->s = control_s;
+		ptr = ptr->next;
+	      }
+
+	    l = create_line_with_spline(s);
+
+	    
+	    free_splinestorage(s);  
+	    return((F_spline *)l);   /* return the new line */
+	  }
+
+	if (approx_spline(s)) return(s);
 	skip_comment(fp);
-	/* Read controls */
+	/* Read controls from older versions */
 	if ((n = fscanf(fp, "%lf%lf%lf%lf", &lx, &ly, &rx, &ry)) != 4) {
 	    put_msg(Err_incomp, "spline", line_no);
 	    free_splinestorage(s);
