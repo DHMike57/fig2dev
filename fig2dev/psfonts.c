@@ -104,6 +104,7 @@ static int	PSfontmap[] = {
 		ROMAN_FONT			/* ZapfDingbats */
 		};
 
+#define	NO	2
 #define	FALSE	0
 #define	TRUE	1
 
@@ -143,6 +144,44 @@ static int	PSmapwarn[] = {
 		TRUE,				/* Symbol */
 		TRUE,				/* ZapfChancery-MediumItalic */
 		TRUE				/* ZapfDingbats */
+		};
+
+int	        PSisomap[] = {
+		FALSE, FALSE,			/* Times-Roman */
+		FALSE,				/* Times-Italic */
+		FALSE,				/* Times-Bold */
+		FALSE,				/* Times-BoldItalic */
+		FALSE,				/* AvantGarde */
+		FALSE,				/* AvantGarde-BookOblique */
+		FALSE,				/* AvantGarde-Demi */
+		FALSE,				/* AvantGarde-DemiOblique */
+		FALSE,				/* Bookman-Light */
+		FALSE,				/* Bookman-LightItalic */
+		FALSE,				/* Bookman-Demi */
+		FALSE,				/* Bookman-DemiItalic */
+		FALSE,				/* Courier */
+		FALSE,				/* Courier-Oblique */
+		FALSE,				/* Courier-Bold */
+		FALSE,				/* Courier-BoldItalic */
+		FALSE,				/* Helvetica */
+		FALSE,				/* Helvetica-Oblique */
+		FALSE,				/* Helvetica-Bold */
+		FALSE,				/* Helvetica-BoldOblique */
+		FALSE,				/* Helvetica-Narrow */
+		FALSE,				/* Helvetica-Narrow-Oblique */
+		FALSE,				/* Helvetica-Narrow-Bold */
+		FALSE,			/* Helvetica-Narrow-BoldOblique */
+		FALSE,				/* NewCenturySchlbk-Roman */
+		FALSE,				/* NewCenturySchlbk-Italic */
+		FALSE,				/* NewCenturySchlbk-Bold */
+		FALSE,			/* NewCenturySchlbk-BoldItalic */
+		FALSE,				/* Palatino-Roman */
+		FALSE,				/* Palatino-Italic */
+		FALSE,				/* Palatino-Bold */
+		FALSE,				/* Palatino-BoldItalic */
+		NO,				/* Symbol */
+		FALSE,				/* ZapfChancery-MediumItalic */
+		NO				/* ZapfDingbats */
 		};
 
 static char *figfontnames[] = {

@@ -51,7 +51,6 @@
 #include "fig2dev.h"
 #include "texfonts.h"
 
-extern char *strchr();
 #ifndef fabs
 extern double fabs();
 #endif
@@ -107,7 +106,6 @@ F_compound	*objects;
 	/* Put PostScript Image if any*/
         if (pstex_file[0] != '\0')
         {
-		define_setfigfont(tfp);
 		fprintf(tfp, "\\begin{picture}(0,0)%%\n");
 		fprintf(tfp, "\\special{psfile=%s}%%\n",pstex_file);
 		fprintf(tfp, "\\end{picture}%%\n");

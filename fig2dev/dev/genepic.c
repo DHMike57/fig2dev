@@ -209,10 +209,10 @@ char opt, *optarg;
 	    break;
 
 	case 'f':
-	    for ( i = 1; i <= MAX_FONT + 1; i++ )
+	    for ( i = 1; i <= MAX_FONT; i++ )
 		if ( !strcmp(optarg, texfontnames[i]) ) break;
 
-	    if ( i > MAX_FONT + 1 )
+	    if ( i > MAX_FONT)
 		fprintf(stderr,
 			"warning: non-standard font name %s\n", optarg);
 	
@@ -366,6 +366,7 @@ F_compound *objects;
     fprintf(tfp, "\\setlength{\\unitlength}{%.4fin}\n", Threshold);
     MaxCircleRadius = (int) (40 / 72.27 / Threshold);
     Threshold = SegLen / Threshold;
+    define_setfigfont(tfp);
     fprintf(tfp, "\\begin{picture}(%d,%d)(%d,%d)\n",
            pt2.x-pt1.x, pt2.y-pt1.y + TopMargin + BottomMargin,
            LowerLeftX, LowerLeftY-BottomMargin);
@@ -937,7 +938,6 @@ F_text *text;
       texsize = TEXFONTMAG(text);
       baselineskip = (texsize * 1.2);
 
-      define_setfigfont(tfp);
       fprintf(tfp, "{{\\SetFigFont{%d}{%.1f}{%s}",
 	      texsize, baselineskip, TEXFONT(text->font));
     }

@@ -42,7 +42,6 @@
 #include "fig2dev.h"
 #include "texfonts.h"
 
-extern char *strchr();
 #ifndef sin
 extern double sin();
 #endif

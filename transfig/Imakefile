@@ -11,6 +11,8 @@ OBJS = transfig.o txfile.o mkfile.o sys.o
 
 ComplexProgramTarget(transfig)
 
+all:: transfig.man fig2dev.man fig2ps2tex.man pic2tpic.man
+
 transfig.man: ../doc/transfig.1
 	ln -s ../doc/transfig.1 transfig.man
 

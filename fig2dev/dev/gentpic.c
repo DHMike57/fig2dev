@@ -113,7 +113,7 @@ char opt, *optarg;
 		    for ( i = 1; i <= MAX_TPICFONT; i++ )
 			if ( !strcmp(optarg, texfontnames[i]) ) break;
 
-		    if ( i > MAX_FONT + 1 )
+		    if ( i > MAX_FONT)
 			    vfont = 1; /* assume a virtual font */
 		}
 		
@@ -557,7 +557,7 @@ F_text	*t;
 
 	unpsfont(t);
 
-	if (t->font > MAX_FONT+1 || vfont)
+	if (t->font > MAX_FONT || vfont)
 		virtual_font = 1;	/* must be a virtual font */
 
 	if (virtual_font)

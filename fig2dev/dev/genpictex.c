@@ -76,10 +76,10 @@ char opt, *optarg;
 		    break;
 
 		case 'f':			/* set default text font */
-		    for ( i = 1; i <= MAX_FONT + 1; i++ )
+		    for ( i = 1; i <= MAX_FONT; i++ )
 			if ( !strcmp(optarg, texfontnames[i]) ) break;
 
-		    if ( i > MAX_FONT + 1 )
+		    if ( i > MAX_FONT)
 			fprintf(stderr,
 			"warning: non-standard font name %s\n", optarg);
 		
@@ -133,6 +133,7 @@ F_compound	*objects;
 
 	/* PiCTeX start */
 	fprintf(tfp, "\\font\\thinlinefont=cmr5\n");
+	define_setfigfont(tfp);
 	fprintf(tfp, "\\mbox{\\beginpicture\n");
 	fprintf(tfp, "\\setcoordinatesystem units <%6.3f%s,%6.3f%s>\n",
 			mag, UNIT, mag, UNIT);
@@ -574,7 +575,6 @@ F_text	*t;
 	  texsize = TEXFONTMAG(t);
 	  baselineskip = (texsize * 1.2);
 
-	  define_setfigfont(tfp);
  	  fprintf(tfp, "\\put{\\SetFigFont{%d}{%.1f}{%s}",
 		texsize, baselineskip, TEXFONT(t->font));
 	}

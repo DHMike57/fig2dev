@@ -1,5 +1,30 @@
-Transfig version 2.1.7
+Transfig version 2.1.8 (Oct 1, 1993)
+Changes from 2.1.7:
 
+New Features:
+
+Bugs fixed:
+
+o thick line threshold increased from 1 to 2 for latex lines
+o save/restore wraps EPS objects now
+o specifing nonexistant font with -f caused coredump
+	from Gordon W. Ross (gwr@jericho.mc.com)
+o newpath command given before EPS object for PostScript output
+o moved definition of SetFigFont to better place 
+	from Bernd Raichle (raichle@isr.uni-stuttgart.de)
+o #included sys/types for BSD4_3 systems in genps.c 
+o bug in eepic output - SetFigFont was being defined inside a \put
+	from Vivek Khera (khera@cs.duke.edu)
+o BoundingBox for EPS objects can be floating values
+o shortened file name (fig2dev/dev/)def_setfigfont.c to setfigfont.c
+o distribution version of fig2dev/dev/Makefile had (def_)setfigfont.c
+	instead of (def_)setfigfont.o in LIBOBJS definition
+o SUBDIR fig2dev/dev was missing from top-level Imakefile caused problems
+	where make would say something like "No rule to make target 
+	dev/libtransfig.a"
+
+---------------------------------------------------------------------------
+Transfig version 2.1.7
 Changes from 2.1.6:
 
 o no longer writes over input file if there is an error in the command line
@@ -37,6 +62,7 @@ o removed "extern coord_system" from fig2dev.h (wasn't used by fig2dev)
 o SPECIAL_CHAR split into three strings for systems which can't handle one
 o -P flag dissappeared from eepic output language - reinstated
 
+---------------------------------------------------------------------------
 Version 2.1.6
 Changes from 2.1.5:
 

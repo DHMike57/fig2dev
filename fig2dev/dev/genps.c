@@ -24,30 +24,35 @@
 /* 
  *	genps.c: PostScript driver for fig2dev
  *
- *      Modified by Herbert Bauer to support ISO-Characters,
- *      multiple page output, color mode etc.
- *      heb@regent.e-technik.tu-muenchen.de
+ *	Modified by Herbert Bauer to support ISO-Characters,
+ *	multiple page output, color mode etc.
+ *	heb@regent.e-technik.tu-muenchen.de
  *
  *	Modified by Eric Picheral to support the whole set of ISO-Latin-1
+ *	Modified by Herve Soulard to allow non-iso coding on special fonts
+ *	Herve.Soulard@inria.fr (8 Apr 1993)
+
 */
 
-#if defined(hpux) || defined(SYSV)
+#include <sys/param.h>
+#if defined(hpux) || defined(SYSV) || defined(BSD4_3)
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
 #include <stdio.h>
 #include <math.h>
 #include <pwd.h>
+#include <errno.h>
+extern char *sys_errlist[];
 #include "pi.h"
 #include "object.h"
 #include "fig2dev.h"
 #include "psfonts.h"
-#ifdef SYSV
 #include <string.h>
-#else
-#include <strings.h>
-#endif
 #include <time.h>
+
+/* for the version nubmer */
+#include "../../patchlevel.h"
 
 #ifdef A4
 #define		PAGE_WIDTH		595	/* points; 21cm */
@@ -60,7 +65,7 @@
 #define		FALSE			0
 #define		POINT_PER_INCH		72
 #define		ULIMIT_FONT_SIZE	300
-#define 	MAXCOLORS 		8
+#define 	MAXCOLORS 		16
 
 int		pagewidth = PAGE_WIDTH;
 int		pageheight = PAGE_HEIGHT;
@@ -70,14 +75,10 @@ static int	cur_thickness;
 int		center = 0;
 int		landscape = 0;
 int		pages;
-int             iso_encoding = 0;
 int		no_obj = 0;
 int		multi_page = FALSE;
 
-extern	int 	v2_flag, v21_flag;
-
-extern	char	*strstr(), *ctime();
-extern	time_t	time();
+extern	int	v2_flag, v21_flag;
 
 static	arc_tangent();
 static	draw_arrow_head();
@@ -111,6 +112,14 @@ $F2psDict /mtrx matrix put\n\
 /col5 {1 0 1 setrgbcolor} bind def\n\
 /col6 {1 1 0 setrgbcolor} bind def\n\
 /col7 {1 1 1 setrgbcolor} bind def\n\
+/col8 {.68 .85 .9 setrgbcolor} bind def\n\
+/col9 {0 .39 0 setrgbcolor} bind def\n\
+/col10 {.65 .17 .17 setrgbcolor} bind def\n\
+/col11 {1 .51 0 setrgbcolor} bind def\n\
+/col12 {.63 .13 .94 setrgbcolor} bind def\n\
+/col13 {1 .75 .8 setrgbcolor} bind def\n\
+/col14 {.7 .13 .13 setrgbcolor} bind def\n\
+/col15 {1 .84 0 setrgbcolor} bind def\n\
 "
 
 #define		SPECIAL_CHAR_1	"\
@@ -281,16 +290,16 @@ F_compound	*objects;
 	{
 	   if (center)
 	   {
-              if (landscape)
-              {
-                 origx = (pageheight - urx - llx)/2.0;
-                 origy = (pagewidth - ury - lly)/2.0;
-              }
-              else
-              {
-                 origx = (pagewidth - urx - llx)/2.0;
-                 origy = (pageheight + ury + lly)/2.0;
-              }
+	      if (landscape)
+	      {
+		 origx = (pageheight - urx - llx)/2.0;
+		 origy = (pagewidth - ury - lly)/2.0;
+	      }
+	      else
+	      {
+		 origx = (pagewidth - urx - llx)/2.0;
+		 origy = (pageheight + ury + lly)/2.0;
+	      }
 	   }
 	   else
 	   {
@@ -315,7 +324,8 @@ F_compound	*objects;
 	    (void)strcpy(host, "unknown-host!?!?");
 	(void) time(&when);
 	fprintf(tfp, "%%%%Title: %s\n", ((from) ? from : "stdin"));
-	fprintf(tfp, "%%%%Creator: %s\n", prog);
+	fprintf(tfp, "%%%%Creator: %s Version %s Patchlevel %s\n", 
+		prog, VERSION, PATCHLEVEL);
 	fprintf(tfp, "%%%%CreationDate: %s", ctime(&when));
 	if (who)
 	   fprintf(tfp, "%%%%For: %s@%s (%s)\n",
@@ -328,15 +338,16 @@ F_compound	*objects;
 		pages = (urx/pagewidth+1)*(ury/pageheight+1);
 	else
 	   pages = 1;
-        if (landscape) {
+	if (landscape) {
 	   fprintf(tfp, "%%%%Orientation: Landscape\n");
 	   fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n", 
 	      (int)origx+llx, (int)origy+lly, (int)origx+urx, (int)origy+ury);
 	} else {
+	   fprintf(tfp, "%%%%Orientation: Portrait\n");
 	   fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n", 
 	      (int)origx+llx, (int)origy-ury, (int)origx+urx, (int)origy-lly);
 	}
-        fprintf(tfp, "%%%%Pages: %d\n", show_page ? pages : 0 );
+	fprintf(tfp, "%%%%Pages: %d\n", show_page ? pages : 0 );
 
 	fprintf(tfp, "%%%%EndComments\n");
 	fprintf(tfp, "%s", BEGIN_PROLOG);
@@ -344,7 +355,6 @@ F_compound	*objects;
 	{
 	   fprintf(tfp, "%s%s%s", SPECIAL_CHAR_1,SPECIAL_CHAR_2,SPECIAL_CHAR_3);
 	   encode_all_fonts(objects);
-           iso_encoding = 1;
 	}
 	if (ellipse_exist(objects)) fprintf(tfp, "%s\n", ELLIPSE_PS);
 	if (normal_spline_exist(objects)) fprintf(tfp, "%s\n", SPLINE_PS);
@@ -353,7 +363,7 @@ F_compound	*objects;
  	fprintf(tfp, "0 setlinecap 0 setlinejoin\n");
   
  	if ( pages > 1 && show_page && !center )
-            multi_page = TRUE;
+	    multi_page = TRUE;
  	else
  	{
 	    fprintf (tfp, "%.1f %.1f translate", origx, origy);
@@ -368,28 +378,34 @@ F_compound	*objects;
 void genps_end()
 {
     double dx,dy;
-    int i;
+    int i, page;
+    int h,w;
   
     if (multi_page)
     {
-       for (dy=0;dy<(ury-pageheight*0.1);dy+=pageheight*0.9)
+       page = 1;
+       h = (landscape? pagewidth: pageheight);
+       w = (landscape? pageheight: pagewidth);
+       for (dy=0; dy < (ury-h*0.1); dy += h*0.9)
        {
-         for (dx=0;dx<(urx-pagewidth*0.1);dx+=pagewidth*0.9)
-         {
-	    fprintf (tfp, "%.1f %.1f translate", 
-		origx+dx, origy+(landscape?-dy:dy));
+	 for (dx=0; dx < (urx-w*0.1); dx += w*0.9)
+	 {
+	    fprintf (tfp, "%%%%Page: %d %d\n%.1f %.1f translate", 
+		page,page,
+		-(origx+dx), (origy+(landscape?-dy:dy)));
 	    if (landscape)
 	    {
 	       fprintf(tfp, " 90 rotate");
 	    }
 	    fprintf (tfp, " %.3f %.3f scale\n", scalex, scaley);
-            for (i=0; i<no_obj; i++)
+	    for (i=0; i<no_obj; i++)
 	    {
 	       fprintf(tfp, "o%d ", i);
-	       if (!(i%10)) fprintf(tfp, "\n", i);
+	       if (!(i%20)) fprintf(tfp, "\n", i);
 	    }
 	    fprintf(tfp, "showpage\n");
-         }
+	    page++;
+	 }
        }
     }
     else
@@ -443,17 +459,18 @@ F_line	*l;
 	char		*cp;
 	int		xmin,xmax,ymin,ymax;
 	int		eps_w, eps_h;
+	double		fllx, flly, furx, fury;
 	
 	if (multi_page)
 	   fprintf(tfp, "/o%d {", no_obj++);
 	if (l->type != T_EPS_BOX)  /* eps object has no line thickness */
 		set_linewidth(l->thickness);
-	radius = l->radius;                /* radius of rounded-corner boxes */
+	radius = l->radius;		/* radius of rounded-corner boxes */
 	p = l->points;
 	q = p->next;
 	if (q == NULL) { /* A single point line */
-            fprintf(tfp, "n %d %d m %d %d l gs col%d s gr\n",
-                        p->x, p->y, p->x, p->y, l->color > MAXCOLORS ? -1 : l->color);
+	    fprintf(tfp, "n %d %d m %d %d l gs col%d s gr\n",
+			p->x, p->y, p->x, p->y, l->color > MAXCOLORS ? -1 : l->color);
 	    if (multi_page)
 	       fprintf(tfp, "} bind def\n");
 	    return;
@@ -466,151 +483,159 @@ F_line	*l;
 		set_style(l->style, l->style_val);
 	fprintf(tfp, "%% Polyline\n");
 
-        xmin = xmax = p->x;
-        ymin = ymax = p->y;
-        while (p->next != NULL) /* find lower left and upper right corne
+	xmin = xmax = p->x;
+	ymin = ymax = p->y;
+	while (p->next != NULL) /* find lower left and upper right corne
 rs */
-        {
-        	p=p->next;
-                if (xmin > p->x)
-                	xmin = p->x;
-                else if (xmax < p->x)
-                        xmax = p->x;
-                if (ymin > p->y)
-                        ymin = p->y;
-                else if (ymax < p->y)
-                        ymax = p->y;
+	{
+		p=p->next;
+		if (xmin > p->x)
+			xmin = p->x;
+		else if (xmax < p->x)
+			xmax = p->x;
+		if (ymin > p->y)
+			ymin = p->y;
+		else if (ymax < p->y)
+			ymax = p->y;
 		}
 
 	if (l->type == T_ARC_BOX)
-        {
-        fprintf(tfp, "n %d %d m",xmin+radius, ymin);
-        fprintf(tfp, " %d %d %d %d %d arcto 4 {pop} repeat",
-                                xmin, ymin, xmin, ymax-radius, radius);
-        fprintf(tfp, " %d %d %d %d %d arcto 4 {pop} repeat", /* arc thro
-ugh bl to br */
-                                xmin, ymax, xmax-radius, ymax, radius);
-        fprintf(tfp, " %d %d %d %d %d arcto 4 {pop} repeat", /* arc thro
-ugh br to tr */
-                                xmax, ymax, xmax, ymin+radius, radius);
-        fprintf(tfp, " %d %d %d %d %d arcto 4 {pop} repeat", /* arc thro
-ugh tr to tl */
-                                xmax, ymin, xmin+radius, ymin, radius);
+	{
+	    fprintf(tfp, "n %d %d m",xmin+radius, ymin);
+	    fprintf(tfp, " %d %d %d %d %d arcto 4 {pop} repeat",
+				xmin, ymin, xmin, ymax-radius, radius);
+	    fprintf(tfp, " %d %d %d %d %d arcto 4 {pop} repeat", /* arc through bl to br */
+				xmin, ymax, xmax-radius, ymax, radius);
+	    fprintf(tfp, " %d %d %d %d %d arcto 4 {pop} repeat", /* arc through br to tr */
+				xmax, ymax, xmax, ymin+radius, radius);
+	    fprintf(tfp, " %d %d %d %d %d arcto 4 {pop} repeat", /* arc through tr to tl */
+				xmax, ymin, xmin+radius, ymin, radius);
 	}
 	else if (l->type == T_EPS_BOX)  /* encapsulated postscript (eps) file */
 	{
-	int             dx, dy, rotation;
-	int		llx, lly, urx, ury;
+		int             dx, dy, rotation;
+		int		llx, lly, urx, ury;
+		double          fllx, flly, furx, fury;
 
-	dx = l->points->next->next->x - l->points->x;
-	dy = l->points->next->next->y - l->points->y;
-	rotation = 0;
-	if (dx < 0 && dy < 0)
-                   rotation = 180;
-	else if (dx < 0 && dy >= 0)
-                   rotation = 270;
-	else if (dy < 0 && dx >= 0)
-                   rotation = 90;
+		dx = l->points->next->next->x - l->points->x;
+		dy = l->points->next->next->y - l->points->y;
+		rotation = 0;
+		if (dx < 0 && dy < 0)
+			   rotation = 180;
+		else if (dx < 0 && dy >= 0)
+			   rotation = 270;
+		else if (dy < 0 && dx >= 0)
+			   rotation = 90;
 
-	fprintf(tfp, "%%\n");
-	fprintf(tfp, "%% Begin Imported EPS File: %s\n", l->eps->file);
-	fprintf(tfp, "%%\n");
-	epsf = fopen(l->eps->file, "r");
-	if (epsf == NULL) {
-		fprintf (stderr, "Unable to open eps file: %s\n", l->eps->file);
-		return;
-	}
-        while (fgets(buf, 512, epsf) != NULL) {
-          lower(buf);
-          if (!strncmp(buf, "%%boundingbox", 13)) {
-                if (sscanf(buf, "%%%%boundingbox: %d %d %d %d",
-                                   &llx, &lly, &urx, &ury) < 4) {
-                  fprintf(stderr,"Bad EPS bitmap file: %s", l->eps->file);
-                  fclose(epsf);
-                  return;
-                }
-                break;
-          }
-        }
+		fprintf(tfp, "%%\n");
+		fprintf(tfp, "%% Begin Imported EPS File: %s\n", l->eps->file);
+		fprintf(tfp, "%%\n");
+		epsf = fopen(l->eps->file, "r");
+		if (epsf == NULL) {
+			fprintf (stderr, "Unable to open eps file: %s, error: (%d)\n",
+				l->eps->file, sys_errlist[errno],errno);
+			return;
+		}
+		while (fgets(buf, 512, epsf) != NULL) {
+		  lower(buf);
+		  if (!strncmp(buf, "%%boundingbox", 13)) {
+			if (sscanf(buf, "%%%%boundingbox: %lf %lf %lf %lf",
+					   &fllx, &flly, &furx, &fury) < 4) {
+			  fprintf(stderr,"Bad EPS bitmap file: %s", l->eps->file);
+			  fclose(epsf);
+			  return;
+			}
+			llx= floor(fllx);
+			lly= floor(flly);
+			urx= ceil(furx);
+			ury= ceil(fury);
+			break;
+		  }
+		}
+		fclose(epsf);
 
-	fprintf(tfp, "gs\n");
-	if (((rotation == 90 || rotation == 270) && !l->eps->flipped) ||
-	    (rotation != 90 && rotation != 270 && l->eps->flipped)) {
-		eps_h = urx - llx;
-		eps_w = ury - lly;
-	} else {
-		eps_w = urx - llx;
-		eps_h = ury - lly;
-	}
+		fprintf(tfp, "n gs\n");
+		if (((rotation == 90 || rotation == 270) && !l->eps->flipped) ||
+		    (rotation != 90 && rotation != 270 && l->eps->flipped)) {
+			eps_h = urx - llx;
+			eps_w = ury - lly;
+		} else {
+			eps_w = urx - llx;
+			eps_h = ury - lly;
+		}
 
-	/* translate the eps stuff to the right spot on the page */
-	fprintf(tfp, "%d %d translate\n", xmin, ymin);
+		/* translate the eps stuff to the right spot on the page */
+		fprintf(tfp, "%d %d translate\n", xmin, ymin);
 
-	/* scale the eps stuff to fit into the bounding box */
-	/* Note: the origin for fig is in the upper-right corner;
-	 *       for postscript its in the lower right hand corner.
-	 *       To fix it, we use a "negative"-y scale factor, then
-	 *       translate the image up on the page */
-	fprintf(tfp, "%f %f scale\n",
-		fabs((double)(xmax-xmin)/eps_w), -1.0*(double)(ymax-ymin)/eps_h);
-	fprintf(tfp, "0 %d translate\n", -eps_h);
+		/* scale the eps stuff to fit into the bounding box */
+		/* Note: the origin for fig is in the upper-right corner;
+		 *       for postscript its in the lower right hand corner.
+		 *       To fix it, we use a "negative"-y scale factor, then
+		 *       translate the image up on the page */
+		fprintf(tfp, "%f %f scale\n",
+			fabs((double)(xmax-xmin)/eps_w), -1.0*(double)(ymax-ymin)/eps_h);
+		fprintf(tfp, "0 %d translate\n", -eps_h);
 
-	/* flip the eps stuff */
-	/* always translate it back so that the lower-left corner is at the origin */
-	if (l->eps->flipped && rotation==90) {
-		fprintf(tfp, "0 %d translate\n", eps_h);
-		fprintf(tfp, "1 -1 scale\n");
-	}
-	if (l->eps->flipped && rotation==270) {
-		fprintf(tfp, "%d 0 translate\n", eps_w);
-		fprintf(tfp, "-1 1 scale\n");
-	}
+		/* flip the eps stuff */
+		/* always translate it back so that the lower-left corner is at the origin */
+		if (l->eps->flipped && rotation==90) {
+			fprintf(tfp, "0 %d translate\n", eps_h);
+			fprintf(tfp, "1 -1 scale\n");
+		}
+		if (l->eps->flipped && rotation==270) {
+			fprintf(tfp, "%d 0 translate\n", eps_w);
+			fprintf(tfp, "-1 1 scale\n");
+		}
 
-	/* note: fig measures rotation clockwise; postscript is counter-clockwise */
-	/* always translate it back so that the lower-left corner is at the origin */
-	switch (rotation) {
-	   case 0:
-		break;
-	   case 90:
-		if (l->eps->flipped) break;
-		fprintf(tfp, "%d %d translate\n", 0, eps_h);
-		fprintf(tfp, "%d rotate\n", 270);
-		break;
-	   case 180:
-		fprintf(tfp, "%d %d translate\n", eps_w, eps_h);
-		fprintf(tfp, "%d rotate\n", 180);
-		break;
-	   case 270:
-		if (l->eps->flipped) break;
-		fprintf(tfp, "%d %d translate\n", eps_w, 0);
-		fprintf(tfp, "%d rotate\n", 90);
-		break;
-	}
+		/* note: fig measures rotation clockwise; postscript is counter-clockwise */
+		/* always translate it back so that the lower-left corner is at the origin */
+		switch (rotation) {
+		   case 0:
+			break;
+		   case 90:
+			if (l->eps->flipped) break;
+			fprintf(tfp, "%d %d translate\n", 0, eps_h);
+			fprintf(tfp, "%d rotate\n", 270);
+			break;
+		   case 180:
+			fprintf(tfp, "%d %d translate\n", eps_w, eps_h);
+			fprintf(tfp, "%d rotate\n", 180);
+			break;
+		   case 270:
+			if (l->eps->flipped) break;
+			fprintf(tfp, "%d %d translate\n", eps_w, 0);
+			fprintf(tfp, "%d rotate\n", 90);
+			break;
+		}
 
-	/* translate the eps stuff so that the lower-left corner is at the origin */
-	fprintf(tfp, "%d %d translate\n", -llx, -lly);
-	fprintf(tfp, "%%\n");
-	epsf = fopen(l->eps->file, "r");
-	if (epsf == NULL) {
-		fprintf (stderr, "Unable to open eps file: %s\n", l->eps->file);
-		fprintf(tfp, "gr\n");
-		return;
+		/* translate the eps stuff so that the lower-left corner is at the origin */
+		fprintf(tfp, "%d %d translate\n", -llx, -lly);
+		/* save vm so eps file won't change anything */
+		fprintf(tfp, "save\n");
+		fprintf(tfp, "%% EPS file follows:\n");
+		epsf = fopen(l->eps->file, "r");
+		if (epsf == NULL) {
+			fprintf (stderr, "Unable to open eps file: %s, error: (%d)\n",
+				l->eps->file, sys_errlist[errno],errno);
+			fprintf(tfp, "gr\n");
+			return;
+		}
+		while (fgets(buf, sizeof(buf), epsf) != NULL) {
+			if (*buf == '%')		/* skip comment lines */
+				continue;
+			if ((cp=strstr(buf, "showpage")) != NULL)
+				strcpy (cp, cp+8);	/* remove showpage */
+			fputs(buf, tfp);
+		}
+		fclose (epsf);
+		/* restore vm and gsave */
+		fprintf(tfp, "restore gr\n");
+		fprintf(tfp, "%%\n");
+		fprintf(tfp, "%% End Imported EPS File: %s\n", l->eps->file);
+		fprintf(tfp, "%%\n");
 	}
-	while (fgets(buf, sizeof(buf), epsf) != NULL) {
-		if (*buf == '%')		/* skip comment lines */
-			continue;
-		if ((cp=strstr(buf, "showpage")) != NULL)
-			strcpy (cp, cp+8);	/* remove showpage */
-		fputs(buf, tfp);
-	}
-	fclose (epsf);
-	fprintf(tfp, "gr\n");
-	fprintf(tfp, "%%\n");
-	fprintf(tfp, "%% End Imported EPS File: %s\n", l->eps->file);
-	fprintf(tfp, "%%\n");
-	}
-        else
-        {
+	else
+	{
 		p = l->points;
 		q = p->next;
 		fprintf(tfp, "n %d %d m", p->x, p->y);
@@ -665,7 +690,7 @@ F_spline	*s;
 	set_linewidth(s->thickness);
 	a = s->controls;
 	p = s->points;
-        if (s->back_arrow && s->thickness > 0)
+	if (s->back_arrow && s->thickness > 0)
 	    draw_arrow_head(a->rx, a->ry, (double)p->x,
 			(double)p->y, s->back_arrow->ht, s->back_arrow->wid,
 			s->color);
@@ -683,7 +708,7 @@ F_spline	*s;
 	if (s->area_fill && (int)s->area_fill != DEFAULT)
 	    fill_area(s->area_fill, s->color);
 	if (s->thickness > 0)
-            fprintf(tfp, "gs col%d s gr\n", s->color > MAXCOLORS ? -1 : s->color);
+	    fprintf(tfp, "gs col%d s gr\n", s->color > MAXCOLORS ? -1 : s->color);
 	reset_style(s->style, s->style_val);
 
 	if (s->for_arrow && s->thickness > 0)
@@ -749,7 +774,7 @@ F_spline	*s;
 	if (s->area_fill && (int)s->area_fill != DEFAULT)
 	    fill_area(s->area_fill, s->color);
 	if (s->thickness > 0)
-            fprintf(tfp, "gs col%d s gr\n", s->color > MAXCOLORS ? -1 : s->color);
+	    fprintf(tfp, "gs col%d s gr\n", s->color > MAXCOLORS ? -1 : s->color);
 	reset_style(s->style, s->style_val);
 	if (s->for_arrow && s->thickness > 0) {
 	    draw_arrow_head(x2, y2, c, d, s->for_arrow->ht,
@@ -768,7 +793,7 @@ F_ellipse	*e;
 	{
 	    fprintf(tfp, "%% Ellipse\n");
 	    fprintf(tfp, "n %d %d %d %d 0 360 DrawEllipse ",
-	          e->center.x, e->center.y, e->radiuses.x, e->radiuses.y);
+		  e->center.x, e->center.y, e->radiuses.x, e->radiuses.y);
 	}
 	else
 	{
@@ -782,7 +807,7 @@ F_ellipse	*e;
 	if (e->area_fill && (int)e->area_fill != DEFAULT)
 	    fill_area(e->area_fill, e->color);
 	if (e->thickness > 0)
-            fprintf(tfp, "gs col%d s gr\n", e->color > MAXCOLORS ? -1 : e->color);
+	    fprintf(tfp, "gs col%d s gr\n", e->color > MAXCOLORS ? -1 : e->color);
 	if (e->angle != 0)
 	    fprintf(tfp, "gr\n");
 	reset_style(e->style, e->style_val);
@@ -800,7 +825,7 @@ F_text	*t;
 
 	if (multi_page)
 	   fprintf(tfp, "/o%d {", no_obj++);
-	if (iso_encoding)
+	if (PSisomap[t->font+1] == TRUE)
 	   fprintf(tfp, TEXT_PS, PSFONT(t), "-iso", PSFONTMAG(t));
 	else
 	   fprintf(tfp, TEXT_PS, PSFONT(t), "", PSFONTMAG(t));
@@ -813,12 +838,13 @@ F_text	*t;
 	/* this loop escapes characters '(', ')', and '\' */
 	fputc('(', tfp);
 	for(cp = (unsigned char *)t->cstring; *cp; cp++) {
-	      if (strchr("()\\", *cp)) fputc('\\', tfp);
-              if (*cp>=0x80)
-                 fprintf(tfp,"\\%o", *cp);
-              else
-	         fputc(*cp, tfp);
-	      }
+	    if (strchr("()\\", *cp)) 
+		fputc('\\', tfp);
+	    if (*cp>=0x80)
+		fprintf(tfp,"\\%o", *cp);
+	    else
+		fputc(*cp, tfp);
+		}
 	fputc(')', tfp);
 
 	if ((t->type == T_CENTER_JUSTIFIED) || (t->type == T_RIGHT_JUSTIFIED)){
@@ -826,7 +852,7 @@ F_text	*t;
 	  	fprintf(tfp, " dup stringwidth pop ");
 		if (t->type == T_CENTER_JUSTIFIED) fprintf(tfp, "2 div ");
 		fprintf(tfp, "neg 0 rmoveto ");
-	      	}
+		}
 
 	else if ((t->type != T_LEFT_JUSTIFIED) && (t->type != DEFAULT))
 		fprintf(stderr, "Text incorrectly positioned\n");
@@ -922,7 +948,7 @@ int col;
 	y = yb + arrowwid / 2;
 	xd = x*cosa + y*sina;
 	yd = -x*sina + y*cosa;
-        fprintf(tfp, "n %.3f %.3f m %.3f %.3f l %.3f %.3f l gs 2 setlinejoin col%d s gr\n", xc, yc, x2, y2, xd, yd, col > MAXCOLORS ? -1 : col);
+	fprintf(tfp, "n %.3f %.3f m %.3f %.3f l %.3f %.3f l gs 2 setlinejoin col%d s gr\n", xc, yc, x2, y2, xd, yd, col > MAXCOLORS ? -1 : col);
 	}
 
 static fill_area(fill, color)
@@ -946,11 +972,11 @@ F_compound      *ob;
    {
       for (t = ob->texts; t != NULL; t = t->next)
       {
-         for (s = (unsigned char*)t->cstring; *s != '\0'; s++)
-         {
-            /* look for characters >= 128 */
-            if (*s>127) return(1);
-         }
+	 for (s = (unsigned char*)t->cstring; *s != '\0'; s++)
+	 {
+	    /* look for characters >= 128 */
+	    if (*s>127) return(1);
+	 }
       }
    }
 
@@ -965,21 +991,21 @@ F_compound	*ob;
 {
    F_compound *c;
    F_text     *t;
-   static int font_defined[ MAX_PSFONT ];
 
    if (ob->texts != NULL)
    {
-      for (t = ob->texts; t != NULL; t = t->next)
-      if (font_defined[t->font] != 1)
-      {
-         fprintf(tfp, "/%s /%s-iso isovec ReEncode\n", PSFONT(t), PSFONT(t));
-         font_defined[t->font] = 1;
-      }
+	for (t = ob->texts; t != NULL; t = t->next)
+	    if (PSisomap[t->font+1] == FALSE)
+	    {
+		fprintf(tfp, "/%s /%s-iso isovec ReEncode\n", PSFONT(t), PSFONT(t));
+		PSisomap[t->font+1] = TRUE;
+	    }
    }
 
-   for (c = ob->compounds; c != NULL; c = c->next) {
-       encode_all_fonts(c);
-       }
+   for (c = ob->compounds; c != NULL; c = c->next) 
+   {
+	encode_all_fonts(c);
+   }
 }
 
 static ellipse_exist(ob)

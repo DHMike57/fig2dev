@@ -68,10 +68,10 @@ char opt, *optarg;
 	case 'f':		/* set default text font */
 	        {   int i;
 
-		    for ( i = 1; i <= MAX_FONT + 1; i++ )
+		    for ( i = 1; i <= MAX_FONT; i++ )
 			if ( !strcmp(optarg, picfontnames[i]) ) break;
 
-		    if ( i > MAX_FONT + 1 )
+		    if ( i > MAX_FONT)
 			fprintf(stderr,
 			"warning: non-standard font name %s\n", optarg);
 		}

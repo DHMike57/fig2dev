@@ -50,3 +50,11 @@ implemented only in the PS output mode, most notably the use of PS font
 names in specifying text objects.  However, unlike V2.0, this feature
 is optional in V2.1; TFX-style font specifiers are also supported and
 can be translated in all output modes.  TFX and V2.0 are still supported.
+
+********************************
+PROBLEMS and POSSIBLE SOLUTIONS:
+********************************
+
+Solaris 2.x users:
+
+You must use the /usr/ucb/cc compiler because gethosename() is used.

@@ -45,6 +45,7 @@ extern int            errno;
 
 extern F_arrow		*make_arrow();
 extern char		*calloc();
+extern double            floor(), ceil();
 
 static F_ellipse	*read_ellipseobject();
 static F_line		*read_lineobject();
@@ -773,6 +774,7 @@ read_epsf(eps)
     int             llx, lly, urx, ury;
     FILE           *epsf;
     register unsigned char *last;
+    double          fllx, flly, furx, fury;
 
     epsf = fopen(eps->file, "r");
     if (epsf == NULL) {
@@ -782,12 +784,16 @@ read_epsf(eps)
     while (fgets(buf, 300, epsf) != NULL) {
 	lower(buf);
 	if (!strncmp(buf, "%%boundingbox", 13)) {
-	    if (sscanf(buf, "%%%%boundingbox: %d %d %d %d",
-		       &llx, &lly, &urx, &ury) < 4) {
+	    if (sscanf(buf, "%%%%boundingbox: %lf %lf %lf %lf",
+		       &fllx, &flly, &furx, &fury) < 4) {
 		put_msg("Bad EPS bitmap file: %s", eps->file);
 		fclose(epsf);
 		return 0;
 	    }
+          llx= floor(fllx);
+          lly= floor(flly);
+          urx= ceil(furx);
+          ury= ceil(fury);
 	    break;
 	}
     }

@@ -58,6 +58,8 @@ DependSubdirs($(SUBDIRS))
 
 ComplexProgramTarget(fig2dev)
 
+all:: fig2dev.man fig2ps2tex.man pic2tpic.man
+
 InstallScript(fig2ps2tex,$(BINDIR))
 InstallScript(pic2tpic,$(BINDIR))
 

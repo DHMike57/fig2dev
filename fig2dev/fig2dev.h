@@ -25,6 +25,9 @@
 #include <string.h>
 #else
 #include <strings.h>
+#ifndef strchr
+extern char *strchr();
+#endif
 #ifndef NeXT
 #define	strchr	index
 #define	strrchr	rindex
@@ -50,19 +53,19 @@ struct driver {
 #define EXCLUDE_TEXT 0
 };
 
-extern char *strchr();
-
 extern char Err_badarg[];
 extern char Err_incomp[];
 extern char Err_mem[];
 
 extern char *PSfontnames[];
 
+extern int  PSisomap[];
+
 extern char	*prog, *from;
 extern int	font_size;
 extern double	mag;
 extern FILE	*tfp;
 
-extern int llx, lly, urx, ury;
+extern int llx, lly, urx, ury, coord_system;
 
 extern void gendev_null();

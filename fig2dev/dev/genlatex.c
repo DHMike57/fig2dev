@@ -100,8 +100,12 @@ double	THICK_LYOFF =	(0.6/72.0);
 #define TRANS2(x1,y1,x2,y2)	(*translate_coordinates)(&x1,&y1); \
 				(*translate_coordinates)(&x2,&y2)
 #define TRANSD(x,y)		(*translate_coordinates_d)(&x,&y)
+#ifndef MIN
 #define	MIN(x,y)	(((x) <= (y))? (x): (y))
+#endif
+#ifndef MAX
 #define	MAX(x,y)	(((x) >= (y))? (x): (y))
+#endif
 #define	ABS(x)		(((x) >= 0)? (x): -(x))
 #define round4(x)	((round(10000.0*(x))/10000.0))
 #define round6(x)	((round(1000000.0*(x))/1000000.0))
@@ -114,7 +118,7 @@ char		thick_ldot[] = THICK_LDOT;
 static	int	coord_system;
 int		verbose = 0;
 double		dash_mag = 1.0;
-int		thick_width = 1;
+int		thick_width = 2;
 double		tolerance = 2.0;
 double		arc_tolerance = 1.0;
 int		(*translate_coordinates)() = NULL;
@@ -175,10 +179,10 @@ char opt, *optarg;
 
 
 	case 'f':		/* set default text font */
-	    for ( i = 1; i <= MAX_FONT + 1; i++ )
+	    for ( i = 1; i <= MAX_FONT; i++ )
 		if ( !strcmp(optarg, texfontnames[i]) ) break;
 
-	    if ( i > MAX_FONT + 1 )
+	    if ( i > MAX_FONT)
 		fprintf(stderr,
 			"warning: non-standard font name %s\n", optarg);
 		

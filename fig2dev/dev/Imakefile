@@ -10,9 +10,9 @@ DEPLIBS =
 INCLUDES = -I..
 
 SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genpic.c genpictex.c \
-	genps.c genpstex.c gentextyl.c gentpic.c def_setfigfont.c
+	genps.c genpstex.c gentextyl.c gentpic.c setfigfont.c
 LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genpic.o genpictex.o \
-	genps.o genpstex.o gentextyl.o gentpic.o def_setfigfont.o
+	genps.o genpstex.o gentextyl.o gentpic.o setfigfont.o
 
 LIB = transfig
 
