@@ -1,27 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1991 by Micah Beck
+ * Copyright (c) 1988 by Conrad Kwok
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
 /* 
@@ -82,8 +74,6 @@
  *		7) The default font size is (assumed to be) 10 points!
  */
 
-#include <stdio.h>
-#include <math.h>
 #include "fig2dev.h"
 #include "object.h"
 #include "tpicfonts.h"
@@ -155,9 +145,13 @@ F_compound	*objects;
 
 }
 
-void gentpic_end()
+int
+gentpic_end()
 {
   	fprintf(tfp, ".PE\n");				/* PIC ending */
+
+	/* all ok */
+	return 0;
 }
 
 /*
@@ -309,7 +303,7 @@ F_line	*l;
 	else
 	    fprintf(tfp, "line");
 
-	/*rja: Place arrowheads or lack there of on the line*/
+	/* Place arrowheads or lack there of on the line*/
 	if ((l->for_arrow) && (l->back_arrow))
 	    fprintf(tfp, " <-> from");
 	else if (l->back_arrow)
@@ -402,7 +396,7 @@ F_line	*l;
 			attr, xmin/ppi, convy((ymin+radius)/ppi),
 			(xmin+radius)/ppi, convy(ymin/ppi), radius/ppi);
 	} else {
-		/*rja: Place arrowheads or lack there of on the line*/
+		/* Place arrowheads or lack there of on the line*/
 		fprintf(tfp, "line %s", attr);
 		if ((l->for_arrow) && (l->back_arrow))
 			fprintf(tfp, " <-> from");
@@ -467,7 +461,7 @@ F_spline	*s;
 		    fprintf(tfp, " dotted");
 
 
-           /*rja: Attach arrowhead as required */
+           /* Attach arrowhead as required */
 	    if ((s->for_arrow) && (s->back_arrow))
 	       fprintf(tfp, " <->");
 	    else if (s->back_arrow)
@@ -487,7 +481,7 @@ F_spline	*s;
 	    fprintf(tfp, " dotted");
 
 
-           /*rja: Attach arrowhead as required */
+           /* Attach arrowhead as required */
 	    if ((s->for_arrow) && (s->back_arrow))
 	       fprintf(tfp, " <->");
 	    else if (s->back_arrow)
@@ -617,13 +611,15 @@ F_arc	*a;
 	else if (a->style == DOTTED_LINE && a->style_val > 0.0)
 		fprintf(tfp, " dotted");
 
-	/*rja: Attach arrowhead as required */
-	if ((a->for_arrow) && (a->back_arrow))
+	/* Attach arrowhead as required */
+	if ((a->type == T_OPEN_ARC) && (a->thickness != 0) && (a->back_arrow || a->for_arrow)) {
+	    if ((a->for_arrow) && (a->back_arrow))
 		fprintf(tfp, " <->");
-	else if (a->back_arrow)
+	    else if (a->back_arrow)
 		fprintf(tfp, " <-");
-	else if (a->for_arrow)
+	    else if (a->for_arrow)
 		fprintf(tfp, " ->");
+	}
 
 
 	if (a->direction)
@@ -748,7 +744,7 @@ F_spline	*s;
 
 	    fprintf(tfp, "line ");
 
-           /*rja: Attach arrowhead as required */
+           /* Attach arrowhead as required */
 
 	    if ((s->back_arrow) && (p2 == pfirst))
 	       fprintf(tfp, " <- ");

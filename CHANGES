@@ -1,20 +1,78 @@
+Changes to Transfig/fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
 
-Patchlevel 1a  (September, 1999)
+Patchlevel 3-beta  (Dec 14, 1999)
+[N.B. There was no transfig/fig2dev 3.2 patchlevel 2]
+
+NEW FEATURES
+	o If DBM file for RGB databse does not exist, read "rgb.txt" instead.
+	o If a file such as /usr/local/lib/fig2dev/A3.ps exists, insert it
+	  when generating PostScript output to select paper tray, for example.
+	o Messages from bitmap output (GIF, JPEG, etc) are captured and printed
+	  if there is any error during the export
+	o New PDF driver (uses ps2pdf from the ghostscript distribution)
+	o New CGM driver (Computer Graphics Metafile) from Philippe Bekaert
+	  (Philippe.Bekaert@cs.kuleuven.ac.be)
+	o More page sizes (Japanese JIS B0-B10 and ISO A0-A9)
+	o Autocad Slide format called "sld" now instead of "acad"
+	  (e.g. fig2dev -L sld ...)
+	o -L eps is required for Encapsulated PostScript now, instead of fig2dev
+	  just using the -P (add showpage) option to distinguish EPS from PS
+	o The compile-time symbol EPSF in fig2dev/Imakefile has been changed:
+	  comment out the DDLATEX2E_GRAPHICS = ... line if you don't want to use
+	  the standard graphics package distributed w/ LaTeX2e
+	  Uncomment the DDEPSFIG = ... line if you want to use the deprecated
+	  epsfig macros distributed w/ LaTeX2e (DDLATEX2E_GRAPHICS must also be
+	  defined)
+	o The default is now to compile for DVIPS
+	o Arc-boxes available for LaTeX now
+	  from C. Scott Ananian <cananian@lesser-magoo.lcs.mit.edu>
+	o New import picture formats supported - TIFF and PPM 
 
 BUGS FIXED
-	o Fixes the problem of uninitialized bounding box vars, which 
-	     only seem to manifest problems with Sun's native Solaris cc.
-	o Fixes problem where box appears in output
-	o Fixes the problem where output from fig2dev is to stdout, but 
-	     genbitmaps trys to close stdout.
-	     Also makes more room for command (com[500]) to export to bitmap
-	     formats.
-	o Fixes the difference between xfig and fig2dev splines
+	o splines were interpolated slightly differently than in xfig
+	o Add description about "-j" option to help message (when I18N is enabled)
+	o if imported PCX image file couldn't be opened, fig2dev tried to close
+	  the file, which is a bad thing
+	o %%EndProlog has been removed since it was not needed and there was
+	  never a %%BeginProlog
+	o needed pi.h for gentk.c (tk driver)
+	o bzero macro defined globally now (wasn't defined in readpcx.c) for
+	  those systems which don't have it (it is defined to use memset)
+	o didn't include "pi.h" in dev/gentk.c for machines that don't have M_PI
+	o Moved JPEGLIBDIR and JPEGINCDIR definition closer to the top in the
+	  fig2dev/Imakefile 
+	o Output to GIF, JPEG, etc. (bitmap formats) didn't work properly if the
+	  destination was stdout
+	o "make install" changed because some systems' install program can only
+	   take one file at a time
+	o Added a "newpath" command after the initial clip command for PostScript
+	  output just in case an object is drawn without a preceding newpath  
+	o M_2PI was redefined without first being #undef'd
+	o the "-" character in Fig files should really be a hyphen, not a dash as
+	  it was encoded for PostScript output.  This is fixed thanks to info
+	  from Robert Maier.
+	o Splines didn't come out exactly as they did in xfig.
+	o In transfig, character used instead of int when checking for EOF on
+	  file. From Geoff Keating (geoffk@ozemail.com.au)
+	o %%EndDocument only written for imported EPS files (not XPM, etc)
+	  From Dick Wesseling (ftu@fi.UU.nl)
+	o Added "if defined(FreeBSDArchitecture)" to include -lcompat library
+	o Changed fig2dev.h to always include <sys/param.h>
+	o Bounding box variables were uninitialized
+	o Cleaned up error reporting of line numbers in Fig file
+	o Text bounding calculations ignored the "include" directive for center-
+	  and right-justified text, which is used to flag whether text should be
+	  included in the bounding area.  This would affect the LaTeX, PicTex,
+	  PSTeX, TexTyl, and IBMGL drivers.
+	  From Anton Wilder <a.j.wilder@swansea.ac.uk>
+	o Clipping for arrowheads so that thick lines wouldn't "protrude" through
+	  the arrow tip modified so that it works properly with ghostscript 5.50.
+	o Allocation error in reading some pcx files
 
-----------------------------
+------------------------------
 Patchlevel 1  (July 1, 1998)
 
 NEW FEATURES
@@ -32,8 +90,6 @@ BUGS FIXED
 	  deeper so "../" is prepended for that case
 	o The rest of the scaling problems for latex fixed :-)
 	  from Hans Werner Strube (strube@physik3.gwdg.de)
-	o fig2dev can now be used in a pipe (e.g. cat x.fig | fig2dev -L ps ...)
-	  was attempting to rewind file before
 	o Two bugs fixed in eepic driver
 		1) -l option didn't work because DPI was 0 when line width was
 		   defined
@@ -64,12 +120,12 @@ BUGS FIXED
 	o fig2dev can now be used in a pipe (e.g. cat x.fig | fig2dev -L ps ...)
 	  was attempting to rewind file before
 	o error in I18N defines in fig2dev/Imakefile
-	o buggy strstr() proc in fig2dev source replaced by xfig's version
-	  (only used for systems that don't have their own strstr() )
 	o bug fixes and modernization of Metafont driver by Mats Bengtsson
 	  <mats.bengtsson@s3.kth.se>
 	o removed stricmp() function in dev/genepic.c because strcasecmp() is
 	  equivalent
+	o newpath command given in PostScript output after imported EPS pic to
+	  prevent bounding box being drawn
 
 ===============================================================================
 Version 3.2 (first release Aug 22, 1997)

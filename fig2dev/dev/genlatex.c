@@ -1,27 +1,18 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
 /* 
@@ -30,23 +21,22 @@
  *	Author: Frank Schmuck, Cornell University 6/88
  * 	Converted from fig2latex 5/89 by Micah Beck
  * 	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
+ *      Arc boxes added by C. Scott Ananian 6/99
  *
  */
 #if defined(hpux) || defined(SYSV) || defined(SVR4)
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
-#include <stdio.h>
-#include <math.h>
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
-#include "pi.h"
 
 extern double rad2deg;
 extern void unpsfont();
 
 static put_box();
+static put_arc_box();
 static single_line();
 static put_solidline();
 static put_dashline();
@@ -140,36 +130,41 @@ double		ldot_yoffset;
 
 extern char *ISOtoTeX[];
 
-static translate1(xp, yp)
-int	*xp, *yp;
+static
+translate1(xp, yp)
+  int	*xp, *yp;
 {
 	*xp = *xp + 1;
 	*yp = *yp + 1;
 	}
 
-static translate2(xp, yp)
-int	*xp, *yp;
+static
+translate2(xp, yp)
+  int	*xp, *yp;
 {
 	*xp = *xp + 1;
 	*yp = (double)(TOP - *yp -1);
 	}
 
-static translate1_d(xp, yp)
-double	*xp, *yp;
+static
+translate1_d(xp, yp)
+  double	*xp, *yp;
 {
 	*xp = *xp + 1.0;
 	*yp = *yp + 1.0;
 	}
 
-static translate2_d(xp, yp)
-double	*xp, *yp;
+static
+translate2_d(xp, yp)
+  double	*xp, *yp;
 {
 	*xp = *xp + 1.0;
 	*yp = (double)TOP - *yp -1.0;
 	}
 
-void genlatex_option(opt, optarg)
-char opt, *optarg;
+void
+genlatex_option(opt, optarg)
+  char opt, *optarg;
 {
     int i;
 
@@ -219,12 +214,12 @@ char opt, *optarg;
 	default:
 	    put_msg(Err_badarg, opt, "latex");
 	    exit(1);
-	    break;
 	}
 }
 
-void genlatex_start(objects)
-F_compound	*objects;
+void
+genlatex_start(objects)
+  F_compound	*objects;
 {
 	int tmp;
 
@@ -254,6 +249,14 @@ F_compound	*objects;
 	if (lly > ury) SWAP(lly, ury)
 
 	/* LaTeX start */
+
+	/* print any whole-figure comments prefixed with "%" */
+	if (objects->comments) {
+	    fprintf(tfp,"%%\n");
+	    print_comments("% ",objects->comments, "");
+	    fprintf(tfp,"%%\n");
+	}
+
 	fprintf(tfp, "\\setlength{\\unitlength}{%lisp}%%\n",
 				(long) (round(4736286.72*unitlength)));
 	/* define the SetFigFont macro */
@@ -262,14 +265,19 @@ F_compound	*objects;
 	 				 urx-llx, ury-lly, llx, lly);
 }
 
-void genlatex_end()
+int
+genlatex_end()
 {
 	/* LaTeX ending */
 	fprintf(tfp, "\\end{picture}\n");
+
+	/* all ok */
+	return 0;
 }
 
-static set_linewidth(w)
-int	w;
+static
+set_linewidth(w)
+  int	w;
 {
 	int		latex_w;
 
@@ -299,13 +307,18 @@ int	w;
 	    }
 	}
 
-void genlatex_line(l)
-F_line	*l;
+void
+genlatex_line(l)
+  F_line	*l;
 {
 	F_point		*p, *q;
 	int		x, y, llx, lly, urx, ury, arrow;
 
-	if (verbose) fprintf(tfp, "%%\n%% Fig POLYLINE object\n%%\n");
+	if (verbose) 
+	    fprintf(tfp, "%%\n%% Fig POLYLINE object\n%%\n");
+
+	/* print any comments prefixed with "%" */
+	print_comments("% ",l->comments, "");
 
 	set_linewidth(l->thickness);
 	set_color(l->pen_color);
@@ -321,12 +334,8 @@ F_line	*l;
 	    return;
 	    }
 
-	if (l->type == T_ARC_BOX) { /* A box with rounded corners */
-	  fprintf(stderr, "Arc box not implemented; substituting box.\n");
-	  l->type = T_BOX;
-	}
-
-	if (l->type == T_BOX) { /* A box */
+	/* a box, perhaps with rounded corners */
+	if (l->type == T_BOX || l->type == T_ARC_BOX) {
 	    x = p->x; y = p->y;
 	    TRANS(x, y);
 	    llx = urx = x;
@@ -340,7 +349,10 @@ F_line	*l;
 		if (y > ury) ury = y;
 		q = q->next;
 		}
-	    put_box (llx, lly, urx, ury, l->style, l->style_val);
+	    if (l->type == T_ARC_BOX)
+	      put_arc_box (llx, lly, urx, ury, l->radius, l->style, l->style_val);
+	    else
+	      put_box (llx, lly, urx, ury, l->style, l->style_val);
 	    return;
 	    }
 
@@ -360,9 +372,10 @@ F_line	*l;
 	reset_color(l->pen_color);
 	}
 
-static single_line (x1, y1, x2, y2, arrow, style, val)
-int	x1, y1, x2, y2, arrow, style;
-double	val;
+static
+single_line (x1, y1, x2, y2, arrow, style, val)
+  int	x1, y1, x2, y2, arrow, style;
+  double	val;
 {
 	int    dx, dy, sx, sy;
 	double l, m, deviation;
@@ -388,7 +401,7 @@ double	val;
 	/*** output letex command ***/
 	switch (style) {
 	    case SOLID_LINE:
-		put_solidline(x1, y1, sx, sy, l, arrow);
+		put_solidline(x1, y1, sx, sy, l, arrow, val);
 		break;
 	    case DASH_LINE:
 		put_dashline(x1, y1, sx, sy, l, arrow, val);
@@ -401,11 +414,53 @@ double	val;
 
 
 /*
+ * draw arc box
+ */
+static put_arc_box (llx, lly, urx, ury, radius, style, val)
+int	llx, lly, urx, ury, radius, style;
+double	val;
+{
+        int     radius2= 2*radius;
+	double  swidth = (double)(urx-llx-radius2);
+	double  sheight= (double)(ury-lly-radius2);
+	int (*put_line)();
+
+	switch (style) {
+	    case SOLID_LINE:
+	        put_line = put_solidline;
+		break;
+	    case DASH_LINE:
+		fprintf(stderr, "Dashed arc boxes approximated with solid arcs\n");
+	        put_line = put_dashline;
+		break;
+	    case DOTTED_LINE:
+		fprintf(stderr, "Dotted arc boxes approximated with solid arcs\n");
+	        put_line = put_dotline;
+		break;
+	    }
+	fprintf(tfp, 
+		"\\put(%3d,%3d){\\oval(%3d,%3d)[bl]}\n"
+		"\\put(%3d,%3d){\\oval(%3d,%3d)[tl]}\n"
+		"\\put(%3d,%3d){\\oval(%3d,%3d)[br]}\n"
+		"\\put(%3d,%3d){\\oval(%3d,%3d)[tr]}\n",
+		llx+radius,lly+radius,radius2,radius2,
+		llx+radius,ury-radius,radius2,radius2,
+		urx-radius,lly+radius,radius2,radius2,
+		urx-radius,ury-radius,radius2,radius2);
+	put_line (llx+radius, lly, 1, 0, swidth, 0, val);
+	put_line (llx+radius, ury, 1, 0, swidth, 0, val);
+	put_line (llx, lly+radius, 0, 1, sheight, 0, val);
+	put_line (urx, lly+radius, 0, 1, sheight, 0, val);
+	return;
+	}
+
+/*
  * draw box
  */
-static put_box (llx, lly, urx, ury, style, val)
-int	llx, lly, urx, ury, style;
-double	val;
+static
+put_box (llx, lly, urx, ury, style, val)
+  int	llx, lly, urx, ury, style;
+  double	val;
 {
 	int	dlen;
 
@@ -432,9 +487,11 @@ double	val;
 /*
  * draw a solid line given latex slope
  */
-static put_solidline (x, y, sx, sy, l, arrow)
-int	x, y, sx, sy, arrow;
-double	l;
+static
+put_solidline (x, y, sx, sy, l, arrow, val)
+  int	x, y, sx, sy, arrow;
+  double	l;
+  double  val; /* unused */
 {
 	double	cosine;		/* cosine of line angle */
 	double	dx, dy;
@@ -490,10 +547,11 @@ double	l;
 /*
  * draw a dashed line given latex slope
  */
-static put_dashline (x, y, sx, sy, l, arrow, val)
-int	x, y, sx, sy, arrow;
-double	l;
-double	val;
+static
+put_dashline (x, y, sx, sy, l, arrow, val)
+  int	x, y, sx, sy, arrow;
+  double	l;
+  double	val;
 {
 	double	cosine;		/* cosine of line angle */
 	double	nd;		/* number of dashes and gaps fitting on line */
@@ -525,7 +583,7 @@ double	val;
 	    }
 	if (2*dl >= l  ||  (sx  &&  sy  &&  (l/cosine)*unitlength < MIN_LEN)) {
 	    fprintf(stderr, "Dashed line too short; drawing solid line\n");
-	    put_solidline (x, y, sx, sy, l, arrow);
+	    put_solidline (x, y, sx, sy, l, arrow, 0);
 	    return;
 	    }
 	dg = (l - (n/2+1)*dl) / (double)(n/2);
@@ -552,10 +610,11 @@ double	val;
 /*
  * draw a dotted line given latex slope
  */
-static put_dotline (x, y, sx, sy, l, arrow, val)
-int	x, y, sx, sy, arrow;
-double	l;
-double	val;
+static
+put_dotline (x, y, sx, sy, l, arrow, val)
+  int	x, y, sx, sy, arrow;
+  double	l;
+  double	val;
 {
 	double	cosine;		/* cosine of line angle */
 	double	nd;		/* number of dots fitting on line */
@@ -605,18 +664,24 @@ double	val;
 	    x, y, dx, dy, n+1, dot_xoffset, dot_yoffset, dot_cmd);
 	}
 
-void genlatex_spline(s)
-F_spline	*s;
+void
+genlatex_spline(s)
+  F_spline	*s;
 {
 	fprintf(stderr, "Can't generate spline; omitting object\n");
 	}
 
-void genlatex_ellipse(e)
-F_ellipse	*e;
+void
+genlatex_ellipse(e)
+  F_ellipse	*e;
 {
 	int  x, y, d, dx, dy;
 
-	if (verbose) fprintf(tfp, "%%\n%% Fig ELLIPSE\n%%\n");
+	if (verbose) 
+	    fprintf(tfp, "%%\n%% Fig ELLIPSE\n%%\n");
+
+	/* print any comments prefixed with "%" */
+	print_comments("% ",e->comments, "");
 
 	set_linewidth(e->thickness);
 	switch (e->style) {
@@ -654,14 +719,19 @@ F_ellipse	*e;
 	}
       }
 
-void genlatex_text(t)
-F_text	*t;
+void
+genlatex_text(t)
+  F_text	*t;
 {
 	int   	x, y;
 	char	*tpos;
 	unsigned char	*cp;
 
-	if (verbose) fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
+	if (verbose) 
+	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
+
+	/* print any comments prefixed with "%" */
+	print_comments("% ",t->comments, "");
 
 	x = t->base_x;
 	y = t->base_y;
@@ -684,6 +754,7 @@ F_text	*t;
 
 	    default:
 		fprintf(stderr, "Text incorrectly positioned\n");
+	    	tpos = "[lb]";	/* make left in this case */
 	    }
 
 	/* smash is used to position text at baseline */
@@ -751,8 +822,9 @@ F_text	*t;
  	fprintf(tfp, "}}}\n");
 	}
 
-void genlatex_arc(a)
-F_arc	*a;
+void
+genlatex_arc(a)
+  F_arc	*a;
 /*
  *  Approximates an arc by a sequence of quarter ovals.
  *
@@ -788,6 +860,12 @@ F_arc	*a;
 	static char	*ad1[4] = { " 0,-1", " 1, 0", " 0, 1", "-1, 0" };
 	static char	*ad2[4] = { "-1, 0", " 0,-1", " 1, 0", " 0, 1" };
 
+	if (verbose) 
+	    fprintf(tfp, "%%\n%% Fig ARC object\n%%\n");
+
+	/* print any comments prefixed with "%" */
+	print_comments("% ",a->comments, "");
+
 	set_linewidth(a->thickness);
 	set_color(a->pen_color);
 	switch (a->style) {
@@ -799,19 +877,18 @@ F_arc	*a;
 	    case DOTTED_LINE:
 		fprintf(stderr, "Dotted arcs not supported\n");
 		break;
-	    }
+	}
 	if (a->direction == 1) {
 	    p1 = a->point[0];
 	    p2 = a->point[2];
 	    p1_arrow = (a->back_arrow != NULL);
 	    p2_arrow = (a->for_arrow != NULL);
-	    }
-	else {
+	} else {
 	    p1 = a->point[2];
 	    p2 = a->point[0];
 	    p1_arrow = (a->for_arrow != NULL);
 	    p2_arrow = (a->back_arrow != NULL);
-	    }
+	}
 	cx = a->center.x;
 	cy = a->center.y;
 	TRANS2(p1.x, p1.y, p2.x, p2.y);
@@ -845,7 +922,7 @@ F_arc	*a;
 	 || fabs(angle2 - 90.0*q2) > arc_tolerance)
 	    fprintf(stderr, "Approximating arc by ovals\n");
 	/*** Draw arc ***/
-	if (p1_arrow)
+	if (a->type == T_OPEN_ARC && a->thickness != 0 && p1_arrow)
 	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%s){0}}\n", p1.x, p1.y, ad1[q1]);
 	while (q1 != q2) {
 	    put_quarter(p1, pq[q1], q1);
@@ -853,7 +930,7 @@ F_arc	*a;
 	    q1 = (q1 + 1) % 4;
 	    }
 	put_quarter(p1, p2, q1);
-	if (p2_arrow)
+	if (a->type == T_OPEN_ARC && a->thickness != 0 && p2_arrow)
 	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%s){0}}\n", p2.x, p2.y, ad2[q2]);
 
 	if (a->fill_style != UNFILLED)
@@ -861,9 +938,10 @@ F_arc	*a;
 	reset_color(a->pen_color);
 	}
 
-static put_quarter(p1, p2, q)
-F_pos	p1, p2;
-int	q;
+static
+put_quarter(p1, p2, q)
+  F_pos	p1, p2;
+  int	q;
 /*
  *  Draw quarter oval from p1 to p2 in quadrant q
  */

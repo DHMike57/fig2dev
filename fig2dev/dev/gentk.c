@@ -1,27 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1998 by Mike Markowski
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
 /*
@@ -30,8 +22,6 @@
  *	Author: Mike Markowski (mm@udel.edu), U of Delaware, 4/98
  */
 
-#include <stdio.h>
-#include <math.h>
 #include "fig2dev.h"
 #include "object.h"
 
@@ -75,32 +65,39 @@ static int	full_page = FALSE;
  */
 
 void
-genTkOption(opt, optarg)
+gentk_option(opt, optarg)
 char opt, *optarg;
 {
-	switch (opt) {
-      	  case 'l':			/* landscape mode */
+    switch (opt) {
+	case 'l':			/* landscape mode */
 		landscape = TRUE;	/* override the figure file setting */
 		orientspec = TRUE;	/* user-specified */
 		break;
 
-      	  case 'p':			/* portrait mode */
+	case 'p':			/* portrait mode */
 		landscape = FALSE;	/* override the figure file setting */
 		orientspec = TRUE;	/* user-specified */
 		break;
 
-      	  case 'P':			/* use full page instead of bounding box */
+	case 'P':			/* use full page instead of bounding box */
 		full_page = TRUE;
 		break;
 
- 	  case 'z':			/* papersize */
+	case 'z':			/* papersize */
 		(void) strcpy (papersize, optarg);
 		paperspec = TRUE;	/* user-specified */
 		break;
 
-	  default:
+	case 'f':			/* ignore magnification, font sizes and lang here */
+	case 'm':
+	case 's':
+	case 'L':
 		break;
-	}
+
+	default:
+		put_msg(Err_badarg, opt, "tk");
+		exit(1);
+    }
 
 }
 
@@ -111,7 +108,7 @@ char opt, *optarg;
  */
 
 void
-genTkStart(F_compound *objects)
+gentk_start(F_compound *objects)
 {
 	char		stfp[128];
 	int		coord_system;
@@ -124,6 +121,12 @@ genTkStart(F_compound *objects)
 	if (coord_system == 1)
 		CONV = 1;
 
+	/* print any whole-figure comments prefixed with "#" */
+	if (objects->comments) {
+	    fprintf(tfp,"#\n");
+	    print_comments("# ",objects->comments, "");
+	    fprintf(tfp,"#\n");
+	}
 	sprintf(stfp, "# Canvas name (\".c\") can be changed to anything you "
 		"like.  It only\n");
 	niceLine(stfp);
@@ -218,13 +221,16 @@ genTkStart(F_compound *objects)
  *   Last call!...
  */
 
-void
-genTkEnd()
+int
+gentk_end()
 {
 	char	stfp[64];
 
 	sprintf(stfp, "focus %s\n", canvas);
 	niceLine(stfp);
+
+	/* all ok */
+	return 0;
 }
 
 /*
@@ -237,15 +243,17 @@ genTkEnd()
  */
 
 void
-genTkArc(F_arc *a)
+gentk_arc(F_arc *a)
 {
-	if (a->style > 0)
-		fprintf(stderr, "genTkArc: only solid lines "
-			"supported by Tk.\n");
-	if (a->for_arrow || a->back_arrow)
-		fprintf(stderr, "genTkArc: arc arrows not supported by Tk.\n");
-	drawShape(tkArc, (void *) a, a->thickness,
-		a->pen_color, a->fill_color, a->fill_style);
+    /* print any comments prefixed with "#" */
+    print_comments("# ",a->comments, "");
+
+    if (a->style > 0)
+	fprintf(stderr, "gentk_arc: only solid lines are supported by Tk.\n");
+    if (a->type == T_OPEN_ARC && (a->for_arrow || a->back_arrow))
+	fprintf(stderr, "gentk_arc: arc arrows not supported by Tk.\n");
+    drawShape(tkArc, (void *) a, a->thickness,
+	a->pen_color, a->fill_color, a->fill_style);
 }
 
 /*
@@ -253,26 +261,29 @@ genTkArc(F_arc *a)
  */
 
 void
-genTkEllipse(F_ellipse *e)
+gentk_ellipse(F_ellipse *e)
 {
-	switch (e->type) {
+    /* print any comments prefixed with "#" */
+    print_comments("# ",e->comments, "");
+
+    switch (e->type) {
 	case T_CIRCLE_BY_DIA:
 	case T_CIRCLE_BY_RAD:
 	case T_ELLIPSE_BY_DIA:
 	case T_ELLIPSE_BY_RAD:
 		if (e->style > 0)
-			fprintf(stderr, "genTkEllipse: only solid lines "
+			fprintf(stderr, "gentk_ellipse: only solid lines "
 				"supported.\n");
 		drawShape(tkEllipse, (void *) e, e->thickness,
 			e->pen_color, e->fill_color, e->fill_style);
 		break;
 	default:
 		/* Stole this line from Netscape 3.03... */
-		fprintf(stderr, "genTkEllipse: Whatchew talkin' 'bout, "
+		fprintf(stderr, "gentk_ellipse: Whatchew talkin' 'bout, "
 			"Willis?\n");
 		return;
 		break;
-	}
+    }
 }
 
 /*
@@ -280,11 +291,14 @@ genTkEllipse(F_ellipse *e)
  */
 
 void
-genTkLine(F_line *l)
+gentk_line(F_line *l)
 {
-	switch (l->type) {
+    /* print any comments prefixed with "#" */
+    print_comments("# ",l->comments, "");
+
+    switch (l->type) {
 	case T_ARC_BOX:	/* Fall through to T_BOX... */
-		fprintf(stderr, "genTkLine: arc box not supported.\n");
+		fprintf(stderr, "gentk_line: arc box not supported.\n");
 	case T_BOX:
 	case T_POLYLINE:
 		/* Take care of filled regions first. */
@@ -299,16 +313,16 @@ genTkLine(F_line *l)
 		break;
 	case T_POLYGON:
 		if (l->style > 0) {
-			fprintf(stderr, "genTkLine: only solid line "
+			fprintf(stderr, "gentk_line: only solid line "
 				"styles supported.\n");
 		}
 		drawShape(tkPolygon, (void *) l->points, l->thickness,
 			l->pen_color, l->fill_color, l->fill_style);
 		break;
 	default:
-		fprintf(stderr, "genTkLine: Whatchew talkin' 'bout, Willis?\n");
+		fprintf(stderr, "gentk_line: Whatchew talkin' 'bout, Willis?\n");
 		break;
-	}
+    }
 }
 
 /*
@@ -329,6 +343,7 @@ drawBitmap(F_line *l)
 	int	stat;
 	FILE	*open_picfile();
 	void	close_picfile();
+	char	xname[PATH_MAX];
 
 	p = l->pic;
 
@@ -340,7 +355,7 @@ drawBitmap(F_line *l)
 
 	/* see if GIF first */
 
-	if ((fd=open_picfile(p->file, &filtype)) == NULL) {
+	if ((fd=open_picfile(p->file, &filtype, True, xname)) == NULL) {
 	    fprintf(stderr,"drawBitmap: can't open bitmap file %s\n",p->file);
 	    return;
 	}
@@ -413,13 +428,13 @@ drawBitmap(F_line *l)
 #define latexFontTypewriter	13
 
 void
-genTkText(F_text * t)
+gentk_text(F_text * t)
 {
 	char		stfp[2048], *tpos;
 	float           y;
 	int		i, j;
-	/* I'm sure I'm just too dense to have seen a better
-	   way of doing this... */
+
+	/* I'm sure I'm just too dense to have seen a better way of doing this... */
 	static struct {
 		char	*prefix,
 			*suffix;
@@ -498,8 +513,11 @@ genTkText(F_text * t)
 			"-0-0-0-p-0-*-*"}
 	};
 
+	/* print any comments prefixed with "#" */
+	print_comments("# ",t->comments, "");
+
 	if (t->angle != 0.)
-		fprintf(stderr, "genTkText: rotated text not "
+		fprintf(stderr, "gentk_text: rotated text not "
 			"supported by Tk.\n");
 
 	sprintf(stfp, "%s create text %fi %fi", canvas, X(t->base_x),
@@ -528,7 +546,7 @@ genTkText(F_text * t)
 		sprintf(stfp, " -anchor se");
 		break;
 	default:
-		fprintf(stderr, "genTkText: Unknown text justification\n");
+		fprintf(stderr, "gentk_text: Unknown text justification\n");
 		t->type = T_LEFT_JUSTIFIED;
 		break;
 	}
@@ -562,7 +580,7 @@ genTkText(F_text * t)
 			break;
 		default:
 			fnum = latexFontDefault;
-			fprintf(stderr, "genTkText: unknown LaTeX font.\n");
+			fprintf(stderr, "gentk_text: unknown LaTeX font.\n");
 			break;
 		}
 		sprintf(stfp, " -font \"%s%d%s\"", fontNames[fnum].prefix,
@@ -619,7 +637,7 @@ bezierSpline(double a0, double b0, double a1, double b1, double a2, double b2,
  */
 
 static void
-genTkItpSpline(F_spline *s)
+gentk_itpSpline(F_spline *s)
 {
 	char		dir[8], stfp[128];
 	F_arrow		*a;
@@ -749,7 +767,7 @@ quadraticSpline(double a1, double b1, double a2, double b2, double a3,
  */
 
 static void
-genTkCtlSpline(F_spline *s)
+gentk_ctlSpline(F_spline *s)
 {
 	char	dir[8], stfp[128];
 	double	cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4;
@@ -905,12 +923,15 @@ genTkCtlSpline(F_spline *s)
  *   g e n T k S p l i n e ( )
  */
 
-void genTkSpline(F_spline *s)
+void gentk_spline(F_spline *s)
 {
+	/* print any comments prefixed with "#" */
+	print_comments("# ",s->comments, "");
+
 	if (int_spline(s))
-		genTkItpSpline(s);
+		gentk_itpSpline(s);
 	else
-		genTkCtlSpline(s);
+		gentk_ctlSpline(s);
 }
 
 /*
@@ -1019,7 +1040,7 @@ tkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
 	ex = X(a->point[2].x) - cx;	/* End point. */
 	ey = cy - Y(a->point[2].y);
 
-	radius = hypot(sy, sx);
+	radius = sqrt(sy*sy + sx*sx);
 	angle1 = atan2(sy, sx) * 180.0 / M_PI;
 	if (angle1 < 0.)
 		angle1 += 360.;
@@ -1432,13 +1453,13 @@ niceLine(char *s)
  */
 
 struct driver   dev_tk = {
-	genTkOption,
-	genTkStart,
-	genTkArc,
-	genTkEllipse,
-	genTkLine,
-	genTkSpline,
-	genTkText,
-	genTkEnd,
+	gentk_option,
+	gentk_start,
+	gentk_arc,
+	gentk_ellipse,
+	gentk_line,
+	gentk_spline,
+	gentk_text,
+	gentk_end,
 	INCLUDE_TEXT
 };

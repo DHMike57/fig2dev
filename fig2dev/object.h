@@ -1,28 +1,24 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
+
+/* for the xpm package */
+#ifdef USE_XPM
+#include <xpm.h>
+#endif
 
 #define	BLACK_COLOR	0
 #define	WHITE_COLOR	7
@@ -49,6 +45,12 @@ typedef		struct f_arrow {
 			}
 		F_arrow;
 
+typedef		struct f_comment {
+			char			*comment;
+			struct f_comment	*next;
+			}
+		F_comment;
+
 typedef		struct f_ellipse {
 			int			type;
 #define					T_ELLIPSE_BY_RAD	1
@@ -72,6 +74,7 @@ typedef		struct f_ellipse {
 			struct f_pos		radiuses;
 			struct f_pos		start;
 			struct f_pos		end;
+			struct f_comment	*comments;
 			struct f_ellipse	*next;
 			}
 		F_ellipse;
@@ -96,6 +99,7 @@ typedef		struct f_arc {
 			int			direction;
 			struct {double x, y;}	center;
 			struct f_pos		point[3];
+			struct f_comment	*comments;
 			struct f_arc		*next;
 			}
 		F_arc;
@@ -125,9 +129,16 @@ typedef		struct f_line {
 			int			radius;	/* for T_ARC_BOX */
 			struct f_point		*points;
 		    	struct f_pic   		*pic;
+			struct f_comment	*comments;
 			struct f_line		*next;
 			}
 		F_line;
+
+/* for colormap */
+
+#define RED 0
+#define GREEN 1
+#define BLUE 2
 
 typedef struct f_pic {
     int		    subtype;
@@ -135,13 +146,19 @@ typedef struct f_pic {
 #define	P_XBM	1	/* X11 bitmap picture type */
 #define	P_XPM	2	/* X11 pixmap (XPM) picture type */
 #define	P_GIF	3	/* GIF picture type */
-#define	P_PCX	5	/* PCX picture type */
 #define	P_JPEG	4	/* JPEG picture type */
+#define	P_PCX	5	/* PCX picture type */
+#define	P_PPM	6	/* PPM picture type */
+#define	P_TIF	7	/* TIFF picture type */
     char            file[256];
     int             flipped;
     unsigned char  *bitmap;
+#ifdef USE_XPM
+    XpmImage	    xpmimage;		/* for Xpm images */
+#endif /* USE_XPM */
     unsigned char   cmap[3][MAXCOLORMAPSIZE]; /* for color files */
     int		    numcols;		/* number of colors in cmap */
+    int		    transp;		/* transparent color (-1 if none) for GIFs */
     float	    hw_ratio;
     struct f_pos    bit_size;
     int             pix_rotation, pix_width, pix_height, pix_flipped;
@@ -174,12 +191,14 @@ typedef		struct f_text {
 #define					RIGID_TEXT	1	
 #define					SPECIAL_TEXT	2
 #define					PSFONT_TEXT	4
+#define					HIDDEN_TEXT	8
 			double			height;	/* pixels */
 			double			length;	/* pixels */
 			int			base_x;
 			int			base_y;
 			int			pen;
 			char			*cstring;
+			struct f_comment	*comments;
 			struct f_text		*next;
 			}
 		F_text;
@@ -198,6 +217,10 @@ typedef		struct f_text {
 #define		psfont_text(t) \
 			(t->flags != DEFAULT \
 				&& (t->flags & PSFONT_TEXT))
+
+#define		hidden_text(t) \
+			(t->flags != DEFAULT \
+				&& (t->flags & HIDDEN_TEXT))
 
 typedef		struct f_control {
 			double			lx, ly, rx, ry;
@@ -245,6 +268,7 @@ typedef		struct f_spline {
 
 			struct f_point		*points;
 			struct f_control	*controls;
+			struct f_comment	*comments;
 			struct f_spline		*next;
 			}
 		F_spline;
@@ -258,6 +282,7 @@ typedef		struct f_compound {
 			struct f_text		*texts;
 			struct f_arc		*arcs;
 			struct f_compound	*compounds;
+			struct f_comment	*comments;
 			struct f_compound	*next;
 			}
 		F_compound;
@@ -272,6 +297,7 @@ typedef		struct f_compound {
 #define		TEXOBJ_SIZE		sizeof(struct f_text)
 #define		SPLOBJ_SIZE		sizeof(struct f_spline)
 #define		COMOBJ_SIZE		sizeof(struct f_compound)
+#define		COMMENT_SIZE		sizeof(struct f_comment)
 
 /**********************  object codes  **********************/
 

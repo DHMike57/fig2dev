@@ -2,21 +2,25 @@
 #define XCOMM #
 #endif
 
-XCOMM	TransFig : Fig code translation Makefile creation program
+XCOMM TransFig: Facility for Translating Fig code
+XCOMM Copyright (c) 1991 Micah Beck
+
+XCOMM THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+XCOMM INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
+XCOMM EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+XCOMM CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+XCOMM DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+XCOMM TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+XCOMM PERFORMANCE OF THIS SOFTWARE.
 XCOMM
-XCOMM	Copyright (c) 1994 Micah Beck
-XCOMM
-XCOMM The X Consortium, and any party obtaining a copy of these files from
-XCOMM the X Consortium, directly or indirectly, is granted, free of charge, a
+XCOMM Any party obtaining a copy of these files is granted, free of charge, a
 XCOMM full and unrestricted irrevocable, world-wide, paid up, royalty-free,
 XCOMM nonexclusive right and license to deal in this software and
 XCOMM documentation files (the "Software"), including without limitation the
 XCOMM rights to use, copy, modify, merge, publish, distribute, sublicense,
 XCOMM and/or sell copies of the Software, and to permit persons who receive
 XCOMM copies from any such party to do so, with the only requirement being
-XCOMM that this copyright notice remain intact.  This license includes without
-XCOMM limitation a license to do the foregoing actions under any patents of
-XCOMM the party supplying this software to the X Consortium.
+XCOMM that this copyright notice remain intact.
 
 XCOMM Uncomment the USELATEX2E flag in the transfig/Imakefile file to use the
 XCOMM \\usepackage{} command for LaTeX2e. 
@@ -38,6 +42,7 @@ ComplexProgramTarget(transfig)
 all:: transfig.man fig2dev.man fig2ps2tex.man pic2tpic.man
 
 transfig.man:: ../doc/transfig.1
+	rm -f transfig.man
 	-ln -s ../doc/transfig.1 transfig.man
 
 InstallManPage(fig2ps2tex,$(MANDIR))

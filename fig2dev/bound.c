@@ -2,6 +2,7 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
@@ -24,9 +25,6 @@
  * the party supplying this software to the X Consortium.
  */
 
-#include <stdio.h>
-#include <math.h>
-#include "pi.h"
 #include "fig2dev.h"
 #include "object.h"
 
@@ -52,7 +50,7 @@ int	*xmin, *ymin, *xmax, *ymax;
 	if (alpha < 0.0) alpha += Three_sixty_deg;
 	/* compute_angle returns value between 0 to 2PI */
 	
-	radius = hypot(dx, dy);
+	radius = sqrt(dx*dx + dy*dy);
 
 	dx = arc->point[2].x - arc->center.x;
 	dy = arc->center.y - arc->point[2].y;
@@ -451,20 +449,20 @@ int	include;
 		  strchr(t->cstring,'y'));
 	/* characters have some extent downside */
 	if (t->type == T_CENTER_JUSTIFIED) {
-	    dx1 = (t->length/1.95);     dy1 =  0.0;
-	    dx2 = -(t->length/1.95);    dy2 =  0.0;
-	    dx3 = (t->length/1.95);     dy3 = -t->height;
-	    dx4 = -(t->length/1.95);    dy4 = -t->height;
+	    dx1 = (include?  (t->length/1.95) : 0.0);	dy1 =  0.0;
+	    dx2 = (include? -(t->length/1.95) : 0.0);	dy2 =  0.0;
+	    dx3 = (include?  (t->length/1.95) : 0.0);	dy3 = -t->height;
+	    dx4 = (include? -(t->length/1.95) : 0.0);	dy4 = -t->height;
 	} else if (t->type == T_RIGHT_JUSTIFIED) {
-	    dx1 = 0.0;                      dy1 =  0.0;
-	    dx2 = -t->length*1.0256;        dy2 =  0.0;
-	    dx3 = 0.0;                      dy3 = -t->height;
-	    dx4 = -t->length*1.0256;        dy4 = -t->height;
+	    dx1 = 0.0;					dy1 =  0.0;
+	    dx2 = (include? -t->length*1.0256 : 0.0);	dy2 =  0.0;
+	    dx3 = 0.0;					dy3 = -t->height;
+	    dx4 = (include? -t->length*1.0256 : 0.0);	dy4 = -t->height;
 	} else {
-	    dx1 = (include ? t->length*1.0256 : 0); dy1 =  0;
-	    dx2 = 0.0;                              dy2 =  0;
-	    dx3 = (include ? t->length*1.0256 : 0); dy3 = -t->height;
-	    dx4 = 0.0;                              dy4 = -t->height;
+	    dx1 = (include ? t->length*1.0256 : 0.0);	dy1 =  0.0;
+	    dx2 = 0.0;					dy2 =  0.0;
+	    dx3 = (include ? t->length*1.0256 : 0.0);	dy3 = -t->height;
+	    dx4 = 0.0;					dy4 = -t->height;
 	}
     if (descend) {
 	dy1 = 0.3*t->height;

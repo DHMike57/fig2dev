@@ -2,6 +2,7 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1985 Supoj Sutantavibul
  * Copyright (c) 1991 Micah Beck
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
  * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
@@ -24,7 +25,6 @@
  * the party supplying this software to the X Consortium.
  */
 
-#include <stdio.h>
 #include "alloc.h"
 #include "fig2dev.h"
 #include "object.h"

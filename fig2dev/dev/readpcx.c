@@ -1,86 +1,65 @@
 /*
- * FIG : Facility for Interactive Generation of figures
+ * TransFig: Facility for Translating Fig code
  * Copyright (c) 1992 by Brian Boyter
- * Parts Copyright (c) 1991 by Paul King
- * Parts Copyright (c) 1996 by Brian V. Smith
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software subject to the restriction stated
- * below, and to permit persons who receive copies from any such party to
- * do so, with the only requirement being that this copyright notice remain
- * intact.
- * This license includes without limitation a license to do the foregoing
- * actions under any patents of the party supplying this software to the 
- * X Consortium.
- *
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.
  *
  */
 
-#include <stdio.h>
 #include <unistd.h>
 #include "fig2dev.h"
 #include "object.h"
 #include "pcx.h"
 
-extern	FILE	*open_picfile();
-extern	void	close_picfile();
-
 int	_read_pcx();
 void	readpcxhead();
 
-int
-read_pcx(pic)
-    F_pic	   *pic;
-{
-    int		    status;
-    
-    status = _read_pcx(pic);
-    if (status != 1)
-	return 0;
-
-    pic->hw_ratio = (float) pic->bit_size.y / pic->bit_size.x;
-    pic->subtype = P_PCX;
-    return 1;
-}
-
-/* _read_pcx() is called from read_pcx() and read_epsf().
-   The latter is because the output of ghostscript is to a PCX
-   file (actually a pipe).
+/* return codes:  1 : success
+		  0 : invalid file
 */
 
-/* the filetype should always be 0 (file, not pipe) because we need to seek() */
-/* since this is from the output of ghostscript, it is not a problem */
+int
+read_pcx(file,filetype,pic,llx,lly)
+    FILE	   *file;
+    int		    filetype;
+    F_pic	   *pic;
+    int		   *llx, *lly;
+{
+	*llx = *lly = 0;
+	return _read_pcx(file, pic);
+}
+
+/* _read_pcx() is called from read_pcx(), read_gif(), read_ppm(), read_tif(), and read_epsf().
+*/
 
 void pcx_decode();
 
-_read_pcx(pic)
+_read_pcx(pcxfile, pic)
+    FILE	*pcxfile;
     F_pic	*pic;
 {
-    FILE		*pcxfile;
-    int			filtype;
     pcxheadr	        pcxhead;	/* PCX header */
     unsigned short	wid;		/* Width of image */
     unsigned short	ht;		/* Height of image */
     unsigned char	*buffer;	/* current input line */
     int			i, bufsize;
 
-    /* Read the PCX image file header information */
-    if ((pcxfile = open_picfile(pic->file, &filtype)) == NULL) {
-	close_picfile(pcxfile,filtype);
-	return 0;
-    }
+    fprintf(tfp, "%% Begin Imported PCX File: %s\n\n", pic->file);
+    pic->subtype = P_PCX;
 
-    /* read the header */
+    /* Read the PCX image file header information */
     (void) readpcxhead(&pcxhead, pcxfile);
 
     /* Check for FILE stream error */
     if (ferror(pcxfile)) {
-	close_picfile(pcxfile,filtype);
 	return 0;
     }
 
@@ -105,11 +84,9 @@ _read_pcx(pic)
     pic->bit_size.x = wid;
     pic->bit_size.y = ht;
 
-    /* allocate space for the image */
-    bufsize = pcxhead.bppl * (wid+sizeof(unsigned char)-1) * 
-		ht / sizeof(unsigned char);
+    /* allocate space for the image (allocate a little more than needed to be safe) */
+    bufsize = wid * (ht+1) + 16;
     if ((pic->bitmap = (unsigned char*) malloc(bufsize)) == NULL) {
-	    close_picfile(pcxfile,filtype);
 	    return 0;	/* couldn't alloc space for image */
     }
 
@@ -123,7 +100,6 @@ _read_pcx(pic)
 	default:
 		  fprintf(stderr,"Unsupported PCX format in %s",pic->file);
 		  free(pic->bitmap);
-		  close_picfile(pcxfile,filtype);
 		  return 0;
     }
 
@@ -140,7 +116,6 @@ _read_pcx(pic)
 	    pic->numcols = 256;	/* for a VGA colormap */
 	}
     }
-    close_picfile(pcxfile,filtype);
     return 1;
 }
 

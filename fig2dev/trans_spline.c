@@ -1,36 +1,22 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
- * Parts Copyright (c) 1995 C. Blanc and C. Schlick
- * 
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
+ * Copyright (c) 1995 C. Blanc and C. Schlick
  *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
-#include <math.h>
-#include <stdio.h>
 #include "fig2dev.h"
+#include "alloc.h"
 #include "object.h"
 #include "trans_spline.h"
-
 
 
 struct zXPoint
@@ -212,16 +198,22 @@ compute_open_spline(spline, precision)
   COPY_CONTROL_POINT(p1, s1, p0, s0);
   /* first control point is needed twice for the first segment */
   COPY_CONTROL_POINT(p2, s2, p1->next, s1->next);
-  COPY_CONTROL_POINT(p3, s3, p2, s2); /* In case only two points */
-
-  for (k = 0; p2->next != NULL; k++) {
+  if (p2->next == NULL) {
+      COPY_CONTROL_POINT(p3, s3, p2, s2);
+  } else {
       COPY_CONTROL_POINT(p3, s3, p2->next, s2->next);
+  }
+
+  for (k = 0 ;  ; k++) {
       SPLINE_SEGMENT_LOOP(k, p0, p1, p2, p3, s1->s, s2->s, precision);
-      COPY_CONTROL_POINT(p0, s0, p1, s1);
-      COPY_CONTROL_POINT(p1, s1, p2, s2);
-      COPY_CONTROL_POINT(p2, s2, p3, s3);
+      if (p3->next == NULL)
+	break;
+      NEXT_CONTROL_POINTS(p0, s0, p1, s1, p2, s2, p3, s3);
   }
   /* last control point is needed twice for the last segment */
+  COPY_CONTROL_POINT(p0, s0, p1, s1);
+  COPY_CONTROL_POINT(p1, s1, p2, s2);
+  COPY_CONTROL_POINT(p2, s2, p3, s3);
   SPLINE_SEGMENT_LOOP(k, p0, p1, p2, p3, s1->s, s2->s, precision);
   
   if (!add_point(p3->x, p3->y))
@@ -248,21 +240,19 @@ compute_closed_spline(spline, precision)
   INIT_CONTROL_POINTS(spline, p0, s0, p1, s1, p2, s2, p3, s3);
   COPY_CONTROL_POINT(first, s_first, p0, s0); 
 
-  for (k = 0 ; p3 != NULL ; k++)
-    {
+  for (k = 0 ; p3 != NULL ; k++) {
       SPLINE_SEGMENT_LOOP(k, p0, p1, p2, p3, s1->s, s2->s, precision);
       NEXT_CONTROL_POINTS(p0, s0, p1, s1, p2, s2, p3, s3);
-    }
+  }
   /* when we are at the end, join to the beginning */
   COPY_CONTROL_POINT(p3, s3, first, s_first);
   SPLINE_SEGMENT_LOOP(k, p0, p1, p2, p3, s1->s, s2->s, precision);
 
-  for (i = 0; i < 2; i++)
-    {
+  for (i = 0; i < 2; i++) {
       k++;
       NEXT_CONTROL_POINTS(p0, s0, p1, s1, p2, s2, p3, s3);
       SPLINE_SEGMENT_LOOP(k, p0, p1, p2, p3, s1->s, s2->s, precision);
-    }
+  }
 
   if (!add_point(points[0].x,points[0].y))
     too_many_points();
@@ -390,71 +380,51 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
      (xv2, yv2) : coordinates of the vector from middle to extremity */
 
   /* compute coordinates of the origin */
-  if (s1>0)
-    {
-      if (s2<0)
-	{
+  if (s1>0) {
+      if (s2<0) {
 	  positive_s1_influence(k, 0.0, s1, &A_blend[0], &A_blend[2]);
 	  negative_s2_influence(0.0, s2, &A_blend[1], &A_blend[3]); 
-	}
-      else
-	{
+      } else {
 	  positive_s1_influence(k, 0.0, s1, &A_blend[0], &A_blend[2]);
 	  positive_s2_influence(k, 0.0, s2, &A_blend[1], &A_blend[3]); 
-	}
+      }
       point_computing(A_blend, p0, p1, p2, p3, &xstart, &ystart);
-    }
-  else
-    {
+  } else {
       xstart = p1->x;
       ystart = p1->y;
-    }
+  }
   
   /* compute coordinates  of the extremity */
-  if (s2>0)
-    {
-      if (s1<0)
-	{
+  if (s2>0) {
+      if (s1<0) {
 	  negative_s1_influence(1.0, s1, &A_blend[0], &A_blend[2]);
 	  positive_s2_influence(k, 1.0, s2, &A_blend[1], &A_blend[3]);
-	}
-      else
-	{
+      } else {
 	  positive_s1_influence(k, 1.0, s1, &A_blend[0], &A_blend[2]);
 	  positive_s2_influence(k, 1.0, s2, &A_blend[1], &A_blend[3]); 
-	}
+      }
       point_computing(A_blend, p0, p1, p2, p3, &xend, &yend);
-    }
-  else
-    {
+  } else {
       xend = p2->x;
       yend = p2->y;
-    }
+  }
 
   /* compute coordinates  of the middle */
-  if (s2>0)
-    {
-      if (s1<0)
-	{
+  if (s2>0) {
+      if (s1<0) {
 	  negative_s1_influence(0.5, s1, &A_blend[0], &A_blend[2]);
 	  positive_s2_influence(k, 0.5, s2, &A_blend[1], &A_blend[3]);
-	}
-      else
-	{
+      } else {
 	  positive_s1_influence(k, 0.5, s1, &A_blend[0], &A_blend[2]);
 	  positive_s2_influence(k, 0.5, s2, &A_blend[1], &A_blend[3]); 
-	}
-    }
-  else if (s1<0)
-    {
+      }
+  } else if (s1<0) {
       negative_s1_influence(0.5, s1, &A_blend[0], &A_blend[2]);
       negative_s2_influence(0.5, s2, &A_blend[1], &A_blend[3]);
-    }
-  else
-    {
+  } else {
       positive_s1_influence(k, 0.5, s1, &A_blend[0], &A_blend[2]);
       negative_s2_influence(0.5, s2, &A_blend[1], &A_blend[3]);
-    }
+  }
   point_computing(A_blend, p0, p1, p2, p3, &xmid, &ymid);
 
   xv1 = xstart - xmid;
@@ -505,51 +475,39 @@ spline_segment_computing(step, k, p0, p1, p2, p3, s1, s2)
      double  s1, s2;
 {
   double A_blend[4];
-  float t;
+  double t;
   
-  if (s1<0)
-    {  
-     if (s2<0)
-       {
-	 for (t=0.0 ; t<1 ; t+=step)
-	   {
+  if (s1<0) {  
+     if (s2<0) {
+	 for (t=0.0 ; t<1 ; t+=step) {
 	     negative_s1_influence(t, s1, &A_blend[0], &A_blend[2]);
 	     negative_s2_influence(t, s2, &A_blend[1], &A_blend[3]);
 
 	     point_adding(A_blend, p0, p1, p2, p3);
-	   }
-       }
-     else
-       {
-	 for (t = 0.0 ; t<1 ; t+=step)
-	   {
+	 }
+     } else {
+	 for (t = 0.0 ; t<1 ; t+=step) {
 	     negative_s1_influence(t, s1, &A_blend[0], &A_blend[2]);
 	     positive_s2_influence(k, t, s2, &A_blend[1], &A_blend[3]);
 
 	     point_adding(A_blend, p0, p1, p2, p3);
-	   }
-       }
-   }
-  else if (s2<0)
-    {
-      for (t = 0.0 ; t<1 ; t+=step)
-	   {
+	 }
+     }
+  } else if (s2<0) {
+      for (t = 0.0 ; t<1 ; t+=step) {
 	     positive_s1_influence(k, t, s1, &A_blend[0], &A_blend[2]);
 	     negative_s2_influence(t, s2, &A_blend[1], &A_blend[3]);
 
 	     point_adding(A_blend, p0, p1, p2, p3);
 	   }
-    }
-  else
-    {
-      for (t = 0.0 ; t<1 ; t+=step)
-	   {
+  } else {
+      for (t = 0.0 ; t<1 ; t+=step) {
 	     positive_s1_influence(k, t, s1, &A_blend[0], &A_blend[2]);
 	     positive_s2_influence(k, t, s2, &A_blend[1], &A_blend[3]);
 
 	     point_adding(A_blend, p0, p1, p2, p3);
-	   } 
-    }
+      } 
+  }
 }
 
 
@@ -563,6 +521,7 @@ create_line_with_spline(s)
   int      start = 0;
   F_point  *ptr, *pt;
   F_arrow  *arrow;
+  F_comment *lcomm, *scomm;
   
   points = open_spline(s) ? compute_open_spline(s, HIGH_PRECISION)
                           : compute_closed_spline(s, HIGH_PRECISION);
@@ -586,6 +545,21 @@ create_line_with_spline(s)
   line->cap_style  = s->cap_style;
   line->for_arrow  = s->for_arrow;
   line->back_arrow = s->back_arrow;
+  /* copy the comments */
+  if (s->comments) {
+    scomm = s->comments;
+    line->comments = lcomm = (F_comment *) malloc(COMMENT_SIZE);
+    while (scomm) {
+	lcomm->comment = malloc(strlen(scomm->comment)+1);
+	strcpy(lcomm->comment, scomm->comment);
+	if (scomm->next)
+	    lcomm->next = (F_comment *) malloc(COMMENT_SIZE);
+	else
+	    lcomm->next = NULL;
+	scomm = scomm->next;
+	lcomm = lcomm->next;
+    }
+  }
   
   if (s->for_arrow) {
     s->for_arrow = NULL;
@@ -696,6 +670,7 @@ create_line()
     l->back_arrow = NULL;
     l->points = NULL;
     l->radius = DEFAULT;
+    l->comments = NULL;
     return l;
 }
 

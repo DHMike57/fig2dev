@@ -45,8 +45,8 @@
 
             SHELL = /bin/sh
 
-              TOP = ../.
-      CURRENT_DIR = ./fig2dev
+              TOP = .
+      CURRENT_DIR = .
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
@@ -230,10 +230,10 @@ PICFLAGS = -pic
            XILIB = -lXi
 
         SOXLIBREV = 4.10
-          SOXTREV = 4.10
-         SOXAWREV = 5.0
+          SOXTREV = 4.20
+         SOXAWREV = 6.0
         SOOLDXREV = 4.10
-         SOXMUREV = 4.10
+         SOXMUREV = 4.20
         SOXEXTREV = 4.10
       SOXINPUTREV = 4.10
 
@@ -269,11 +269,10 @@ PICFLAGS = -pic
 # -------------------------------------------------------------------------
 # start of Imakefile
 
-#	Fig2dev : General Fig code translation program
-
-# TransFig: Facility for Translating Fig code
-# Copyright (c) 1985 Supoj Sutantavibul
+# Fig2dev : General Fig code translation program
 # Copyright (c) 1991 Micah Beck
+# Parts Copyright (c) 1995-1999 by Brian V. Smith
+# Parts Copyright (c) 1999 by T. Sato
 
 # THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
 # INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN 0
@@ -283,17 +282,14 @@ PICFLAGS = -pic
 # TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 # PERFORMANCE OF THIS SOFTWARE.
 #
-# The X Consortium, and any party obtaining a copy of these files from
-# the X Consortium, directly or indirectly, is granted, free of charge, a
+# Any party obtaining a copy of these files is granted, free of charge, a
 # full and unrestricted irrevocable, world-wide, paid up, royalty-free,
 # nonexclusive right and license to deal in this software and
 # documentation files (the "Software"), including without limitation the
 # rights to use, copy, modify, merge, publish, distribute, sublicense,
 # and/or sell copies of the Software, and to permit persons who receive
 # copies from any such party to do so, with the only requirement being
-# that this copyright notice remain intact.  This license includes without
-# limitation a license to do the foregoing actions under any patents of
-# the party supplying this software to the X Consortium.
+# that this copyright notice remain intact.
 
 # You should point XFIGLIBDIR to the same directory you did when you compiled
 # and installed xfig.  This will be made automatic in the future.
@@ -311,17 +307,18 @@ NEED_STRERROR = -DNEED_STRERROR
 
 # USEINLINE = -DUSE_INLINE
 
+# Change RGB if necessary, to point to your rgb.txt color database
+# file (for X11).  This is needed for the -g (background color) option.
+#
+
+RGB = $(LIBDIR)/rgb
+
 # Unomment the #define for USEXPM if you want to use the XPM
 # (color pixmap) package.
 # You need version 3.4c or newer of the XPM package.
 #
-# Change XPMLIBS if necessary to point to the xpm library (libXpm)
+# Change XPMLIBDIR if necessary to point to the xpm library (libXpm)
 # Change XPMINC if necessary to point to the include file for xpm (xpm.h)
-#
-# Also change XPMRGB if necessary, to point to your rgb.txt color
-# database file (for X11).  This is needed for those XPM flies which
-# have named colors (e.g. "white").
-# You need version 3.4c of the XPM package.
 #
 
 # #define USEXPM
@@ -341,10 +338,13 @@ USE_NDBM = -DNDBM
 
 # If you don't have the jpeg library in your system library area, comment
 # out the USEINSTALLEDJPEG variable (using #), change the JPEGLIBDIR
-# variable to the directory where your jpeg library resides and change
-# the JPEGINCDIR to the directory where your jpeg header files (include)
-# reside.
+# variable to the directory where your jpeg library resides. Do not change
+# JPEGINCDIR in this case because it must be defined relative to the
+# fig2dev/dev subdirectory.
 # You must have version 5b or newer of the jpeg library.
+
+JPEGLIBDIR = /usr/local/lib
+JPEGINCDIR = /usr/include/X11
 
 # uncomment the following to set paper size to A4
 # DDA4 = -DA4
@@ -352,19 +352,23 @@ USE_NDBM = -DNDBM
 # uncomment the following to set IBM Graphics Enhancement Cartridge
 # DDIBMGEC = -DIBMGEC
 
-# uncomment the following to set DVI-to-PostScript driver to dvip
-# DDDVIPS = -DDVIPS
-
 # comment out the DDNFSS = ... line if you don't want NFSS2 font selection
-# for LaTeX texts
-# comment out the DDEPSF = ... line if you don't want epsfig macros as
-# distributed w/ LaTeX2e
+#	for LaTeX texts
+# comment out the DDLATEX2E_GRAPHICS = ... line if you don't want to use the
+#	standard graphics package distributed w/ LaTeX2e
+# UNcomment the DDEPSFIG = ... line if you want to use the deprecated epsfig macros
+#	distributed w/ LaTeX2e (DDLATEX2E_GRAPHICS must also be defined)
 #
-#     Hint: Users of LaTeX2e will probably want to include both of these
-#     options; users of LaTeX 2.09 will probably want to include neither.
+#     Hint: Users of LaTeX2e will probably want to include both DDNFSS
+#		and DDLATEX2E_GRAPHICS options; users of LaTeX 2.09 will
+#		probably want to include neither.
 
 DDNFSS = -DNFSS
-DDEPSF = -DEPSF
+DDLATEX2E_GRAPHICS = -DLATEX2E_GRAPHICS
+# DDEPSFIG = -DEPSFIG
+
+# comment out the DDDVIPS to NOT use dvips for the DVI-to-PostScript driver
+DDDVIPS = -DDVIPS
 
 # If your system doesn't have strcasecmp and/or strncasecmp
 # undefine the following two definitions
@@ -384,21 +388,19 @@ DEFINES = $(NEED_STRERROR) $(HAVE_NO_STRCASECMP) $(HAVE_NO_STRNCASECMP) $(USEINL
 
 # **************************************************************
 # *** You shouldn't have to change anything below this point ***
-# *** The one exception is to change JPEGLIBDIR if you have  ***
-# ***  commented out.                        ***
 # **************************************************************
 
 DIR_DEFS=	-DBITMAPDIR=\\\"$(XFIGLIBDIR)/bitmaps\\\"
 
-IMAKE_DEFINES = -DUSE_JPEG
 DUSEJPEG = -DUSE_JPEG
 
 JPEGLIBDIR = /usr/local/lib
-JPEGINCDIR = /usr/include/X11
 JPEGLIB = -L$(JPEGLIBDIR) -ljpeg
 
-DEVDEFINES = $(DUSEJPEG) $(DUSEXPM) $(XPMINC) $(XPMDBM) \
-		$(DDNFSS) $(DDEPSF) $(DDA4) $(DDIBMGEC) $(DDDVIPS) $(I18N_DEV_DEFS)
+IMAKE_DEFINES = $(DUSEJPEG) $(DUSEXPM)
+
+DEVDEFINES = $(DUSEJPEG) $(DUSEXPM) $(XPMINC) $(DDNFSS) $(DDA4) \
+		$(DDLATEX2E_GRAPHICS) $(DDEPSFIG) $(DDIBMGEC) $(DDDVIPS) $(I18N_DEV_DEFS)
 
 DEVDIR = dev
 
@@ -415,20 +417,31 @@ SYS_LIBRARIES = $(XPMLIBS) $(DBMLIB) -lm
 DEPLIBS = $(LIBTRANSFIG)
 
 GETOPTC=   getopt.c
-GETOPTO=   getopt.c
+GETOPTO=   getopt.o
 
-SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c trans_spline.c \
+SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c colors.c trans_spline.c \
 	free.c read.c read1_3.c latex_line.c $(STRSTRC) $(GETOPTC)
-OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o trans_spline.o \
+OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o colors.o trans_spline.o \
 	free.o read.o read1_3.o latex_line.o $(STRSTRO) $(GETOPTO)
 
 fig2dev: $(DEPLIBJPEG) $(DEPLIBS)
+
+RGBDBM = $(USE_NDBM)
+RGBFILE = -DRGB_FILE=\"$(RGB)\"
+
+colors.o:
+	$(RM) $@
+	$(CC) -c $(CFLAGS)  $(RGBFILE) $(RGBDBM) $*.c
+
+fig2dev.o:  fig2dev.c ../patchlevel.h
+	$(RM) $@
+	$(CC) -c $(CFLAGS)   $*.c
 
 # only compile our jpeg if the use doesn't have one installed
 
 $(LIBTRANSFIG)::
 	cd $(DEVDIR); $(MAKE) JPEGINCDIR=$(JPEGINCDIR) \
-		DEFINES="$(DEVDEFINES) $(DIR_DEFS)" $(XPMRGB) libtransfig.a
+		DEFINES="$(DEVDEFINES) $(DIR_DEFS)" libtransfig.a
 
 PROGRAM = fig2dev
 
@@ -489,11 +502,13 @@ all:: fig2dev.man fig2ps2tex.man pic2tpic.man
 
 # Install the tk bitmaps here
 install::
-	    @(cd bitmaps ; \
-	    if [ -d $(XFIGLIBDIR)/bitmaps ]; then set +x; \
-	    else (set -x; $(MKDIRHIER) $(XFIGLIBDIR)/bitmaps ); fi ; \
-	    echo Copying files for $$d library to $(XFIGLIBDIR)/bitmaps ; \
-	    $(INSTALL) -c * $(XFIGLIBDIR)/bitmaps ; )
+	@(cd bitmaps ; \
+	if [ -d $(XFIGLIBDIR)/bitmaps ]; then set +x; \
+	else (set -x; $(MKDIRHIER) $(XFIGLIBDIR)/bitmaps ); fi ; \
+	echo Copying bitmap files for tk to $(XFIGLIBDIR)/bitmaps ; \
+	for f in * ; do \
+	      $(INSTALL) -c $$f $(XFIGLIBDIR)/bitmaps ; \
+	done) ;
 
 install:: fig2ps2tex.script
 	@if [ -d $(DESTDIR)$(BINDIR) ]; then set +x; \

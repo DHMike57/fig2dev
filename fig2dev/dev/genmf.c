@@ -1,27 +1,16 @@
 /*
  * TransFig: Facility for Translating Fig code
+ * Copyright (c) 1993 Anthony Starks (ajs@merck.com)
  *
- *  Copyright (c) 1993 Anthony Starks (ajs@merck.com)
- *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
 /*
@@ -50,12 +39,10 @@
  *  - ...
  */
 
-#include <stdio.h>
 #include "fig2dev.h"
 #include "object.h"
 
 #define dofill(obj)	1.2-((double)obj->fill_style/(double)BLACK_FILL)
-#define VERSION		0.06
 #define DEF_PEN		0.5
 #define PEN_INCR	0.10
 #define INFTY		1e5
@@ -100,10 +87,19 @@ F_compound	*objects;
 	ppi = objects->nwcorner.x;
 	curchar = (int)code;
 
-	fprintf(tfp,"%%\n%% fig2dev -L mf version %.2lf --- Preamble\n%%\n",
-		VERSION);
-	fprintf(tfp,"mag:=1; input grafbase.mf; code:=%g;\n",
-		code);
+	fprintf(tfp,"%%\n%% fig2dev -L mf (Version %s Patchlevel %s)\n",
+			VERSION, PATCHLEVEL);
+	fprintf(tfp,"%%\n");
+
+	/* print any whole-figure comments prefixed with "%" */
+	if (objects->comments) {
+	    fprintf(tfp,"%%\n");
+	    print_comments("% ",objects->comments, "");
+	    fprintf(tfp,"%%\n");
+	}
+	fprintf(tfp,"%%\n%% Preamble\n%%\n");
+
+	fprintf(tfp,"mag:=1; input grafbase.mf; code:=%g;\n", code);
 	fprintf(tfp,"interim hdwdr:=1; interim hdten:=1;\n");
 
 	fprintf(tfp,"%%\n%% %s (char %d)\n%%\n",
@@ -116,10 +112,13 @@ F_compound	*objects;
 }
 
 
-void
+int
 genmf_end()
 {
 	fprintf(tfp,"endmfpic;\nend.\n");
+
+	/* all ok */
+	return 0;
 }
 
 void
@@ -152,7 +151,14 @@ char *optarg;
 	case 'Y':
 	    yu = atof(optarg);
 	    break;
-
+	case 'f':		/* ignore magnification, font sizes and lang here */
+	case 'm':
+	case 's':
+	case 'L':
+	    break;
+	default:
+	    put_msg(Err_badarg, opt, "mf");
+	    exit(1);
     }
 }
 
@@ -161,6 +167,10 @@ genmf_line(l)
 F_line *l;
 {
 	F_point	*p;
+
+	/* print any comments prefixed with "%" */
+	print_comments("% ",l->comments, "");
+
 	setpen(l->thickness);
 	fprintf(tfp, "  store (curpath)\n");
 	if ((l->type==1) && (l->fill_style<0)) /* Open polyline */
@@ -194,6 +204,10 @@ genmf_spline(s)
 F_spline *s;
 {
 	F_point	*p;
+
+	/* print any comments prefixed with "%" */
+	print_comments("% ",s->comments, "");
+
 	setpen(s->thickness);
 	fprintf(tfp, "  store (curpath)\n");
 	if ((s->type == 0) || (s->type == 2) && (s->fill_style < 0)) /* Open spline */
@@ -224,6 +238,9 @@ void
 genmf_ellipse(e)
 F_ellipse *e;
 {
+	/* print any comments prefixed with "%" */
+	print_comments("% ",e->comments, "");
+
         setpen(e->thickness);
 	fprintf(tfp, "  store (curpath)\n");
 	if (e->fill_style == BLACK_FILL)
@@ -243,13 +260,14 @@ F_ellipse *e;
 			e->center.x/ppi, maxy-(e->center.y/ppi), 
 			e->radiuses.x/ppi, e->radiuses.y/ppi);
 	}
-
 }
 
 void
 genmf_arc(a)
 F_arc *a;
 {
+	/* print any comments prefixed with "%" */
+	print_comments("% ",a->comments, "");
 
 	setpen(a->thickness);
 	fprintf(tfp, "  store (curpath)\n");
@@ -259,7 +277,6 @@ F_arc *a;
 		a->point[2].x/ppi, maxy-(a->point[2].y/ppi));
 
 	return;
-
 }
 
 void

@@ -39,4 +39,3 @@ extern char	*calloc();
 #define		Arrow_malloc(z)		z = (F_arrow*)malloc(ARROW_SIZE)
 
 extern char	Err_mem[];
-extern char	Err_incomp[];

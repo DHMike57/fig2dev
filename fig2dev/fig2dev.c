@@ -1,28 +1,20 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
+
 
 /* 
  *	Fig2dev : General Fig code translation program
@@ -32,9 +24,8 @@
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
-#include <stdio.h>
-#include "patchlevel.h"
 #include "fig2dev.h"
+#include "alloc.h"
 #include "object.h"
 #include "drivers.h"
 
@@ -42,6 +33,18 @@ extern int fig_getopt();
 extern char *optarg;
 extern int optind;
 char	lang[40];
+
+/* hex names for Fig colors */
+char	*Fig_color_names[] = {
+		"#000000", "#0000ff", "#00ff00", "#00ffff",
+		"#ff0000", "#ff00ff", "#ffff00", "#ffffff",
+		"#000090", "#0000b0", "#0000d0", "#87ceff", 
+		"#009000", "#00b000", "#00d000", "#009090",
+		"#00b0b0", "#00d0d0", "#900000", "#b00000",
+		"#d00000", "#900090", "#b000b0", "#d000d0",
+		"#803000", "#a04000", "#c06000", "#ff8080",
+		"#ffa0a0", "#ffc0c0", "#ffe0e0", "#ffd700"
+		};
 
 struct driver *dev = NULL;
 
@@ -52,7 +55,6 @@ Boolean support_i18n = FALSE;
 char		Usage[] = "Usage: %s [-L language] [-f font] [-s size] [-m scale] [input [output]]\n";
 #endif  /* I18N */
 char		Err_badarg[] = "Argument -%c unknown to %s driver.";
-char		Err_incomp[] = "Incomplete %s object at line %d.";
 char		Err_mem[] = "Running out of memory.";
 
 char		*prog;
@@ -64,18 +66,22 @@ FILE		*tfp = NULL;
 int		llx = 0, lly = 0, urx = 0, ury = 0;
 Boolean		landscape;
 Boolean		center;
-Boolean		orientspec=FALSE;	/* set if the user specifies the orientation */
-Boolean		centerspec=FALSE;	/* set if the user specifies the justification */
-Boolean		magspec=FALSE;		/* set if the user specifies the magnification */
-Boolean		multispec=FALSE;	/* set if the user specifies multiple pages */
-Boolean		paperspec=FALSE;	/* set if the user specifies the paper size */
+Boolean		orientspec=FALSE;	/* set if the user specs. the orientation */
+Boolean		centerspec=FALSE;	/* set if the user specs. the justification */
+Boolean		magspec=FALSE;		/* set if the user specs. the magnification */
+Boolean		transspec=FALSE;	/* set if the user specs. the GIF transparent color */
+Boolean		multispec=FALSE;	/* set if the user specs. multiple pages */
+Boolean		paperspec=FALSE;	/* set if the user specs. the paper size */
 Boolean		pats_used, pattern_used[NUMPATTERNS];
 Boolean		multi_page = FALSE;	/* multiple page option for PostScript */
 Boolean		metric;			/* true if file specifies Metric */
+char		gif_transparent[20]="\0"; /* GIF transp color hex name (e.g. #ff00dd) */
 char		papersize[20];		/* paper size */
 float		THICK_SCALE;		/* convert line thickness from screen res. */
 					/* calculated in read_objects() */
 char		lang[40];		/* selected output language */
+RGB		background;		/* background (if specified by -g) */
+Boolean		bgspec = FALSE;		/* flag to say -g was specified */
 
 struct obj_rec {
 	void (*gendev)();
@@ -87,20 +93,35 @@ struct obj_rec {
 
 struct paperdef paperdef[] =
 {
-    {"Letter", 612, 792}, 	/* 8.5" x 11" */
-    {"Legal", 612, 1008}, 	/* 8.5" x 14" */
-    {"Tabloid", 792, 1224}, 	/*  11" x 17" */
-    {"A", 612, 792},		/* 8.5" x 11" (letter) */
-    {"B", 792, 1224},		/*  11" x 17" (tabloid) */
-    {"C", 1224, 1584},		/*  17" x 22" */
-    {"D", 1584, 2448},		/*  22" x 34" */
-    {"E", 2448, 3168},		/*  34" x 44" */
-    {"B5", 516, 729}, 		/* 18.2cm x  25.7cm */
-    {"A4", 595, 842}, 		/* 21  cm x  29.7cm */
-    {"A3", 842, 1190},		/* 29.7cm x  42  cm */
-    {"A2", 1190, 1684},		/* 42  cm x  59.4cm */
-    {"A1", 1684, 2383},		/* 59.4cm x  84.1cm */
-    {"A0", 2383, 3370},		/* 84.1cm x 118.9cm */ 
+    {"Letter", 612, 792}, 	/*  8.5" x 11" */
+    {"Legal", 612, 1008}, 	/*  8.5" x 14" */
+    {"Tabloid", 792, 1224}, 	/*   11" x 17" */
+    {"A",   612, 792},		/*  8.5" x 11" (letter) */
+    {"B",   792, 1224},		/*   11" x 17" (tabloid) */
+    {"C",  1224, 1584},		/*   17" x 22" */
+    {"D",  1584, 2448},		/*   22" x 34" */
+    {"E",  2448, 3168},		/*   34" x 44" */
+    {"A9",  105, 148},		/*   37 mm x   52 mm */
+    {"A8",  148, 210},		/*   52 mm x   74 mm */
+    {"A7",  210, 297},		/*   74 mm x  105 mm */
+    {"A6",  297, 420},		/*  105 mm x  148 mm */
+    {"A5",  420, 595},		/*  148 mm x  210 mm */
+    {"A4",  595, 842}, 		/*  210 mm x  297 mm */
+    {"A3",  842, 1190},		/*  297 mm x  420 mm */
+    {"A2", 1190, 1684},		/*  420 mm x  594 mm */
+    {"A1", 1684, 2383},		/*  594 mm x  841 mm */
+    {"A0", 2383, 3370},		/*  841 mm x 1189 mm */ 
+    {"B10",  91,  127},		/*   32 mm x   45 mm */
+    {"B9",  127,  181},		/*   45 mm x   64 mm */
+    {"B8",  181,  258},		/*   64 mm x   91 mm */
+    {"B7",  258,  363},		/*   91 mm x  128 mm */
+    {"B6",  363,  516},		/*  128 mm x  182 mm */
+    {"B5",  516,  729}, 	/*  182 mm x  257 mm */
+    {"B4",  729, 1032},		/*  257 mm x  364 mm */
+    {"B3", 1032, 1460},		/*  364 mm x  515 mm */
+    {"B2", 1460, 2064},		/*  515 mm x  728 mm */
+    {"B1", 2064, 2920},		/*  728 mm x 1030 mm */
+    {"B0", 2920, 4127},		/* 1030 mm x 1456 mm */
     {NULL, 0, 0}
 };
 
@@ -123,9 +144,9 @@ char	*argv[];
 /* add :? */
 	/* sum of all arguments */
 #ifdef I18N
-	while ((c = fig_getopt(argc, argv, "aAcC:d:ef:hl:L:Mm:n:q:Pp:s:S:t:vVx:X:y:Y:wWz:j?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "aAb:cC:d:efg:hl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:j?")) != EOF) {
 #else
-	while ((c = fig_getopt(argc, argv, "aAcC:d:ef:hl:L:Mm:n:q:Pp:s:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "aAb:cC:d:efg:hl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
 #endif
 
 	  /* generic option handling */
@@ -133,7 +154,7 @@ char	*argv[];
 
 		case 'h':	/* print version message for -h too */
 		case 'V': 
-			fprintf(stderr, "fig2dev Version %s Patchlevel %s\n",
+			printf("fig2dev Version %s Patchlevel %s\n",
 							VERSION, PATCHLEVEL);
 			if (c == 'h')
 			    help_msg();
@@ -206,6 +227,10 @@ char	*argv[];
 	F_compound	objects;
 	int		status;
 
+	/* initialize the color database */
+	if (init_colordb() != 0)
+		exit(1);
+
 	get_args(argc, argv);
 
 	if (from)
@@ -214,9 +239,10 @@ char	*argv[];
 	    status = readfp_fig(stdin, &objects);
 
 	if (status != 0) {
-	    if (from) read_fail_message(from, status);
+	    if (from) 
+		read_fail_message(from, status);
 	    exit(1);
-	    }
+	}
 
 	if (to == NULL)
 	    tfp = stdout;
@@ -231,82 +257,129 @@ char	*argv[];
 	if (metric)
 		mag *= 80.0/76.2;
 
-	gendev_objects(&objects, dev);
+	status = gendev_objects(&objects, dev);
 	if ((tfp != stdout) && (tfp != 0)) 
 	    (void)fclose(tfp);
-	exit(0);
+	exit(status);
 }
 
 help_msg()
 {
-	fprintf(stderr,"General Options:\n");
-	fprintf(stderr,"  -L language	choose output language (this must be first)\n");
-	fprintf(stderr,"  -m mag	set magnification\n");
-	fprintf(stderr,"  -f font	set default font\n");
-	fprintf(stderr,"  -s size	set default font size in points\n");
-	fprintf(stderr,"  -h		print this message, fig2dev version number and exit\n");
-	fprintf(stderr,"  -V		print fig2dev version number and exit\n");
-	fprintf(stderr,"\n");
-	fprintf(stderr,"PostScript Options:\n");
-	fprintf(stderr,"  -c		center figure on page\n");
-	fprintf(stderr,"  -e		put figure at edge of page\n");
-	fprintf(stderr,"  -l dummyarg	landscape mode\n");
-	fprintf(stderr,"  -p dummyarg	portrait mode\n");
-	fprintf(stderr,"  -M		generate multiple pages for large figure\n");
-	fprintf(stderr,"  -P		generate \"showpage\" command for printing\n");
-	fprintf(stderr,"  -n name	set title part of PostScript output to name\n");
-	fprintf(stderr,"  -x offset	shift figure left/right by offset units (1/72 inch)\n");
-	fprintf(stderr,"  -y offset	shift figure up/down by offset units (1/72 inch)\n");
-	fprintf(stderr,"  -z papersize	set the papersize (see man pages for available sizes)\n");
-	fprintf(stderr,"LaTeX Options:\n");
-	fprintf(stderr,"  -l lwidth	set threshold between thin and thick lines to lwidth\n");
-	fprintf(stderr,"  -d dmag	set separate magnification for length of line dashes to dmag\n");
-	fprintf(stderr,"  -v		verbose mode\n");
-	fprintf(stderr,"PSTEX Options:\n");
-	fprintf(stderr,"  -n name	set title part of PostScript output to name\n");
-	fprintf(stderr,"  -p name	name of the PostScript file to be overlaid\n");
-	fprintf(stderr,"EPIC Options:\n");
-	fprintf(stderr,"  -A scale	scale arrowheads by dividing their size by scale\n");	
-	fprintf(stderr,"  -l lwidth	use \"thicklines\" when width of line is > lwidth\n");
-	fprintf(stderr,"  -v		include comments in the output\n");
-	fprintf(stderr,"  -P		generate a complete LaTeX file\n");
-	fprintf(stderr,"  -S scale	scale figure\n");
-	fprintf(stderr,"  -W		enable variable line width\n");
-	fprintf(stderr,"  -w		disable variable line width\n");
-	fprintf(stderr,"\n");
-	fprintf(stderr,"TK Options:\n");
-	fprintf(stderr,"  -l dummyarg	landscape mode\n");
-	fprintf(stderr,"  -p dummyarg	portrait mode\n");
-	fprintf(stderr,"  -P		generate canvas of full page size instead of figure bounds\n");
-	fprintf(stderr,"  -z papersize	set the papersize (see man pages for available sizes)\n");
-	fprintf(stderr,"PIC Options:\n");
-	fprintf(stderr,"  -p ext	enables certain PIC extensions (see man pages)\n");
-	fprintf(stderr,"METAFONT Options:\n");
-	fprintf(stderr,"  -C code	specifies the starting METAFONT font code\n");
-	fprintf(stderr,"  -n name	name to use in the output file\n");
-	fprintf(stderr,"  -p pen_mag	linewidth magnification compared to the original figure\n");
-	fprintf(stderr,"  -t top	specifies the top of the coordinate system\n");
-	fprintf(stderr,"  -x xneg	specifies minimum x coordinate of figure (inches)\n");
-	fprintf(stderr,"  -y yneg	specifies minimum y coordinate of figure (inches)\n");
-	fprintf(stderr,"  -X xpos	specifies maximum x coordinate of figure (inches)\n");
-	fprintf(stderr,"  -Y xpos	specifies maximum y coordinate of figure (inches)\n");
-	fprintf(stderr,"JPEG Options:\n");
-	fprintf(stderr,"  -q quality	specify image quality factor (0-100)\n");
-	fprintf(stderr,"GIF Options:\n");
-	fprintf(stderr,"  -t color	specify GIF transparent color in hexadecimal (e.g. #ff0000=red)\n");
-	fprintf(stderr,"TEXTYL Options: None\n");
-	fprintf(stderr,"TPIC Options: None\n");
-	fprintf(stderr,"IBM-GL Options:\n");
-	fprintf(stderr,"  -a		select ISO A4 paper size if default is ANSI A, or vice versa\n");
-	fprintf(stderr,"  -c		generate instructions for IBM 6180 plotter\n");
-	fprintf(stderr,"  -d xll,yll,xur,yur	restrict plotting to area specified by coords\n");
-	fprintf(stderr,"  -f fontfile	load text character specs from table in file\n");
-	fprintf(stderr,"  -l pattfile	load patterns for pattern fill from file\n");
-	fprintf(stderr,"  -m mag,x0,y0	magnification with optional offset in inches\n");
-	fprintf(stderr,"  -p pensfile	load plotter pen specs from file\n");
-	fprintf(stderr,"  -P		rotate figure to portrait (default is landscape)\n");
-	fprintf(stderr,"  -S speed	set pen speed in cm/sec\n");
-	fprintf(stderr,"  -v		print figure upside-down in portrait or backwards in landscape\n");
+    int i;
+
+    printf("General Options:\n");
+    printf("  -L language	choose output language (this must be first)\n");
+    /* display available languages - 23/01/90 */
+    printf("                Available languages are:");
+    for (i=0; *drivers[i].name; i++) {
+	if (i%9 == 0)
+	printf("\n\t\t  ");
+	printf("%s ",drivers[i].name);
+    }
+    printf("\n");
+    printf("  -m mag	set magnification\n");
+    printf("  -f font	set default font\n");
+    printf("  -s size	set default font size in points\n");
+    printf("  -h		print this message, fig2dev version number and exit\n");
+    printf("  -V		print fig2dev version number and exit\n");
+#ifdef I18N
+    printf("  -j		enable i18n facility\n");
+#endif
+    printf("\n");
+
+    printf("CGM Options:\n");
+    printf("  -r		Position arrowheads for CGM viewers that display rounded arrowheads\n");
+
+    printf("EPIC Options:\n");
+    printf("  -A scale	scale arrowheads by dividing their size by scale\n");	
+    printf("  -l lwidth	use \"thicklines\" when width of line is > lwidth\n");
+    printf("  -v		include comments in the output\n");
+    printf("  -P		generate a complete LaTeX file\n");
+    printf("  -S scale	scale figure\n");
+    printf("  -W		enable variable line width\n");
+    printf("  -w		disable variable line width\n");
+
+    printf("EPS (Encapsulated PostScript) Options:\n");
+    printf("  -g color	background color\n");
+    printf("  -n name	set title part of PostScript output to name\n");
+
+    printf("IBM-GL Options:\n");
+    printf("  -a		select ISO A4 paper size if default is ANSI A, or vice versa\n");
+    printf("  -c		generate instructions for IBM 6180 plotter\n");
+    printf("  -d xll,yll,xur,yur	restrict plotting to area specified by coords\n");
+    printf("  -f fontfile	load text character specs from table in file\n");
+    printf("  -l pattfile	load patterns for pattern fill from file\n");
+    printf("  -m mag,x0,y0	magnification with optional offset in inches\n");
+    printf("  -p pensfile	load plotter pen specs from file\n");
+    printf("  -P		rotate figure to portrait (default is landscape)\n");
+    printf("  -S speed	set pen speed in cm/sec\n");
+    printf("  -v		print figure upside-down in portrait or backwards in landscape\n");
+
+    printf("GIF Options:\n");
+    printf("  -b width	specify width of blank border around figure\n");
+    printf("  -g color	background color\n");
+    printf("  -S smooth	specify smoothing factor [2-3 reasonable]\n");
+    printf("  -t color	specify GIF transparent color in hexadecimal (e.g. #ff0000=red)\n");
+
+    printf("JPEG Options:\n");
+    printf("  -b width	specify width of blank border around figure\n");
+    printf("  -g color	background color\n");
+    printf("  -q quality	specify image quality factor (0-100)\n");
+    printf("  -S smooth	specify smoothing factor [2-3 reasonable]\n");
+
+    printf("PNG, PCX, PPM, and TIFF Options:\n");
+    printf("  -b width	specify width of blank border around figure\n");
+    printf("  -g color	background color\n");
+    printf("  -S smooth	specify smoothing factor [2-3 reasonable]\n");
+
+    printf("LaTeX Options:\n");
+    printf("  -d dmag	set separate magnification for length of line dashes to dmag\n");
+    printf("  -l lwidth	set threshold between thin and thick lines to lwidth\n");
+    printf("  -v		verbose mode\n");
+
+    printf("MAP (HTML image map) Options:\n");
+    printf("  -b width	specify width of blank border around figure\n");
+
+    printf("METAFONT Options:\n");
+    printf("  -C code	specifies the starting METAFONT font code\n");
+    printf("  -n name	name to use in the output file\n");
+    printf("  -p pen_mag	linewidth magnification compared to the original figure\n");
+    printf("  -t top	specifies the top of the coordinate system\n");
+    printf("  -x xneg	specifies minimum x coordinate of figure (inches)\n");
+    printf("  -y yneg	specifies minimum y coordinate of figure (inches)\n");
+    printf("  -X xpos	specifies maximum x coordinate of figure (inches)\n");
+    printf("  -Y xpos	specifies maximum y coordinate of figure (inches)\n");
+
+    printf("PIC Options:\n");
+    printf("  -p ext	enables certain PIC extensions (see man pages)\n");
+
+    printf("PostScript and PDF Options:\n");
+    printf("  -b width	specify width of blank border around figure\n");
+    printf("  -c		center figure on page\n");
+    printf("  -e		put figure at left edge of page\n");
+    printf("  -g color	background color\n");
+    printf("  -l dummyarg	landscape mode\n");
+    printf("  -p dummyarg	portrait mode\n");
+    printf("  -M		generate multiple pages for large figure\n");
+    printf("  -n name	set title part of PostScript output to name\n");
+    printf("  -x offset	shift figure left/right by offset units (1/72 inch)\n");
+    printf("  -y offset	shift figure up/down by offset units (1/72 inch)\n");
+    printf("  -z papersize	set the papersize (see man pages for available sizes)\n");
+
+    printf("PSTEX Options:\n");
+    printf("  -g color	background color\n");
+    printf("  -n name	set title part of PostScript output to name\n");
+    printf("  -p name	name of the PostScript file to be overlaid\n");
+
+    printf("TEXTYL Options: None\n");
+
+    printf("TK Options:\n");
+    printf("  -l dummyarg	landscape mode\n");
+    printf("  -p dummyarg	portrait mode\n");
+    printf("  -P		generate canvas of full page size instead of figure bounds\n");
+    printf("  -z papersize	set the papersize (see man pages for available sizes)\n");
+
+    printf("TPIC Options: None\n");
 }
 
 /* count primitive objects & create pointer array */
@@ -368,21 +441,23 @@ struct driver *dev;
 	return count;
 }
 
+int
 gendev_objects(objects, dev)
 F_compound	*objects;
 struct driver *dev;
 {
-	int obj_count, rec_comp();
-	struct obj_rec *rec_array, *r; 
+	int	obj_count, rec_comp();
+	int	status;
+	struct	obj_rec *rec_array, *r; 
 
-	if (0 == (double)objects->nwcorner.x) {
+	if (objects->nwcorner.x == 0) {
 	    fprintf(stderr, "Resolution is zero!! default to 80 ppi\n");
 	    objects->nwcorner.x = 80;
-	    }
+	}
 	if (objects->nwcorner.y != 1 && objects->nwcorner.y != 2) {
 	    fprintf(stderr, "Wrong coordinate system; cannot continue\n");
 	    return;
-	    }
+	}
 
 	/* Compute bounding box of objects, supressing texts if indicated */
 	compound_bound(objects, &llx, &lly, &urx, &ury, dev->text_include);
@@ -392,7 +467,7 @@ struct driver *dev;
 	if (!obj_count) {
 	    fprintf(stderr, "No object\n");
 	    return;
-	    }
+	}
 	rec_array = (struct obj_rec *)malloc(obj_count*sizeof(struct obj_rec));
 	(void)compound_dump(objects, rec_array, 0, dev);
 
@@ -404,11 +479,14 @@ struct driver *dev;
 
 	/* generate objects in sorted order */
 	for (r = rec_array; r<rec_array+obj_count; r++)
-		(*(r->gendev))(r->obj);
+	    (*(r->gendev))(r->obj);
 
 	/* generate trailer */
-	(*dev->end)();
+	status = (*dev->end)();
+
 	free(rec_array);
+
+	return status;
 }
 
 int rec_comp(r1, r2)

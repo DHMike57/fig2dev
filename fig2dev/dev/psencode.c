@@ -2,30 +2,20 @@
  * TransFig: Facility for Translating Fig code
  * This routine is from PSencode.c, in the xwpick package by:
  *      E.Chernyaev (IHEP/Protvino)
- * Parts Copyright (c) 1994 Brian V. Smith
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
-#include <stdio.h>
 #include "fig2dev.h"
 
 #define MAXWIDTH       4096
@@ -141,11 +131,10 @@ PSencode(File, Width, Height, Ncol, R, G, B, data)
     NULL
   };
 
-  /*   C H E C K   P A R A M E T E R S   */
+  /*   CHECK PARAMETERS   */
   
   if (Width <= 0 || Width > MAXWIDTH || Height <= 0 || Height > MAXWIDTH) {
-    fprintf(stderr,
-            "\nIncorrect image size: %d x %d\n", Width, Height);
+    fprintf(stderr, "\nIncorrect image size: %d x %d\n", Width, Height);
     return 0;
   }
 
@@ -154,17 +143,17 @@ PSencode(File, Width, Height, Ncol, R, G, B, data)
     return 0;
   }
 
-  /*   O U T P U T   H E A D E R   */
+  /*   OUTPUT HEADER   */
 
   Nbyte = 0;
 
-  /*   O U T P U T   P O S T S C R I P T   P R O G R A M   */
+  /*   OUTPUT POSTSCRIPT PROGRAM */
 
   for (q=PostScript; *q; q++) {
     sprintf(s,"%s\n",*q);                          put_string;
   }
 
-  /*   O U T P U T   I M A G E   D A T A   */
+  /*  OUTPUT IMAGE DATA  */
 
   sprintf(s,"%d %d\n", Width, Height);             put_string;
   sprintf(s,"%d\n",Ncol);                          put_string;
@@ -178,7 +167,7 @@ PSencode(File, Width, Height, Ncol, R, G, B, data)
     }
   }
 
-  /*   R U N - L E N G T H    C O M P R E S S I O N   */
+  /*  RUN-LENGTH  COMPRESSION   */
 
   run   = 0;
   nc    = 0;

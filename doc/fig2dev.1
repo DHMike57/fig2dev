@@ -1,4 +1,4 @@
-.TH FIG2DEV 1 "Release 3.2 Patchlevel 1 (Protocol 3.2) July 1, 1998"
+.TH FIG2DEV 1 "Version 3.2.3-beta Dec 14, 1999"
 .SH NAME
 fig2dev \- translates Fig code to various graphics languages
 
@@ -34,28 +34,38 @@ and
 .I out-file
 are standard input and standard output, respectively
 .LP
-Fig (Facility for Interactive Generation of figures) is a screen-oriented
-tool which allows the user to draw and manipulate objects interactively.
-Various versions of Fig run under the Suntools/Sunview window environment
-and under version 11 of the X Windows System.
-Fig2dev is compatible with Fig versions 1.3, 1.4, 2.0, 2.1, 3.0, 3.1 and 3.2.
+Xfig (Facility for Interactive Generation of figures) is a screen-oriented
+tool which runs under the X Window System, and 
+allows the user to draw and manipulate objects interactively.
+This version of fig2dev is compatible with 
+xfig versions 1.3, 1.4, 2.0, 2.1, 3.0, 3.1 and 3.2.
+.LP
+Xfig version 3.2.3 and later saves and allows the user to edit comments
+for each Fig object.  These comments are output with several of the output languages,
+such as PostScript, CGM, LaTeX, MetaFont, PicTeX, (as % comments),
+tk (as # comments), and pic (as .\\" comments).
 
-.SH OPTIONS
+.SH GENERAL OPTIONS
 .TP
 .B \-L
 Set the output graphics language.
 Valid languages are
-\fBacad (AutoCad slide format), box, epic, eepic, eepicemu, gif, ibmgl, jpeg, 
-latex, mf (METAFONT),
-pcx, pic, pictex, png, ppm, ps, pstex, pstex_t, textyl, \fR
+\fBbox, cgm, epic, eepic, eepicemu, eps, gif, ibmgl, jpeg, 
+latex, map (HTML image map), mf (METAFONT), pcx, pdf, pic, pictex, png, ppm, ps,
+pstex, pstex_t, sld (AutoCad slide format), textyl, \fR
 tiff, tk (tcl/tk), tpic, xbm and
 .B xpm.
 
-Note that
+Notes:
+.br
 .I dvips
 and
 .I xdvi
 must be compiled with the tpic support (-DTPIC) for epic, eepic and tpic to work.
+.br
+You must have ghostscript and ps2pdf, which comes with the ghostscript distribution
+to get the pdf output and the bitmap formats (png, jpeg, etc.), and the netpbm (pbmplus)
+package to get gif, xbm, xpm, and sld output.
 
 .TP
 .B \-h
@@ -90,6 +100,21 @@ The other options are specific to the choice of graphics
 .I language,
 as described below.
 
+.SH CGM OPTIONS
+CGM is Computer Graphics Metafile, developed by ISO and ANSI and is a
+vector-based plus bitmap language.  Microsoft WORD, PowerPoint and probably
+other products can import this format
+.I and display it on the screen,
+something that they won't do with EPS files that have an ASCII preview.
+.TP
+.B \-r
+Position arrowheads for CGM viewers that display rounded arrowheads.
+Normally, arrowheads are pointed, so fig2dev compensates for this by
+moving the endpoint of the line back so the tip of the arrowhead ends 
+where the original endpoint of the line was.
+If the \fB-r\fR option is used, the position
+of arrows will \fINOT\fR be corrected for compensating line width effects,
+because the rounded arrowhead doesn't extend beyond the endpoint of the line. 
 .SH EPIC OPTIONS
 EPIC is an enhancement to LaTeX picture drawing environment.
 It was developed by Sunil Podar of Department of Computer Science
@@ -240,6 +265,43 @@ The IBM-GEC is required to fill other polygons.
 Fig2dev may be installed for plotters with or without the IBM-GEC.
 The \fB-c\fR option selects the alternate instruction set.
 
+.SH OPTIONS COMMON TO ALL BITMAP FORMATS
+.TP
+.B -b borderwidth
+Make blank border around figure of width 
+.I borderwidth.
+.TP
+.B -g color
+Use
+.I color
+for the background.
+.TP
+.B -S smoothfactor
+This will smooth the output by scaling the figure by the
+.I smoothfactor
+factor, which forces ghostscript to render the figure at the higher scale
+to improve font rendering, then passing through pnmscale to reduce to original size,
+which also smooths the image by averaging colors of adjacent pixels.
+A value of 2 or 3 for 
+.I smoothfactor
+is reasonable.  xfig uses 2 when the "smooth" option is used in the export panel.
+
+.SH GIF OPTIONS
+.TP
+.B -t color
+Use
+.I color
+for the transparent color in the GIF file.  This must be specified
+as a six-digit hexadecimal RGBvalue with the # sign, e.g. #ff0000 (Red).
+
+.SH JPEG OPTIONS
+.TP
+.B -q image_quality
+use the integer value 
+.I image_quality
+for the JPEG "Quality" factor.  Valid values are 0-100.
+
+
 .SH LATEX OPTIONS
 .TP
 .B \-l
@@ -266,6 +328,76 @@ For example, the possible slopes which lines may have are limited.
 Some objects, such as spline curves, cannot be drawn at all.
 Fig2latex chooses the closest possible line slope, and prints error
 messages when objects cannot be drawn accurately
+
+.SH MAP (HTML image map) OPTIONS
+Xfig version 3.2.3 and later saves and allows the user to edit comments
+for each Fig object.
+The fig2dev map output language will produce an HTML image map using Fig objects
+that have href="some_html_reference" in their comments.
+Any Fig object except compound objects may used for this.
+Usually, besides generating the map file, you would also 
+generate a GIF file, which is the image to which the map refers.
+.sp
+For example, you may have an xfig drawing with an 
+imported image that has the comment
+href="go_here.html" and a box object with a comment href="go_away.html".
+This will produce an image map file such the user
+may click on the image and the browser will load the "go_here.html" page, 
+or click on the box and the browser will load the "go_away.html" page.
+.sp
+After the map file is generated by 
+.I fig2dev
+you will need to edit it to fill out any additional information it may need.
+.TP
+.B -b borderwidth
+Make blank border around figure of width 
+.I borderwidth.
+
+
+.SH METAFONT OPTIONS
+.I fig2dev
+scales the figure by 1/8 before generating METAFONT code.
+The magnification can be further changed with the
+.B -m
+option or by giving magnification options to 
+.B mf.
+.LP
+In order to process the generated METAFONT code, the mfpic macros
+must be installed where
+.B mf
+can find them. The mfpic macro package is available at any CTAN cite
+under the subdirectory: graphics/mfpic
+
+.TP
+.B -C code
+specifies the starting METAFONT font code. The default is 32.
+.TP
+.B -n name
+specifies the name to use in the output file.
+.TP
+.B -p pen_magnification
+specifies how much the line width should be magnified compared to the
+original figure. The default is 1.
+.TP
+.B -t top
+specifies the top of the whole coordinate system. The default is 
+.B ypos.
+.TP
+.B -x xneg
+specifies the minimum x coordinate value of the figure (inches). The
+default is 0.
+.TP
+.B -y yneg
+specifies the minumum y coordinate value of the figure (inches). The
+default is 0. 
+.TP
+.B -X xpos
+specifies the maximum x coordinate value of the figure (inches). The
+default is 8.
+.TP
+.B -Y ypos
+specifies the maximum y coordinate value of the figure (inches). The
+default is 8.
 
 .SH PIC OPTIONS
 .TP
@@ -306,12 +438,30 @@ and generates large DVI files.
 The size of TeX's memory limits the number of plot symbols in a picture.
 As a result, it is best to use PiCTeX to generate small pictures.
 
-.SH POSTSCRIPT OPTIONS
+.SH POSTSCRIPT, ENCAPSULATED POSTSCRIPT (EPS), and PDF OPTIONS
 With PostScript, Fig can be used to create large posters. The figure
 will be created by printing multiple pages which can be glued together.
 Simply specify the -M option to produce a multi-page output.
 Due to memory limitations of most laser printers, the figure should not
 be too complicated. Great for text with very big letters.
+.LP
+The EPS driver has the following differences from PostScript:
+.br
+.in +.4i
+o No showpage is generated because the output is meant to be imported
+into another program or document and not printed
+.br
+o The landscape/portrait options are ignored
+.br
+o The centering option is ignored
+.br
+o The multiple-page option is ignored
+.br 
+o The paper size option is ignored
+.br 
+o The x/y offset options are ignored
+.LP
+The PDF driver uses all the PostScript options.
 .LP
 Text can now include various ISO-character codes above 0x7f, which is
 useful for language specific characters to be printed directly.
@@ -333,6 +483,10 @@ and 21 more "tints" from full saturation + 1 to white.
 In addition, there are 16 patterns such as bricks, diagonal lines, 
 crosshatch, etc.
 .TP
+.B -b borderwidth
+Make blank border around figure of width 
+.I borderwidth.
+.TP
 .B -c
 option centers the figure on the page.
 The centering may not be accurate if there are texts in the
@@ -341,6 +495,11 @@ that extends too far to the right of other objects.
 .TP
 .B -e
 option puts the figure against the edge (not centered) of the page.
+.TP
+.B -g color
+Use
+.I color
+for the background.
 .TP
 .B -l dummy_arg
 Generate figure in landscape mode.  The dummy argument is ignored,
@@ -393,7 +552,7 @@ Sets the papersize. Available paper sizes are:
 .nf
 .in +.4i
 "Letter" (8.5" x 11" also "A"),
-"Legal" (11" x 14" also "A")
+"Legal" (11" x 14")
 "Ledger" (11" x 17"),
 "Tabloid" (17" x 11", really Ledger in Landscape mode),
 "A" (8.5" x 11" also "Letter"),
@@ -426,6 +585,11 @@ PostScript file generated using
 These two drivers can be used to generate a figure which combines the
 flexibility of PostScript graphics with LaTeX text formatting of
 special text.
+.TP
+.B -g color
+Use
+.I color
+for the background.
 .TP
 .B -n name
 sets the Title part of the PostScript output to
@@ -462,73 +626,6 @@ of the figure's objects. The default is to use only the bounding box.
 Sets the papersize.  See the POSTSCRIPT OPTIONS for available paper sizes.
 This is only used when the -P option (use full page) is used.
 
-.SH TEXTYL OPTIONS
-There are no TeXtyl-specific options.
-
-.SH METAFONT OPTIONS
-.I fig2dev
-scales the figure by 1/8 before generating METAFONT code.
-The magnification can be further changed with the
-.B -m
-option or by giving magnification options to 
-.B mf.
-.LP
-In order to process the generated METAFONT code, the mfpic macros
-must be installed where
-.B mf
-can find them. The mfpic macro package is available at any CTAN cite
-under the subdirectory: graphics/mfpic
-
-.TP
-.B -C code
-specifies the starting METAFONT font code. The default is 32.
-.TP
-.B -n name
-specifies the name to use in the output file.
-.TP
-.B -p pen_magnification
-specifies how much the line width should be magnified compared to the
-original figure. The default is 1.
-.TP
-.B -t top
-specifies the top of the whole coordinate system. The default is 
-.B ypos.
-.TP
-.B -x xneg
-specifies the minimum x coordinate value of the figure (inches). The
-default is 0.
-.TP
-.B -y yneg
-specifies the minumum y coordinate value of the figure (inches). The
-default is 0. 
-.TP
-.B -X xpos
-specifies the maximum x coordinate value of the figure (inches). The
-default is 8.
-.TP
-.B -Y ypos
-specifies the maximum y coordinate value of the figure (inches). The
-default is 8.
-
-.SH JPEG OPTIONS
-.TP
-.B -q image_quality
-use the integer value 
-.I image_quality
-for the JPEG "Quality" factor.  Valid values are 0-100.
-
-
-.SH GIF OPTIONS
-.TP
-.B -t color
-Use
-.I color
-for the transparent color in the GIF file.  This must be specified
-as a six-digit hexadecimal RGBvalue with the # sign, e.g. #ff0000 (Red).
-
-.SH TPIC OPTIONS
-There are no tpic-specific options.
-
 .SH "SEE ALSO"
 [x]fig(1),
 pic(1)
@@ -552,9 +649,11 @@ which aren't scaled at all.
 Rotated text is only supported in the IBM-GL (HP/GL) and PostScript (including eps)
 languages.
 .SH COPYRIGHT
-Copyright (c) 1985 Supoj Sutantavibul
-.br
 Copyright (c) 1991 Micah Beck
+.br
+Parts Copyright (c) 1985 Supoj Sutantavibul
+.br
+Parts Copyright (c) 1989-1999 Brian V. Smith
 .LP
 Permission to use, copy, modify, distribute, and sell this software and its
 documentation for any purpose is hereby granted without fee, provided that
@@ -610,6 +709,14 @@ Christophe Schlick (schlick@labri.u-bordeaux.fr)
 .br
 The initial implementation was done by C. Feuille, S. Grobois, L. Maziere
 and L. Minihot as a student practice (Universite Bordeaux, France).
-The tk driver was written by:
+.sp
+Japanese text support for LaTeX output
+written by T. Sato (VEF00200@niftyserve.or.jp)
+.sp
+The tk driver was written by
 .br
 Mike Markowski (mm@udel.edu) with a little touch-up by Brian Smith
+.sp
+The CGM driver (Computer Graphics Metafile) was written by 
+.br
+Philippe Bekaert (Philippe.Bekaert@cs.kuleuven.ac.be)

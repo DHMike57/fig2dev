@@ -1,27 +1,18 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
 /* 
@@ -34,9 +25,6 @@
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
-#include <stdio.h>
-#include <math.h>
-#include "pi.h"
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
@@ -63,7 +51,8 @@ static char 		*linethick = "1pt";
 static char		*plotsymbol = "\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}";
 static int		cur_thickness = -1;
 
-static void genpictex_option(opt, optarg)
+static void
+genpictex_option(opt, optarg)
 char opt, *optarg;
 {
         int i;
@@ -110,7 +99,6 @@ char opt, *optarg;
 	default:
 		put_msg(Err_badarg, opt, "pictex");
 		exit(1);
-		break;
 	}
 }
 
@@ -118,13 +106,15 @@ char opt, *optarg;
 static double		ppi;
 static int		CONV = 0;
 
-static double convy(a)
+static double
+convy(a)
 double	a;
 {
 	return((double)(CONV ? TOP-a : a));
 }
 
-void genpictex_start(objects)
+void
+genpictex_start(objects)
 F_compound	*objects;
 {
 	texfontsizes[0] = texfontsizes[1] = 
@@ -135,6 +125,13 @@ F_compound	*objects;
 	if (coord_system == 2) CONV = 1;
 
 	/* PiCTeX start */
+
+	/* print any whole-figure comments prefixed with "% " */
+	if (objects->comments) {
+	    fprintf(tfp,"%%\n");
+	    print_comments("% ",objects->comments, "");
+	    fprintf(tfp,"%%\n");
+	}
 	fprintf(tfp, "\\font\\thinlinefont=cmr5\n");
 	define_setfigfont(tfp);
 	fprintf(tfp, "\\mbox{\\beginpicture\n");
@@ -147,16 +144,22 @@ F_compound	*objects;
 	fprintf(tfp, "\\setlinear\n");
 }
 
-void genpictex_end()
+int
+genpictex_end()
 {
 	/* PiCTeX ending */
 	fprintf(tfp, "\\linethickness=0pt\n");
         fprintf(tfp, "\\putrectangle corners at %6.3f %6.3f and %6.3f %6.3f\n",
-		(llx/ppi)*CONVUNIT, (convy(lly/ppi))*CONVUNIT, (urx/ppi)*CONVUNIT, (convy(ury/ppi))*CONVUNIT);
+		(llx/ppi)*CONVUNIT, (convy(lly/ppi))*CONVUNIT,
+		(urx/ppi)*CONVUNIT, (convy(ury/ppi))*CONVUNIT);
 	fprintf(tfp, "\\endpicture}\n");
+
+	/* all ok */
+	return 0;
 }
 
-static set_linewidth(w)
+static
+set_linewidth(w)
 int	w;
 {
 /*	static int	cur_thickness = -1;*/
@@ -179,70 +182,90 @@ int	w;
 		    }
 		}
 	    switch (cur_thickness) {
-		    case 0:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\thinlinefont \\ ");
-			    break;
-		    case 1:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\thinlinefont .");
-			    break;
-		    case 2:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}");
-			    break;
-		    case 3:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'161}}");
-			    break;
-		    case 4:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'162}}");
-			    break;
-		    case 5:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'163}}");
-			    break;
-		    case 6:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'164}}");
-			    break;
-		    case 7:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'165}}");
-			    break;
-		    case 8:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'166}}");
-			    break;
-		    case 9:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'167}}");
-			    break;
-		    case 10:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'170}}");
-			    break;
-		    case 11:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'171}}");
-			    break;
-		    case 12:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'172}}");
-			    break;
-		    case 13:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'173}}");
-			    break;
-		    case 14:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'174}}");
-			    break;
-		    case 15:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'175}}");
-			    break;
-		    case 16:
-                        fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'176}}");
-			    break;
-		    default:
-			    fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\makebox(0,0)[l]{\\tencirc\\symbol{'176}}");
-			    break;
+		case 0:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\thinlinefont \\ ");
+		    break;
+		case 1:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\thinlinefont .");
+		    break;
+		case 2:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n", 
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}");
+		    break;
+		case 3:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'161}}");
+		    break;
+		case 4:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'162}}");
+		    break;
+		case 5:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'163}}");
+		    break;
+		case 6:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'164}}");
+		    break;
+		case 7:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'165}}");
+		    break;
+		case 8:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'166}}");
+		    break;
+		case 9:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'167}}");
+		    break;
+		case 10:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'170}}");
+		    break;
+		case 11:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'171}}");
+		    break;
+		case 12:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'172}}");
+		    break;
+		case 13:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'173}}");
+		    break;
+		case 14:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'174}}");
+		    break;
+		case 15:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'175}}");
+		    break;
+		case 16:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'176}}");
+		    break;
+		default:
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
+				"\\makebox(0,0)[l]{\\tencirc\\symbol{'176}}");
+		    break;
 	    }
 /* PIC  fprintf(tfp, "\"D't %.3fi'\"\n", 0.7 * cur_thickness);*/
 /*    }*/
 }
 
-void genpictex_line(l)
+void
+genpictex_line(l)
 F_line	*l;
 {
 	F_point		*p, *q;
 	int		x, y, llx, lly, urx, ury;
+
+	/* print any comments */
+	print_comments("% ",l->comments, "");
 
 	fprintf(tfp, "%%\n%% Fig POLYLINE object\n%%\n");
 
@@ -260,7 +283,8 @@ F_line	*l;
 
 	if (q == NULL) { /* A single point line */
 	    fprintf(tfp, "\\plot %6.3f %6.3f %6.3f %6.3f /\n",
-			(p->x/ppi)*CONVUNIT, (convy(p->y/ppi))*CONVUNIT, (p->x/ppi)*CONVUNIT, (convy(p->y/ppi))*CONVUNIT);
+			(p->x/ppi)*CONVUNIT, (convy(p->y/ppi))*CONVUNIT,
+			(p->x/ppi)*CONVUNIT, (convy(p->y/ppi))*CONVUNIT);
 	    return;
 	    }
 
@@ -311,7 +335,8 @@ F_line	*l;
 /*
  * draw box
  */
-static put_box (llx, lly, urx, ury, l)
+static
+put_box (llx, lly, urx, ury, l)
 int	llx, lly, urx, ury;
 F_line	*l;
 {
@@ -404,7 +429,8 @@ F_line	*l;
 /* 
  * set_style - issue style commands as appropriate
  */
-static set_style(style, dash_len)
+static
+set_style(style, dash_len)
 int style;
 double dash_len;
 {
@@ -434,7 +460,8 @@ double dash_len;
 /*
  * putline - use rules if possible
  */
-static putline (start_x, start_y, end_x, end_y, next_x, next_y,
+static
+putline (start_x, start_y, end_x, end_y, next_x, next_y,
                 first_start_x, first_start_y, first_end_x, first_end_y)
 int	start_x, start_y, next_x, next_y;
 int	first_start_x, first_start_y, first_end_x, first_end_y;
@@ -472,18 +499,26 @@ double	end_x, end_y;
 	    }
 
 	fprintf(tfp, "\\putrule from %6.3f %6.3f to %6.3f %6.3f\n",
-		(start_x/ppi)*CONVUNIT, (convy(start_y/ppi))*CONVUNIT, (end_x/ppi)*CONVUNIT, (convy(end_y/ppi))*CONVUNIT);
+		(start_x/ppi)*CONVUNIT, (convy(start_y/ppi))*CONVUNIT,
+		(end_x/ppi)*CONVUNIT, (convy(end_y/ppi))*CONVUNIT);
 	}
     else {
 	fprintf(tfp, "\\plot %6.3f %6.3f %6.3f %6.3f /\n",
-		(start_x/ppi)*CONVUNIT, (convy(start_y/ppi))*CONVUNIT, (end_x/ppi)*CONVUNIT, (convy(end_y/ppi))*CONVUNIT);
+		(start_x/ppi)*CONVUNIT, (convy(start_y/ppi))*CONVUNIT,
+		(end_x/ppi)*CONVUNIT, (convy(end_y/ppi))*CONVUNIT);
 	}
 }
 
 
-void genpictex_spline(s)
+void
+genpictex_spline(s)
 F_spline	*s;
 {
+	/* print any comments */
+	print_comments("% ",s->comments, "");
+
+	fprintf(tfp, "%%\n%% Fig SPLINE\n%%\n");
+
 	set_linewidth(s->thickness);
 	set_style(s->style, s->style_val);
 	set_color(s->pen_color);
@@ -500,9 +535,13 @@ F_spline	*s;
 
 #define MAXBLACKDIAM 15 /* pt */
 
-void genpictex_ellipse(e)
+void
+genpictex_ellipse(e)
 F_ellipse	*e;
 {
+	/* print any comments */
+	print_comments("% ",e->comments, "");
+
 	fprintf(tfp, "%%\n%% Fig ELLIPSE\n%%\n");
 
 	set_linewidth(e->thickness);
@@ -522,7 +561,8 @@ F_ellipse	*e;
 		fprintf(tfp, "\\ellipticalarc axes ratio %6.3f:%-6.3f 360 degrees \n",
 		    (e->radiuses.x/ppi)*CONVUNIT, (e->radiuses.y/ppi)*CONVUNIT);
 		fprintf(tfp, "\tfrom %6.3f %6.3f center at %6.3f %6.3f\n",
-		    ((e->center.x+e->radiuses.x)/ppi)*CONVUNIT, (convy(e->center.y/ppi))*CONVUNIT,
+		    ((e->center.x+e->radiuses.x)/ppi)*CONVUNIT,
+		    (convy(e->center.y/ppi))*CONVUNIT,
 		    (e->center.x/ppi)*CONVUNIT, (convy(e->center.y/ppi))*CONVUNIT);
 		if (e->fill_style != UNFILLED)
 			fprintf(stderr, "Ellipse area fill not implemented\n");
@@ -532,12 +572,16 @@ F_ellipse	*e;
 
 #define			HT_OFFSET	(0.2 / 72.0)
 
-void genpictex_text(t)
+void
+genpictex_text(t)
 F_text	*t;
 {
 	double	x, y;
 	char *tpos;
 	unsigned char *cp;
+
+	/* print any comments */
+	print_comments("% ",t->comments, "");
 
         fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
@@ -623,12 +667,16 @@ F_text	*t;
 	    tpos, (x)*CONVUNIT, (y)*CONVUNIT);
 	}
 
-void genpictex_arc(a)
+void
+genpictex_arc(a)
 F_arc	*a;
 {
 	double		x, y;
 	double		cx, cy, sx, sy, ex, ey;
 	double		dx1, dy1, dx2, dy2, r1, r2, th1, th2, theta;
+
+	/* print any comments */
+	print_comments("% ",a->comments, "");
 
         fprintf(tfp, "%%\n%% Fig CIRCULAR ARC object\n%%\n");
 
@@ -640,16 +688,18 @@ F_arc	*a;
 	sx = a->point[0].x/ppi; sy = convy(a->point[0].y/ppi);
 	ex = a->point[2].x/ppi; ey = convy(a->point[2].y/ppi);
 
-	if (a->for_arrow) {
-	    arc_tangent(cx, cy, ex, ey, a->direction, &x, &y);
-	    draw_arrow_head(x, y, ex, ey,
+	if ((a->type == T_OPEN_ARC) && (a->thickness != 0) && (a->back_arrow || a->for_arrow)) {
+	    if (a->for_arrow) {
+		arc_tangent(cx, cy, ex, ey, a->direction, &x, &y);
+		draw_arrow_head(x, y, ex, ey,
 			a->for_arrow->ht/ppi, a->for_arrow->wid/ppi);
 	    }
-	if (a->back_arrow) {
-	    arc_tangent(cx, cy, sx, sy, !a->direction, &x, &y);
-	    draw_arrow_head(x, y, sx, sy,
+	    if (a->back_arrow) {
+		arc_tangent(cx, cy, sx, sy, !a->direction, &x, &y);
+		draw_arrow_head(x, y, sx, sy,
 			a->back_arrow->ht/ppi, a->back_arrow->wid/ppi);
 	    }
+	}
 
 	dx1 = sx - cx;
 	dy1 = sy - cy;
@@ -665,10 +715,12 @@ F_arc	*a;
 
 	if (a->direction)
 		fprintf(tfp, "\\circulararc %6.3f degrees from %6.3f %6.3f center at %6.3f %6.3f\n",
-			360+(180/M_PI * theta), (sx)*CONVUNIT, (sy)*CONVUNIT, (cx)*CONVUNIT, (cy)*CONVUNIT);
+			360+(180/M_PI * theta),
+			(sx)*CONVUNIT, (sy)*CONVUNIT, (cx)*CONVUNIT, (cy)*CONVUNIT);
 	else
 		fprintf(tfp, "\\circulararc %6.3f degrees from %6.3f %6.3f center at %6.3f %6.3f\n",
-			-180/M_PI * theta, (ex)*CONVUNIT, (ey)*CONVUNIT, (cx)*CONVUNIT, (cy)*CONVUNIT);
+			-180/M_PI * theta,
+			(ex)*CONVUNIT, (ey)*CONVUNIT, (cx)*CONVUNIT, (cy)*CONVUNIT);
 
 	if (a->fill_style != UNFILLED)
 		fprintf(stderr, "Arc area fill not implemented\n");
@@ -680,7 +732,8 @@ F_arc	*a;
 /*
  * rtop - rectangular to polar conversion
  */
-static rtop(x, y, r, th)
+static
+rtop(x, y, r, th)
 double x, y, *r, *th;
 {
 	*r = sqrt(x*x+y*y);
@@ -689,7 +742,8 @@ double x, y, *r, *th;
 	if (y < 0) *th = 2*M_PI - *th;
 }
 
-static arc_tangent(x1, y1, x2, y2, direction, x, y)
+static
+arc_tangent(x1, y1, x2, y2, direction, x, y)
 double	x1, y1, x2, y2, *x, *y;
 int	direction;
 {
@@ -705,7 +759,8 @@ int	direction;
 
 /*	draw arrow heading from (x1, y1) to (x2, y2)	*/
 
-static draw_arrow_head(x1, y1, x2, y2, arrowht, arrowwid)
+static
+draw_arrow_head(x1, y1, x2, y2, arrowht, arrowwid)
 double	x1, y1, x2, y2, arrowht, arrowwid;
 {
 	double	x, y, xb, yb, dx, dy, l, sina, cosa;
@@ -743,7 +798,9 @@ double	x1, y1, x2, y2, arrowht, arrowwid;
         fprintf(tfp, "%%\n%% arrow head\n%%\n");
 
 	fprintf(tfp, "\\plot %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f /\n%%\n",
-		(xc)*CONVUNIT, (yc)*CONVUNIT, (x2)*CONVUNIT, (y2)*CONVUNIT, (xd)*CONVUNIT, (yd)*CONVUNIT);
+			(xc)*CONVUNIT, (yc)*CONVUNIT,
+			(x2)*CONVUNIT, (y2)*CONVUNIT,
+			(xd)*CONVUNIT, (yd)*CONVUNIT);
 
 	/* restore line style */
 	set_style(style, dash);
@@ -751,7 +808,8 @@ double	x1, y1, x2, y2, arrowht, arrowwid;
 
 #define		THRESHOLD	.05	/* inch */
 
-static quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
+static
+quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
 double	a1, b1, a2, b2, a3, b3, a4, b4;
 {
 	double	x1, y1, x4, y4;
@@ -778,7 +836,8 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	    }
 	}
 
-static void genpictex_ctl_spline(s)
+static void
+genpictex_ctl_spline(s)
 F_spline	*s;
 {
 	F_point	*p;
@@ -835,7 +894,8 @@ F_spline	*s;
 
 	}
 
-static void genpictex_itp_spline(s)
+static void
+genpictex_itp_spline(s)
 F_spline	*s;
 {
 	F_point		*p1, *p2;
@@ -902,4 +962,3 @@ struct driver dev_pictex = {
 	genpictex_end,
 	EXCLUDE_TEXT
 };
-

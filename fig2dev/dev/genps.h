@@ -1,34 +1,27 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
- * Parts Copyright (c) 1994 Brian V. Smith
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
+
 
 /*
  *	genps.h: PostScript headers/patterns etc.
  *
  */
+
+extern Boolean	epsflag;	/* to distinguish PS and EPS */
 
 #define		BEGIN_PROLOG1	"\
 /$F2psDict 200 dict def\n\
@@ -1094,14 +1087,14 @@ newfontname newfont definefont pop end } def\n\
 /isovec [\n\
 "
 #define		SPECIAL_CHAR_2	"\
-8#200 /grave 8#201 /acute 8#202 /circumflex 8#203 /tilde\n\
+8#055 /minus 8#200 /grave 8#201 /acute 8#202 /circumflex 8#203 /tilde\n\
 8#204 /macron 8#205 /breve 8#206 /dotaccent 8#207 /dieresis\n\
 8#210 /ring 8#211 /cedilla 8#212 /hungarumlaut 8#213 /ogonek 8#214 /caron\n\
 8#220 /dotlessi 8#230 /oe 8#231 /OE\n\
 8#240 /space 8#241 /exclamdown 8#242 /cent 8#243 /sterling\n\
 8#244 /currency 8#245 /yen 8#246 /brokenbar 8#247 /section 8#250 /dieresis\n\
 8#251 /copyright 8#252 /ordfeminine 8#253 /guillemotleft 8#254 /logicalnot\n\
-8#255 /endash 8#256 /registered 8#257 /macron 8#260 /degree 8#261 /plusminus\n\
+8#255 /hypen 8#256 /registered 8#257 /macron 8#260 /degree 8#261 /plusminus\n\
 8#262 /twosuperior 8#263 /threesuperior 8#264 /acute 8#265 /mu 8#266 /paragraph\n\
 8#267 /periodcentered 8#270 /cedilla 8#271 /onesuperior 8#272 /ordmasculine\n\
 8#273 /guillemotright 8#274 /onequarter 8#275 /onehalf\n\
@@ -1166,5 +1159,4 @@ newfontname newfont definefont pop end } def\n\
 #define		END_PROLOG	"\
 /$F2psBegin {$F2psDict begin /$F2psEnteredState save def} def\n\
 /$F2psEnd {$F2psEnteredState restore end} def\n\
-%%EndProlog\n\
 "

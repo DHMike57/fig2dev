@@ -1,28 +1,20 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
+
 
 /* 
  *	genibmgl.c :	IBMGL driver for fig2dev
@@ -50,11 +42,8 @@ static set_style();
 #else
 #include <strings.h>
 #endif
-#include <stdio.h>
-#include <math.h>
 #include "fig2dev.h"
 #include "object.h"
-#include "pi.h"
 
 #define		FONTS 			35
 #define		COLORS 			8
@@ -219,7 +208,6 @@ char opt, *optarg;
 	    default:
 		put_msg(Err_badarg, opt, "ibmgl");
 		exit(1);
-		break;
 	}
 }
 
@@ -579,7 +567,7 @@ F_arc	*a;
 		    theta	-= 2.0*M_PI;
 		}
 
-	    if (a->thickness != 0 && a->back_arrow) {
+	    if (a->type == T_OPEN_ARC && a->thickness != 0 && a->back_arrow) {
 		arc_tangent(cx, cy, sx, sy, a->direction^flipped, &x, &y);
 		draw_arrow_head(x, y, sx, sy,
 		a->back_arrow->ht/ppi, a->back_arrow->wid/ppi);
@@ -592,7 +580,7 @@ F_arc	*a;
 	    if (a->thickness != 0)
 		fprintf(tfp, "EP;\n");
 
-	    if (a->thickness != 0 && a->for_arrow) {
+	    if (a->type == T_OPEN_ARC && a->thickness != 0 && a->for_arrow) {
 		arc_tangent(cx, cy, ex, ey, !a->direction^flipped, &x, &y);
 		draw_arrow_head(x, y, ex, ey,
 			a->for_arrow->ht/ppi, a->for_arrow->wid/ppi);
@@ -990,10 +978,14 @@ static	double	angle	 = 0.0;		/* label direction  in radians	*/
 	fprintf(tfp, "LB%s\003\n", t->cstring);
 	}
 
-void genibmgl_end()
+int
+genibmgl_end()
 {
 	/* IBMGL ending */
 	fprintf(tfp, "PU;SP;IN;\n");
+
+	/* all ok */
+	return 0;
 }
 
 struct driver dev_ibmgl = {

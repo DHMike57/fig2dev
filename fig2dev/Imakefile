@@ -3,9 +3,9 @@
 #endif
 
 XCOMM Fig2dev : General Fig code translation program
-XCOMM Copyright (c) 1985-1988 Supoj Sutantavibul
-XCOMM Copyright (c) 1989-1998 by Brian V. Smith
 XCOMM Copyright (c) 1991 Micah Beck
+XCOMM Parts Copyright (c) 1995-1999 by Brian V. Smith
+XCOMM Parts Copyright (c) 1999 by T. Sato
 
 XCOMM THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
 XCOMM INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
@@ -40,20 +40,26 @@ XCOMM the display will be a bit faster in complex figures
 
 XCOMM USEINLINE = -DUSE_INLINE
 
+XCOMM Change RGB if necessary, to point to your rgb.txt color database
+XCOMM file (for X11).  This is needed for the -g (background color) option.
+XCOMM
+
+RGB = $(LIBDIR)/rgb
+
 XCOMM Unomment the #define for USEXPM if you want to use the XPM
 XCOMM (color pixmap) package.
 XCOMM You need version 3.4c or newer of the XPM package.
 XCOMM
-XCOMM Change XPMLIBS if necessary to point to the xpm library (libXpm)
+XCOMM Change XPMLIBDIR if necessary to point to the xpm library (libXpm)
 XCOMM Change XPMINC if necessary to point to the include file for xpm (xpm.h)
-XCOMM
-XCOMM Also change XPMRGB if necessary, to point to your rgb.txt color
-XCOMM database file (for X11).  This is needed for those XPM flies which
-XCOMM have named colors (e.g. "white").
-XCOMM You need version 3.4c of the XPM package.
 XCOMM
 
 XCOMM #define USEXPM
+
+#ifdef USEXPM
+XPMLIBDIR = $(USRLIBDIR)
+XPMINC = -I$(INCDIR)
+#endif
 
 XCOMM For Linux machines or any machines that have a separate library for
 XCOMM the database management routines, uncomment the following line.
@@ -96,15 +102,19 @@ XCOMM uncomment the following to set IBM Graphics Enhancement Cartridge
 XCOMM DDIBMGEC = -DIBMGEC
 
 XCOMM comment out the DDNFSS = ... line if you don't want NFSS2 font selection
-XCOMM for LaTeX texts
-XCOMM comment out the DDEPSF = ... line if you don't want epsfig macros as
-XCOMM distributed w/ LaTeX2e
+XCOMM	for LaTeX texts
+XCOMM comment out the DDLATEX2E_GRAPHICS = ... line if you don't want to use the
+XCOMM	standard graphics package distributed w/ LaTeX2e
+XCOMM UNcomment the DDEPSFIG = ... line if you want to use the deprecated epsfig macros
+XCOMM	distributed w/ LaTeX2e (DDLATEX2E_GRAPHICS must also be defined)
 XCOMM
-XCOMM     Hint: Users of LaTeX2e will probably want to include both of these
-XCOMM     options; users of LaTeX 2.09 will probably want to include neither.
+XCOMM     Hint: Users of LaTeX2e will probably want to include both DDNFSS
+XCOMM		and DDLATEX2E_GRAPHICS options; users of LaTeX 2.09 will
+XCOMM		probably want to include neither.
 
 DDNFSS = -DNFSS
-DDEPSF = -DEPSF
+DDLATEX2E_GRAPHICS = -DLATEX2E_GRAPHICS
+XCOMM DDEPSFIG = -DEPSFIG
 
 XCOMM comment out the DDDVIPS to NOT use dvips for the DVI-to-PostScript driver
 DDDVIPS = -DDVIPS
@@ -121,7 +131,23 @@ XCOMM #define I18N
 
 #ifdef I18N
 I18N_DEFS = -DI18N 
+FIG2DEV_LIBDIR = /usr/local/lib/fig2dev
 I18N_DEV_DEFS = $(I18N_DEFS) -DFIG2DEV_LIBDIR='\"/usr/local/lib/fig2dev\"'
+
+install::
+	[ -d $(FIG2DEV_LIBDIR) ] || mkdir $(FIG2DEV_LIBDIR)
+	cp japanese.ps $(FIG2DEV_LIBDIR)
+	( cd $(FIG2DEV_LIBDIR); \
+	  rm -f ja.ps ja_JP.ps ja_JP.ujis.ps ja_JP.eucJP.ps ja_JP.EUC.ps; \
+	  ln -s japanese.ps ja.ps; ln -s japanese.ps ja_JP.ps; \
+	  ln -s japanese.ps ja_JP.ujis.ps; ln -s japanese.ps ja_JP.eucJP.ps; \
+	  ln -s japanese.ps ja_JP.EUC.ps )
+	cp korean.ps $(FIG2DEV_LIBDIR)
+	( cd $(FIG2DEV_LIBDIR); \
+	  rm -f ko.ps ko_KR.ps ko_KR.ujis.ps ko_KR.eucKR.ps ko_KR.EUC.ps; \
+	  ln -s korean.ps ko.ps; ln -s korean.ps ko_KR.ps; \
+	  ln -s korean.ps ko_KR.ujis.ps; ln -s korean.ps ko_KR.eucKR.ps; \
+	  ln -s korean.ps ko_KR.EUC.ps )
 #endif
 
 DEFINES = $(NEED_STRERROR) $(HAVE_NO_STRCASECMP) $(HAVE_NO_STRNCASECMP) $(USEINLINE) \
@@ -138,11 +164,7 @@ DIR_DEFS=	-DBITMAPDIR=\\\"$(XFIGLIBDIR)/bitmaps\\\"
 
 #ifdef USEXPM
 DUSEXPM = -DUSE_XPM
-XPMLIBDIR = $(USRLIBDIR)
-XPMINC = -I$(INCDIR)
 XPMLIBS = -L$(XPMLIBDIR) -lXpm -lX11
-XPMRGB = XPMRGB=$(LIBDIR)/rgb
-XPMDBM = $(USE_NDBM)
 #endif
 
 #if defined(NOSTRSTR) 
@@ -152,7 +174,6 @@ STRSTRO=	strstr.o
 
 #ifdef USEJPEG
 
-IMAKE_DEFINES = -DUSE_JPEG
 DUSEJPEG = -DUSE_JPEG
 
 #ifdef USEINSTALLEDJPEG
@@ -168,8 +189,10 @@ DEPLIBJPEG = $(JPEGLIBDIR)/libjpeg.a
 
 #endif /* USEJPEG */
 
-DEVDEFINES = $(DUSEJPEG) $(DUSEXPM) $(XPMINC) $(XPMDBM) \
-		$(DDNFSS) $(DDEPSF) $(DDA4) $(DDIBMGEC) $(DDDVIPS) $(I18N_DEV_DEFS)
+IMAKE_DEFINES = $(DUSEJPEG) $(DUSEXPM)
+
+DEVDEFINES = $(DUSEJPEG) $(DUSEXPM) $(XPMINC) $(DDNFSS) $(DDA4) \
+		$(DDLATEX2E_GRAPHICS) $(DDEPSFIG) $(DDIBMGEC) $(DDDVIPS) $(I18N_DEV_DEFS)
 
 #define IHaveSubdirs
 #define PassCDebugFlags 'CDEBUGFLAGS=$(CDEBUGFLAGS)'
@@ -183,7 +206,7 @@ LIBTRANSFIG = $(DEVDIR)/libtransfig.a
 INCLUDES = -I..
 
 LOCAL_LIBRARIES = $(LIBTRANSFIG) $(JPEGLIB)
-#if defined(NetBSDArchitecture)
+#if defined(NetBSDArchitecture) || defined(FreeBSDArchitecture)
 SYS_LIBRARIES = $(XPMLIBS) $(DBMLIB) -lm -lcompat
 #else
 SYS_LIBRARIES = $(XPMLIBS) $(DBMLIB) -lm
@@ -192,22 +215,28 @@ DEPLIBS = $(LIBTRANSFIG)
 
 #if !(defined(SunOSPlatform) && (OSMajorVersion>=5))
 GETOPTC=   getopt.c
-GETOPTO=   getopt.c
+GETOPTO=   getopt.o
 #endif
 
-SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c trans_spline.c \
+SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c colors.c trans_spline.c \
 	free.c read.c read1_3.c latex_line.c $(STRSTRC) $(GETOPTC)
-OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o trans_spline.o \
+OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o colors.o trans_spline.o \
 	free.o read.o read1_3.o latex_line.o $(STRSTRO) $(GETOPTO)
 
-
 fig2dev: $(DEPLIBJPEG) $(DEPLIBS)
+
+RGBDBM = $(USE_NDBM)
+RGBFILE = -DRGB_FILE=\"$(RGB)\"
+SpecialObjectRule(colors.o, , $(RGBFILE) $(RGBDBM))
+SpecialObjectRule(fig2dev.o, fig2dev.c ../patchlevel.h, )
 
 XCOMM only compile our jpeg if the use doesn't have one installed
 
 #ifndef USEINSTALLEDJPEG
+XCOMM We need the cjpeg prog for smoothing jpeg output (there is no ppmtojpeg),
+XCOMM so we do "make install"
 $(JPEGLIBDIR)/libjpeg.a: $(JPEGLIBDIR)/jconfig.h
-	cd $(JPEGLIBDIR); $(MAKE) libjpeg.a
+	cd $(JPEGLIBDIR); $(MAKE) install
 
 $(JPEGLIBDIR)/jconfig.h:
 	cd $(JPEGLIBDIR) ; ./$(JPEGCONF) CC='$(CC)'
@@ -215,7 +244,7 @@ $(JPEGLIBDIR)/jconfig.h:
 
 $(LIBTRANSFIG)::
 	cd $(DEVDIR); $(MAKE) JPEGINCDIR=$(JPEGINCDIR) \
-		DEFINES="$(DEVDEFINES) $(DIR_DEFS)" $(XPMRGB) libtransfig.a
+		DEFINES="$(DEVDEFINES) $(DIR_DEFS)" libtransfig.a
 
 PROGRAM = fig2dev
 AllTarget(fig2dev)

@@ -1,27 +1,18 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
 /* 
@@ -48,8 +39,6 @@
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
-#include <stdio.h>
-#include <math.h>
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
@@ -64,27 +53,31 @@ extern double rad2deg;
 #define rint(a) floor((a)+0.5)     /* close enough? */
 #endif
 
-extern void genlatex_start (),
+extern void
+	genlatex_start (),
 	gendev_null (),
-	genlatex_end (),
      	genps_option (),
 	genps_start (),
 	genps_arc (),
 	genps_ellipse (),
 	genps_line (),
 	genps_spline (),
-	genps_end (),
         genlatex_option (),
         genlatex_text (),
         genps_text ();
+extern int
+	genlatex_end (),
+	genps_end ();
 
 static char pstex_file[1000] = "";
 
 void genpstex_t_option(opt, optarg)
 char opt, *optarg;
 {
-       if (opt == 'p') strcpy(pstex_file, optarg);
-       else genlatex_option(opt, optarg);
+       if (opt == 'p') 
+	   strcpy(pstex_file, optarg);
+       else
+	   genlatex_option(opt, optarg);
 }
 
 
@@ -92,12 +85,15 @@ void genpstex_t_start(objects)
 F_compound	*objects;
 {
 	/* Put PostScript Image if any*/
-        if (pstex_file[0] != '\0')
-        {
+        if (pstex_file[0] != '\0') {
 		fprintf(tfp, "\\begin{picture}(0,0)%%\n");
-/* changed to use epsfig-macros April 13, 94 HGS*/
-#ifdef EPSF
+/* newer includegraphics directive suggested by Stephen Harker 1/13/99 */
+#if defined(LATEX2E_GRAPHICS)
+#  if defined(EPSFIG)
 		fprintf(tfp, "\\epsfig{file=%s}%%\n",pstex_file); 
+#  else
+		fprintf(tfp, "\\includegraphics{%s}%%\n",pstex_file);
+#  endif
 #else
 		fprintf(tfp, "\\special{psfile=%s}%%\n",pstex_file);
 #endif

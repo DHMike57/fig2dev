@@ -1,3 +1,18 @@
+/*
+ * TransFig: Facility for Translating Fig code
+ * Copyright (c) 1989-1999 by Brian V. Smith
+ *
+ * Any party obtaining a copy of these files is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.
+ *
+ */
+
 /* The following code is extracted from giftoppm.c, from the pbmplus package */
 
 /* +-------------------------------------------------------------------+ */
@@ -10,20 +25,36 @@
 /* |   provided "as is" without express or implied warranty.           | */
 /* +-------------------------------------------------------------------+ */
 
-#include <stdio.h>
 #include "fig2dev.h"
 #include "object.h"
 
-extern	FILE	*open_picfile();
-extern	void	close_picfile();
+extern	int	_read_pcx();
 
-#define	MAX_LWZ_BITS		12
+#define BUFLEN 1024
 
-#define INTERLACE		0x40
+/* Some of the following code is extracted from giftopnm.c, from the netpbm package */
+
+/* +-------------------------------------------------------------------+ */
+/* | Copyright 1990, David Koblas.                                     | */
+/* |   Permission to use, copy, modify, and distribute this software   | */
+/* |   and its documentation for any purpose and without fee is hereby | */
+/* |   granted, provided that the above copyright notice appear in all | */
+/* |   copies and that both that copyright notice and this permission  | */
+/* |   notice appear in supporting documentation.  This software is    | */
+/* |   provided "as is" without express or implied warranty.           | */
+/* +-------------------------------------------------------------------+ */
+
+
+static Boolean	 ReadColorMap();
+static Boolean	 DoGIFextension();
+static int	 GetDataBlock();
+static int	 GetCode();
+extern FILE	*open_picfile();
+extern void	 close_picfile();
+
 #define LOCALCOLORMAP		0x80
-#define BitSet(byte, bit)	(((byte) & (bit)) == (bit))
-
 #define	ReadOK(file,buffer,len)	(fread(buffer, len, 1, file) != 0)
+#define BitSet(byte, bit)	(((byte) & (bit)) == (bit))
 
 #define LM_to_uint(a,b)			(((b)<<8)|(a))
 
@@ -31,6 +62,7 @@ struct {
 	unsigned int	Width;
 	unsigned int	Height;
 	unsigned int	BitPixel;
+	unsigned char	ColorMap[3][MAXCOLORMAPSIZE];
 	unsigned int	ColorResolution;
 	unsigned int	Background;
 	unsigned int	AspectRatio;
@@ -43,98 +75,85 @@ struct {
 	int	disposal;
 } Gif89 = { -1, -1, -1, 0 };
 
-static	int	verbose;
-int	showComment;
-
-static Boolean ReadColorMap();
-static Boolean DoExtension();
-static int GetDataBlock();
-static int GetCode();
-static int LWZReadByte();
-static Boolean ReadGIFImage();
+/* return codes:  1 : success
+		  0 : invalid file
+*/
 
 int
-read_gif(pic)
-  F_pic *pic;
+read_gif(file,filetype,pic,llx,lly)
+    FILE	   *file;
+    int		    filetype;
+    F_pic	   *pic;
+    int		   *llx, *lly;
 {
-	FILE		*fd;
-	unsigned char	buf[16];
-	unsigned char	c;
+	char		buf[BUFLEN],pcxname[PATH_MAX];
+	FILE		*giftopcx;
+	int		i, stat, size;
 	int		useGlobalColormap;
-	int		bitPixel;
+	unsigned char	localColorMap[3][MAXCOLORMAPSIZE];
+	unsigned int	bitPixel, red, green, blue;
+	unsigned char	c;
 	char		version[4];
-	int		filtype;		/* file (0) or pipe (1) */
 
-	if ((fd=open_picfile(pic->file, &filtype)) == NULL)
-	    return 0;
+	/* first read header to look for any transparent color extension */
 
-	if (! ReadOK(fd,buf,6)) {
-		close_picfile(fd,filtype);
+	*llx = *lly = 0;
+
+	if (! ReadOK(file,buf,6)) {
 		return 0;
 	}
 
-	if (strncmp((char *) buf,"GIF",3) != 0) {
-		close_picfile(fd,filtype);
-		return -1;
+	if (strncmp((char*)buf,"GIF",3) != 0) {
+		return 0;
 	}
 
-	strncpy(version, (char *) (buf + 3), 3);
+	strncpy(version, (char*)(buf + 3), 3);
 	version[3] = '\0';
 
 	if ((strcmp(version, "87a") != 0) && (strcmp(version, "89a") != 0)) {
-		fprintf(stderr,"Unknown GIF version %s\n",version);
-		close_picfile(fd,filtype);
-		return -1;
+		fprintf(stderr,"Unknown GIF version %s",version);
+		return 0;
 	}
 
-	if (! ReadOK(fd,buf,7)) {
-		close_picfile(fd,filtype);
+	if (! ReadOK(file,buf,7)) {
 		return 0;		/* failed to read screen descriptor */
 	}
 
 	GifScreen.Width           = LM_to_uint(buf[0],buf[1]);
 	GifScreen.Height          = LM_to_uint(buf[2],buf[3]);
 	GifScreen.BitPixel        = 2<<(buf[4]&0x07);
-	GifScreen.ColorResolution = (((unsigned int)(buf[4]&0x70)>>3)+1);
-	GifScreen.Background      = buf[5];
-	GifScreen.AspectRatio     = buf[6];
+	GifScreen.ColorResolution = (((((int)buf[4])&0x70)>>3)+1);
+	GifScreen.Background      = (unsigned int) buf[5];
+	GifScreen.AspectRatio     = (unsigned int) buf[6];
 
+	/* put in the width/height now in case there is some other failure later */
 	if (BitSet(buf[4], LOCALCOLORMAP)) {	/* Global Colormap */
-		if (!ReadColorMap(fd,GifScreen.BitPixel,pic->cmap)) {
-			close_picfile(fd,filtype);
-			return 0;		/* error reading global colormap */
+		if (!ReadColorMap(file,GifScreen.BitPixel,pic->cmap)) {
+			return 0;	/* error reading global colormap */
 		}
 	}
 
-	if (GifScreen.AspectRatio != 0 && GifScreen.AspectRatio != 49) {
-		fprintf(stderr,"GIF: warning - non-square pixels\n");
-	}
+	/* assume no transparent color for now */
+	Gif89.transparent =  -1;
 
 	for (;;) {
-		if (! ReadOK(fd,&c,1)) {
-			close_picfile(fd,filtype);	/* EOF / read error on image data */
-			return 0;
+		if (! ReadOK(file,&c,1)) {
+			return 0;	/* EOF / read error on image data */
 		}
 
-		if (c == ';') {		/* GIF terminator */
-			close_picfile(fd,filtype);
-			return 1;
+		if (c == ';') {			/* GIF terminator, finish up */
+			break;			/* all done */
 		}
 
-		if (c == '!') { 	/* Extension */
-			if (! ReadOK(fd,&c,1))
-				fprintf(stderr,"GIF read error on extention function code\n");
-			(void) DoExtension(fd, c);
+		if (c == '!') { 		/* Extension */
+		    if (! ReadOK(file,&c,1))
+			fprintf(stderr,"GIF read error on extention function code");
+		    (void) DoGIFextension(file, c);
+		    continue;
+		}
+
+		if (c != ',') {			/* Not a valid start character */
 			continue;
-		}
-
-		if (c != ',') {		/* Not a valid start character */
-			continue;
-		}
-
-		if (! ReadOK(fd,buf,9)) {
-			close_picfile(fd,filtype);
-			return 0;	/* couldn't read left/top/width/height */
 		}
 
 		useGlobalColormap = ! BitSet(buf[8], LOCALCOLORMAP);
@@ -142,54 +161,102 @@ read_gif(pic)
 		bitPixel = 1<<((buf[8]&0x07)+1);
 
 		if (! useGlobalColormap) {
-			if (!ReadColorMap(fd, bitPixel, pic->cmap)) {
-				close_picfile(fd,filtype);
-				fprintf(stderr,"error reading local GIF colormap\n" );
-				return 0;
-			}
-			pic->numcols = bitPixel;
-			if (!ReadGIFImage(pic, fd, LM_to_uint(buf[4],buf[5]),
-				  LM_to_uint(buf[6],buf[7]),
-				  BitSet(buf[8], INTERLACE)))
-			    return 0;
-		} else {
-			if (!ReadGIFImage(pic, fd, LM_to_uint(buf[4],buf[5]),
-				  LM_to_uint(buf[6],buf[7]),
-				  BitSet(buf[8], INTERLACE)))
-			    return 0;
-			pic->numcols = GifScreen.BitPixel;
+		    if (!ReadColorMap(file, bitPixel, pic->cmap)) {
+			fprintf(stderr,"error reading local GIF colormap" );
+			return 1;
+		    }
 		}
+		break;				/* image starts here, header is done */
 	}
+
+	/* output PostScript comment */
+	fprintf(tfp, "%% Originally from a GIF File: %s\n\n", pic->file);
+
+	/* save transparent indicator */
+	pic->transp = Gif89.transparent;
+
+	/* reposition the file at the beginning */
+	close_picfile(file,filetype);
+	file = open_picfile(pic->file, &filetype, True, pcxname);
+	
+	/* now call giftopnm and ppmtopcx */
+
+	/* make name for temp output file */
+	sprintf(pcxname, "%s/%s%06d.pix", TMPDIR, "xfig-pcx", getpid());
+	/* make command to convert gif to pcx into temp file */
+	sprintf(buf, "giftopnm | ppmtopcx > %s 2> /dev/null", pcxname);
+	if ((giftopcx = popen(buf,"w" )) == 0) {
+	    fprintf(stderr,"Cannot open pipe to giftoppm\n");
+	    return 0;
+	}
+	while ((size=fread(buf, 1, BUFLEN, file)) != 0) {
+	    fwrite(buf, size, 1, giftopcx);
+	}
+	/* close pipe */
+	pclose(giftopcx);
+	if ((giftopcx = fopen(pcxname, "r")) == NULL) {
+	    fprintf(stderr,"Can't open temp output file\n");
+	    return 0;
+	}
+	/* now call _read_pcx to read the pcx file */
+	stat = _read_pcx(giftopcx, pic);
+
+	/* remove temp file */
+	unlink(pcxname);
+
+	/* now match original transparent colortable index with possibly new 
+	   colortable from ppmtopcx */
+	if (pic->transp != -1) {
+	    if (useGlobalColormap) {
+		red = GifScreen.ColorMap[RED][pic->transp];
+		green = GifScreen.ColorMap[GREEN][pic->transp];
+		blue = GifScreen.ColorMap[BLUE][pic->transp];
+	    } else {
+		red = localColorMap[RED][pic->transp];
+		green = localColorMap[GREEN][pic->transp];
+		blue = localColorMap[BLUE][pic->transp];
+	    }
+	    for (i=0; i<pic->numcols; i++) {
+		if (pic->cmap[RED][i] == red &&
+		    pic->cmap[GREEN][i] == green &&
+		    pic->cmap[BLUE][i] == blue)
+			break;
+	    }
+	    if (i < pic->numcols)
+		pic->transp = i;
+	}
+
+	return stat;
 }
 
 static Boolean
 ReadColorMap(fd,number,cmap)
 FILE	*fd;
-int	number;
+unsigned int	number;
 unsigned char cmap[3][MAXCOLORMAPSIZE];
 {
 	int		i;
 	unsigned char	rgb[3];
 
 	for (i = 0; i < number; ++i) {
-		if (! ReadOK(fd, rgb, sizeof(rgb))) {
-			fprintf(stderr,"bad GIF colormap\n" );
-			return FALSE;
-		}
-		cmap[0][i] = rgb[0];
-		cmap[1][i] = rgb[1];
-		cmap[2][i] = rgb[2];
+	    if (! ReadOK(fd, rgb, sizeof(rgb))) {
+		fprintf(stderr,"bad GIF colormap" );
+		return False;
+	    }
+	    cmap[RED][i]   = rgb[RED];
+	    cmap[GREEN][i] = rgb[GREEN];
+	    cmap[BLUE][i]  = rgb[BLUE];
 	}
-	return TRUE;
+	return True;
 }
 
 static Boolean
-DoExtension(fd, label)
+DoGIFextension(fd, label)
 FILE	*fd;
 int	label;
 {
-	static char	buf[256];
-	char		*str;
+	static unsigned char buf[256];
+	char	    *str;
 
 	switch (label) {
 	case 0x01:		/* Plain Text Extension */
@@ -200,10 +267,10 @@ int	label;
 		break;
 	case 0xfe:		/* Comment Extension */
 		str = "Comment Extension";
-		while (GetDataBlock(fd, (unsigned char*) buf) != 0) {
+		while (GetDataBlock(fd, buf) != 0) {
 			; /* GIF comment */
 		}
-		return FALSE;
+		return False;
 	case 0xf9:		/* Graphic Control Extension */
 		str = "Graphic Control Extension";
 		(void) GetDataBlock(fd, (unsigned char*) buf);
@@ -213,23 +280,22 @@ int	label;
 		if ((buf[0] & 0x1) != 0)
 			Gif89.transparent = buf[3];
 
-		while (GetDataBlock(fd, (unsigned char*) buf) != 0)
+		while (GetDataBlock(fd, buf) != 0)
 			;
-		return FALSE;
+		return False;
 	default:
-		str = buf;
-		sprintf(buf, "UNKNOWN (0x%02x)", label);
+		str = (char *) buf;
+		sprintf(str, "UNKNOWN (0x%02x)", label);
 		break;
 	}
 
-
-	while (GetDataBlock(fd, (unsigned char*) buf) != 0)
+	while (GetDataBlock(fd, buf) != 0)
 		;
 
-	return FALSE;
+	return False;
 }
 
-int	ZeroDataBlock = FALSE;
+int	ZeroDataBlock = False;
 
 static int
 GetDataBlock(fd, buf)
@@ -267,7 +333,7 @@ int	flag;
 	if (flag) {
 		curbit = 0;
 		lastbit = 0;
-		done = FALSE;
+		done = False;
 		return 0;
 	}
 
@@ -280,7 +346,7 @@ int	flag;
 		buf[1] = buf[last_byte-1];
 
 		if ((count = GetDataBlock(fd, &buf[2])) == 0)
-			done = TRUE;
+			done = True;
 
 		last_byte = 2 + count;
 		curbit = (curbit - lastbit) + 16;
@@ -294,191 +360,4 @@ int	flag;
 	curbit += code_size;
 
 	return ret;
-}
-
-static int
-LWZReadByte(fd, flag, input_code_size)
-FILE	*fd;
-int	flag;
-int	input_code_size;
-{
-	static int	fresh = FALSE;
-	int		code, incode;
-	static int	code_size, set_code_size;
-	static int	max_code, max_code_size;
-	static int	firstcode, oldcode;
-	static int	clear_code, end_code;
-	static int	table[2][(1<< MAX_LWZ_BITS)];
-	static int	stack[(1<<(MAX_LWZ_BITS))*2], *sp;
-	register int	i;
-
-	if (flag) {
-		set_code_size = input_code_size;
-		code_size = set_code_size+1;
-		clear_code = 1 << set_code_size ;
-		end_code = clear_code + 1;
-		max_code_size = 2*clear_code;
-		max_code = clear_code+2;
-
-		GetCode(fd, 0, TRUE);
-		
-		fresh = TRUE;
-
-		for (i = 0; i < clear_code; ++i) {
-			table[0][i] = 0;
-			table[1][i] = i;
-		}
-		for (; i < (1<<MAX_LWZ_BITS); ++i)
-			table[0][i] = table[1][0] = 0;
-
-		sp = stack;
-
-		return 0;
-	} else if (fresh) {
-		fresh = FALSE;
-		do {
-			firstcode = oldcode =
-				GetCode(fd, code_size, FALSE);
-		} while (firstcode == clear_code);
-		return firstcode;
-	}
-
-	if (sp > stack)
-		return *--sp;
-
-	while ((code = GetCode(fd, code_size, FALSE)) >= 0) {
-		if (code == clear_code) {
-			for (i = 0; i < clear_code; ++i) {
-				table[0][i] = 0;
-				table[1][i] = i;
-			}
-			for (; i < (1<<MAX_LWZ_BITS); ++i)
-				table[0][i] = table[1][i] = 0;
-			code_size = set_code_size+1;
-			max_code_size = 2*clear_code;
-			max_code = clear_code+2;
-			sp = stack;
-			firstcode = oldcode =
-					GetCode(fd, code_size, FALSE);
-			return firstcode;
-		} else if (code == end_code) {
-			int		count;
-			unsigned char	buf[260];
-
-			if (ZeroDataBlock)
-				return -2;
-
-			while ((count = GetDataBlock(fd, buf)) > 0)
-				;
-
-			if (count != 0) {
-				fprintf(stderr,"LWZReadByte: missing EOD in data stream (common occurence)\n");
-			}
-			return -2;
-		}
-
-		incode = code;
-
-		if (code >= max_code) {
-			*sp++ = firstcode;
-			code = oldcode;
-		}
-
-		while (code >= clear_code) {
-			*sp++ = table[1][code];
-			if (code == table[0][code]) {
-				fprintf(stderr,"LWZReadByte: circular table entry BIG ERROR\n");
-			}
-			code = table[0][code];
-		}
-
-		*sp++ = firstcode = table[1][code];
-
-		if ((code = max_code) <(1<<MAX_LWZ_BITS)) {
-			table[0][code] = oldcode;
-			table[1][code] = firstcode;
-			++max_code;
-			if ((max_code >= max_code_size) &&
-				(max_code_size < (1<<MAX_LWZ_BITS))) {
-				max_code_size *= 2;
-				++code_size;
-			}
-		}
-
-		oldcode = incode;
-
-		if (sp > stack)
-			return *--sp;
-	}
-	return code;
-}
-
-static Boolean
-ReadGIFImage(pic, fd, len, height, interlace)
-F_pic	*pic;
-FILE	*fd;
-int	len, height;
-int	interlace;
-{
-	unsigned char	c;	
-	int		v;
-	int		xpos = 0, ypos = 0, pass = 0;
-	unsigned char	*image;
-
-	/*
-	**  Initialize the Compression routines
-	*/
-	if (! ReadOK(fd,&c,1))
-		return FALSE;		/* EOF / read error on image data */
-
-	if (LWZReadByte(fd, TRUE, c) < 0)
-		return FALSE;		/* error reading image */
-
-	if ((image = (unsigned char*) malloc(len* height* sizeof(char))) == NULL)
-		return FALSE;		/* couldn't alloc space for image */
-
-	while ((v = LWZReadByte(fd,FALSE,c)) >= 0 ) {
-		image[ypos*len+xpos] = (unsigned char) v;
-		++xpos;
-		if (xpos == len) {
-			xpos = 0;
-			if (interlace) {
-				switch (pass) {
-				case 0:
-				case 1:
-					ypos += 8; break;
-				case 2:
-					ypos += 4; break;
-				case 3:
-					ypos += 2; break;
-				}
-
-				if (ypos >= height) {
-					++pass;
-					switch (pass) {
-					case 1:
-						ypos = 4; break;
-					case 2:
-						ypos = 2; break;
-					case 3:
-						ypos = 1; break;
-					default:
-						goto fini;
-					}
-				}
-			} else {
-				++ypos;
-			}
-		}
-		if (ypos >= height)
-			break;
-	}
-
-fini:
-	pic->subtype = P_GIF;
-	pic->bitmap = image;	/* save the pixel data */
-	pic->hw_ratio = (float) height / len;
-	pic->bit_size.x = len;
-	pic->bit_size.y = height;
-	return TRUE;
 }

@@ -1,4 +1,19 @@
 /*
+ * TransFig: Facility for Translating Fig code
+ * Copyright (c) 1989-1999 by Brian V. Smith
+ *
+ * Any party obtaining a copy of these files is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons who receive
+ * copies from any such party to do so, with the only requirement being
+ * that this copyright notice remain intact.
+ *
+ */
+
+/*
    This is a modified version of the XReadBitmapFromFile() routine from
    the X11R5 distribution.  This version reads the XBM file into a (char*)
    array rather than creating the pixmap directly.
@@ -32,14 +47,43 @@
  * without the other).
  */
 
-#include <stdio.h>
 #include "fig2dev.h"
 #include "object.h"
 
-extern FILE	*open_picfile();
-extern void	close_picfile();
-
 #define MAX_SIZE 255
+
+/* attempt to read a bitmap file */
+
+/* return codes:  1 : success
+		  0 : invalid file
+*/
+
+int
+read_xbm(file,filetype,pic,llx,lly)
+    FILE	   *file;
+    int		    filetype;
+    F_pic	   *pic;
+    int		   *llx, *lly;
+{
+    int status;
+    unsigned int x, y;
+
+    *llx = *lly = 0;
+    /* first try for a X Bitmap file format */
+    status = ReadFromBitmapFile(file, &x, &y, &pic->bitmap);
+    if (status == BitmapSuccess) {
+	pic->subtype = P_XBM;
+	pic->hw_ratio = (float) y / x;
+	pic->numcols = 0;
+	pic->bit_size.x = x;
+	pic->bit_size.y = y;
+	/* output PostScript comment */
+	fprintf(tfp, "%% Begin Imported X11 Bitmap File: %s\n\n", pic->file);
+	return 1;
+    }
+    /* Non Bitmap file */
+    return 0;
+}
 
 /* shared data for the image read/parse logic */
 static short hexTable[256];		/* conversion value */
@@ -84,8 +128,8 @@ static void initHexTable()
  *	read next hex value in the input stream, return -1 if EOF
  */
 
-static NextInt (fstream)
-    FILE *fstream;
+static NextInt (file)
+    FILE *file;
 {
     int	ch;
     int	value = 0;
@@ -97,7 +141,7 @@ static NextInt (fstream)
     /* skip any initial delimiters found in read stream */
 
     while (!done) {
-	ch = getc(fstream);
+	ch = getc(file);
 	if (ch == EOF) {
 	    value	= -1;
 	    done++;
@@ -133,12 +177,12 @@ static NextInt (fstream)
 
 }
 
-int ReadFromBitmapFile (filename, width, height, data_ret)
-    char *filename;
+int
+ReadFromBitmapFile (file, width, height, data_ret)
+    FILE	*file;			/* handle on file  */
     unsigned int *width, *height;       /* RETURNED */
     unsigned char **data_ret;           /* RETURNED */
 {
-    FILE	*fstream;		/* handle on file  */
     int		filtype;		/* file type (pipe or file) */
     unsigned	char *data = NULL;	/* working variable */
     char	line[MAX_SIZE];		/* input line from file */
@@ -156,15 +200,12 @@ int ReadFromBitmapFile (filename, width, height, data_ret)
     if (initialized == 0)
 	initHexTable();
 
-    if ((fstream=open_picfile(filename, &filtype)) == NULL)
-	    return 0;
-
     /* error cleanup and return macro	*/
-#define	RETURN(code) { if (data) free (data); close_picfile(fstream,filtype); return code; }
+#define	RETURN(code) { if (data) free (data);  return code; }
 
-    while (fgets(line, MAX_SIZE, fstream)) {
+    while (fgets(line, MAX_SIZE, file)) {
 	if (strlen(line) == MAX_SIZE-1) {
-	    RETURN (0);
+	    RETURN (BitmapFileInvalid);
 	}
 	if (sscanf(line,"#define %s %d",name_and_type,&value) == 2) {
 	    if (!(type = strrchr(name_and_type, '_')))
@@ -197,7 +238,7 @@ int ReadFromBitmapFile (filename, width, height, data_ret)
 	  continue;
 
 	if (!ww || !hh)
-	  RETURN (0);
+	  RETURN (BitmapFileInvalid);
 
 	if ((ww % 16) && ((ww % 16) < 9) && version10p)
 	  padding = 1;
@@ -209,15 +250,15 @@ int ReadFromBitmapFile (filename, width, height, data_ret)
 	size = bytes_per_line * hh;
 	data = (unsigned char *) malloc ((unsigned int) size);
 	if (!data)
-	  RETURN (0);
+	  RETURN (BitmapFileInvalid);
 
 	if (version10p) {
 	    unsigned char *ptr;
 	    int bytes;
 
 	    for (bytes=0, ptr=data; bytes<size; (bytes += 2)) {
-		if ((value = NextInt(fstream)) < 0)
-		  RETURN (0);
+		if ((value = NextInt(file)) < 0)
+		  RETURN (BitmapFileInvalid);
 		*(ptr++) = value;
 		if (!padding || ((bytes+2) % bytes_per_line))
 		  *(ptr++) = value >> 8;
@@ -227,21 +268,20 @@ int ReadFromBitmapFile (filename, width, height, data_ret)
 	    int bytes;
 
 	    for (bytes=0, ptr=data; bytes<size; bytes++, ptr++) {
-		if ((value = NextInt(fstream)) < 0)
-		  RETURN (0);
+		if ((value = NextInt(file)) < 0)
+		  RETURN (BitmapFileInvalid);
 		*ptr=value;
 	    }
 	}
     }					/* end while */
 
     if (data == NULL) {
-	RETURN (0);
+	RETURN (BitmapFileInvalid);
     }
 
     *data_ret = data;
     *width = ww;
     *height = hh;
 
-    close_picfile(fstream, filtype);
-    return (1);
+    RETURN (BitmapSuccess);
 }

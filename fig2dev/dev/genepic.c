@@ -1,27 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1991 by Micah Beck
+ * Copyright (c) 1988 by Conrad Kwok
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
 /*
@@ -87,14 +79,11 @@
 ====================================================================*/
 
   
-#include <stdio.h>
-#include <math.h>
 #include <varargs.h>
 #include <ctype.h>
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
-#include "pi.h"
 
 extern float THICK_SCALE;	/* ratio of dpi/80 */
 
@@ -218,7 +207,8 @@ int	VarWidth=FALSE;
 int	DashStretch=30;
 double	ArrowScale=1.0;
 
-void genepic_option(opt, optarg)
+void
+genepic_option(opt, optarg)
 char opt, *optarg;
 {
   	int loop, i;
@@ -304,11 +294,11 @@ char opt, *optarg;
 	default:
 	    put_msg(Err_badarg, opt, "epic");
 	    exit(1);
-	    break;
         }
 }
 
-static fconvertCS(fpt)
+static
+fconvertCS(fpt)
 FPoint *fpt;
 {
     if (CoordSys) {
@@ -328,7 +318,8 @@ F_point *pt;
     pt->y -= LLY;
 }
 
-void genepic_start(objects)
+void
+genepic_start(objects)
 F_compound *objects;
 {
     int temp;
@@ -342,6 +333,13 @@ F_compound *objects;
 
     texfontsizes[0] = texfontsizes[1] =
 		TEXFONTSIZE(font_size?font_size:DEFAULT_FONT_SIZE);
+
+    /* print any whole-figure comments prefixed with "%" */
+    if (objects->comments) {
+	fprintf(tfp,"%%\n");
+	print_comments("% ",objects->comments,"");
+	fprintf(tfp,"%%\n");
+    }
 
     switch (TeXLang) {
     case Epic:
@@ -416,16 +414,21 @@ F_compound *objects;
            LowerLeftX, LowerLeftY-BottomMargin);
 }
 
-void genepic_end()
+int
+genepic_end()
 {
     fprintf(tfp, "\\end{picture}\n");
     if (DashStretch)
       fprintf(tfp, "}\n");
     if (PageMode)
         fputs(Postamble, stdout);
+
+    /* all ok */
+    return 0;
 }
 
-static set_linewidth(w)
+static
+set_linewidth(w)
 int w;
 {
     int old_width;
@@ -673,7 +676,8 @@ int type, color;
     }
 }
 
-void genepic_line(line)
+void
+genepic_line(line)
 F_line *line;
 {
     F_point *p, *q;
@@ -681,6 +685,9 @@ F_line *line;
     int boxflag = FALSE, llx, lly, urx, ury;
     int r;
     double dtemp;
+
+    /* print any comments prefixed with "%" */
+    print_comments("% ",line->comments,"");
 
     set_linewidth(line->thickness);
     set_style(line->style, line->style_val);
@@ -883,20 +890,24 @@ double dash_len;
 }
 
 
-void genepic_spline(spl)
-F_spline *spl;
+void
+genepic_spline(s)
+F_spline *s;
 {
-    set_linewidth(spl->thickness);
+    /* print any comments prefixed with "%" */
+    print_comments("% ",s->comments,"");
+
+    set_linewidth(s->thickness);
     set_style(SOLID_LINE, 0.0);
-    if (int_spline(spl)) {
-	genepic_itp_spline(spl);
+    if (int_spline(s)) {
+	genepic_itp_spline(s);
     } else {
-	genepic_ctl_spline(spl);
+	genepic_ctl_spline(s);
     }
 }
 
-static
-void genepic_ctl_spline(spl)
+static void
+genepic_ctl_spline(spl)
 F_spline *spl;
 {
     if (closed_spline(spl)) {
@@ -906,7 +917,8 @@ F_spline *spl;
     }
 }
 
-static void genepic_open_spline(spl)
+static void
+genepic_open_spline(spl)
 F_spline *spl;
 {
     F_point *p, *q, *r;
@@ -972,7 +984,8 @@ F_spline *spl;
     }
 }
 
-static void genepic_closed_spline(spl)
+static void
+genepic_closed_spline(spl)
 F_spline *spl;
 {
     F_point *p;
@@ -1028,7 +1041,8 @@ double a1, b1, a2, b2, a3, b3;
     }
 }
 
-static quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
+static
+quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
 double	a1, b1, a2, b2, a3, b3, a4, b4;
 {
     double	x1, y1, x4, y4;
@@ -1108,7 +1122,8 @@ F_spline *spl;
     }
 }
 
-static bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
+static
+bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
 double	a0, b0, a1, b1, a2, b2, a3, b3;
 {
     double	x0, y0, x3, y3;
@@ -1131,10 +1146,14 @@ double	a0, b0, a1, b1, a2, b2, a3, b3;
     }
 }
 
-void genepic_ellipse(ell)
+void
+genepic_ellipse(ell)
 F_ellipse *ell;
 {
     F_point pt;
+
+    /* print any comments prefixed with "%" */
+    print_comments("% ",ell->comments,"");
 
     set_linewidth(ell->thickness);
     pt.x = ell->center.x;
@@ -1180,12 +1199,17 @@ F_ellipse *ell;
 }
 
 extern char *ISOtoTeX[];
-void genepic_text(text)
+
+void
+genepic_text(text)
 F_text *text;
 {
     F_point pt;
     char *tpos, *esc_cp, *special_index;
     unsigned char   *cp;
+
+    /* print any comments prefixed with "%" */
+    print_comments("% ",text->comments,"");
 
     pt.x=text->base_x;
     pt.y=text->base_y;
@@ -1315,13 +1339,17 @@ F_text *text;
     fprintf(tfp, "}}}}}\n");
 }
 
-void genepic_arc(arc)
+void
+genepic_arc(arc)
 F_arc *arc;
 {
     FPoint pt1, pt2, ctr, tmp;
     double r1, r2, th1, th2, theta;
     double dx1, dy1, dx2, dy2;
     double arrowfactor;
+
+    /* print any comments prefixed with "%" */
+    print_comments("% ",arc->comments,"");
 
     ctr.x = arc->center.x;
     ctr.y = arc->center.y;
@@ -1341,7 +1369,8 @@ F_arc *arc;
     rtop(dx1, dy1, &r1, &th1);
     rtop(dx2, dy2, &r2, &th2);
     arrowfactor = (r1+r2) / 30.0;
-    if (arrowfactor > 1) arrowfactor = 1;
+    if (arrowfactor > 1)
+	arrowfactor = 1;
     set_linewidth(arc->thickness);
     if (TeXLang == EEpic) {
 	set_pattern(arc->fill_style, arc->fill_color);
@@ -1391,25 +1420,30 @@ F_arc *arc;
             drawarc(&ctr, r2, 2*M_PI - th1 - theta, theta);
         }
     }
-    if (arc->for_arrow) {
-	arc_arrow(&ctr, &pt2, arc->direction, arc->for_arrow, &tmp);
-	fdraw_arrow_head(&tmp, &pt2,
+    if ((arc->type == T_OPEN_ARC) && (arc->thickness != 0) && 
+	(arc->back_arrow || arc->for_arrow)) {
+	 if (arc->for_arrow) {
+	    arc_arrow(&ctr, &pt2, arc->direction, arc->for_arrow, &tmp);
+	    fdraw_arrow_head(&tmp, &pt2,
 			 arc->for_arrow->ht*arrowfactor,
 			 arc->for_arrow->wid*arrowfactor,
 			 arc->for_arrow->type,
 			 arc->for_arrow->style,
 			 arc->for_arrow->thickness);
-    	if (Verbose) fprintf(tfp, "%%\n");
-    }
-    if (arc->back_arrow) {
-	arc_arrow(&ctr, &pt1, !arc->direction, arc->back_arrow, &tmp);
-	fdraw_arrow_head(&tmp, &pt1,
+    	    if (Verbose)
+		fprintf(tfp, "%%\n");
+	 }
+	 if (arc->back_arrow) {
+	    arc_arrow(&ctr, &pt1, !arc->direction, arc->back_arrow, &tmp);
+	    fdraw_arrow_head(&tmp, &pt1,
 			 arc->back_arrow->ht*arrowfactor,
 			 arc->back_arrow->wid*arrowfactor,
 			 arc->back_arrow->type,
 			 arc->back_arrow->style,
 			 arc->back_arrow->thickness);
-    	if (Verbose) fprintf(tfp, "%%\n");
+    	    if (Verbose)
+		fprintf(tfp, "%%\n");
+	 }
     }
 }
 
@@ -1436,7 +1470,8 @@ double r, th1, angle;
     fprintf(tfp, "\n");
 }
 
-static arc_tangent(pt1, pt2, direction, pt3)
+static
+arc_tangent(pt1, pt2, direction, pt3)
 FPoint *pt1, *pt2, *pt3;
 int direction;
 {
@@ -1463,7 +1498,8 @@ int direction;
 
 ****************************************************************/
 
-static arc_arrow(pt1, pt2, direction, arrow, pt3)
+static
+arc_arrow(pt1, pt2, direction, arrow, pt3)
 FPoint *pt1, *pt2, *pt3;
 int direction;
 F_arrow *arrow;
@@ -1512,7 +1548,8 @@ double x, y, *r, *th;
     if (y < 0) *th = 2*M_PI - *th;
 }
 
-static draw_arrow_head(pt1, pt2, arrowht, arrowwid, type, style, thickness)
+static
+draw_arrow_head(pt1, pt2, arrowht, arrowwid, type, style, thickness)
 F_point *pt1, *pt2;
 int type, style;
 double arrowht, arrowwid, thickness;

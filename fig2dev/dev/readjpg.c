@@ -1,32 +1,20 @@
 /*
  * TransFig: Facility for Translating Fig code
+ * Copyright (c) 1989-1999 by Brian V. Smith
  *
- * Parts Copyright (c) 1994 Brian V. Smith
- *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
 /* The following code is from the example.c file in the JPEG distribution */
 
-#include <stdio.h>
 #include "fig2dev.h"
 #include "object.h"
 #include "setjmp.h"
@@ -34,8 +22,6 @@
 #include "jpeglib.h"
 
 static	Boolean	read_JPEG_file();
-extern	FILE	*open_picfile();
-extern	void	close_picfile();
 
 static	F_pic	   *pict;
 static	unsigned char *bitmapptr;
@@ -45,23 +31,23 @@ static	unsigned char *bitmapptr;
 */
 
 int
-read_jpg(pic)
+read_jpg(file, filetype, pic, llx, lly)
+    FILE	   *file;
+    int		    filetype;
     F_pic	   *pic;
+    int		   *llx, *lly;
 {
 
-	FILE   *file;
-	int	filtype;		/* file (0) or pipe (1) */
-
-	if ((file=open_picfile(pic->file, &filtype)) == NULL)
-	    return 0;
-
+	*llx = *lly = 0;
 	pict = pic;			/* for global access to the object */
 	if (!read_JPEG_file(file))
 	    return 0;
 
+	/* output PostScript comment */
+	fprintf(tfp, "%% Begin Imported JPEG File: %s\n\n", pic->file);
+
 	/* number of colors, size and bitmap is put in by read_JPEG_file() */
 	pic->subtype = P_JPEG;
-	pic->hw_ratio = (float) pic->bit_size.y/pic->bit_size.x;
 	return 1;
 }
 

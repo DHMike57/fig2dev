@@ -1,27 +1,18 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
 /* 
@@ -38,9 +29,6 @@
 #include <sys/types.h>
 #endif
 #include <sys/file.h>
-#include <stdio.h>
-#include <math.h>
-#include "pi.h"
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
@@ -62,7 +50,8 @@ static int		line_style = 0; /* Textyl solid line style */
 static int 		linethick = 2;  /* Range is 1-12 `pixels' */
  
 
-static void gentextyl_option(opt, optarg)
+static void
+gentextyl_option(opt, optarg)
 char opt, *optarg;
 {
   int i;
@@ -109,7 +98,6 @@ char opt, *optarg;
 	default:
 		put_msg(Err_badarg, opt, "textyl");
 		exit(1);
-		break;
 	}
 }
 
@@ -132,7 +120,8 @@ double a; {
   return (int)(f / ppi);
 }
 
-void gentextyl_start(objects)
+void
+gentextyl_start(objects)
 F_compound	*objects;
 {
 
@@ -141,14 +130,26 @@ F_compound	*objects;
 	coord_system = objects->nwcorner.y;
 	ppi = objects->nwcorner.x;
 
-	if (coord_system == 2) CONV = 1;
+	if (coord_system == 2) 
+		CONV = 1;
+
+	/* print any whole-figure comments prefixed with "%" */
+	if (objects->comments) {
+	    fprintf(tfp,"%%\n");
+	    print_comments("% ",objects->comments, "");
+	    fprintf(tfp,"%%\n");
+	}
 	/* Textyl start */
 	fprintf(tfp, "\\begintyl{%fsp}\n",ury/ppi*SCALE);
 }
 
-void gentextyl_end()
+int
+gentextyl_end()
 {
   fprintf(tfp,"\\endtyl\n");
+
+  /* all ok */
+  return 0;
 }
 
 
@@ -158,10 +159,14 @@ int	w;
 /* Nop */
 }
 
-void gentextyl_line(l)
+void
+gentextyl_line(l)
 F_line	*l;
 {
 	F_point		*p, *q;
+
+	/* print any comments prefixed with "%" */
+	print_comments("% ",l->comments, "");
 
 	fprintf(tfp, "%%\n%% Fig POLYLINE object\n%%\n");
 
@@ -238,9 +243,12 @@ int	start_x, start_y, end_x, end_y;
 }
 
 
-void gentextyl_spline(s)
+void
+gentextyl_spline(s)
 F_spline	*s;
 {
+	/* print any comments prefixed with "%" */
+	print_comments("% ",s->comments, "");
 
 	set_linewidth(s->thickness);
 	set_style(s->style, s->style_val);
@@ -254,11 +262,16 @@ F_spline	*s;
 		fprintf(stderr, "Spline area fill not implemented\n");
 }
 
-void gentextyl_ellipse(e)
+void
+gentextyl_ellipse(e)
 F_ellipse	*e;
 {
-   int sx, sy;
-   int radius;
+	int sx, sy;
+	int radius;
+
+	/* print any comments prefixed with "%" */
+	print_comments("% ",e->comments, "");
+
 	fprintf(tfp, "%%\n%% Fig ELLIPSE\n%%\n");
 
 	set_linewidth(e->thickness);
@@ -291,11 +304,15 @@ F_ellipse	*e;
 
 #define			HT_OFFSET	(0.2 / 72.0)
 
-void gentextyl_text(t)
+void
+gentextyl_text(t)
 F_text	*t;
 {
 	double	x, y;
 	char *cp;
+
+	/* print any comments prefixed with "%" */
+	print_comments("% ",t->comments, "");
 
         fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
@@ -317,12 +334,16 @@ F_text	*t;
 
 }
 
-void gentextyl_arc(a)
+void
+gentextyl_arc(a)
 F_arc	*a;
 {
 	double		x, y;
 	double		cx, cy, sx, sy, ex, ey;
 	double		dx1, dy1, dx2, dy2, r1, r2, th1, th2;
+
+	/* print any comments prefixed with "%" */
+	print_comments("% ",a->comments, "");
 
 	set_linewidth(a->thickness);
 	set_style(a->style, a->style_val);
@@ -331,16 +352,18 @@ F_arc	*a;
 	sx = a->point[0].x; sy = a->point[0].y;
 	ex = a->point[2].x; ey = a->point[2].y;
 
-	if (a->for_arrow) {
-	    arc_tangent(cx, cy, ex, ey, !a->direction, &x, &y);
-	    draw_arrow_head(x, y, ex, ey,
+	if ((a->type == T_OPEN_ARC) && (a->thickness != 0) && (a->back_arrow || a->for_arrow)) {
+	    if (a->for_arrow) {
+		arc_tangent(cx, cy, ex, ey, !a->direction, &x, &y);
+		draw_arrow_head(x, y, ex, ey,
 			a->for_arrow->ht, a->for_arrow->wid);
 	    }
-	if (a->back_arrow) {
-	    arc_tangent(cx, cy, sx, sy, a->direction, &x, &y);
-	    draw_arrow_head(x, y, sx, sy,
+	    if (a->back_arrow) {
+		arc_tangent(cx, cy, sx, sy, a->direction, &x, &y);
+		draw_arrow_head(x, y, sx, sy,
 			a->back_arrow->ht, a->back_arrow->wid);
 	    }
+	}
 
 
 	cy = ury - a->center.y;
@@ -381,7 +404,8 @@ F_arc	*a;
 /*
  * rtop - rectangular to polar conversion
  */
-static rtop(x, y, r, th)
+static
+rtop(x, y, r, th)
 double x, y, *r, *th;
 {
 	*r = sqrt(x*x+y*y);
@@ -390,7 +414,8 @@ double x, y, *r, *th;
 	if (y < 0) *th = 2*M_PI - *th;
 }
 
-static arc_tangent(x1, y1, x2, y2, direction, x, y)
+static
+arc_tangent(x1, y1, x2, y2, direction, x, y)
 double	x1, y1, x2, y2, *x, *y;
 int	direction;
 {
@@ -406,7 +431,8 @@ int	direction;
 
 /*	draw arrow heading from (x1, y1) to (x2, y2)	*/
 
-static draw_arrow_head(x1, y1, x2, y2, arrowht, arrowwid)
+static
+draw_arrow_head(x1, y1, x2, y2, arrowht, arrowwid)
 double	x1, y1, x2, y2;
 double  arrowht, arrowwid;
 {
@@ -445,7 +471,8 @@ double  arrowht, arrowwid;
 #define THRESHOLD (10.0)
 double last_x, last_y;
 
-static quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
+static
+quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
 double	a1, b1, a2, b2, a3, b3, a4, b4;
 {
 	double	x1, y1, x4, y4;
@@ -479,7 +506,8 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	    }
 	}
 
-static void gentextyl_ctl_spline(s)
+static
+void gentextyl_ctl_spline(s)
 F_spline	*s;
 {
 	F_point	*p;
@@ -538,7 +566,8 @@ F_spline	*s;
 
 	}
 
-static void gentextyl_itp_spline(s)
+static
+void gentextyl_itp_spline(s)
 F_spline	*s;
 {
   F_point		*p1, *p2;
@@ -570,7 +599,8 @@ F_spline	*s;
 		    s->for_arrow->ht, s->for_arrow->wid);
 }
 
-static bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
+static
+bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
 double	a0, b0, a1, b1, a2, b2, a3, b3;
 {
   double	x0, y0, x3, y3;

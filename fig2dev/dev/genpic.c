@@ -1,27 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
- * Copyright (c) 1991 Micah Beck
+ * Copyright (c) 1991 by Micah Beck
+ * Copyright (c) 1988 by Conrad Kwok
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
 /* 
@@ -43,8 +35,6 @@
  *		Cleaned up the code
  */
 
-#include <stdio.h>
-#include <math.h>
 #include "fig2dev.h"
 #include "object.h"
 #include "picfonts.h"
@@ -136,25 +126,36 @@ F_compound	*objects;
 	coord_system = objects->nwcorner.y;
 	if (coord_system == 2) CONV = 1;
 
+	/* print any whole-figure comments prefixed with '.\" ' */
+	if (objects->comments) {
+	    fprintf(tfp,".\\\"\n");
+	    print_comments(".\\\" ",objects->comments, "");
+	    fprintf(tfp,".\\\"\n");
+	}
+
 	fprintf(tfp, ".PS\n.ps %d\n", 		/* PIC preamble */
 		font_size?font_size:DEFAULT_FONT_SIZE);
 }
 
-void
+int
 genpic_end()
 {
   	fprintf(tfp, ".PE\n");				/* PIC ending */
+
+	/* all ok */
+	return 0;
 }
 
 /*
-The line thickness is, unfortunately, multiple of pixel.
-One pixel thickness is a little too thick on the hard copy
-so I scale it with 0.7; i.e., it's a kludge.  The best way is
-to allow thickness in fraction of pixel.
+  The line thickness is, unfortunately, multiple of pixel.
+  One pixel thickness is a little too thick on the hard copy
+  so I scale it with 0.7; i.e., it's a kludge.  The best way is
+  to allow thickness in fraction of pixel.
 
-Note that the current version of psdit (a ditroff to postcript filter)
-won't take the legitimate line thickness command.
+  Note that the current version of psdit (a ditroff to postcript filter)
+  won't take the legitimate line thickness command.
 */
+
 static
 set_linewidth(w)
 int	w;
@@ -273,6 +274,9 @@ F_line	*l;
 {
 	F_point		*p, *q;
 
+	/* print any comments */
+	print_comments(".\\\" ",l->comments, "");
+
 	if (l->type == T_ARC_BOX && !OptArcBox)
 	{ fprintf(stderr, "Arc box not implemented; substituting box.\n");
 	  l->type = T_BOX;
@@ -306,7 +310,7 @@ F_line	*l;
 	      fprintf(tfp, " dotted");
 	}
 
-	/*rja: Place arrowheads or lack there of on the line*/
+	/* Place arrowheads or lack there of on the line*/
 	if ((l->for_arrow) && (l->back_arrow))
 	    fprintf(tfp, " <->");
 	else if (l->back_arrow)
@@ -329,6 +333,9 @@ void
 genpic_spline(s)
 F_spline	*s;
 {
+	/* print any comments */
+	print_comments(".\\\" ",s->comments, "");
+
 	if (int_spline(s))
 	    genpic_itp_spline(s);
 	else
@@ -364,7 +371,7 @@ F_spline	*s;
 	if (p->next == NULL) {
 	    fprintf(tfp, "line");
 
-           /*rja: Attach arrowhead as required */
+           /* Attach arrowhead as required */
 	    if ((s->for_arrow) && (s->back_arrow))
 	       fprintf(tfp, " <->");
 	    else if (s->back_arrow)
@@ -383,7 +390,7 @@ F_spline	*s;
 
 	fprintf(tfp, "spline"); 
 
-           /*rja: Attach arrowhead as required */
+           /* Attach arrowhead as required */
 	    if ((s->for_arrow) && (s->back_arrow))
 	       fprintf(tfp, " <->");
 	    else if (s->back_arrow)
@@ -406,6 +413,9 @@ void
 genpic_ellipse(e)
 F_ellipse	*e;
 {
+	/* print any comments */
+	print_comments(".\\\" ",e->comments, "");
+
 	set_linewidth(e->thickness);
 	if (e->type == 3 || e->type == 4)
 	  fprintf(tfp, "circle at %.3f,%.3f rad %.3f",
@@ -440,6 +450,9 @@ F_text	*t;
 {
 	float	y;
         char *tpos;
+
+	/* print any comments */
+	print_comments(".\\\" ",t->comments, "");
 
 	if (!OptNoUnps) {
 	  unpsfont(t);
@@ -483,6 +496,9 @@ F_arc	*a;
 	double		x, y;
 	double		cx, cy, sx, sy, ex, ey;
 
+	/* print any comments */
+	print_comments(".\\\" ",a->comments, "");
+
 	cx = a->center.x/ppi; cy = convy(a->center.y/ppi);
 	sx = a->point[0].x/ppi; sy = convy(a->point[0].y/ppi);
 	ex = a->point[2].x/ppi; ey = convy(a->point[2].y/ppi);
@@ -498,13 +514,15 @@ F_arc	*a;
 		fprintf(tfp, " dotted");
 	}
 
-	/*rja: Attach arrowhead as required */
-	if ((a->for_arrow) && (a->back_arrow))
-	  fprintf(tfp, " <->");
-	else if (a->back_arrow)
-	  fprintf(tfp, " <-");
-	else if (a->for_arrow)
-	  fprintf(tfp, " ->");
+	/* Attach arrowhead as required */
+	if ((a->type == T_OPEN_ARC) && (a->thickness != 0) && (a->back_arrow || a->for_arrow)) {
+	    if ((a->for_arrow) && (a->back_arrow))
+		fprintf(tfp, " <->");
+	    else if (a->back_arrow)
+		fprintf(tfp, " <-");
+	    else if (a->for_arrow)
+		fprintf(tfp, " ->");
+	}
 
 
 	fprintf(tfp, " at %.3f,%.3f from %.3f,%.3f to %.3f,%.3f",
@@ -651,7 +669,7 @@ F_spline	*s;
 
 	    fprintf(tfp, "line ");
 
-           /*rja: Attach arrowhead as required */
+           /* Attach arrowhead as required */
 
 	    if ((s->back_arrow) && (p2 == pfirst))
 	       fprintf(tfp, " <- ");

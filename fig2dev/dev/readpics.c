@@ -1,85 +1,100 @@
 /*
  * TransFig: Facility for Translating Fig code
- *
  * Various copyrights in this file follow
- * Parts Copyright (c) 1994 Brian V. Smith
+ * Parts Copyright (c) 1994-1999 by Brian V. Smith
  *
- * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * The X Consortium, and any party obtaining a copy of these files from
- * the X Consortium, directly or indirectly, is granted, free of charge, a
+ * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons who receive
  * copies from any such party to do so, with the only requirement being
- * that this copyright notice remain intact.  This license includes without
- * limitation a license to do the foregoing actions under any patents of
- * the party supplying this software to the X Consortium.
+ * that this copyright notice remain intact.
+ *
  */
 
-#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "fig2dev.h"
 
+/* 
+   Open the file 'name' and return its type (pipe or real file) in 'type'.
+   Return the full name in 'retname'.  This will have a .gz or .Z if the file is
+   zipped/compressed.
+   The return value is the FILE stream.
+*/
+
 FILE *
-open_picfile(name, type)
+open_picfile(name, type, pipeok, retname)
     char	*name;
     int		*type;
+    Boolean	 pipeok;
+    char	*retname;
 {
-    char	unc[PATH_MAX+20];	/* temp buffer for uncompress/gunzip command */
-    char	*compname;
+    char	 unc[PATH_MAX+20];	/* temp buffer for uncompress/gunzip command */
     FILE	*fstream;		/* handle on file  */
-    struct stat	status;
+    struct stat	 status;
+    char	*gzoption;
 
     *type = 0;
-    compname = NULL;
+    *retname = '\0';
+    if (pipeok)
+	gzoption = "-c";		/* tell gunzip to output to stdout */
+    else
+	gzoption = "";
+
     /* see if the filename ends with .Z */
     /* if so, generate uncompress command and use pipe (filetype = 1) */
-    if (strlen(name) > (size_t)2 && !strcmp(".Z", name + (strlen(name)-2))) {
-	sprintf(unc,"uncompress -c %s",name);
+    if (strlen(name) > 2 && !strcmp(".Z", name + (strlen(name)-2))) {
+	sprintf(unc,"uncompress %s %s", gzoption, name);
 	*type = 1;
     /* or with .z or .gz */
-    } else if ((strlen(name) > (size_t)3 && !strcmp(".gz", name + (strlen(name)-3))) ||
-	      ((strlen(name) > (size_t)2 && !strcmp(".z", name + (strlen(name)-2))))) {
-	sprintf(unc,"gunzip -qc %s",name);
+    } else if ((strlen(name) > 3 && !strcmp(".gz", name + (strlen(name)-3))) ||
+	      ((strlen(name) > 2 && !strcmp(".z", name + (strlen(name)-2))))) {
+	sprintf(unc,"gunzip -q %s %s", gzoption, name);
 	*type = 1;
     /* none of the above, see if the file with .Z or .gz or .z appended exists */
     } else {
-	compname = (char*) malloc(strlen(name)+4);
-	strcpy(compname, name);
-	strcat(compname, ".Z");
-	if (!stat(compname, &status)) {
-	    sprintf(unc, "uncompress -c %s",compname);
+	strcpy(retname, name);
+	strcat(retname, ".Z");
+	if (!stat(retname, &status)) {
+	    sprintf(unc, "uncompress %s %s", gzoption, retname);
 	    *type = 1;
-	    name = compname;
+	    name = retname;
 	} else {
-	    strcpy(compname, name);
-	    strcat(compname, ".z");
-	    if (!stat(compname, &status)) {
-		sprintf(unc, "gunzip -c %s",compname);
+	    strcpy(retname, name);
+	    strcat(retname, ".z");
+	    if (!stat(retname, &status)) {
+		sprintf(unc, "gunzip %s %s", gzoption, retname);
 		*type = 1;
-		name = compname;
+		name = retname;
 	    } else {
-		strcpy(compname, name);
-		strcat(compname, ".gz");
-		if (!stat(compname, &status)) {
-		    sprintf(unc, "gunzip -c %s",compname);
+		strcpy(retname, name);
+		strcat(retname, ".gz");
+		if (!stat(retname, &status)) {
+		    sprintf(unc, "gunzip %s %s", gzoption, retname);
 		    *type = 1;
-		    name = compname;
+		    name = retname;
 		}
 	    }
 	}
     }
+    /* if a pipe, but the caller needs a file, uncompress the file now */
+    if (*type == 1 && !pipeok) {
+	char *p;
+	system(unc);
+	if (p=strrchr(name,'.')) {
+	    *p = '\0';		/* terminate name before last .gz, .z or .Z */
+	}
+	strcpy(retname, name);
+	/* force to plain file now */
+	*type = 0;
+    }
+
     /* no appendages, just see if it exists */
+    /* and restore the original name */
+    strcpy(retname, name);
     if (stat(name, &status) != 0) {
 	fstream = NULL;
     } else {
@@ -92,8 +107,6 @@ open_picfile(name, type)
 	    break;
 	}
     }
-    if (compname)
-	free(compname);
     return fstream;
 }
 

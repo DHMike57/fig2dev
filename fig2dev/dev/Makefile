@@ -45,8 +45,8 @@
 
             SHELL = /bin/sh
 
-              TOP = ../../.
-      CURRENT_DIR = ./fig2dev/dev
+              TOP = ../.
+      CURRENT_DIR = ./dev
 
                AR = ar clq
   BOOTSTRAPCFLAGS =
@@ -230,10 +230,10 @@ PICFLAGS = -pic
            XILIB = -lXi
 
         SOXLIBREV = 4.10
-          SOXTREV = 4.10
-         SOXAWREV = 5.0
+          SOXTREV = 4.20
+         SOXAWREV = 6.0
         SOOLDXREV = 4.10
-         SOXMUREV = 4.10
+         SOXMUREV = 4.20
         SOXEXTREV = 4.10
       SOXINPUTREV = 4.10
 
@@ -273,6 +273,7 @@ PICFLAGS = -pic
 #	Fig2dev Driver Library Makefile
 #
 # Copyright (c) 1994 Micah Beck
+# Parts Copyright (c) 1995-1999 Micah Beck
 #
 # The X Consortium, and any party obtaining a copy of these files from
 # the X Consortium, directly or indirectly, is granted, free of charge, a
@@ -286,21 +287,25 @@ PICFLAGS = -pic
 # limitation a license to do the foregoing actions under any patents of
 # the party supplying this software to the X Consortium.
 
-INCLUDES = -I..
-EXTRA_INCLUDES = -I$(JPEGINCDIR)
+INCLUDES = -I.. -I../..
+
+EXTRA_INCLUDES = $(JPEGINC)
 
 READJPGS=readjpg.c
 READJPGO=readjpg.o
 
-SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genmf.c genpic.c genpictex.c \
-	genps.c genpstex.c gentextyl.c gentk.c gentpic.c genbitmaps.c setfigfont.c \
-	psencode.c readpics.c readgif.c readpcx.c readxbm.c $(READJPGS)
-LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genmf.o genpic.o genpictex.o \
-	genps.o genpstex.o gentextyl.o gentk.o gentpic.o genbitmaps.o setfigfont.o \
-	psencode.o readpics.o readgif.o readpcx.o readxbm.o $(READJPGO)
+SRCS =  genbox.c gencgm.c genepic.c genibmgl.c genlatex.c genmap.c genmf.c genpic.c \
+	genpictex.c genps.c genpdf.c genpstex.c gentextyl.c gentk.c gentpic.c \
+	genbitmaps.c genge.c setfigfont.c psencode.c \
+	readpics.c readeps.c readgif.c readjpg.c readpcx.c readppm.c \
+	readxbm.c readtif.c $(READJPGS) $(READXPMS)
+LIBOBJS = genbox.o gencgm.o genepic.o genibmgl.o genlatex.o genmap.o genmf.o genpic.o \
+	genpictex.o genps.o genpdf.o genpstex.o gentextyl.o gentk.o gentpic.o \
+	genbitmaps.o genge.o setfigfont.o psencode.o \
+	readpics.o readeps.o readgif.o readjpg.o readpcx.o readppm.o \
+	readxbm.o readtif.o $(READJPGO) $(READXPMO)
 
 LIB = transfig
-XPMRGBFILE = -DRGB_FILE=\"$(XPMRGB)\"
 
 all:: lib$(LIB).a
 
@@ -308,10 +313,6 @@ lib$(LIB).a: $(LIBOBJS)
 	$(RM) $@
 	$(AR) $@ $(LIBOBJS)
 	$(RANLIB) $@
-
-genps.o:
-	$(RM) $@
-	$(CC) -c $(CFLAGS)  $(XPMRGBFILE) $*.c
 
 depend::
 	$(DEPEND) $(DEPENDFLAGS) -s "# DO NOT DELETE" -- $(ALLDEFINES) -- $(SRCS)
