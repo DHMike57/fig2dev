@@ -136,7 +136,7 @@ struct driver dev_pstex_t = {
 	gendev_null,
 	genpstex_t_text,
 	genlatex_end,
-	EXCLUDE_TEXT
+	INCLUDE_TEXT
 };
 
 struct driver dev_pstex = {

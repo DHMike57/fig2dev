@@ -44,7 +44,6 @@ static set_style();
 static arc_tangent();
 static rtop();
 
-static int		coord_system;
 static double		dash_length = -1;
 static int		line_style = 0; /* Textyl solid line style */
 static int 		linethick = 2;  /* Range is 1-12 `pixels' */
@@ -103,8 +102,6 @@ char opt, *optarg;
 
 #define			TOP	(10.5)	/* top of page is 10.5 inch */
 #define SCALE (65536.0*72.27)
-static double		ppi;
-static int		CONV = 0;
 #define measure 'S'
 
 convy(a)
@@ -127,11 +124,6 @@ F_compound	*objects;
 
 	texfontsizes[0] = texfontsizes[1] = 
 		texfontsizes[(font_size?font_size:DEFAULT_FONT_SIZE)+1];
-	coord_system = objects->nwcorner.y;
-	ppi = objects->nwcorner.x;
-
-	if (coord_system == 2) 
-		CONV = 1;
 
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {

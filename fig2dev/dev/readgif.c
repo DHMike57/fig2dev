@@ -90,7 +90,6 @@ read_gif(file,filetype,pic,llx,lly)
 	FILE		*giftopcx;
 	int		i, stat, size;
 	int		useGlobalColormap;
-	unsigned char	localColorMap[3][MAXCOLORMAPSIZE];
 	unsigned int	bitPixel, red, green, blue;
 	unsigned char	c;
 	char		version[4];
@@ -111,7 +110,7 @@ read_gif(file,filetype,pic,llx,lly)
 	version[3] = '\0';
 
 	if ((strcmp(version, "87a") != 0) && (strcmp(version, "89a") != 0)) {
-		fprintf(stderr,"Unknown GIF version %s",version);
+		fprintf(stderr,"Unknown GIF version %s\n",version);
 		return 0;
 	}
 
@@ -126,7 +125,6 @@ read_gif(file,filetype,pic,llx,lly)
 	GifScreen.Background      = (unsigned int) buf[5];
 	GifScreen.AspectRatio     = (unsigned int) buf[6];
 
-	/* put in the width/height now in case there is some other failure later */
 	if (BitSet(buf[4], LOCALCOLORMAP)) {	/* Global Colormap */
 		if (!ReadColorMap(file,GifScreen.BitPixel,pic->cmap)) {
 			return 0;	/* error reading global colormap */
@@ -147,7 +145,7 @@ read_gif(file,filetype,pic,llx,lly)
 
 		if (c == '!') { 		/* Extension */
 		    if (! ReadOK(file,&c,1))
-			fprintf(stderr,"GIF read error on extention function code");
+			fprintf(stderr,"GIF read error on extention function code\n");
 		    (void) DoGIFextension(file, c);
 		    continue;
 		}
@@ -156,13 +154,17 @@ read_gif(file,filetype,pic,llx,lly)
 			continue;
 		}
 
+		if (! ReadOK(file,buf,9)) {
+			return 1;	/* couldn't read left/top/width/height */
+		}
+
 		useGlobalColormap = ! BitSet(buf[8], LOCALCOLORMAP);
 
 		bitPixel = 1<<((buf[8]&0x07)+1);
 
 		if (! useGlobalColormap) {
 		    if (!ReadColorMap(file, bitPixel, pic->cmap)) {
-			fprintf(stderr,"error reading local GIF colormap" );
+			fprintf(stderr,"error reading local GIF colormap\n" );
 			return 1;
 		    }
 		}
@@ -194,12 +196,14 @@ read_gif(file,filetype,pic,llx,lly)
 	}
 	/* close pipe */
 	pclose(giftopcx);
-	if ((giftopcx = fopen(pcxname, "r")) == NULL) {
+	if ((giftopcx = fopen(pcxname, "rb")) == NULL) {
 	    fprintf(stderr,"Can't open temp output file\n");
 	    return 0;
 	}
 	/* now call _read_pcx to read the pcx file */
 	stat = _read_pcx(giftopcx, pic);
+	/* close file */
+	fclose(giftopcx);
 
 	/* remove temp file */
 	unlink(pcxname);
@@ -207,15 +211,9 @@ read_gif(file,filetype,pic,llx,lly)
 	/* now match original transparent colortable index with possibly new 
 	   colortable from ppmtopcx */
 	if (pic->transp != -1) {
-	    if (useGlobalColormap) {
-		red = GifScreen.ColorMap[RED][pic->transp];
-		green = GifScreen.ColorMap[GREEN][pic->transp];
-		blue = GifScreen.ColorMap[BLUE][pic->transp];
-	    } else {
-		red = localColorMap[RED][pic->transp];
-		green = localColorMap[GREEN][pic->transp];
-		blue = localColorMap[BLUE][pic->transp];
-	    }
+	    red = pic->cmap[RED][pic->transp];
+	    green = pic->cmap[GREEN][pic->transp];
+	    blue = pic->cmap[BLUE][pic->transp];
 	    for (i=0; i<pic->numcols; i++) {
 		if (pic->cmap[RED][i] == red &&
 		    pic->cmap[GREEN][i] == green &&
@@ -240,7 +238,7 @@ unsigned char cmap[3][MAXCOLORMAPSIZE];
 
 	for (i = 0; i < number; ++i) {
 	    if (! ReadOK(fd, rgb, sizeof(rgb))) {
-		fprintf(stderr,"bad GIF colormap" );
+		fprintf(stderr,"bad GIF colormap\n" );
 		return False;
 	    }
 	    cmap[RED][i]   = rgb[RED];

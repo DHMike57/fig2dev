@@ -74,15 +74,12 @@
 				 * see fillshade() and conv_color(). */
 #define EPSILON		1e-4	/* small floating point value */
 
-static int Ypointsdown;		/* True for Y axis pointing downward */
 static int rounded_arrows;	/* If rounded_arrows is False, the position
 				 * of arrows will be corrected for
 				 * compensating line width effects. This
 				 * correction is not needed if arrows appear
 				 * rounded with the used CGM viewer.
 				 * See -r driver command line option. */
-
-static float scale;		/* scale factor for fonts */
 
 static struct	_rgb {
   float r, g, b;
@@ -137,8 +134,6 @@ gencgm_start(objects)
   int i;
   char *p, *figname = malloc(strlen(from)+1);
 
-  scale = (double) objects->nwcorner.x;
-
   sprintf(figname, from);
   p = strrchr(figname, '/');
   if (p) 
@@ -146,8 +141,6 @@ gencgm_start(objects)
   p = strchr(figname, '.');	
   if (p)
     *p = '\0';			/* discard extension */
-
-  Ypointsdown = (objects->nwcorner.y == 2);
 
   fprintf(tfp, "BEGMF '%s';\n", figname);
   fprintf(tfp, "mfversion 1;\n");
@@ -266,10 +259,7 @@ _pos(x, y)
    int	x;
    int	y;
 {
-  if (Ypointsdown)
     fprintf(tfp, "(%d,%d)", x-llx, ury-y);
-  else
-    fprintf(tfp, "(%d,%d)", x-llx, y-lly);
 }
 
 /* only reverses y if Y axis points down (relative position) */
@@ -278,10 +268,7 @@ _relpos(x, y)
    int	x;
    int	y;
 {
-  if (Ypointsdown)
     fprintf(tfp, "(%d,%d)", x, -y);
-  else
-    fprintf(tfp, "(%d,%d)", x, y);
 }
 
 static void
@@ -962,16 +949,9 @@ _arcctr(cx, cy, x1, y1, x2, y2, r)
   fprintf(tfp, "arcctr ");
   _pos(cx, cy);
   fprintf(tfp, " ");
-  if (Ypointsdown) {
-    /* reverse direction */
-    _relpos(x2, y2);
-    fprintf(tfp, " ");
-    _relpos(x1, y1);
-  } else {
-    _relpos(x1, y1);
-    fprintf(tfp, " ");
-    _relpos(x2, y2);
-  }
+  _relpos(x2, y2);
+  fprintf(tfp, " ");
+  _relpos(x1, y1);
   fprintf(tfp, " %d;\n", r);
 }
 
@@ -1211,7 +1191,7 @@ static int cwarc(a)
       x2 = a->point[2].x - a->point[1].x,
       y2 = a->point[2].y - a->point[1].y;
 
-  return Ypointsdown ? (icprod(x1,y1,x2,y2) > 0) : (icprod(x1,y1,x2,y2) < 0);
+  return (icprod(x1,y1,x2,y2) > 0);
 }
 
 /* reverses arc direction by swapping endpoints and arrows */
@@ -1480,7 +1460,7 @@ textsize(size)
 {
   static double oldsize = UNDEFVALUE;
   chkcache(size, oldsize);
-  fprintf(tfp, "charheight %d;\n", round(/*scale*/ 10 * size /*/ 80.*/));
+  fprintf(tfp, "charheight %d;\n", round( 10 * size ));
 }
 
 static void
@@ -1501,7 +1481,15 @@ text(x, y, text)
 {
   fprintf(tfp, "text ");
   _pos(x, y);
-  fprintf(tfp, " final '%s';\n", text);
+  fprintf(tfp, " final '");
+  /* if text contains a "'", must escape it(them) */
+  while ( *text ) {
+	fputc(*text,tfp);
+	if ( *text == '\'' )
+	    fputc('\'',tfp);
+	text++;
+  }
+  fprintf(tfp,"';\n");
 }
 
 void

@@ -102,11 +102,10 @@ argument *arg_list;
 	case pstex:
 
 		/*
-		 * The makefile for the pstex need to update two files.
-		 * file.eps with is created using fig2dev -L pstex file.fig
+		 * The makefile for the pstex needs to update two files:
+		 * file.eps which is created using fig2dev -L pstex file.fig
 		 * and
 		 * file.tex with fig2dev -L pstex_t -p file.eps file.fig
-		 * 
 		 */
 		puttarget(mk, i, "tex", "eps");
 		fprintf(mk, "\tfig2dev -L pstex_t -p %s.eps ", i);

@@ -22,6 +22,15 @@
  */
 
 extern Boolean	epsflag;	/* to distinguish PS and EPS */
+extern Boolean	pdfflag;	/* to distinguish PDF and PS/EPS */
+
+extern void	genps_grid();
+extern void	genps_arc();
+extern void	genps_ellipse();
+extern void	genps_line();
+extern void	genps_spline();
+extern void	genps_text();
+
 
 #define		BEGIN_PROLOG1	"\
 /$F2psDict 200 dict def\n\
@@ -141,7 +150,7 @@ $F2psDict /mtrx matrix put\n\
 	3 index 		% nw nh px py str nh\n\
 	{			% nw nh px py str\n\
 	  currentpoint		% nw nh px py str cx cy\n\
-	  2 index show		% nw nh px py str cx cy\n\
+	  2 index oldshow	% nw nh px py str cx cy\n\
 	  YStep add moveto	% nw nh px py str\n\
 	} repeat		% nw nh px py str\n\
     } for\n\
@@ -1094,7 +1103,7 @@ newfontname newfont definefont pop end } def\n\
 8#240 /space 8#241 /exclamdown 8#242 /cent 8#243 /sterling\n\
 8#244 /currency 8#245 /yen 8#246 /brokenbar 8#247 /section 8#250 /dieresis\n\
 8#251 /copyright 8#252 /ordfeminine 8#253 /guillemotleft 8#254 /logicalnot\n\
-8#255 /hypen 8#256 /registered 8#257 /macron 8#260 /degree 8#261 /plusminus\n\
+8#255 /hyphen 8#256 /registered 8#257 /macron 8#260 /degree 8#261 /plusminus\n\
 8#262 /twosuperior 8#263 /threesuperior 8#264 /acute 8#265 /mu 8#266 /paragraph\n\
 8#267 /periodcentered 8#270 /cedilla 8#271 /onesuperior 8#272 /ordmasculine\n\
 8#273 /guillemotright 8#274 /onequarter 8#275 /onehalf\n\

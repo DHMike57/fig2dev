@@ -162,8 +162,6 @@ PSencode(File, Width, Height, Ncol, R, G, B, data)
     sprintf(s,"%02x%02x%02x", R[k], G[k], B[k]);   put_string; 
     if (k % 10 == 9 || k == Ncol-1) { 
       sprintf(s,"\n");                             put_string;
-    }else{
-      sprintf(s," ");                              put_string;
     }
   }
 
@@ -208,4 +206,43 @@ PSencode(File, Width, Height, Ncol, R, G, B, data)
   s[nc]   = '\0';
   put_string; 
   return Nbyte;
+}
+
+
+/* write 24-bit bitmap as PostScript image (no colortable) */
+
+void
+PSrgbimage(file, width, height, data)
+	 FILE		*file;
+         int		 width, height;
+	 unsigned char	*data;
+{
+    int		 c, h, w, left;
+    unsigned char *p;
+
+    fprintf(file,"/picstr 192 string def\n");
+    fprintf(file,"%d %d 8\n",width, height);
+    fprintf(file,"[%d 0 0 %d 0 %d]\n",width, -height, height);
+    fprintf(file,"{currentfile picstr readhexstring pop}\n");
+    fprintf(file,"false 3 colorimage\n");
+
+    c = 0;
+    p = data;
+    for (h=0; h<height; h++) {
+    	for (w=0; w<width; w++) {
+	    fprintf(file,"%02x%02x%02x", *(p+2), *(p+1), *p);
+	    p += 3;
+	    c++;
+	    if ((c % 15) == 0)
+		fprintf(file,"\n");
+	}
+    }
+    /* now output zeroes to pad to 64 triples (length of picstr) */
+    left = ((int)((c+63) / 64)) * 64 - c;
+    for (c=0; c<left; c++) {
+	fprintf(file,"000000");
+	if ((c % 12) == 0)
+	    fprintf(file,"\n");
+    }
+    fprintf(file,"\n");
 }

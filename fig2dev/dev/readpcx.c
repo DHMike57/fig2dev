@@ -17,7 +17,6 @@
 #include <unistd.h>
 #include "fig2dev.h"
 #include "object.h"
-#include "pcx.h"
 
 int	_read_pcx();
 void	readpcxhead();
@@ -37,199 +36,261 @@ read_pcx(file,filetype,pic,llx,lly)
 	return _read_pcx(file, pic);
 }
 
-/* _read_pcx() is called from read_pcx(), read_gif(), read_ppm(), read_tif(), and read_epsf().
-*/
+/* pcx2ppm 1.2 - convert pcx to ppm
+ * based on zgv's readpcx.c
+ * public domain by RJM
+ *
+ * this is incredibly messy
+ *
+ * 1999-03-16	updated to support 24-bit.
+ */
+
+typedef unsigned char byte;
+
+struct pcxhed
+  {
+  byte manuf,ver,encod,bpp;		/* 0 - 3 gen format */
+  byte x1lo,x1hi,y1lo,y1hi;		/* 4 - 11 size */
+  byte x2lo,x2hi,y2lo,y2hi;
+  byte unused1[4];			/* 12 - 15 scrn size */
+  byte pal16[48];			/* 16 - 63 4-bit palette */
+  byte reserved;			/* 64 reserved */
+  byte nplanes;				/* 65 num of bitplanes */
+  byte bytelinelo,bytelinehi;		/* 66 - 67 bytes per line */
+  byte unused2[60];			/* 68 - 127 unused */
+  };  /* palette info is after image data */
+
+
+/* prototypes */
+void dispbyte(unsigned char *ptr,int *xp,int *yp,int c,int w,int h,
+              int real_bpp,int byteline,int *planep,int *pmaskp);
+
+
+/* _read_pcx() is called from read_pcx(), read_gif(), read_ppm(),
+   read_tif() and read_epsf().
+ */
 
 void pcx_decode();
 
-_read_pcx(pcxfile, pic)
+_read_pcx(pcxfile,pic)
     FILE	*pcxfile;
     F_pic	*pic;
 {
-    pcxheadr	        pcxhead;	/* PCX header */
-    unsigned short	wid;		/* Width of image */
-    unsigned short	ht;		/* Height of image */
-    unsigned char	*buffer;	/* current input line */
-    int			i, bufsize;
+	int		 w,h,bytepp,x,y,yy,byteline,plane,pmask;
+	unsigned char	*pal, *old;
+	struct pcxhed	 header;
+	int		 count,waste;
+	long		 bytemax,bytesdone;
+	byte		 inbyte,inbyte2;
+	int		 real_bpp;		/* how many bpp file really is */
+	int		 mult, neu_stat, numcols, size, x3;
+	byte		 col[3];
 
-    fprintf(tfp, "%% Begin Imported PCX File: %s\n\n", pic->file);
-    pic->subtype = P_PCX;
+	fprintf(tfp, "%% Begin Imported PCX File: %s\n\n", pic->file);
+	pic->subtype = P_PCX;
 
-    /* Read the PCX image file header information */
-    (void) readpcxhead(&pcxhead, pcxfile);
+	pic->bitmap=NULL;
 
-    /* Check for FILE stream error */
-    if (ferror(pcxfile)) {
-	return 0;
-    }
+	fread(&header,1,sizeof(struct pcxhed),pcxfile);
+	if (header.manuf!=10 || header.encod!=1)
+	    return 0;
 
-    /* Check the identification byte value */
-    if (pcxhead.id != 0x0A) {
-	return 0;
-    }
-
-    /* copy the EGA palette now in case there is no VGA palette later in the file */
-    for (i=0; i<16; i++) {
-	pic->cmap[0][i] = (unsigned short) pcxhead.egapal[i*3];
-	pic->cmap[1][i] = (unsigned short) pcxhead.egapal[i*3+1];
-	pic->cmap[2][i] = (unsigned short) pcxhead.egapal[i*3+2];
-    }
-    pic->numcols = 16;
-
-    /* Calculate size of image in pixels and scan lines */
-    wid = pcxhead.xmax - pcxhead.xmin + 1;
-    ht = pcxhead.ymax - pcxhead.ymin + 1;
-
-    /* put in the width/height now in case there is some other failure later */
-    pic->bit_size.x = wid;
-    pic->bit_size.y = ht;
-
-    /* allocate space for the image (allocate a little more than needed to be safe) */
-    bufsize = wid * (ht+1) + 16;
-    if ((pic->bitmap = (unsigned char*) malloc(bufsize)) == NULL) {
-	    return 0;	/* couldn't alloc space for image */
-    }
-
-    buffer = pic->bitmap;
-
-    switch (pcxhead.bppl) {
-	case 1:   
-	case 8:   
-		pcx_decode(pcxfile, buffer, bufsize, pcxhead.bppl, &pcxhead, wid, ht);
-		break;
-	default:
-		  fprintf(stderr,"Unsupported PCX format in %s",pic->file);
-		  free(pic->bitmap);
-		  return 0;
-    }
-
-    /* See if there is a VGA palette; read it into the pic->cmap */
-    if (pcxhead.vers == 5) {
-	fseek(pcxfile, -769L, SEEK_END);  /* backwards from end of file */
-
-	if (getc(pcxfile) == 0x0C) {	/* VGA Palette ID value */ 
-	    for (i = 0; i < 256; i++) {
-		pic->cmap[0][i] = getc(pcxfile);
-		pic->cmap[1][i] = getc(pcxfile);
-		pic->cmap[2][i] = getc(pcxfile);
+	/* header.bpp=1, header.nplanes=1 = 1-bit.
+	 * header.bpp=1, header.nplanes=2 = 2-bit.   - added B.V.Smith 6/00
+	 * header.bpp=1, header.nplanes=3 = 3-bit.   - added B.V.Smith 6/00
+	 * header.bpp=1, header.nplanes=4 = 4-bit.
+	 * header.bpp=8, header.nplanes=1 = 8-bit.
+	 * header.bpp=8, header.nplanes=3 = 24-bit.
+	 * anything else gives an `unsupported' error.
+	 */
+	real_bpp=0;
+	bytepp = 1;
+	switch(header.bpp) {
+	  case 1:
+	    switch(header.nplanes) {
+	      case 1: real_bpp=1; break;
+	      case 2: real_bpp=2; break;
+	      case 3: real_bpp=3; break;
+	      case 4: real_bpp=4; break;
 	    }
-	    pic->numcols = 256;	/* for a VGA colormap */
-	}
-    }
-    return 1;
-}
-
-unsigned short
-getwrd(file)
-FILE *file;
-{
-    unsigned char c1;
-    c1 = getc(file);
-    return (unsigned short) (c1 + (unsigned char) getc(file)*256);
-}
-
-void
-readpcxhead(head, pcxfile)
-pcxheadr	*head;
-FILE		*pcxfile;
-{
-    register unsigned short i;
-
-    head->id	= getc(pcxfile);
-    head->vers	= getc(pcxfile);
-    head->format = getc(pcxfile);
-    head->bppl = getc(pcxfile);
-    head->xmin	= getwrd(pcxfile);
-    head->ymin	= getwrd(pcxfile);
-    head->xmax	= getwrd(pcxfile);
-    head->ymax	= getwrd(pcxfile);
-    head->hdpi	= getwrd(pcxfile);
-    head->vdpi	= getwrd(pcxfile);
-
-    /* Read the EGA Palette */
-    for (i = 0; i < sizeof(head->egapal); i++)
-	head->egapal[i] = getc(pcxfile);
-
-    head->reserv = getc(pcxfile);
-    head->nplanes = getc(pcxfile);
-    head->blp = getwrd(pcxfile); 
-    head->palinfo = getwrd(pcxfile);  
-    head->hscrnsiz = getwrd(pcxfile);  
-    head->vscrnsiz = getwrd(pcxfile);
-
-    /* Read the reserved area at the end of the header */
-    for (i = 0; i < sizeof(head->fill); i++)
-	head->fill[i] = getc(pcxfile);
-}
-
-void
-pcx_decode(file, image, bufsize, planes, header, w, h)
-    FILE     *file;
-    unsigned  char *image;
-    int       bufsize, planes;
-    pcxheadr *header;
-    int       w,h;
-{
-    int	      row, bcnt, bpl, pd;
-    int       i, j, b, cnt;
-    unsigned char mask, plane, pmsk;
-    unsigned char *oimage;
-
-    /* clear area first */
-    bzero((char*)image,bufsize);
- 
-    bpl = header->blp;
-    if (planes == 1)
-	pd = (bpl * 8) - w;
-    else
-	pd = bpl - w;
-
-    row = bcnt = 0;
-
-    plane = 0;
-    pmsk = 1;
-    oimage = image;
-
-    while ( (b=getc(file)) != EOF) {
-	if ((b & 0xC0) == 0xC0) {   /* this is a repitition count */
-	    cnt = b & 0x3F;
-	    b = getc(file);
-	    if (b == EOF) {
-		getc(file);
-		return; 
+	    break;
+	  
+	  case 8:
+	    switch(header.nplanes) {
+	      case 1: real_bpp=8; break;
+	      case 3: real_bpp=24; bytepp = 3; break;
 	    }
-	} else
-	    cnt = 1;
-	
-	for (i=0; i<cnt; i++) {
-	    if (planes == 1) {
-		for (j=0, mask=0x80; j<8; j++) {
-		    *image++ |= (unsigned char) (((b & mask) ? pmsk : 0));
-		    mask = mask >> 1;
-		}
+	    break;
+	  }
+
+	if (!real_bpp)
+	    return 0;
+
+	if ((pal=calloc(768,1))==NULL)
+	    return 0;
+
+	w=(header.x2lo+256*header.x2hi)-(header.x1lo+256*header.x1hi)+1;
+	h=(header.y2lo+256*header.y2hi)-(header.y1lo+256*header.y1hi)+1;
+	byteline=header.bytelinelo+256*header.bytelinehi;
+
+	if (w==0 || h==0)
+	    return 0;
+
+	x=0; y=0;
+	bytemax=w*h;
+	if (real_bpp==1 || real_bpp==4)
+	    bytemax=(1<<30);	/* we use a 'y<h' test instead for these files */
+
+	if ((pic->bitmap=malloc(w*(h+2)*bytepp))==NULL)
+	    return 0;
+
+	/* need this if more than one bitplane */
+	memset(pic->bitmap,0,w*h*bytepp);
+
+	bytesdone=0;
+
+	/* start reading image */
+	for (yy=0; yy<h; yy++) {
+	  plane=0;
+	  pmask=1;
+	  
+	  y=yy;
+	  x=0;
+	  while (y==yy) {
+	    inbyte=fgetc(pcxfile);
+	    if (inbyte<192) {
+	      dispbyte(pic->bitmap,&x,&y,inbyte,w,h,real_bpp,
+		byteline,&plane,&pmask);
+	      bytesdone++;
 	    } else {
-		*image++ = (unsigned char) b;
+	      inbyte2=fgetc(pcxfile);
+	      inbyte&=63;
+	      for (count=0; count<inbyte; count++)
+		dispbyte(pic->bitmap,&x,&y,inbyte2,w,h,real_bpp,
+			byteline,&plane,&pmask);
+	      bytesdone+=inbyte;
 	    }
-	
-	    bcnt++;
-	
-	    if (bcnt == bpl) {     /* end of a scan line */
-		bcnt = 0;
-		plane++;  
-
-		if (plane >= (int) header->nplanes) {   /* go to the next row */
-		    plane = 0;
-		    image -= pd;
-		    oimage = image;
-		    row++;
-		    if (row >= h) {
-			return;   /* done */
-		    }
-		} else {   /* new plane, same row */
-			image = oimage;
-		}	
-	    pmsk = 1 << plane;
-	    }
+	  }
 	}
-    }
+
+	/* read palette */
+	switch(real_bpp) {
+	    case 1:
+		pic->cmap[0][0] = pic->cmap[1][0] = pic->cmap[2][0] = 0;
+		pic->cmap[0][1] = pic->cmap[1][1] = pic->cmap[2][1] = 255;
+		pic->numcols = 2;
+		break;
+	  
+	    case 2:
+	    case 3:
+	    case 4:
+		/* 2-,3-, and 4-bit, palette is embedded in header */
+		pic->numcols = (1<<real_bpp);
+		for (x=0; x < pic->numcols; x++) {
+		    pic->cmap[0][x] = header.pal16[x*3  ];
+		    pic->cmap[1][x] = header.pal16[x*3+1];
+		    pic->cmap[2][x] = header.pal16[x*3+2];
+		}
+		break;
+
+	    case 8:
+		/* 8-bit */
+		waste=fgetc(pcxfile);                    /* ditch splitter byte */
+		for (x=0; x<256; x++) {
+		    pic->cmap[0][x] = fgetc(pcxfile);
+		    pic->cmap[1][x] = fgetc(pcxfile);
+		    pic->cmap[2][x] = fgetc(pcxfile);
+		}
+		pic->numcols = 256;
+		break;
+	  
+	    case 24:
+		/* no palette, set flag in numcols to write out rgb values */
+		pic->numcols = 2<<24;
+		break;
+	}
+
+	pic->bit_size.x = w;
+	pic->bit_size.y = h;
+
+	return 1;  
+}
+
+
+void
+dispbyte(unsigned char *ptr,int *xp,int *yp,int c,int w,int h,
+              int real_bpp,int byteline,int *planep,int *pmaskp)
+{
+	int f;
+	unsigned char *dstptr;
+
+	switch(real_bpp) {
+	  case 1:
+	  case 2:
+	  case 3:
+	  case 4:
+		/* mono or 4-bit */
+
+		if ((*yp)>=h)
+		    return;
+
+		dstptr=ptr+(*yp)*w+*xp;
+		w=byteline*8;
+
+		for (f=0; f<8; f++) {
+		   *dstptr++|=(c&(0x80>>(f&7)))?(*pmaskp):0;
+		   (*xp)++;
+		   if (*xp>=w) {
+			if (real_bpp==1) {
+			    (*xp)=0,(*yp)++;
+			    return;
+			}
+			(*xp)=0;
+			(*planep)++;
+			(*pmaskp)<<=1;
+			if (real_bpp==2) {
+			    if (*planep==2) {
+				(*yp)++;
+				return;
+			    }
+			} else if (real_bpp==3) {
+			    if (*planep==3) {
+				(*yp)++;
+				return;
+			    }
+			} else {
+			    /* otherwise, it's 4 bpp */
+			    if (*planep==4) {
+				(*yp)++;
+				return;
+			    }
+			}
+		    }
+		    if ((*yp)>=h)
+			return;
+		}
+		break;
+	  
+	  case 8:
+		*(ptr+(*yp)*w+*xp)=c;
+		(*xp)++;
+		if (*xp>=w) {
+		    (*xp)=0;
+		    (*yp)++;
+		}
+		break;
+	  
+	  case 24:
+		*(ptr+((*yp)*w+*xp)*3+(2-(*planep)))=c;
+		(*xp)++;
+		if (*xp>=w) {
+		    (*xp)=0;
+		    (*planep)++; /* no need to change pmask */
+		    if (*planep==3) {
+			(*yp)++;
+			return;
+		    }
+		}
+		break;
+	  }
 }

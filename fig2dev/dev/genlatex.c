@@ -110,7 +110,6 @@ char		thickdot[] = THICKDOT;
 char		thin_ldot [] = THIN_LDOT;
 char		thick_ldot[] = THICK_LDOT;
 
-static	int	coord_system;
 static	int	verbose = 0;
 double		dash_mag = 1.0;
 int		thick_width = 2;
@@ -226,23 +225,11 @@ genlatex_start(objects)
 	texfontsizes[0] = texfontsizes[1] = 
 		TEXFONTSIZE(font_size?font_size:DEFAULT_FONT_SIZE);
 
-	coord_system = objects->nwcorner.y;
  	unitlength = mag/objects->nwcorner.x;
 	dash_mag /= unitlength*80.0;
 
-	switch (coord_system) {
-	    case 1:
-		translate_coordinates = translate1;
-		translate_coordinates_d = translate1_d;
-		break;
-	    case 2:
-		translate_coordinates = translate2;
-		translate_coordinates_d = translate2_d;
-		break;
-	    default:
-		fprintf(stderr, "Wrong coordinate system; cannot continue\n");
-		return;
-	    }
+	translate_coordinates = translate2;
+	translate_coordinates_d = translate2_d;
 
 	TRANS2(llx, lly, urx, ury);
 	if (llx > urx) SWAP(llx, urx)
@@ -331,6 +318,7 @@ genlatex_line(l)
 	    TRANS(x, y);
 	    fprintf(tfp, "\\put(%3d,%3d){\\makebox(%.4f,%.4f){%s}}\n",
 	      x, y, dot_xoffset, dot_yoffset, dot_cmd);
+	    reset_color(l->pen_color);
 	    return;
 	    }
 
@@ -353,6 +341,7 @@ genlatex_line(l)
 	      put_arc_box (llx, lly, urx, ury, l->radius, l->style, l->style_val);
 	    else
 	      put_box (llx, lly, urx, ury, l->style, l->style_val);
+	    reset_color(l->pen_color);
 	    return;
 	    }
 
@@ -583,7 +572,7 @@ put_dashline (x, y, sx, sy, l, arrow, val)
 	    }
 	if (2*dl >= l  ||  (sx  &&  sy  &&  (l/cosine)*unitlength < MIN_LEN)) {
 	    fprintf(stderr, "Dashed line too short; drawing solid line\n");
-	    put_solidline (x, y, sx, sy, l, arrow, 0);
+	    put_solidline (x, y, sx, sy, l, arrow, (double) 0.0);
 	    return;
 	    }
 	dg = (l - (n/2+1)*dl) / (double)(n/2);
@@ -683,6 +672,8 @@ genlatex_ellipse(e)
 	/* print any comments prefixed with "%" */
 	print_comments("% ",e->comments, "");
 
+	set_color(e->pen_color);
+
 	set_linewidth(e->thickness);
 	switch (e->style) {
 	    case SOLID_LINE:
@@ -717,6 +708,8 @@ genlatex_ellipse(e)
 	    if (e->fill_style != UNFILLED)
 		fprintf(stderr, "Ellipse area fill not implemented\n");
 	}
+	reset_color(e->pen_color);
+
       }
 
 void
@@ -980,54 +973,62 @@ put_quarter(p1, p2, q)
 
 #define  MAXCOLORS 32
 
+/* need this for communication between color routines. Sorry */
+static int lastcolor=-1;
+
 set_color(col)
 int col;
 {
    static char *colors[] = {
-   "0 0 0",    /* black */
-   "0 0 1",    /* blue */
-   "0 1 0",    /* green */
-   "0 1 1",    /* cyan */
-   "1 0 0",    /* red */
-   "1 0 1",    /* magenta */
-   "1 1 0",    /* yellow */
-   "1 1 1",    /* white */
-   "1 .84 0",	/* gold */
-   "0 0 .56",	/* dk blue */
-   "0 0 .69",	/* md blue */
-   "0 0 .82",	/* lt blue */
-   "0 .56 0",	/* dk green */
-   "0 .69 0",	/* md green */
-   "0 .82 0",	/* lt green */
-   "0 .56 .56",	/* dk cyan */
-   "0 .69 .69",	/* md cyan */
-   "0 .82 .82",	/* lt cyan */
-   ".56 0 0",	/* dk red */
-   ".69 0 0",	/* md red */
-   ".82 0 0",	/* lt red */
-   ".56 0 .56",	/* dk magenta */
-   ".69 0 .69",	/* md magenta */
-   ".82 0 .82",	/* lt magenta */
-   ".5 .17 0",	/* dk brown */
-   ".63 .25 0",	/* md brown1 */
-   ".75 .38 0",	/* md brown1 */
-   ".88 .44 0",	/* lt brown */
-   "1 .5 .5",	/* dk pink */
-   "1 .63 .63",	/* md pink1 */
-   "1 .75 .75",	/* md pink2 */
-   "1 .88 .88",	/* lt pink */
+   "0,0,0",    /* black */
+   "0,0,1",    /* blue */
+   "0,1,0",    /* green */
+   "0,1,1",    /* cyan */
+   "1,0,0",    /* red */
+   "1,0,1",    /* magenta */
+   "1,1,0",    /* yellow */
+   "1,1,1",    /* white */
+   "1,.84,0",	/* gold */
+   "0,0,.56",	/* dk blue */
+   "0,0,.69",	/* md blue */
+   "0,0,.82",	/* lt blue */
+   "0,.56,0",	/* dk green */
+   "0,.69,0",	/* md green */
+   "0,.82,0",	/* lt green */
+   "0,.56,.56",	/* dk cyan */
+   "0,.69,.69",	/* md cyan */
+   "0,.82,.82",	/* lt cyan */
+   ".56,0,0",	/* dk red */
+   ".69,0,0",	/* md red */
+   ".82,0,0",	/* lt red */
+   ".56,0,.56",	/* dk magenta */
+   ".69,0,.69",	/* md magenta */
+   ".82,0,.82",	/* lt magenta */
+   ".5,.17,0",	/* dk brown */
+   ".63,.25,0",	/* md brown1 */
+   ".75,.38,0",	/* md brown1 */
+   ".88,.44,0",	/* lt brown */
+   "1,.5,.5",	/* dk pink */
+   "1,.63,.63",	/* md pink1 */
+   "1,.75,.75",	/* md pink2 */
+   "1,.88,.88",	/* lt pink */
    };
    
+
 #ifdef DVIPS
    if (col != -1) {
+       /* we do not support nested colors, although LaTeX would */
+       if (lastcolor == -1)
+	   fprintf(tfp, "{");
+       /* switch to (other) color */
 	if (col < NUM_STD_COLS)
-	    fprintf(tfp, "\\special{ps: gsave %s setrgbcolor}",
-				colors[col]);
+	    fprintf(tfp, "\\color[rgb]{%s}",colors[col]);
 	else
-	    fprintf(tfp, "\\special{ps: gsave %.3f %.3f %.3f setrgbcolor}",
+	    fprintf(tfp, "\\color[rgb]{%.3f,%.3f,%.3f}",
 				user_colors[col-NUM_STD_COLS].r/256.0,
 				user_colors[col-NUM_STD_COLS].g/256.0,
 				user_colors[col-NUM_STD_COLS].b/256.0);
+       lastcolor = col;
    }
 #endif
    return;
@@ -1037,8 +1038,12 @@ reset_color(col)
 int col;
 {
 #ifdef DVIPS
-   if (col != -1 && col < NUM_STD_COLS + MAX_USR_COLS)
-      fprintf(tfp, "\\special{ps: grestore}");
+    if (col != -1 && col < NUM_STD_COLS + MAX_USR_COLS) {
+       /* end using the last color */
+       fprintf(tfp, "}%%\n");
+    }
+    /* make sure the color indicator is reset */
+    lastcolor = -1;
 #endif
    return;
 }

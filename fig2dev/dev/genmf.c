@@ -51,7 +51,6 @@ typedef struct {
 	double *value;
 } Options;
 
-static double ppi;
 static double code = 32.0;
 static int oldpen = 0;
 static double penscale = 1;
@@ -68,7 +67,7 @@ setpen(thickness)
 int thickness;
 {
   if (thickness != oldpen) {
-    fprintf(tfp, "penwd := %.2lfpt;\n", 
+    fprintf(tfp, "penwd := %.2fpt;\n", 
 	    thickness/THICK_SCALE*penscale*yscale*mag);
     fprintf(tfp, "drawpen := pencircle scaled penwd yscaled aspect_ratio;\n");
     oldpen = thickness;
@@ -84,7 +83,6 @@ F_compound	*objects;
 	if (maxy == INFTY) 
 		maxy = yu;
 	
-	ppi = objects->nwcorner.x;
 	curchar = (int)code;
 
 	fprintf(tfp,"%%\n%% fig2dev -L mf (Version %s Patchlevel %s)\n",
@@ -104,8 +102,8 @@ F_compound	*objects;
 
 	fprintf(tfp,"%%\n%% %s (char %d)\n%%\n",
 		(name? name: ((from) ? from : "stdin")), ++curchar);
-	fprintf(tfp,"xscale:=%.3lf; yscale:=%.3lf;\n", xscale*mag, yscale*mag);
-	fprintf(tfp,"bounds(%.3lf,%.3lf,%.3lf,%.3lf);\n", xl, xu, yl, yu);
+	fprintf(tfp,"xscale:=%.3f; yscale:=%.3f;\n", xscale*mag, yscale*mag);
+	fprintf(tfp,"bounds(%.3f,%.3f,%.3f,%.3f);\n", xl, xu, yl, yu);
 	fprintf(tfp,"unitlen:=1.0in#;\n");
 	fprintf(tfp,"beginmfpic(incr code);\n");
 	setpen(1);
@@ -181,7 +179,7 @@ F_line *l;
 		if (l->fill_style == BLACK_FILL)
 			fprintf(tfp,"  filled ");
 		else if (l->fill_style < BLACK_FILL && l->fill_style > 0)
-			fprintf(tfp,"  shade(%lfpt) unfilled", dofill(l));
+			fprintf(tfp,"  shade(%fpt) unfilled", dofill(l));
 		else if (l->fill_style == 0)
 			fprintf(tfp,"  drawn unfilled ");
 		else 
@@ -189,10 +187,10 @@ F_line *l;
 		fprintf(tfp,"polyline(true)\n");
 	}
 	p = l->points;
-	fprintf(tfp,"      ((%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
+	fprintf(tfp,"      ((%f, %f)", p->x/ppi, maxy-(p->y/ppi));
 	p = p->next;
 	for ( ; p != NULL; p=p->next) {
-	    fprintf(tfp,",\n       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
+	    fprintf(tfp,",\n       (%f, %f)", p->x/ppi, maxy-(p->y/ppi));
 	}
 	fprintf(tfp, ");\n");
 	return;
@@ -216,7 +214,7 @@ F_spline *s;
 		if (s->fill_style == BLACK_FILL)
 			fprintf(tfp,"  filled ");
 		else if (s->fill_style < BLACK_FILL && s->fill_style > 0)
-			fprintf(tfp,"  shade(%lfpt) unfilled ", dofill(s));
+			fprintf(tfp,"  shade(%fpt) unfilled ", dofill(s));
 		else if (s->fill_style == 0)
 			fprintf(tfp,"  drawn unfilled ");
 		else
@@ -224,10 +222,10 @@ F_spline *s;
 		fprintf(tfp,"curve(true)\n");
 	}
 	p = s->points;
-	fprintf(tfp,"      ((%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
+	fprintf(tfp,"      ((%f, %f)", p->x/ppi, maxy-(p->y/ppi));
 	p = p->next;
 	for ( ; p != NULL; p=p->next) {
-	    fprintf(tfp,",\n       (%lf, %lf)", p->x/ppi, maxy-(p->y/ppi));
+	    fprintf(tfp,",\n       (%f, %f)", p->x/ppi, maxy-(p->y/ppi));
 	}
 	fprintf(tfp, ");\n");
 	return;
@@ -246,17 +244,17 @@ F_ellipse *e;
 	if (e->fill_style == BLACK_FILL)
 		fprintf(tfp,"  filled ");
 	else if (e->fill_style < BLACK_FILL && e->fill_style > 0)
-		fprintf(tfp,"  shade(%lfpt) ", dofill(e));
+		fprintf(tfp,"  shade(%fpt) ", dofill(e));
 	else
 		fprintf(tfp,"  drawn ");
 	if (e->type == 3 || e->type == 4)
 	{
-		fprintf(tfp,"circle((%lf,%lf),%lf);\n",
+		fprintf(tfp,"circle((%f,%f),%f);\n",
 			e->center.x/ppi, maxy-(e->center.y/ppi), e->radiuses.x/ppi);
 	}
 	else if (e->type == 1 || e->type == 2)
 	{
-		fprintf(tfp,"ellipse((%lf,%lf),%lf,%lf,0);\n",
+		fprintf(tfp,"ellipse((%f,%f),%f,%f,0);\n",
 			e->center.x/ppi, maxy-(e->center.y/ppi), 
 			e->radiuses.x/ppi, e->radiuses.y/ppi);
 	}
@@ -271,7 +269,7 @@ F_arc *a;
 
 	setpen(a->thickness);
 	fprintf(tfp, "  store (curpath)\n");
-	fprintf(tfp,"  drawn arcppp((%lf,%lf), (%lf,%lf), (%lf,%lf));\n",
+	fprintf(tfp,"  drawn arcppp((%f,%f), (%f,%f), (%f,%f));\n",
 		a->point[0].x/ppi, maxy-(a->point[0].y/ppi),
 		a->point[1].x/ppi, maxy-(a->point[1].y/ppi),
 		a->point[2].x/ppi, maxy-(a->point[2].y/ppi));

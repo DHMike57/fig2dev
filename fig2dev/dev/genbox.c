@@ -42,13 +42,6 @@ char opt, *optarg;
 void genbox_start(objects)
 F_compound	*objects;
 {
-	double ppi;
-
-	if (0 == (ppi = (double)objects->nwcorner.x)) {
-	    fprintf(stderr, "Resolution is zero!! default to 80 ppi\n");
-	    ppi = 80.0;
-	    }
-
 	/* draw box */
         fprintf(tfp, "\\makebox[%.3fin]{\\rule{0in}{%.3fin}}\n",
 		(urx-llx)*mag/ppi, (ury-lly)*mag/ppi);

@@ -61,11 +61,6 @@ static Boolean enable_composite_font = False;
 /* include the PostScript preamble, patterns etc */
 #include "genps.h"
 
-typedef struct _point
-{
-    int x,y;
-} Point;
-
 #define		POINT_PER_INCH		72
 #define		ULIMIT_FONT_SIZE	300
 
@@ -74,13 +69,12 @@ typedef struct _point
 void		gen_ps_eps_option();
 
 Boolean		epsflag = False;	/* to distinguish PS and EPS */
+Boolean		pdfflag = False;	/* to distinguish PDF and PS/EPS */
 
 int		pagewidth = -1;
 int		pageheight = -1;
 int		xoff=0;
 int		yoff=0;
-static int	coord_system;
-static int	resolution;
 static double	cur_thickness = 0.0;
 static int	cur_joinstyle = 0;
 static int	cur_capstyle = 0;
@@ -99,13 +93,12 @@ int		lpntx2, lpnty2;	/* second-to-last point of object */
 static		arc_tangent();
 static		fill_area();
 static		clip_arrows();
-static		calc_arrow();
 static		draw_arrow();
 static		iso_text_exist();
 static		encode_all_fonts();
 static		ellipse_exist();
 static		approx_spline_exist();
-static double	compute_angle();
+static		set_linewidth();
 
 #define SHADEVAL(F)	1.0*(F)/(NUMSHADES-1)
 #define TINTVAL(F)	1.0*(F-NUMSHADES+1)/NUMTINTS
@@ -186,66 +179,60 @@ int	patmat[NUMPATTERNS][2] = {
 	 8, -16,
 	};
 
-/************** ARRAY FOR ARROW SHAPES **************/ 
-
-struct _fpnt { 
-		double x,y;
-	};
-struct _arrow_shape {
-		int numpts;
-		int tipno;
-		double tipmv;
-		struct _fpnt points[6];
-	};
-
-#define NUM_ARROW_TYPES 21
-static struct _arrow_shape arrow_shapes[NUM_ARROW_TYPES+1] = {
-		   /* number of points, index of tip, {datapairs} */
-		   /* first point must be upper-left point of tail, then tip */
-
-		   /* type 0 */
-		   { 3, 1, 2.15, {{-1,0.5}, {0,0}, {-1,-0.5}}},
-		   /* place holder for what would be type 0 filled */
-		   { 0 },
-		   /* type 1 simple triangle */
-		   { 4, 1, 2.1, {{-1.0,0.5}, {0,0}, {-1.0,-0.5}, {-1.0,0.5}}},
-		   /* type 1 filled simple triangle*/
-		   { 4, 1, 2.1, {{-1.0,0.5}, {0,0}, {-1.0,-0.5}, {-1.0,0.5}}},
-		   /* type 2 concave spearhead */
-		   { 5, 1, 2.6, {{-1.25,0.5},{0,0},{-1.25,-0.5},{-1.0,0},{-1.25,0.5}}},
-		   /* type 2 filled concave spearhead */
-		   { 5, 1, 2.6, {{-1.25,0.5},{0,0},{-1.25,-0.5},{-1.0,0},{-1.25,0.5}}},
-		   /* type 3 convex spearhead */
-		   { 5, 1, 1.5, {{-0.75,0.5},{0,0},{-0.75,-0.5},{-1.0,0},{-0.75,0.5}}},
-		   /* type 3 filled convex spearhead */
-		   { 5, 1, 1.5, {{-0.75,0.5},{0,0},{-0.75,-0.5},{-1.0,0},{-0.75,0.5}}},
-		   /* type 4 diamond */
-		   { 5, 1, 1.15, {{-0.5,0.5},{0,0},{-0.5,-0.5},{-1.0,0},{-0.5,0.5}}},
-		   /* type 4 filled diamond */
-		   { 5, 1, 1.15, {{-0.5,0.5},{0,0},{-0.5,-0.5},{-1.0,0},{-0.5,0.5}}},
-		   /* type 5 circle - handled in code */
-		   { 0, 0, 0.0 }, { 0, 0, 0.0 },
-		   /* type 6 half circle - handled in code */
-		   { 0, 0, -1.0 }, { 0, 0, -1.0 },
-		   /* type 7 square */
-		   { 5, 1, 0.0, {{-1.0,0.5},{0,0.5},{0,-0.5},{-1.0,-0.5},{-1.0,0.5}}},
-		   /* type 7 filled square */
-		   { 5, 1, 0.0, {{-1.0,0.5},{0,0.5},{0,-0.5},{-1.0,-0.5},{-1.0,0.5}}},
-		   /* type 8 reverse triangle */
-		   { 4, 1, 0.0, {{-1.0,0},{0,0.5},{0,-0.5},{-1.0,0}}},
-		   /* type 8 filled reverse triangle */
-		   { 4, 1, 0.0, {{-1.0,0},{0,0.5},{0,-0.5},{-1.0,0}}},
-		   /* type 9a "wye" */
-		   { 3, 0, -1.0, {{0,0.5},{-1.0,0},{0,-0.5}}},
-		   /* type 9b bar */
-		   { 2, 1, 0.0, {{0,0.5},{0,-0.5}}},
-		   /* type 10a two-prong fork */
-		   { 4, 0, -1.0, {{0,0.5},{-1.0,0.5},{-1.0,-0.5},{0,-0.5}}},
-		   /* type 10b backward two-prong fork */
-		   { 4, 1, 0.0, {{-1.0,0.5,},{0,0.5},{0,-0.5},{-1.0,-0.5}}},
-		};
 static double		scalex, scaley;
 static double		origx, origy;
+
+FILE	*open_picfile();
+void	close_picfile();
+int	filtype;
+extern	int	read_gif();
+extern	int	read_pcx();
+extern	int	read_eps();
+extern	int	read_pdf();
+extern	int	read_ppm();
+extern	int	read_tif();
+extern	int	read_xbm();
+#ifdef USE_JPEG
+extern	int	read_jpg();
+#endif
+#ifdef USE_XPM
+extern	int	read_xpm();
+#endif
+
+/* headers for various image files */
+
+static	 struct hdr {
+	    char	*type;
+	    char	*bytes;
+	    int		 nbytes;
+	    int		(*readfunc)();
+	    Boolean	pipeok;
+	}
+	headers[]= {    {"GIF", "GIF",		    3, read_gif,	True},
+#ifdef V4_0
+			{"FIG", "#FIG",		    4, read_figure,	True},
+#endif /* V4_0 */
+			{"PCX", "\012\005\001",	    3, read_pcx,	True},
+			{"EPS", "%!",		    2, read_eps,	True},
+			{"PDF", "%PDF",		    4, read_pdf,	True},
+			{"PPM", "P3",		    2, read_ppm,	True},
+			{"PPM", "P6",		    2, read_ppm,	True},
+			{"TIFF", "II*\000",	    4, read_tif,	False},
+			{"TIFF", "MM\000*",	    4, read_tif,	False},
+			{"XBM", "#define",	    7, read_xbm,	True},
+#ifdef USE_JPEG
+			{"JPEG", "\377\330\377\340", 4, read_jpg,	True},
+#endif
+#ifdef USE_XPM
+			{"XPM", "/* XPM */",	    9, read_xpm,	False},
+#endif
+			};
+
+#define NUMHEADERS sizeof(headers)/sizeof(headers[0])
+
+/******************************/
+/* various methods start here */
+/******************************/
 
 void
 geneps_option(opt, optarg)
@@ -253,6 +240,7 @@ char opt;
 char *optarg;
 {
 	epsflag = True;
+	pdfflag = False;
 	gen_ps_eps_option(opt, optarg);
 }
 
@@ -262,6 +250,7 @@ char opt;
 char *optarg;
 {
 	epsflag = False;
+	pdfflag = False;
 	gen_ps_eps_option(opt, optarg);
 }
 
@@ -297,22 +286,21 @@ char *optarg;
 			if ( !strcmp(optarg, PSfontnames[i]) ) break;
 
 		if ( i > MAX_PSFONT )
-			fprintf(stderr,
-			    "warning: non-standard font name %s\n", optarg);
+			fprintf(stderr, "warning: non-standard font name %s\n", optarg);
 
 	    	psfontnames[0] = psfontnames[1] = optarg;
 	    	PSfontnames[0] = PSfontnames[1] = optarg;
 	    	break;
 
 	  case 'g':			/* background color */
-		if (lookup_db_color(optarg,&background) >= 0) {
+		if (lookup_X_color(optarg,&background) >= 0) {
 		    bgspec = True;
 		} else {
 		    fprintf(stderr,"Can't parse color '%s', ignoring background option\n",
 				optarg);
 		}
 		break;
-
+	
 	  case 'M':			/* multi-page option */
 		if (!epsflag) {
 		    multi_page = True;
@@ -390,15 +378,12 @@ F_compound	*objects;
 	int		itmp;
 	int		cliplx, cliply, clipux, clipuy;
 	struct paperdef	*pd;
-	float		bd;
 
 	char		*libdir;
 	char		filename[512], str[512];
 	FILE		*fp;
 
-	resolution = objects->nwcorner.x;
-	coord_system = objects->nwcorner.y;
-	scalex = scaley = mag * POINT_PER_INCH / (double)resolution;
+	scalex = scaley = mag * POINT_PER_INCH / ppi;
 
 	/* this seems to work around Solaris' cc optimizer bug */
 	/* the problem was that llx had garbage in it - this "fixes" it */
@@ -411,12 +396,11 @@ F_compound	*objects;
 	ury = (int)ceil(ury * scaley);
 
 	/* adjust for any border margin */
-	bd = border_margin;
 
-	llx -= bd;
-	lly -= bd;
-	urx += bd;
-	ury += bd;
+	llx -= border_margin;
+	lly -= border_margin;
+	urx += border_margin;
+	ury += border_margin;
 
 	/* convert ledger (deprecated) to tabloid */
 	if (strcasecmp(papersize, "ledger") == 0)
@@ -434,10 +418,14 @@ F_compound	*objects;
 	    exit (1);
 	}
 
-	if (epsflag) {
-	    /* eps, shift figure to 0,0 */
+	if (epsflag || pdfflag) {
+	    /* eps or pdf, shift figure to 0,0 */
 	    origx = -llx;
 	    origy =  ury;
+	    if (pdfflag && landscape) {
+		origx = -lly;
+		origy = -llx;
+	    }
 	} else {
 	    /* postscript, do any orientation and/or centering */
 	    if (landscape) {
@@ -460,7 +448,7 @@ F_compound	*objects;
 	}
 
 	/* finally, adjust by any offset the user wants */
-	if (!epsflag) {
+	if (!epsflag || pdfflag) {
 	    if (landscape) {
 		origx += yoff;
 		origy += xoff;
@@ -491,20 +479,28 @@ F_compound	*objects;
 	/* calc initial clipping area to size of the bounding box (this is needed
 		for later clipping by arrowheads */
 	cliplx = cliply = 0;
-	if (epsflag) {
+	if (epsflag || pdfflag) {
 	    clipux = urx-llx;
 	    clipuy = ury-lly;
+	    if (pdfflag && landscape) {
+		clipux = ury-lly;
+		clipuy = urx-llx;
+	    }
 	    pages = 1;
 	} else {
 	    if (landscape) {
 		clipux = pageheight;
 		clipuy = pagewidth;
-		pages = (urx/pageheight+1)*(ury/pagewidth+1);
+		/* account for overlap */
+		pages = (int)(1.11111*(urx-0.1*pageheight)/pageheight+1)*
+				(int)(1.11111*(ury-0.1*pagewidth)/pagewidth+1);
 		fprintf(tfp, "%%%%Orientation: Landscape\n");
 	    } else {
 		clipux = pagewidth;
 		clipuy = pageheight;
-		pages = (urx/pagewidth+1)*(ury/pageheight+1);
+		/* account for overlap */
+		pages = (int)(1.11111*(urx-0.1*pagewidth)/pagewidth+1)*
+				(int)(1.11111*(ury-0.1*pageheight)/pageheight+1);
 		fprintf(tfp, "%%%%Orientation: Portrait\n");
 	    }
 	    /* only print Pages if PostScript */
@@ -513,11 +509,17 @@ F_compound	*objects;
 	fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n",
 			cliplx, cliply, clipux, clipuy);
 
-	/* only include a pagesize command if not EPS */
-	if (!epsflag) {
+	/* only include a pagesize command if PS */
+	if (!epsflag && !pdfflag) {
 	    fprintf(tfp, "%%%%BeginSetup\n");
 	    fprintf(tfp, "%%%%IncludeFeature: *PageSize %s\n", papersize);
 	    fprintf(tfp, "%%%%EndSetup\n");
+	} else if (pdfflag) {
+	    /* set the page size for PDF */
+	    if (landscape)
+		fprintf(tfp, "<< /PageSize [%d %d] >> setpagedevice\n",ury-lly,urx-llx);
+	    else
+		fprintf(tfp, "<< /PageSize [%d %d] >> setpagedevice\n",urx-llx,ury-lly);
 	}
 
 	/* put in the magnification for information purposes */
@@ -540,10 +542,12 @@ F_compound	*objects;
 #endif
 	if (libdir != NULL) {
 	  sprintf(filename, "%s/%s.ps", libdir, papersize);
-	  /* get filename like "/usr/local/lib/fig2dev/A3.ps" */
-	  fp = fopen(filename, "r");
+	  /* get filename like "/usr/local/lib/fig2dev/A3.ps" and 
+	     prepend it to the postscript code */
+	  fp = fopen(filename, "rb");
 	  if (fp != NULL) {
-	    while (fgets(str, sizeof(str), fp)) fputs(str, tfp);
+	    while (fgets(str, sizeof(str), fp))
+		fputs(str, tfp);
 	    fclose(fp);
 	  }
 	}
@@ -582,12 +586,10 @@ F_compound	*objects;
 	if (landscape && !epsflag) {
 	    fprintf(tfp, " 90 rotate\n");
 	}
-	if (coord_system == 2) {
-	    fprintf(tfp, "1 -1 scale\n");
-	}
+	/* increasing y goes down */
+	fprintf(tfp, "1 -1 scale\n");
 	if (pats_used) {
 	    int i;
-	    fprintf(tfp, ".9 .9 scale %% to make patterns same scale as in xfig\n");
 	    fprintf(tfp, "\n%s%s%s", FILL_PROLOG1,FILL_PROLOG2,FILL_PROLOG3);
 	    fprintf(tfp, "\n%s%s%s", FILL_PROLOG4,FILL_PROLOG5,FILL_PROLOG6);
 	    fprintf(tfp, "\n%s%s%s", FILL_PROLOG7,FILL_PROLOG8,FILL_PROLOG9);
@@ -596,7 +598,6 @@ F_compound	*objects;
 	    for (i=0; i<NUMPATTERNS; i++)
 		if (pattern_used[i])
 			fprintf(tfp, "\n%s", fill_def[i]);
-	    fprintf(tfp, "1.1111 1.1111 scale %%restore scale\n");
 	}
 	fprintf(tfp, "\n%s", BEGIN_PROLOG2);
 	if (iso_text_exist(objects)) {
@@ -622,7 +623,7 @@ F_compound	*objects;
 	    }
 	    sprintf(filename, "%s/%s.ps", libdir, locale);
 	    /* get filename like ``/usr/local/lib/fig2dev/japanese.ps'' */
-	    fp = fopen(filename, "r");
+	    fp = fopen(filename, "rb");
 	    if (fp == NULL) {
 		fprintf(stderr, "fig2dev: can't open file: %s\n", filename);
 	    } else {
@@ -639,7 +640,9 @@ F_compound	*objects;
 
 	fprintf(tfp, "$F2psBegin\n");
 
-	fprintf(tfp, "%%%%Page: 1 1\n");
+	/* multipage will print the page numbers in genps_end() */
+	if (!multi_page)
+	    fprintf(tfp, "%%%%Page: 1 1\n");
 	fprintf(tfp, "10 setmiterlimit\n");	/* make like X server (11 degrees) */
 
  	if ( multi_page ) {
@@ -649,6 +652,10 @@ F_compound	*objects;
 	    if (!epsflag)
 		fprintf(tfp,"%%%%Page: 1 1\n");
 	}
+
+	fprintf(tfp,"%%\n");
+	fprintf(tfp,"%% Fig objects follow\n");
+	fprintf(tfp,"%%\n");
 }
 
 int
@@ -671,9 +678,8 @@ genps_end()
 	    if (landscape) {
 	       fprintf(tfp, " 90 rot");
 	    }
-	    if (coord_system == 2) {
-		fprintf(tfp, " 1 -1 sc\n");
-	    }
+	    /* increasing y goes down */
+	    fprintf(tfp, " 1 -1 sc\n");
 	    fprintf(tfp, " %.3f %.3f sc\n", scalex, scaley);
 	    for (i=0; i<no_obj; i++) {
 	       fprintf(tfp, "o%d ", i);
@@ -703,32 +709,32 @@ set_style(s, v)
 int	s;
 double	v;
 {
-	v /= 80.0 / (double)resolution;
+	v /= 80.0 / ppi;
 	if (s == DASH_LINE) {
 	    if (v > 0.0) fprintf(tfp, " [%d] 0 sd\n", round(v));
 	    }
 	else if (s == DOTTED_LINE) {
 	    if (v > 0.0) fprintf(tfp, " [%d %d] %d sd\n", 
-		round(resolution/80.0), round(v), round(v));
+		round(ppi/80.0), round(v), round(v));
 	    }
 	else if (s == DASH_DOT_LINE) {
 	    if (v > 0.0) fprintf(tfp, " [%d %d %d %d] 0 sd\n", 
 		round(v), round(v*0.5),
-		round(resolution/80.0), round(v*0.5));
+		round(ppi/80.0), round(v*0.5));
 	    }
 	else if (s == DASH_2_DOTS_LINE) {
 	    if (v > 0.0) fprintf(tfp, " [%d %d %d %d %d %d] 0 sd\n", 
 		round(v), round(v*0.45),
-		round(resolution/80.0), round(v*0.333),
-		round(resolution/80.0), round(v*0.45));
+		round(ppi/80.0), round(v*0.333),
+		round(ppi/80.0), round(v*0.45));
 	    }
 	else if (s == DASH_3_DOTS_LINE) {
 	    if (v > 0.0) fprintf(tfp, 
                 " [%d %d %d %d %d %d %d %d ] 0 sd\n", 
 		round(v), round(v*0.4),
-		round(resolution/80.0), round(v*0.3),
-		round(resolution/80.0), round(v*0.3),
-		round(resolution/80.0), round(v*0.4));
+		round(ppi/80.0), round(v*0.3),
+		round(ppi/80.0), round(v*0.3),
+		round(ppi/80.0), round(v*0.4));
 	    }
 	}
 
@@ -782,54 +788,6 @@ double	w;
 				cur_thickness - THICK_SCALE);
 	    }
 	}
-
-FILE	*open_picfile();
-void	close_picfile();
-int	filtype;
-extern	int	read_gif();
-extern	int	read_pcx();
-extern	int	read_eps();
-extern	int	read_pdf();
-extern	int	read_ppm();
-extern	int	read_tif();
-extern	int	read_xbm();
-#ifdef USE_JPEG
-extern	int	read_jpg();
-#endif
-#ifdef USE_XPM
-extern	int	read_xpm();
-#endif
-
-/* headers for various image files */
-
-static	 struct hdr {
-	    char	*type;
-	    char	*bytes;
-	    int		 nbytes;
-	    int		(*readfunc)();
-	    Boolean	pipeok;
-	}
-	headers[]= {    {"GIF", "GIF",		    3, read_gif,	True},
-#ifdef V4_0
-			{"FIG", "#FIG",		    4, read_figure,	True},
-#endif /* V4_0 */
-			{"PCX", "\012\005\001",	    3, read_pcx,	True},
-			{"EPS", "%!",		    2, read_eps,	True},
-			{"PDF", "%PDF",		    4, read_pdf,	True},
-			{"PPM", "P3",		    2, read_ppm,	True},
-			{"PPM", "P6",		    2, read_ppm,	True},
-			{"TIFF", "DD*\000",	    4, read_tif,	False},
-			{"TIFF", "MM\000*",	    4, read_tif,	False},
-			{"XBM", "#define",	    7, read_xbm,	True},
-#ifdef USE_JPEG
-			{"JPEG", "\377\330\377\340", 4, read_jpg,	True},
-#endif
-#ifdef USE_XPM
-			{"XPM", "/* XPM */",	    9, read_xpm,	False},
-#endif
-			};
-
-#define NUMHEADERS sizeof(headers)/sizeof(headers[0])
 
 
 void
@@ -932,9 +890,12 @@ F_line	*l;
 
 		fprintf(tfp, "%%\n");
 
+	        fprintf(tfp, "%% pen to black in case this eps object doesn't set color first\n");
+	        fprintf(tfp, "0 0 0 setrgbcolor\n");
+
 		/* open the file and read a few bytes of the header to see what it is */
 		if ((picf=open_picfile(l->pic->file, &filtype, True, realname)) == NULL) {
-			fprintf(stderr,"No such picture file: %s",l->pic->file);
+			fprintf(stderr,"No such picture file: %s\n",l->pic->file);
 			return;
 		}
 
@@ -962,14 +923,14 @@ F_line	*l;
 
 		    if (headers[i].pipeok) {
 			if (((*headers[i].readfunc)(picf,filtype,l->pic,&llx,&lly)) == 0) {
-			    fprintf(stderr,"%s: Bad %s format",l->pic->file, headers[i].type);
+			    fprintf(stderr,"%s: Bad %s format\n",l->pic->file, headers[i].type);
 			    close_picfile(picf,filtype);
 			    return;
 			}
 		    } else {
 			/* routines that can't take a pipe (e.g. xpm) get the real filename */
 			if (((*headers[i].readfunc)(realname,filtype,l->pic,&llx,&lly)) == 0) {
-			    fprintf(stderr,"%s: Bad %s format",l->pic->file, headers[i].type);
+			    fprintf(stderr,"%s: Bad %s format\n",l->pic->file, headers[i].type);
 			    close_picfile(picf,filtype);
 			    return;
 			}
@@ -1156,10 +1117,15 @@ F_line	*l;
 			    fprintf(tfp, "%% JPEG image follows:\n");
 			/* scale for size in bits */
 			fprintf(tfp, "%d %d sc\n", urx, ury);
-			/* now write out the image data in a compressed form */
-			(void) PSencode(tfp, wid, ht, l->pic->numcols,
+			if (l->pic->numcols > 256) {
+			    /* 24-bit image, write rgb values */
+			    (void) PSrgbimage(tfp, wid, ht, l->pic->bitmap);
+			} else {
+			    /* now write out the image data in a compressed form */
+			    (void) PSencode(tfp, wid, ht, l->pic->numcols,
 				l->pic->cmap[0], l->pic->cmap[1], l->pic->cmap[2], 
 				l->pic->bitmap);
+			}
 
 		/* EPS file */
 		} else if (l->pic->subtype == P_EPS) {
@@ -1167,7 +1133,7 @@ F_line	*l;
 		    fprintf(tfp, "%% EPS file follows:\n");
 		    if ((picf=open_picfile(l->pic->file, &filtype, True, realname)) == NULL) {
 			fprintf(stderr, "Unable to open EPS file '%s': error: %s (%d)\n",
-				l->pic->file, sys_errlist[errno],errno);
+				l->pic->file, strerror(errno),errno);
 			fprintf(tfp, "gr\n");
 			return;
 		    }
@@ -1493,10 +1459,7 @@ F_arc	*a;
 	sx = a->point[0].x; sy = a->point[0].y;
 	ex = a->point[2].x; ey = a->point[2].y;
 
-	if (coord_system != 2)
-	    direction = !a->direction;
-	else
-	    direction = a->direction;
+	direction = a->direction;
 	set_linewidth((double)a->thickness);
 	set_linecap(a->cap_style);
 	dx = cx - sx;
@@ -1615,7 +1578,7 @@ F_text	*t;
 	unsigned char ch;
 #endif /* I18N */
 
-	/* ignore hidden text (new for xfig3.2.3/fig2dev3.2.2) */
+	/* ignore hidden text (new for xfig3.2.3/fig2dev3.2.3) */
 	if (hidden_text(t))
 	    return;
 
@@ -1642,8 +1605,7 @@ F_text	*t;
 	   fprintf(tfp, TEXT_PS, PSFONT(t), "", PSFONTMAG(t));
 
 	fprintf(tfp, "%d %d m\ngs ", t->base_x,  t->base_y);
-	if (coord_system == 2)
-		fprintf(tfp, "1 -1 sc ");
+	fprintf(tfp, "1 -1 sc ");
 
 	if (t->angle != 0)
 	   fprintf(tfp, " %.1f rot ", t->angle*180.0/M_PI);
@@ -1840,233 +1802,6 @@ clip_arrows(obj, objtype)
     fprintf(tfp, "eoclip\n");
 }
 
-/****************************************************************
-
- calc_arrow - calculate points heading from (x1, y1) to (x2, y2)
-
- Must pass POINTER to npoints for return value and for c1x, c1y,
- c2x, c2y, which are two points at the end of the arrowhead so:
-
-		|\     + (c1x,c1y)
-		|  \
-		|    \
- ---------------|      \
-		|      /
-		|    /
-		|  /
-		|/     + (c2x,c2y)
-
-
- Fills points array with npoints arrowhead coordinates
-
-****************************************************************/
-
-static
-calc_arrow(x1, y1, x2, y2, c1x, c1y, c2x, c2y, arrow, points, npoints, nboundpts)
-    int		    x1, y1, x2, y2;
-    int		   *c1x, *c1y, *c2x, *c2y;
-    F_arrow	   *arrow;
-    Point	    points[];
-    int		   *npoints, *nboundpts;
-{
-    double	    x, y, xb, yb, dx, dy, l, sina, cosa;
-    double	    mx, my;
-    double	    ddx, ddy, lpt, tipmv;
-    double	    alpha;
-    double	    miny, maxy;
-    double	    thick;
-    int		    xa, ya, xs, ys;
-    double	    xt, yt;
-    float	    wd = arrow->wid;
-    float	    ht = arrow->ht;
-    int		    type, style, indx;
-    int		    i, np;
-
-    /* types = 0...10 */
-    type = arrow->type;
-    /* style = 0 (unfilled) or 1 (filled) */
-    style = arrow->style;
-    /* index into shape array */
-    indx = 2*type + style;
-
-    *npoints = 0;
-    dx = x2 - x1;
-    dy = y1 - y2;
-    if (dx==0 && dy==0)
-	return;
-
-    /* lpt is the amount the arrowhead extends beyond the end of the
-       line because of the sharp point (miter join) */
-
-    tipmv = arrow_shapes[indx].tipmv;
-    lpt = 0.0;
-    /* lines are made a little thinner in set_linewidth */
-    thick = (arrow->thickness <= THICK_SCALE) ? 	
-		0.5* arrow->thickness :
-		arrow->thickness - THICK_SCALE;
-    if (tipmv > 0.0)
-        lpt = thick / (2.0 * sin(atan(wd / (tipmv * ht))));
-    else if (tipmv == 0.0)
-	lpt = thick / 3.0;	 /* types which have blunt end */
-    /* (Don't adjust those with tipmv < 0) */
-
-    /* alpha is the angle the line is relative to horizontal */
-    alpha = atan2(dy,-dx);
-
-    /* ddx, ddy is amount to move end of line back so that arrowhead point
-       ends where line used to */
-    ddx = lpt * cos(alpha);
-    ddy = lpt * sin(alpha);
-
-    /* move endpoint of line back */
-    mx = x2 + ddx;
-    my = y2 + ddy;
-
-    l = sqrt(dx * dx + dy * dy);
-    sina = dy / l;
-    cosa = dx / l;
-    xb = mx * cosa - my * sina;
-    yb = mx * sina + my * cosa;
-
-    /* (xa,ya) is the rotated endpoint */
-    xa =  xb * cosa + yb * sina + 0.5;
-    ya = -xb * sina + yb * cosa + 0.5;
-
-    /*
-     * We approximate circles with an octagon since, at small sizes,
-     * this is sufficient.  I haven't bothered to alter the bounding
-     * box calculations.
-     */
-    miny =  100000.0;
-    maxy = -100000.0;
-    if (type == 5 || type == 6) {	/* also include half circle */
-	double rmag;
-	double angle, init_angle, rads;
-	double fix_x, fix_y;
-
-	/* get angle of line */
-	init_angle = compute_angle(dx,dy);
-
-	/* (xs,ys) is a point the length (height) of the arrowhead BACK from 
-	   the end of the shaft */
-	/* for the half circle, use 0.0 */
-	xs =  (xb-(type==5? ht: 0.0)) * cosa + yb * sina + 0.5;
-	ys = -(xb-(type==5? ht: 0.0)) * sina + yb * cosa + 0.5;
-
-	/* calc new (dx, dy) from moved endpoint to (xs, ys) */
-	dx = mx - xs;
-	dy = my - ys;
-	/* radius */
-	rmag = ht/2.0;
-	fix_x = xs + (dx / (double) 2.0);
-	fix_y = ys + (dy / (double) 2.0);
-	/* choose number of points for circle - 20+mag/4 points */
-	np = round(mag/4.0) + 20;
-	/* full or half circle? */
-	rads = (type==5? M_2PI: M_PI);
-
-	if (type == 5) {
-	    init_angle = 5.0*M_PI_2 - init_angle;
-	    /* np/2 points in the forward part of the circle for the line clip area */
-	    *nboundpts = np/2;
-	    /* full circle */
-	    rads = M_2PI;
-	} else {
-	    init_angle = 3.0*M_PI_2 - init_angle;
-	    /* no points in the line clip area */
-	    *nboundpts = 0;
-	    /* half circle */
-	    rads = M_PI;
-	}
-	/* draw the half or full circle */
-	for (i = 0; i < np; i++) {
-	    if (type == 5)
-		angle = init_angle - (rads * (double) i / (double) np);
-	    else
-		angle = init_angle - (rads * (double) i / (double) (np-1));
-	    x = fix_x + round(rmag * cos(angle));
-	    points[*npoints].x = x;
-	    y = fix_y + round(rmag * sin(angle));
-	    points[*npoints].y = y;
-	    miny = min2(y, miny);
-	    maxy = max2(y, maxy);
-	    (*npoints)++;
-	}
-	x = 2.0*THICK_SCALE;
-	y = rmag;
-	xt =  x*cosa + y*sina + x2;
-	yt = -x*sina + y*cosa + y2;
-	*c1x = xt;
-	*c1y = yt;
-	y = -rmag;
-	xt =  x*cosa + y*sina + x2;
-	yt = -x*sina + y*cosa + y2;
-	*c2x = xt;
-	*c2y = yt;
-    } else {
-	/* 3 points in the arrowhead that define the line clip part */
-	*nboundpts = 3;
-	np = arrow_shapes[indx].numpts;
-	for (i=0; i<np; i++) {
-	    x = arrow_shapes[indx].points[i].x * ht;
-	    y = arrow_shapes[indx].points[i].y * wd;
-	    miny = min2(y, miny);
-	    maxy = max2(y, maxy);
-	    xt =  x*cosa + y*sina + xa;
-	    yt = -x*sina + y*cosa + ya;
-	    points[*npoints].x = xt;
-	    points[*npoints].y = yt;
-	    (*npoints)++;
-	}
-	x = arrow_shapes[indx].points[arrow_shapes[indx].tipno].x * ht + THICK_SCALE;
-	y = maxy;
-	xt =  x*cosa + y*sina + x2;
-	yt = -x*sina + y*cosa + y2;
-	*c1x = xt;
-	*c1y = yt;
-	y = miny;
-	xt =  x*cosa + y*sina + x2;
-	yt = -x*sina + y*cosa + y2;
-	*c2x = xt;
-	*c2y = yt;
-    }
-}
-
-/********************* COMPUTE ANGLE ************************
-
-Input arguments :
-	(dx,dy) : the vector (0,0)(dx,dy)
-Output arguments : none
-Return value : the angle of the vector in the range [0, 2PI)
-
-*************************************************************/
-
-double
-compute_angle(dx, dy)		/* compute the angle between 0 to 2PI  */
-    double	    dx, dy;
-{
-    double	    alpha;
-
-    if (dx == 0) {
-	if (dy > 0)
-	    alpha = M_PI_2;
-	else
-	    alpha = 3 * M_PI_2;
-    } else if (dy == 0) {
-	if (dx > 0)
-	    alpha = 0;
-	else
-	    alpha = M_PI;
-    } else {
-	alpha = atan(dy / dx);	/* range = -PI/2 to PI/2 */
-	if (dx < 0)
-	    alpha += M_PI;
-	else if (dy < 0)
-	    alpha += M_2PI;
-    }
-    return (alpha);
-}
-
 static
 arc_tangent(x1, y1, x2, y2, direction, x, y)
 double	x1, y1, x2, y2;
@@ -2082,52 +1817,6 @@ int	direction;
 	    *y = round(y2 + (x2 - x1));
 	    }
 	}
-
-/* Computes a point on a line which is a chord to the arc specified by */
-/* center (x1,y1) and endpoint (x2,y2), where the chord intersects the */
-/* arc arrow->ht from the endpoint.                                    */
-/* May give strange values if the arrow.ht is larger than about 1/4 of */
-/* the circumference of a circle on which the arc lies.                */
-
-compute_arcarrow_angle(x1, y1, x2, y2, direction, arrow, x, y)
-    double	 x1, y1;
-    double	 x2, y2;
-    int		*x, *y;
-    int		 direction;
-    F_arrow	*arrow;
-{
-    double	 r, alpha, beta, dy, dx;
-    double	 lpt,h;
-    double	 thick;
-
-    dy=y2-y1;
-    dx=x2-x1;
-    r=sqrt(dx*dx+dy*dy);
-    h = (double) arrow->ht;
-    thick <= THICK_SCALE ? 	/* lines are made a little thinner in set_linewidth */
-		0.5* arrow->thickness :
-		arrow->thickness - THICK_SCALE;
-    /* lpt is the amount the arrowhead extends beyond the end of the line */
-    lpt = thick/2.0/(arrow->wid/h/2.0);
-    /* add this to the length */
-    h += lpt;
-
-    /* radius too small for this method, use normal method */
-    if (h > 2.0*r) {
-	arc_tangent(x1,y1,x2,y2,direction,x,y);
-	return;
-    }
-
-    beta=atan2(dy,dx);
-    if (direction) {
-	alpha = 2*asin(h/2.0/r);
-    } else {
-	alpha = -2*asin(h/2.0/r);
-    }
-
-    *x=round(x1+r*cos(beta+alpha));
-    *y=round(y1+r*sin(beta+alpha));
-}
 
 /* uses eofill (even/odd rule fill) */
 /* ulx and uly define the upper-left corner of the object for pattern alignment */
@@ -2319,15 +2008,17 @@ convert_xpm_colors(cmap, coltabl, ncols)
 	for (i=0; i<ncols; i++) {
 	    name = (coltabl+i)->c_color;
 	    /* get the rgb values from the name */
-	    if (lookup_db_color(name, &rgb) < 0)
+	    if (lookup_X_color(name, &rgb) < 0)
 		fprintf(stderr,"Can't parse color '%s', using black.\n",name);
-	    cmap[0][i] = (unsigned char) rgb.red;
-	    cmap[1][i] = (unsigned char) rgb.green;
-	    cmap[2][i] = (unsigned char) rgb.blue;
+	    cmap[0][i] = (unsigned char) (rgb.red>>8);
+	    cmap[1][i] = (unsigned char) (rgb.green>>8);
+	    cmap[2][i] = (unsigned char) (rgb.blue>>8);
 	}
 }
 
 #endif /* USE_XPM */
+
+/* driver defs */
 
 struct
 driver dev_ps = {

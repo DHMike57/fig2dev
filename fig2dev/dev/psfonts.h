@@ -35,4 +35,4 @@ extern int v2_flag, v21_flag, v30_flag;
 
 #define PSFONTMAG(T)  (((T->size) <= ULIMIT_FONT_SIZE ? \
 				     T->size :  ULIMIT_FONT_SIZE) \
-				       * resolution/80)
+				       * ppi/80)

@@ -30,8 +30,6 @@
 #define		SCALE(v)	(round((v)*scale))
 #define		min(a, b)	(((a) < (b)) ? (a) : (b))
 
-static int	coord_system;
-static int	resolution;
 static float	scale;
 
 static		set_color();
@@ -101,10 +99,8 @@ F_compound	*objects;
 	int		itmp;
 	int		clipx, clipy;
 
-	resolution = objects->nwcorner.x;
-	coord_system = objects->nwcorner.y;
 	/* convert dpi to 0.1mm per point */
-	scale = 254.0 / resolution;
+	scale = 254.0 / ppi;
 
 	/* print any whole-figure comments prefixed with "#" */
 	print_comments("# ",objects->comments, "");

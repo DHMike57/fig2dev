@@ -29,10 +29,10 @@
 #include "object.h"
 #include "drivers.h"
 
-extern int fig_getopt();
-extern char *optarg;
-extern int optind;
-char	lang[40];
+extern	int	 fig_getopt();
+extern	char	*optarg;
+extern	int	 optind;
+char		 lang[40];
 
 /* hex names for Fig colors */
 char	*Fig_color_names[] = {
@@ -63,6 +63,8 @@ char		*name = NULL;
 int		font_size = 0;
 double		mag = 1.0;
 FILE		*tfp = NULL;
+
+int		ppi;			/* Fig file resolution (e.g. 1200) */
 int		llx = 0, lly = 0, urx = 0, ury = 0;
 Boolean		landscape;
 Boolean		center;
@@ -82,6 +84,7 @@ float		THICK_SCALE;		/* convert line thickness from screen res. */
 char		lang[40];		/* selected output language */
 RGB		background;		/* background (if specified by -g) */
 Boolean		bgspec = False;		/* flag to say -g was specified */
+char		gscom[1000];		/* to build up a command for ghostscript */
 
 struct obj_rec {
 	void (*gendev)();
@@ -137,16 +140,16 @@ get_args(argc, argv)
 int	 argc;
 char	*argv[];
 {
-  	int	c, i;
-	double	atof();
+  	int	 c, i;
+	double	 atof();
 
 	prog = *argv;
 /* add :? */
 	/* sum of all arguments */
 #ifdef I18N
-	while ((c = fig_getopt(argc, argv, "aAb:cC:d:efg:hl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:j?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "aAb:cC:d:ef:g:hl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:j?")) != EOF) {
 #else
-	while ((c = fig_getopt(argc, argv, "aAb:cC:d:efg:hl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
+	while ((c = fig_getopt(argc, argv, "aAb:cC:d:ef:g:hl:L:Mm:n:q:Pp:rs:S:t:vVx:X:y:Y:wWz:?")) != EOF) {
 #endif
 
 	  /* generic option handling */
@@ -154,12 +157,12 @@ char	*argv[];
 
 		case 'h':	/* print version message for -h too */
 		case 'V': 
-			printf("fig2dev Version %s Patchlevel %s\n",
+		    printf("fig2dev Version %s Patchlevel %s\n",
 							VERSION, PATCHLEVEL);
-			if (c == 'h')
-			    help_msg();
-			exit(0);
-			break;
+		    if (c == 'h')
+			help_msg();
+		    exit(0);
+		    break;
 
 		case 'L':			/* set output language */
 		    /* save language for gen{gif,jpg,pcx,xbm,xpm,ppm,tif} */
@@ -215,9 +218,9 @@ char	*argv[];
       	}
 
 	if (optind < argc)
-		from = argv[optind++];  /*  from file  */
+		from = argv[optind++];	/*  from file  */
 	if (optind < argc)
-		to   = argv[optind];  /*  to file    */
+		to   = argv[optind];	/*  to file    */
 }
 
 main(argc, argv)
@@ -227,9 +230,9 @@ char	*argv[];
 	F_compound	objects;
 	int		status;
 
-	/* initialize the color database */
-	if (init_colordb() != 0)
-		exit(1);
+#ifdef HAVE_SETMODE
+	setmode(1,O_BINARY); /* stdout is binary */
+#endif
 
 	get_args(argc, argv);
 
@@ -246,7 +249,7 @@ char	*argv[];
 
 	if (to == NULL)
 	    tfp = stdout;
-	else if ((tfp = fopen(to, "w")) == NULL) {
+	else if ((tfp = fopen(to, "wb")) == NULL) {
 	    fprintf(stderr, "Couldn't open %s", to);
 	    fprintf(stderr, Usage, prog);
 	    exit(1);
@@ -384,10 +387,10 @@ help_msg()
 
 /* count primitive objects & create pointer array */
 static int compound_dump(com, array, count, dev)
-F_compound *com;
-struct obj_rec *array;
-int count;
-struct driver *dev;
+    F_compound		*com;
+    struct obj_rec	*array;
+    int			 count;
+    struct driver	*dev;
 {
   	F_arc		*a;
 	F_compound	*c;
@@ -443,21 +446,12 @@ struct driver *dev;
 
 int
 gendev_objects(objects, dev)
-F_compound	*objects;
-struct driver *dev;
+    F_compound		*objects;
+    struct driver	*dev;
 {
 	int	obj_count, rec_comp();
 	int	status;
 	struct	obj_rec *rec_array, *r; 
-
-	if (objects->nwcorner.x == 0) {
-	    fprintf(stderr, "Resolution is zero!! default to 80 ppi\n");
-	    objects->nwcorner.x = 80;
-	}
-	if (objects->nwcorner.y != 1 && objects->nwcorner.y != 2) {
-	    fprintf(stderr, "Wrong coordinate system; cannot continue\n");
-	    return;
-	}
 
 	/* Compute bounding box of objects, supressing texts if indicated */
 	compound_bound(objects, &llx, &lly, &urx, &ury, dev->text_include);
@@ -490,10 +484,21 @@ struct driver *dev;
 }
 
 int rec_comp(r1, r2)
-struct obj_rec *r1, *r2;
+    struct obj_rec	*r1, *r2;
 {
 	return (r2->depth - r1->depth);
 }
 
 /* null operation */
-void gendev_null() {;}
+void gendev_null() {
+    ;
+}
+
+void
+gs_broken_pipe(int sig)
+{
+  fprintf(stderr,"fig2dev: broken pipe (GhostScript aborted?)\n");
+  fprintf(stderr,"command was: %s\n", gscom);
+  exit(1);
+}
+

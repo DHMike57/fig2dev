@@ -380,8 +380,7 @@ genmap_text(t)
   }
 }
 
-struct
-driver dev_map = {
+struct driver dev_map = {
         genmap_option,
         genmap_start,
         genmap_arc,

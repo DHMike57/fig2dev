@@ -50,12 +50,14 @@ read_ppm(file,filetype,pic,llx,lly)
 	}
 	/* close pipe */
 	pclose(giftopcx);
-	if ((giftopcx = fopen(pcxname, "r")) == NULL) {
+	if ((giftopcx = fopen(pcxname, "rb")) == NULL) {
 	    fprintf(stderr,"Can't open temp output file\n");
 	    return 0;
 	}
 	/* now call _read_pcx to read the pcx file */
 	stat = _read_pcx(giftopcx, pic);
+	/* close file */
+	fclose(giftopcx);
 	/* remove temp file */
 	unlink(pcxname);
 

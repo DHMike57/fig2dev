@@ -18,7 +18,7 @@
  *
  *	Author: Brian V. Smith
  *		Uses genps functions to generate PostScript output then
- *		calls ps2pdf (which uses ghostscript) to convert it to pdf.
+ *		calls ghostscript (device pdfwrite) to convert it to pdf.
  */
 
 #if defined(hpux) || defined(SYSV) || defined(SVR4)
@@ -30,18 +30,10 @@
 #include "object.h"
 #include "texfonts.h"
 
-extern void 
-	genps_arc(),
-	genps_ellipse(),
-	genps_line(),
-	genps_spline(),
-	genps_text();
-
-static char com[1000];
-Boolean	direct;
-FILE	*saveofile;
-char	*ofile;
-char	 tempfile[PATH_MAX];
+static	Boolean	 direct;
+static	FILE	*saveofile;
+static	char	*ofile;
+static	char	 tempfile[PATH_MAX];
 
 void
 genpdf_option(opt, optarg)
@@ -49,23 +41,28 @@ char opt;
 char *optarg;
 {
 	/* just use the ps options */
-	genps_option(opt, optarg);
+	pdfflag = 1;
+	epsflag = 0;
+	gen_ps_eps_option(opt, optarg);
 }
 
 void
 genpdf_start(objects)
 F_compound	*objects;
 {
-
-	/* change output from ps driver to a temp file because
-	   ps2pdf only works with files, not pipes */
+	/* divert output from ps driver to the pipe into ghostscript */
 	/* but first close the output file that main() opened */
 	saveofile = tfp;
 	if (tfp != stdout)
 	    fclose(tfp);
-	sprintf(tempfile, "fig2dev-%d", getpid());
-	if ((tfp = fopen(tempfile,"w" )) == 0) {
-	    fprintf(stderr,"Can't open temporary file %s\n",tempfile);
+
+	/* make up the command for gs */
+	ofile = (to == NULL? "-": to);
+	sprintf(gscom, "gs -q -dNOPAUSE -sDEVICE=pdfwrite -sOutputFile=%s - -c quit", ofile);
+	(void) signal(SIGPIPE, gs_broken_pipe);
+	if ((tfp = popen(gscom,"w" )) == 0) {
+	    fprintf(stderr,"fig2dev: Can't open pipe to ghostscript\n");
+	    fprintf(stderr,"command was: %s\n", gscom);
 	    exit(1);
 	}
 	genps_start(objects);
@@ -74,41 +71,26 @@ F_compound	*objects;
 int
 genpdf_end()
 {
-	char	com[500],tempofile[PATH_MAX];
-	int	status = 0;
-
-	sprintf(tempfile, "fig2dev-%d", getpid());
+	char	 com[PATH_MAX*2],tempofile[PATH_MAX];
+	FILE	*tmpfile;
+	int	 status = 0;
+	int	 num;
 
 	/* wrap up the postscript output */
 	if (genps_end() != 0)
-	    return -1;
+	    return -1;		/* error, return now */
 
-	/* add a showpage so the pdf will have a page */
+	/* add a showpage so ghostscript will produce output */
 	fprintf(tfp, "showpage\n");
-	fclose(tfp);
 
-	/* if no output file specified, put in temp and cat it */
-	if (to==NULL) {
-	    sprintf(tempofile,"fig2dev-%d.pdf", getpid());
-	    to = tempofile;
+	if (pclose(tfp) != 0) {
+	    fprintf(stderr,"Error in ghostcript command\n");
+	    fprintf(stderr,"command was: %s\n", gscom);
+	    return -1;
 	}
-	/* make up the command for ps2pdf */
-	sprintf(com, "ps2pdf %s %s", tempfile, to);
-	/* run it */
-	if (system(com) != 0)
-	    status = -1;
+	(void) signal(SIGPIPE, SIG_DFL);
 
-	/* finally, remove the temporary file */
-	unlink(tempfile);
-	/* cat the temp output file if any */
-	if (to == tempofile) {
-	    sprintf(com,"cat %s",tempofile);
-	    system(com);
-	    /* and remove it */
-	    unlink(tempofile);
-	}
-	/* we've already closed the original output file */
-	tfp = 0;
+	/* all ok so far */
 
 	return status;
 }

@@ -35,30 +35,14 @@
 #include "object.h"
 #include "texfonts.h"
 
-extern void 
-	genps_arc(),
-	genps_ellipse(),
-	genps_line(),
-	genps_spline(),
-	genps_text();
-
-static char gscom[1000],*gsdev,tmpname[PATH_MAX];
-Boolean	direct;
-FILE	*saveofile;
-char	*ofile;
-int	width,height;
-int	jpeg_quality=75;
-static	int	border_margin = 0;
-static	int	smooth = 1;
-static	int	debug = 0;
-
-void
-gs_broken_pipe(int sig)
-{
-  fprintf(stderr,"fig2dev: broken pipe (GhostScript aborted?)\n");
-  fprintf(stderr,"command was: %s\n", gscom);
-  exit(1);
-}
+static	char	 *gsdev,tmpname[PATH_MAX];
+static	Boolean	 direct;
+static	FILE	*saveofile;
+static	char	*ofile;
+static	int	 width,height;
+static	int	 jpeg_quality=75;
+static	int	 border_margin = 0;
+static	int	 smooth = 0;
 
 void
 genbitmaps_option(opt, optarg)
@@ -72,7 +56,7 @@ char *optarg;
 	    break;
 
 	case 'g':			/* background color (handled in postscript gen) */
-	    if (lookup_db_color(optarg,&background) >= 0) {
+	    if (lookup_X_color(optarg,&background) >= 0) {
 		bgspec = True;
 	    } else {
 		fprintf(stderr,"Can't parse color '%s', ignoring background option\n",
@@ -95,8 +79,10 @@ char *optarg;
 
 	case 'S':			/* smoothing factor */
 	    sscanf(optarg,"%d",&smooth);
-	    if (smooth < 1) {
-		fprintf(stderr,"fig2dev: bad value for -S option: %s\n", optarg);
+	    if (smooth != 0 && smooth != 1 && smooth != 2 && smooth != 4) {
+		fprintf(stderr,
+			"fig2dev: bad value for -S option: %s, should be 0, 2 or 4\n",
+			optarg);
 		exit(1);
 	    }
 	    break;
@@ -128,45 +114,50 @@ F_compound	*objects;
     ury += bd;
 
     /* make command for ghostscript */
-    width=round(mag*smooth*(urx-llx)/THICK_SCALE);
-    height=round(mag*smooth*(ury-lly)/THICK_SCALE);
+
+    width=round(mag*(urx-llx)/THICK_SCALE);
+    height=round(mag*(ury-lly)/THICK_SCALE);
 
     /* Add conditionals here if gs has a driver built-in */
     /* gs has a driver for png, ppm, pcx, jpeg and tiff */
 
     direct = True;
-    ofile = to;
+    ofile = (to == NULL? "-": to);
     extra_options[0]='\0';
 
     gsdev = NULL;
     /* if we're smoothing, we'll generate magnified ppm then convert it later */
-    if (smooth == 1) {
-	if (strcmp(lang,"png")==0) {
-	    gsdev="png16m";
-	} else if (strcmp(lang,"pcx")==0) {
+	if (strcmp(lang,"pcx")==0) {
 	    gsdev="pcx256";
 	} else if (strcmp(lang,"ppm")==0) {
 	    gsdev="ppmraw";
+	} else if (strcmp(lang,"png")==0) {
+	    gsdev="png16m";
 	} else if (strcmp(lang,"tiff")==0) {
 	    /* use the 24-bit - unfortunately, it doesn't use compression */
 	    gsdev="tiff24nc";
 	} else if (strcmp(lang,"jpeg")==0) {
 	    gsdev="jpeg";
 	    /* set quality for JPEG */
-	    sprintf(extra_options,"-dJPEGQ=%d",jpeg_quality);
+	    sprintf(extra_options," -dJPEGQ=%d",jpeg_quality);
 	}
+    if (smooth > 1) {
+      sprintf(extra_options+strlen(extra_options),
+	      " -dTextAlphaBits=%d -dGraphicsAlphaBits=%d",smooth,smooth);
     }
     /* no driver in gs or we're smoothing, use ppm output then use ppmtoxxx later */
     if (gsdev == NULL) {
 	gsdev="ppmraw";
-	/* make a unique name for the temporary ppm file */
-	sprintf(tmpname,"%s/f2d%d.ppm",TMPDIR,getpid());
-	ofile = tmpname;
-	direct = False;
+	if (smooth > 1 || strcmp(lang,"ppm")) {
+	    /* make a unique name for the temporary ppm file */
+	    sprintf(tmpname,"%s/f2d%d.ppm",TMPDIR,getpid());
+	    ofile = tmpname;
+	    direct = False;
+	}
     }
     /* make up the command for gs */
-    sprintf(gscom, "gs -q -dSAFER -sDEVICE=%s -r%d -g%dx%d -sOutputFile=%s %s -",
-		   gsdev, 80 * smooth, width, height, ofile, extra_options);
+    sprintf(gscom, "gs -q -dSAFER -sDEVICE=%s -r%d -g%dx%d -sOutputFile=%s%s -",
+		   gsdev, 80, width, height, ofile, extra_options);
     /* divert output from ps driver to the pipe into ghostscript */
     /* but first close the output file that main() opened */
     saveofile = tfp;
@@ -213,12 +204,7 @@ genbitmaps_end()
 	/* and pipe through the ppm converter for that format */
 	if (!direct) {
 	    tmpname1 = tmpname;
-	    if (smooth == 1) {
-		strcpy(com, "(");
-	    } else {
-		sprintf(com, "(pnmscale %f %s | ", 1.0 / smooth, tmpname);
-		tmpname1 = "";
-	    }
+	    strcpy(com, "(");
 	    if (strcmp(lang, "gif")==0) {
 		if (gif_transparent[0]) {
 		    /* escape the first char of the transparent color (#) for the shell */
@@ -228,7 +214,8 @@ genbitmaps_end()
 		    sprintf(com1,"ppmquant 256 %s | ppmtogif",tmpname1);
 		}
 	    } else if (strcmp(lang, "jpeg")==0) {
-		sprintf(com1, "cjpeg -quality %d %s", jpeg_quality, tmpname1);
+		/*sprintf(com1, "cjpeg -quality %d %s", jpeg_quality, tmpname1);*/
+		sprintf(com1, "ppmtojpeg --quality=%d %s", jpeg_quality, tmpname1);
 	    } else if (strcmp(lang, "xbm")==0) {
 		sprintf(com1,"ppmtopgm %s | pgmtopbm | pbmtoxbm",tmpname1);
 	    } else if (strcmp(lang, "xpm")==0) {
@@ -237,10 +224,10 @@ genbitmaps_end()
 		sprintf(com1,"ppmtoacad %s",tmpname1);
 	    } else if (strcmp(lang, "pcx")==0) {
 		sprintf(com1, "ppmtopcx %s", tmpname1);
+	    } else if (strcmp(lang, "ppm")==0) {
+		com1[0] = '\0';				/* nothing to do for ppm */
 	    } else if (strcmp(lang, "png")==0) {
 		sprintf(com1, "pnmtopng %s", tmpname1);
-	    } else if (strcmp(lang, "ppm")==0) {
-		sprintf(com1, "cat %s", tmpname1);
 	    } else if (strcmp(lang, "tiff")==0) {
 		sprintf(com1, "pnmtotiff %s", tmpname1);
 	    } else {
@@ -261,8 +248,6 @@ genbitmaps_end()
 	    /* make a unique name for an error file */
 	    sprintf(errfname,"%s/f2d%d.err",TMPDIR,getpid());
 
-	    if (debug)
-		fprintf(stderr,"Calling: %s\n",com);
 	    /* send all messages to error file */
 	    strcat(com," 2> ");
 	    strcat(com,errfname);
@@ -282,7 +267,7 @@ genbitmaps_end()
 		fprintf(stderr,"Command used:\n  %s\n",com);
 		fprintf(stderr,"Messages resulting:\n");
 		if (errfile == 0)
-		    fprintf(stderr,"can't opern error file %s\n",errfname);
+		    fprintf(stderr,"can't open error file %s\n",errfname);
 		else {
 		    while (!feof(errfile)) {
 			if (fgets(com, sizeof(com)-1, errfile) == NULL)

@@ -85,8 +85,6 @@
 #define TPIC_ARC_BOX
 
 #define			TOP	10.5	/* top of page is 10.5 inch */
-static double		ppi;
-static int		CONV = 0;
 static int		line_width = 8;	/* milli-inches */
 static int		vfont = 0; /* true if using a virtual TeX font */
 
@@ -129,20 +127,15 @@ char opt, *optarg;
 static double convy(a)
 double	a;
 {
-	return((double)(CONV ? TOP-a : a));
+	return((double) TOP-a);
 }
 
 void gentpic_start(objects)
 F_compound	*objects;
 {
-	int		coord_system;
-
-	ppi = objects->nwcorner.x/mag;
-	coord_system = objects->nwcorner.y;
-	if (coord_system == 2) CONV = 1;
+	ppi = ppi/mag;
 
 	fprintf(tfp, ".PS\n");	/* PIC preamble */
-
 }
 
 int

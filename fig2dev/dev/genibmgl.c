@@ -211,12 +211,10 @@ char opt, *optarg;
 	}
 }
 
-static double		ppi;			/*     pixels/inch	*/
 static double		cpi;			/*       cent/inch	*/
 static double		cpp;			/*       cent/pixel	*/
 static double		wcmpp	 = CMPP;	/* centimeter/point	*/
 static double		hcmpp	 = CMPP;	/* centimeter/point	*/
-static int		flipped	 = False;	/* flip Y coordinate	*/
 
 void genibmgl_start(objects)
 F_compound	*objects;
@@ -272,8 +270,6 @@ F_compound	*objects;
 	ppi	 = objects->nwcorner.x;
 	cpi	 = mag*100.0/sqrt((xu-xl)*(xu-xl) + (yu-yl)*(yu-yl));
 	cpp	 = cpi/ppi;
-	if (objects->nwcorner.y == 2)
-	    flipped	 = True;
 
 	/* IBMGL start */
 	fprintf(tfp, "IN;\n");			/* initialize plotter	*/
@@ -290,16 +286,14 @@ F_compound	*objects;
 	    P2x		 = Xur;
 	    if (reflected)			/* upside-down text	*/
 		hcmpp	 = -hcmpp;
-	    if (reflected^flipped) {		/* reflected or flipped */
-		P1y	 = Yur;			/* but not both		*/
-		P2y	 = Yll;
-		}
-	    else {				/* normal		*/
+	    if (reflected) {			/* reflected */
 		P1y	 = Yll;
 		P2y	 = Yur;
-		}
+	    } else {
+		P1y	 = Yur;
+		P2y	 = Yll;
 	    }
-	else {					/* landscape mode	*/
+	} else {					/* landscape mode	*/
 	    Xll	 = xl*UNITS_PER_INCH;
 	    Yll	 = yl*UNITS_PER_INCH;
 	    Yur	 = yu*UNITS_PER_INCH;
@@ -310,20 +304,13 @@ F_compound	*objects;
 		wcmpp	 = -wcmpp;		/* backward text	*/
 		P1x	 = Xur;
 		P2x	 = Xll;
-		}
-	    else {				/* normal		*/
+	    } else {				/* normal		*/
 		P1x	 = Xll;
 		P2x	 = Xur;
-		}
-	    if (flipped) {			/* reflected or not	*/
-		P1y	 = Yur;
-		P2y	 = Yll;
-		}
-	    else {
-		P1y 	 = Yll;
-		P2y 	 = Yur;
-		}
 	    }
+	    P1y	 = Yur;
+	    P2y	 = Yll;
+	}
 
 	Xmin	 = xz;
 	Ymin	 = yz;
@@ -558,17 +545,16 @@ F_arc	*a;
 	    dy2		 = ey - cy;
 	    
 	    theta	 = atan2(dy2, dx2) - atan2(dy1, dx1);
-	    if (a->direction^flipped) {
-		if (theta < 0.0)
-		    theta	+= 2.0*M_PI;
-		}
-	    else {
+	    if (a->direction) {
 		if (theta > 0.0)
 		    theta	-= 2.0*M_PI;
-		}
+	    } else {
+		if (theta < 0.0)
+		    theta	+= 2.0*M_PI;
+	    }
 
 	    if (a->type == T_OPEN_ARC && a->thickness != 0 && a->back_arrow) {
-		arc_tangent(cx, cy, sx, sy, a->direction^flipped, &x, &y);
+		arc_tangent(cx, cy, sx, sy, !a->direction, &x, &y);
 		draw_arrow_head(x, y, sx, sy,
 		a->back_arrow->ht/ppi, a->back_arrow->wid/ppi);
 		}
@@ -581,7 +567,7 @@ F_arc	*a;
 		fprintf(tfp, "EP;\n");
 
 	    if (a->type == T_OPEN_ARC && a->thickness != 0 && a->for_arrow) {
-		arc_tangent(cx, cy, ex, ey, !a->direction^flipped, &x, &y);
+		arc_tangent(cx, cy, ex, ey, a->direction, &x, &y);
 		draw_arrow_head(x, y, ex, ey,
 			a->for_arrow->ht/ppi, a->for_arrow->wid/ppi);
 		}
@@ -612,8 +598,8 @@ F_ellipse	*e;
 	    b		 = e->radiuses.y/ppi;
 	    x0		 = e->center.x/ppi;
 	    y0		 = e->center.y/ppi;
-	    angle	 = (flipped ? -e->angle: e->angle);
-	    delta	 = (flipped ? -DELTA: DELTA);
+	    angle	 = -e->angle;
+	    delta	 = -DELTA;
 
 	    x		 = x0 + cos(angle)*a;
 	    y		 = y0 + sin(angle)*a;
@@ -714,18 +700,10 @@ F_line	*l;
 		    x0	 = llx/ppi;
 		    x1	 = urx/ppi;
 		    dx	 = l->radius/ppi;
-		    if (flipped) {
-			y0	 = ury/ppi;
-			y1	 = lly/ppi;
-			dy	 = -dx;
-			angle	 = -M_PI/2.0;
-			}
-		    else {
-			y0	 = lly/ppi;
-			y1	 = ury/ppi;
-			dy	 =  dx;
-			angle	 =  M_PI/2.0;
-			}
+		    y0	 = ury/ppi;
+		    y1	 = lly/ppi;
+		    dy	 = -dx;
+		    angle = -M_PI/2.0;
 
 		    fprintf(tfp, "PA%.4f,%.4f;PM;PD;\n",  x0, y0 + dy);
 		    arc(x0, y0 + dy, x0 + dx, y0 + dy, angle, DELTA);

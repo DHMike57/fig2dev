@@ -276,7 +276,7 @@ FILE	*fp;
 	if (feof(fp))
 	    return(com);
 	else {
-	    put_msg("Format error: %s", sys_errlist[errno]);
+	    put_msg("Format error: %s", strerror(errno));
 	    return(NULL);
 	    }
 	}

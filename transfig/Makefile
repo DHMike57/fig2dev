@@ -342,7 +342,7 @@ clean::
 all:: transfig.man fig2dev.man fig2ps2tex.man pic2tpic.man
 
 transfig.man:: ../doc/transfig.1
-	rm -f transfig.man
+	$(RM) transfig.man
 	-ln -s ../doc/transfig.1 transfig.man
 
 install.man:: fig2ps2tex.man
@@ -356,12 +356,15 @@ install.man:: pic2tpic.man
 	$(INSTALL) -c $(INSTMANFLAGS) pic2tpic.man $(DESTDIR)$(MANDIR)/pic2tpic.$(MANSUFFIX)
 
 fig2dev.man:: ../doc/fig2dev.1
+	$(RM) fig2dev.man
 	-ln -s ../doc/fig2dev.1 fig2dev.man
 
 fig2ps2tex.man:: ../doc/fig2ps2tex.1
+	$(RM) fig2ps2tex.man
 	-ln -s ../doc/fig2ps2tex.1 fig2ps2tex.man
 
 pic2tpic.man:: ../doc/pic2tpic.1
+	$(RM) pic2tpic.man
 	-ln -s ../doc/pic2tpic.1 pic2tpic.man
 
 clean::

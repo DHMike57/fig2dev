@@ -30,7 +30,7 @@ read_tif(filename,filetype,pic,llx,lly)
     int		   *llx, *lly;
 {
 	char	 buf[2*PATH_MAX+40],pcxname[PATH_MAX];
-	FILE	*giftopcx;
+	FILE	*tiftopcx;
 	int	 stat, size;
 
 	*llx = *lly = 0;
@@ -42,23 +42,25 @@ read_tif(filename,filetype,pic,llx,lly)
 	/* make command to convert tif to pnm then to pcx into temp file */
 	sprintf(buf, "tifftopnm %s 2> /dev/null | ppmtopcx > %s 2> /dev/null",
 		filename, pcxname);
-	if ((giftopcx = popen(buf,"w" )) == 0) {
+	if ((tiftopcx = popen(buf,"w" )) == 0) {
 	    fprintf(stderr,"Cannot open pipe to tifftopnm or ppmtopcx\n");
 	    /* remove temp file */
 	    unlink(pcxname);
 	    return 0;
 	}
 	/* close pipe */
-	pclose(giftopcx);
-	if ((giftopcx = fopen(pcxname, "r")) == NULL) {
+	pclose(tiftopcx);
+	if ((tiftopcx = fopen(pcxname, "rb")) == NULL) {
 	    fprintf(stderr,"Can't open temp output file\n");
 	    /* remove temp file */
 	    unlink(pcxname);
 	    return 0;
 	}
 	/* now call _read_pcx to read the pcx file */
-	stat = _read_pcx(giftopcx, pic);
-	/* remove temp file */
+	stat = _read_pcx(tiftopcx, pic);
+	/* close the temp file */
+	fclose(tiftopcx);
+	/* and remove it */
 	unlink(pcxname);
 
 	return stat;

@@ -86,7 +86,7 @@ F_text	**list;
 	for (t = *list; t != NULL;) {
 	    text = t;
 	    t = t->next;
-	    cfree(text->cstring);
+	    free(text->cstring);
 	    free((char*)text);
 	    } 
 	*list = NULL;

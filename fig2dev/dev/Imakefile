@@ -22,11 +22,6 @@ XCOMM limitation a license to do the foregoing actions under any patents of
 XCOMM the party supplying this software to the X Consortium.
 
 INCLUDES = -I.. -I../..
-#ifdef JPEGINCDIR
-JPEGINC = -I$(JPEGINCDIR)
-#endif
-
-EXTRA_INCLUDES = $(JPEGINC)
 
 #ifdef USE_XPM
 READXPMS=readxpm.c

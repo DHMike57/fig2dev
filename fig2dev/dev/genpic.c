@@ -44,8 +44,6 @@ void genpic_ctl_spline(), genpic_itp_spline();
 void genpic_open_spline(), genpic_closed_spline();
 
 #define			TOP	10.5	/* top of page is 10.5 inch */
-static double		ppi;
-static int		CONV = 0;
 static int LineThickness = 0;
 static int OptArcBox = 0;		/* Conditional use */
 static int OptLineThick = 0;
@@ -113,18 +111,14 @@ static
 double convy(a)
 double	a;
 {
-	return((double)(CONV ? TOP-a : a));
+	return((double) TOP-a);
 }
 
 void
 genpic_start(objects)
 F_compound	*objects;
 {
-	int		coord_system;
-
-	ppi = objects->nwcorner.x/mag;
-	coord_system = objects->nwcorner.y;
-	if (coord_system == 2) CONV = 1;
+	ppi = ppi/mag;
 
 	/* print any whole-figure comments prefixed with '.\" ' */
 	if (objects->comments) {

@@ -541,7 +541,7 @@ create_line_with_spline(s)
   line->fill_color = s->fill_color;
   line->fill_style = s->fill_style;
   line->style_val  = s->style_val;
-  line->join_style = 0;
+  line->join_style = 2;			/* prevents spikes in tight splines */
   line->cap_style  = s->cap_style;
   line->for_arrow  = s->for_arrow;
   line->back_arrow = s->back_arrow;

@@ -31,7 +31,7 @@
 #endif
 
 #define X(x) ((double)(x)/ppi)
-#define Y(y) (CONV ? (TOP - ((double)(y)/ppi)) : ((double)(y)/ppi))
+#define Y(y) ((double)(y)/ppi)
 
 #define NONE (0xffffff + 1)
 
@@ -56,8 +56,6 @@ static char *xbmPathVar = "$xbmPath";
 static char *xbmPathName = BITMAPDIR;
 
 #define		TOP	8.5 /* inches */
-static double   ppi;
-static int      CONV = 0;
 static int	full_page = False;
 
 /*
@@ -111,15 +109,11 @@ void
 gentk_start(F_compound *objects)
 {
 	char		stfp[128];
-	int		coord_system;
 	float		wid, ht, swap;
 	struct paperdef	*pd;
 
 	/* adjust ppi for the difference of screen dots to points */
-	ppi = objects->nwcorner.x / mag * 80.0/72.0;
-	coord_system = objects->nwcorner.y;
-	if (coord_system == 1)
-		CONV = 1;
+	ppi = ppi / mag * 80.0/72.0;
 
 	/* print any whole-figure comments prefixed with "#" */
 	if (objects->comments) {
@@ -272,15 +266,13 @@ gentk_ellipse(F_ellipse *e)
 	case T_ELLIPSE_BY_DIA:
 	case T_ELLIPSE_BY_RAD:
 		if (e->style > 0)
-			fprintf(stderr, "gentk_ellipse: only solid lines "
-				"supported.\n");
+		    fprintf(stderr, "gentk_ellipse: only solid lines supported.\n");
 		drawShape(tkEllipse, (void *) e, e->thickness,
 			e->pen_color, e->fill_color, e->fill_style);
 		break;
 	default:
 		/* Stole this line from Netscape 3.03... */
-		fprintf(stderr, "gentk_ellipse: Whatchew talkin' 'bout, "
-			"Willis?\n");
+		fprintf(stderr, "gentk_ellipse: Whatchew talkin' 'bout, Willis?\n");
 		return;
 		break;
     }
@@ -313,8 +305,7 @@ gentk_line(F_line *l)
 		break;
 	case T_POLYGON:
 		if (l->style > 0) {
-			fprintf(stderr, "gentk_line: only solid line "
-				"styles supported.\n");
+		    fprintf(stderr, "gentk_line: only solid line styles supported.\n");
 		}
 		drawShape(tkPolygon, (void *) l->points, l->thickness,
 			l->pen_color, l->fill_color, l->fill_style);
@@ -336,6 +327,7 @@ drawBitmap(F_line *l)
 {
 	char	stfp[128];
 	double	dx, dy;
+	int	x, y;
 	F_pic	*p;
 	unsigned char	buf[16];
 	FILE	*fd;
@@ -350,8 +342,7 @@ drawBitmap(F_line *l)
 	dx = l->points->next->next->x - l->points->x;
 	dy = l->points->next->next->y - l->points->y;
 	if (!(dx >= 0. && dy >= 0.))
-		fprintf(stderr, "drawBitmap: rotated bitmaps not supprted"
-			" by Tk.\n");
+	    fprintf(stderr, "drawBitmap: rotated bitmaps not supported by Tk.\n");
 
 	/* see if GIF first */
 
@@ -363,55 +354,55 @@ drawBitmap(F_line *l)
 	/* read header */
 
 	stat = ReadOK(fd,buf,6);
-	close_picfile(fd,filtype);
 	if (!stat) {
 		fprintf(stderr,"drawBitmap: Bitmap file %s too short\n",p->file);
+		close_picfile(fd,filtype);
 		return;
 	}
 
 	if (strncmp((char *) buf,"GIF",3) == 0) {
-		/* GIF allright, create the image command */
-		/* first make a name without the .gif part */
-		char pname[PATH_MAX], *dot;
-		strcpy(pname,p->file);
-		if (dot=strchr(pname,'.'))
-			*dot='\0';
-		/* image create */
-		sprintf(stfp, "image create photo %s -file %s\n",pname, p->file);
-		niceLine(stfp);
-		niceLine("\n");
-		/* now the canvas image */
-		sprintf(stfp, "%s create image %fi %fi -anchor nw -image %s",
+	    /* GIF allright, create the image command */
+	    /* first make a name without the .gif part */
+	    char pname[PATH_MAX], *dot;
+
+	    close_picfile(fd,filtype);
+	    strcpy(pname,p->file);
+	    if (dot=strchr(pname,'.'))
+		*dot='\0';
+	    /* image create */
+	    sprintf(stfp, "image create photo %s -file %s\n",pname, p->file);
+	    niceLine(stfp);
+	    niceLine("\n");
+	    /* now the canvas image */
+	    sprintf(stfp, "%s create image %fi %fi -anchor nw -image %s",
 			canvas, X(l->points->x), Y(l->points->y), pname);
-		niceLine(stfp);
-		niceLine("\n");
+	    niceLine(stfp);
+	    niceLine("\n");
 	} else {
 	    /* Try for an X Bitmap file format. */
-	    if (fopen(p->file,"r") == (FILE*) NULL) {
-		    fprintf(stderr,"drawBitmap: can't open bitmap file %s\n",p->file);
-		} else {
-		    if (ReadFromBitmapFile(p->file, &dx, &dy, &p->bitmap)) {
-			sprintf(stfp, "%s create bitmap %fi %fi -anchor nw",
-				canvas, X(l->points->x), Y(l->points->y));
+	    rewind(fd);
+	    if (ReadFromBitmapFile(fd, &x, &y, &p->bitmap)) {
+		sprintf(stfp, "%s create bitmap %fi %fi -anchor nw",
+			canvas, X(l->points->x), Y(l->points->y));
+		niceLine(stfp);
+		sprintf(stfp, " -bitmap @%s", p->file);
+		niceLine(stfp);
+		if (l->pen_color != BLACK_COLOR && l->pen_color != DEFAULT) {
+			sprintf(stfp, " -foreground #%6.6x",
+				rgbColorVal(l->pen_color));
 			niceLine(stfp);
-			sprintf(stfp, " -bitmap @%s", p->file);
-			niceLine(stfp);
-			if (l->pen_color != BLACK_COLOR && l->pen_color != DEFAULT) {
-				sprintf(stfp, " -foreground #%6.6x",
-					rgbColorVal(l->pen_color));
-				niceLine(stfp);
-			}
-			niceLine("\n");
-			if (l->fill_color != UNFILLED) {
-				sprintf(stfp, " -background #%6.6x",
-					rgbColorVal(l->fill_color));
-				niceLine(stfp);
-			}
-			niceLine("\n");
-		    } else
-			fprintf(stderr, "drawBitmap: only X bitmap picture objects "
-				"are supported in Tk canvases.\n");
 		}
+		niceLine("\n");
+		if (l->fill_color != UNFILLED) {
+			sprintf(stfp, " -background #%6.6x",
+				rgbColorVal(l->fill_color));
+			niceLine(stfp);
+		}
+		niceLine("\n");
+	    } else
+		fprintf(stderr, "drawBitmap: only X bitmap picture objects "
+			"are supported in Tk canvases.\n");
+	    close_picfile(fd,filtype);
 	}
 }
 
@@ -517,8 +508,7 @@ gentk_text(F_text * t)
 	print_comments("# ",t->comments, "");
 
 	if (t->angle != 0.)
-		fprintf(stderr, "gentk_text: rotated text not "
-			"supported by Tk.\n");
+	    fprintf(stderr, "gentk_text: rotated text not supported by Tk.\n");
 
 	sprintf(stfp, "%s create text %fi %fi", canvas, X(t->base_x),
 		Y(t->base_y));
@@ -887,8 +877,7 @@ gentk_ctlSpline(F_spline *s)
 				niceLine(stfp);
 				break;
 			default:
-				fprintf(stderr, "tkLine: unknown arrow "
-					"type.\n");
+				fprintf(stderr, "tkLine: unknown arrow type.\n");
 				break;
 			}
 
@@ -1024,13 +1013,12 @@ void
 tkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
 	unsigned int fillPattern, int thickness)
 {
-	char	dir[8], stfp[128];
+	char	stfp[128];
 	double	cx, cy,	/* Center of circle containing arc. */
 		sx, sy,	/* Start point of arc. */
 		ex, ey,	/* Stop point of arc. */
 		angle1, angle2, extent, radius, startAngle;
 	F_arc	*a;
-	F_arrow	*r;
 
 	a = (F_arc *) shape;
 	cx = X(a->center.x);		/* Center. */
@@ -1065,7 +1053,7 @@ tkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
 		cx-radius, cy-radius, cx+radius, cy+radius);
 	niceLine(stfp);
 	/* Start angle in degrees and its extent in degrees. */
-	sprintf(stfp, " -start %lf -extent %lf", startAngle, extent);
+	sprintf(stfp, " -start %f -extent %f", startAngle, extent);
 	niceLine(stfp);
 
 	if (outlineColor == NONE)
@@ -1119,7 +1107,7 @@ tkEllipse(void *shape, unsigned int outlineColor, unsigned int fillColor,
 	F_ellipse	*e;
 
 	e = (F_ellipse *) shape;
-	sprintf(stfp, "%s create oval %lfi %lfi %lfi %lfi",
+	sprintf(stfp, "%s create oval %fi %fi %fi %fi",
 		canvas,
 		X(e->center.x - e->radiuses.x),
 		Y(e->center.y - e->radiuses.y),
@@ -1172,16 +1160,16 @@ tkLine(void * shape, unsigned int penColor, unsigned int fillColor,
 
 	if (q == NULL) {
 		/* Degenerate line (single point). */
-		sprintf(stfp, "%s create line %lfi %lfi %lfi %lfi",
+		sprintf(stfp, "%s create line %fi %fi %fi %fi",
 			canvas, X(p->x), Y(p->y), X(p->x), Y(p->y));
 		niceLine(stfp);
 	} else {
 		sprintf(stfp, "%s create line", canvas);
 		niceLine(stfp);
-		sprintf(stfp, " %lfi %lfi", X(p->x), Y(p->y));
+		sprintf(stfp, " %fi %fi", X(p->x), Y(p->y));
 		niceLine(stfp);
 		for ( /* No op. */ ; q != NULL; q = q->next) {
-			sprintf(stfp, " %lfi %lfi", X(q->x), Y(q->y));
+			sprintf(stfp, " %fi %fi", X(q->x), Y(q->y));
 			niceLine(stfp);
 		}
 	}
@@ -1309,10 +1297,10 @@ tkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
 	q = p->next;
 	sprintf(stfp, "%s create polygon", canvas);
 	niceLine(stfp);
-	sprintf(stfp, " %lfi %lfi", X(p->x), Y(p->y));
+	sprintf(stfp, " %fi %fi", X(p->x), Y(p->y));
 	niceLine(stfp);
 	for ( /* No op. */ ; q != NULL; q = q->next) {
-		sprintf(stfp, " %lfi %lfi", X(q->x), Y(q->y));
+		sprintf(stfp, " %fi %fi", X(q->x), Y(q->y));
 		niceLine(stfp);
 	}
 

@@ -103,7 +103,7 @@ int	err;
 	    }
 	else
 	    put_msg("File \"%s\" is not accessable; %s", file, strerror(err));
-	}
+}
 
 /**********************************************************
 Read_fig returns :
@@ -113,8 +113,7 @@ Read_fig returns :
     -2 : File is empty
 err_no : if file can not be read for various reasons
 
-The resolution (ppi) and the cooridnate system (coord_sys) are
-stored in obj->nwcorner.x and obj->nwcorner.x respectively.
+The resolution (ppi) is stored in global "ppi"
 **********************************************************/
 
 read_fig(file_name, obj)
@@ -128,7 +127,7 @@ F_compound	*obj;
 	    return errno;
 	else
 	    return readfp_fig(fp, obj);
-	}
+}
 
 readfp_fig(fp, obj)
 FILE	*fp;
@@ -162,7 +161,7 @@ F_compound	*obj;
 	    status = read_1_3_objects(fp, obj);
 	(void)fclose(fp);
 	return status;
-	}
+}
 	
 int
 read_objects(fp, obj)
@@ -175,7 +174,7 @@ F_compound	*obj;
 	F_spline	*s, *ls = NULL;
 	F_arc		*a, *la = NULL;
 	F_compound	*c, *lc = NULL;
-	int		object, ppi, coord_sys, len;
+	int		object, coord_sys, len;
 
 	bzero((char*)obj, COMOBJ_SIZE);
 	(void) fgets(buf, BUF_SIZE, fp);	/* get the version line */
@@ -246,8 +245,7 @@ F_compound	*obj;
 		    return -1;
 		}
 		if (!paperspec) {
-		    /* copy all except newline */
-		    strncpy(papersize,buf,strlen(buf)-1);
+		    strcpy(papersize,buf);
 		    /* and truncate at first blank, if any */
 		    if (p=strchr(papersize,' '))
 			*p = '\0';
@@ -278,12 +276,10 @@ F_compound	*obj;
 		}
 		if (!transspec) {
 		    gif_colnum = atof(buf);
-		    if (gif_colnum < NUM_STD_COLS) {
+		    /* if standard color, get the name from the array */
+		    /* for user colors, wait till we've read in the file to get the value */
+		    if (gif_colnum < NUM_STD_COLS && gif_colnum >= 0)
 			strcpy(gif_transparent,Fig_color_names[gif_colnum]);
-		    } else {
-			/* set flag to get user color value once they've been read from file */
-			gif_colnum = -gif_colnum;
-		    }
 		}
 	    } 
 	} else {
@@ -301,7 +297,7 @@ F_compound	*obj;
 	    }
 	}
 
-	/* now read for resolution and coord_sys */
+	/* now read for resolution and coord_sys (coord_sys is not used) */
 	if (get_line(fp) < 0) {
 	    put_msg("File is truncated at resolution specification.");
 	    return -1;
@@ -316,8 +312,6 @@ F_compound	*obj;
 	/* attach any comments found thus far to the whole figure */
 	obj->comments = attach_comments();
 
-	obj->nwcorner.x = ppi;
-	obj->nwcorner.y = coord_sys;
 	while (get_line(fp) > 0) {
 	    if (sscanf(buf, "%d", &object) != 1) {
 		put_msg("Incorrect format at line %d", line_no);
@@ -422,10 +416,10 @@ F_compound	*obj;
 
 	/* if user color was requested for GIF transparent color, get the
 	   rgb values from the user color array now that we've read them in */
-	if (gif_colnum < 0) {
+	if (gif_colnum >= NUM_STD_COLS) {
 	    int i;
 	    for (i=0; i<num_usr_cols; i++)
-		if (user_col_indx[i] == -gif_colnum)
+		if (user_col_indx[i] == gif_colnum)
 		    break;
 	    if (i < num_usr_cols)
 		sprintf(gif_transparent,"#%2x%2x%2x", 
@@ -436,7 +430,8 @@ F_compound	*obj;
 	    return 0;
 	else
 	    return errno;
-	} /*  read_objects */
+
+} /*  read_objects */
 
 static void
 read_colordef(fp)
@@ -1091,7 +1086,7 @@ FILE	*fp;
 		&t->type, &t->color, &t->depth, &t->pen,
 		&t->font, &t->size, &t->angle,
 		&t->flags, &t->height, &t->length,
-		&t->base_x, &t->base_y, s, junk);
+		&t->base_x, &t->base_y, s);
 	} else {
 	    /* The text object is terminated by a CONTROL-A, so we read
 		everything up to the CONTROL-A and then read that character.

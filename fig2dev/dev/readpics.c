@@ -32,7 +32,7 @@ open_picfile(name, type, pipeok, retname)
     Boolean	 pipeok;
     char	*retname;
 {
-    char	 unc[PATH_MAX+20];	/* temp buffer for uncompress/gunzip command */
+    char	 unc[PATH_MAX+20];	/* temp buffer for gunzip command */
     FILE	*fstream;		/* handle on file  */
     struct stat	 status;
     char	*gzoption;
@@ -44,13 +44,8 @@ open_picfile(name, type, pipeok, retname)
     else
 	gzoption = "";
 
-    /* see if the filename ends with .Z */
-    /* if so, generate uncompress command and use pipe (filetype = 1) */
-    if (strlen(name) > 2 && !strcmp(".Z", name + (strlen(name)-2))) {
-	sprintf(unc,"uncompress %s %s", gzoption, name);
-	*type = 1;
-    /* or with .z or .gz */
-    } else if ((strlen(name) > 3 && !strcmp(".gz", name + (strlen(name)-3))) ||
+    /* see if the filename ends with .Z or .z or .gz */
+    if ((strlen(name) > 3 && !strcmp(".gz", name + (strlen(name)-3))) ||
 	      ((strlen(name) > 2 && !strcmp(".z", name + (strlen(name)-2))))) {
 	sprintf(unc,"gunzip -q %s %s", gzoption, name);
 	*type = 1;
@@ -59,7 +54,7 @@ open_picfile(name, type, pipeok, retname)
 	strcpy(retname, name);
 	strcat(retname, ".Z");
 	if (!stat(retname, &status)) {
-	    sprintf(unc, "uncompress %s %s", gzoption, retname);
+	    sprintf(unc, "gunzip %s %s", gzoption, retname);
 	    *type = 1;
 	    name = retname;
 	} else {
@@ -100,7 +95,7 @@ open_picfile(name, type, pipeok, retname)
     } else {
 	switch (*type) {
 	  case 0:
-	    fstream = fopen(name, "r");
+	    fstream = fopen(name, "rb");
 	    break;
 	  case 1:
 	    fstream = popen(unc,"r");

@@ -1,5 +1,3 @@
-Announcing the release of TransFig version 3.2.3 January 14, 2000
-
 TransFig is a set of tools for creating TeX documents with graphics
 which are portable, in the sense that they can be printed in a wide
 variety of environments.
@@ -47,85 +45,82 @@ To make TransFig:
 5. Do a "make install" to install them in the system
 6. Do a "make install.man" to put the manual pages in the proper directories
 
-Uncomment the USELATEX2E flag in the transfig/Imakefile file to use the
-\\usepackage{} command for LaTeX2e.
-The default is to use \\documentstyle{} for LaTeX209.
+o Uncomment the USELATEX2E flag in the transfig/Imakefile file to use the
+  \\usepackage{} command for LaTeX2e.
+  The default is to use \\documentstyle{} for LaTeX209.
 
-In fig2dev/Imakefile for the described features:
-Comment out the DDNFSS = ... line if you don't want NFSS2 font selection
-	for LaTeX texts.
-Comment out the DDLATEX2E_GRAPHICS = ... line if you don't want to use the
-	standard graphics package distributed w/ LaTeX2e.
-UNcomment the DDEPSFIG = ... line if you want to use the deprecated epsfig macros
-	distributed w/ LaTeX2e (DDLATEX2E_GRAPHICS must also be defined).
+o In fig2dev/Imakefile for the described features:
+
+  o Comment out the DDNFSS = ... line if you don't want NFSS2 font selection
+    for LaTeX texts.
+  o Comment out the DDLATEX2E_GRAPHICS = ... line if you don't want to use the
+    standard graphics package distributed w/ LaTeX2e.
+  o UNcomment the DDEPSFIG = ... line if you want to use the deprecated epsfig macros
+    distributed w/ LaTeX2e (DDLATEX2E_GRAPHICS must also be defined).
 
     Hint: Users of LaTeX2e will probably want to include both of these
     options; users of LaTeX 2.09 will probably want to include neither.
 
-If your system doesn't have strcasecmp() and/or strncasecmp(), uncomment the
-   lines in the Imakefile with HAVE_NO_STRCASECMP and HAVE_NO_STRNCASECMP.
+o If your system doesn't have strcasecmp() and/or strncasecmp(), uncomment the
+  lines in the Imakefile with HAVE_NO_STRCASECMP and HAVE_NO_STRNCASECMP.
 
-If your system doesn't have strstr(3) uncomment the "#define NOSTRSTR"
+o If your system doesn't have strstr(3) uncomment the "#define NOSTRSTR"
 
-----------------------------------------------------------------------------
+o Make sure that you point XFIGLIBDIR to the same directory that xfig uses
+  (usually /usr/local/lib/xfig).  This will be used to hold the bitmaps
+  directory for the tk fill patterns.
+
+o If you have NOT installed the JPEG library in your system library area,
+  comment out the USEINSTALLEDJPEG in fig2dev/Imakefile variable, change the
+  JPEGLIBDIR variable to the directory where your JPEG library resides and
+  change the JPEGINC to the directory where your JPEG header files (include)
+  reside.  You must have version 5b or newer of the JPEG library.
+
+  The JPEG library is available from several places.  The official archive site
+  is ftp.uu.net in /graphics/jpeg.
+  Another site is ftp.x.org in /contrib/libraries.
+
+o If you don't want to be able to import JPEG images in your Fig files at all
+  then comment out the "#define USEJPEG" line in the fig2dev/Imakefile.
+
+o If you want to be able to translate Fig files that have imported XPM files
+  (color pixmaps) uncomment the "#define USEXPM" line in fig2dev/Imakefile.
+  You need version 3.4c or newer of the XPM package.
+  This is available from ftp.x.org in /contrib/libraries.
+
+o If your system has the strerror() function (doesn't have sys_errlist) then
+  comment out NEED_STRERROR with an XCOMM comment.
+
+o If your system can open files in text and binary modes and has the setmode()
+  function, uncomment HAVE_SETMODE.  This probably only applies to Windows 9x/NT
+  systems.
+
+o Look in the Imakefiles to see if any options are relevant to your system.
+
+o If you use epic, eepic or tpic you must have compiled your dvips and xvdi
+  with the tpic support (-DTPIC for dvips).
+
 ***************
 IMPORTANT NOTE:
 
-As of version 3.2.0 (final), fig2dev has taken over the translating of Fig
-to the bitmap formats (ACAD, GIF, JPEG, XPM, XBM, PCX, TIFF).
-In the past, xfig itself rendered the bitmap formats.  This change was made
-to have a more consistent look and better fonts.  First, the Fig file is
-translated to PostScript, then ghostscript is used to render the image to
-the final format in the case of JPEG, PCX and TIFF, or to PPM (portable
-pixmap) after which the appropriate ppmtoXXX filter is used to get ACAD, GIF,
-XPM and XBM.  If smoothing is done (-S option) when jpeg output is used, the
-"cjpeg" program must be installed from the jpeg package.  This is done
-automatically when you "make" TransFig or fig2dev.
+o As of version 3.2.0 (final), fig2dev has taken over the translating of Fig
+  to the bitmap formats (ACAD, GIF, JPEG, XPM, XBM, PCX, TIFF).
+  In the past, xfig itself rendered the bitmap formats.  This change was made
+  to have a more consistent look and better fonts.  First, the Fig file is
+  translated to PostScript, then ghostscript is used to render the image to
+  the final format in the case of JPEG, PCX and TIFF, or to PPM (portable
+  pixmap) after which the appropriate ppmtoXXX filter is used to get ACAD, GIF,
+  XPM and XBM.  If smoothing is done (-S option) when jpeg output is used, the
+  "cjpeg" program must be installed from the jpeg package.  This is done
+  automatically when you "make" TransFig or fig2dev.
 
-You need the netpbm package of March 1994 (or later), which you can find on
-ftp.x.org in /contrib/utilities or on ftp.cdrom.com in
-/pub/X11/contrib/utilities.
+  o You need the netpbm package of March 1994 (or later), which you can find
+    at ftp://ftp.x.org/contrib/utilities or
+    at ftp://ftp.cdrom.com/pub/X11/contrib/utilities.
 
-You will also need ghostscript, which can be found on ftp.cs.wisc.edu in
-/ghost/aladdin, *AND* it must be compiled with the pcx256, jpeg, png256, ppmraw
-and tiff24nc drivers.
-***************
-----------------------------------------------------------------------------
-Make sure that you point XFIGLIBDIR to the same directory that xfig uses
-(usually /usr/local/lib/xfig).  This will be used to hold the bitmaps directory
-for the tk fill patterns.
-----------------------------------------------------------------------------
-If you have NOT installed the JPEG library in your system library area, comment
-out the USEINSTALLEDJPEG in fig2dev/Imakefile variable, change the JPEGLIBDIR
-variable to the directory where your JPEG library resides and change the
-JPEGINCDIR to the directory where your JPEG header files (include) reside.
-You must have version 5b or newer of the JPEG library.
-
-The JPEG library is available from several places.  The official archive site
-is ftp.uu.net in /graphics/jpeg.
-Another site is ftp.x.org in /contrib/libraries.
-
-If you don't want to be able to import JPEG images in your Fig files at all
-then comment out the "#define USEJPEG" line in the fig2dev/Imakefile.
-----------------------------------------------------------------------------
-If you want to be able to translate Fig files that have imported XPM files
-(color pixmaps) uncomment the "#define USEXPM" line in fig2dev/Imakefile.
-You need version 3.4c or newer of the XPM package.
-This is available from ftp.x.org in /contrib/libraries.
-----------------------------------------------------------------------------
-Uncomment the "DBMLIB = -lgdbm" in fig2dev/Imakefile if your dbm routines are
-in their own library.
-For the Redhat distributions of Linux you may have to change DBMLIB to -ldb.
-For some Linuxes you may need to change it to "DBMLIB = -ldbm".
-Slackware Linuxes use -lgdbm.
-----------------------------------------------------------------------------
-If your system has the strerror() function (doesn't have sys_errlist) then
-comment out NEED_STRERROR with an XCOMM comment.
-----------------------------------------------------------------------------
-Look in the Imakefiles to see if any options are relevant to your system.
-----------------------------------------------------------------------------
-** If you use epic, eepic or tpic you must have compiled your dvips and xvdi
-** with the tpic support (-DTPIC for dvips).
+  o You will also need ghostscript, which can be found on ftp.cs.wisc.edu in
+    /ghost/aladdin, *AND* it must be compiled with the pcx256, jpeg, png256,
+    ppmraw and tiff24nc drivers.
 
 *************************************************************************
 Please send email about any questions/bug fixes/contributions etc. about

@@ -44,7 +44,6 @@ static rtop();
 static draw_arrow_head();
 
 #define rint(a) floor((a)+0.5)     /* close enough? */
-static int		coord_system;
 static double		dash_length = -1;
 static int		line_style = SOLID_LINE;
 static char 		*linethick = "1pt";
@@ -103,14 +102,12 @@ char opt, *optarg;
 }
 
 #define			TOP	10.5	/* top of page is 10.5 inch */
-static double		ppi;
-static int		CONV = 0;
 
 static double
 convy(a)
 double	a;
 {
-	return((double)(CONV ? TOP-a : a));
+	return((double) TOP-a);
 }
 
 void
@@ -119,10 +116,6 @@ F_compound	*objects;
 {
 	texfontsizes[0] = texfontsizes[1] = 
 		TEXFONTSIZE(font_size?font_size:DEFAULT_FONT_SIZE);
-
-	coord_system = objects->nwcorner.y;
-	ppi = objects->nwcorner.x;
-	if (coord_system == 2) CONV = 1;
 
 	/* PiCTeX start */
 

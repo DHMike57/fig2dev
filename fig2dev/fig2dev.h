@@ -105,6 +105,7 @@ extern int	font_size;
 extern double	mag;
 extern FILE	*tfp;
 
+extern int	ppi;		/* Fig file resolution (e.g. 1200) */
 extern int	llx, lly, urx, ury;
 extern Boolean	landscape;
 extern Boolean	center;
@@ -123,6 +124,7 @@ extern char	lang[];		/* selected output language */
 extern char	*Fig_color_names[]; /* hex names for Fig colors */
 extern RGB	background;	/* background (if specified by -g) */
 extern Boolean	bgspec;		/* flag to say -g was specified */
+extern char	gscom[];	/* to build up a command for ghostscript */
 
 struct paperdef
 {
@@ -145,7 +147,8 @@ extern int		user_col_indx[MAX_USR_COLS];
 extern int		num_usr_cols;
 extern Boolean		pats_used, pattern_used[NUMPATTERNS];
 
-extern void gendev_null();
+extern void	gendev_null();
+extern void	gs_broken_pipe();
 
 /* for GIF files */
 #define	MAXCOLORMAPSIZE 256
@@ -186,3 +189,9 @@ extern int		sys_nerr, errno;
 	!defined(__GNU_LIBRARY__) && !defined(__FreeBSD__) && !defined(__GLIBC__))
 	    extern char *sys_errlist[];
 #endif
+
+typedef struct _point
+{
+    int x,y;
+} Point;
+

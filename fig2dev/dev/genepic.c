@@ -124,11 +124,8 @@ struct fp_struct {
 typedef struct fp_struct FPoint;
 
 /* Local to the file only */
-static int	coord_system;
-static int	CoordSys = 2;
 static double	Threshold;
 static Boolean	linew_spec;
-static int	DPI;
 static int	CurWidth = 0;
 static int	LineStyle = SOLID_LINE;
 static int	LLX = 0, LLY = 0;
@@ -221,27 +218,23 @@ char opt, *optarg;
 	  break;
 
 	case 'a':
-	    fprintf(stderr, "warning: genepic option -a obsolete");
+	    fprintf(stderr, "warning: genepic option -a obsolete\n");
 	    break;
 
 	case 'f':
 	    for ( i = 1; i <= MAX_FONT; i++ )
 		if ( !strcmp(optarg, texfontnames[i]) ) break;
 
-	    if ( i > MAX_FONT)
-			{
-			  fprintf(stderr,
-						 "warning: non-standard font name %s ignored\n", optarg);
-			}
-		 else
-			{
-			  texfontnames[0] = texfontnames[i];
+	    if ( i > MAX_FONT) {
+		fprintf(stderr, "warning: non-standard font name %s ignored\n", optarg);
+	    } else {
+		texfontnames[0] = texfontnames[i];
 #ifdef NFSS
-			  texfontfamily[0] = texfontfamily[i];
-			  texfontseries[0] = texfontseries[i];
-			  texfontshape[0] = texfontshape[i];
+		texfontfamily[0] = texfontfamily[i];
+		texfontseries[0] = texfontseries[i];
+		texfontshape[0] = texfontshape[i];
 #endif
-			}
+	    }
 	    break;
 
         case 'l':
@@ -301,9 +294,7 @@ static
 fconvertCS(fpt)
 FPoint *fpt;
 {
-    if (CoordSys) {
-        fpt->y = TopCoord - fpt->y;
-    }
+    fpt->y = TopCoord - fpt->y;
     fpt->x -= LLX;
     fpt->y -= LLY;
 }
@@ -311,9 +302,7 @@ FPoint *fpt;
 convertCS(pt)
 F_point *pt;
 {
-    if (CoordSys) {
-        pt->y = TopCoord - pt->y;
-    }
+    pt->y = TopCoord - pt->y;
     pt->x -= LLX;
     pt->y -= LLY;
 }
@@ -358,29 +347,11 @@ F_compound *objects;
         fputs(Preamble, stdout);
     }
 
-    DPI = objects->nwcorner.x;
-    if (DPI <= 0) {
-        put_msg("Resolution has to be positive. Default to 80!\n");
-        DPI = 80;
-    }
-    /* now that we have DPI defined we can use the -l option */
     if (linew_spec)
-	LineThick = LineThick * DPI/80;
+	LineThick = LineThick * ppi/80.0;
     if (LineThick == 0)
-	LineThick = 2*DPI/80;
-    DashScale = (double)DPI/80.0;
-    coord_system = objects->nwcorner.y;
-    switch (coord_system) {
-    case 1:
-        CoordSys = 0;
-        break;
-    case 2:
-        CoordSys = 1;
-        break;
-    default:
-        put_msg("Unknown Coordinate system -- %d\n", coord_system);
-        exit(1);
-    }
+	LineThick = 2.0*ppi/80.0;
+    DashScale = ppi/80.0;
     pt1.x = llx;
     pt1.y = lly;
     pt2.x = urx;
@@ -402,7 +373,7 @@ F_compound *objects;
     if (Verbose) {
         fprintf(tfp, "%%\n%% Language in use is %s\n%%\n", Tlangkw[TeXLang]);
     }
-    Threshold = 1.0 / DPI * mag;
+    Threshold = 1.0 / ppi * mag;
     fprintf(tfp, "\\setlength{\\unitlength}{%.8fin}\n", Threshold);
     MaxCircleRadius = (int) (40 / 72.27 / Threshold);
     Threshold = SegLen / Threshold;
@@ -440,7 +411,7 @@ int w;
 	if (CurWidth==ThinLines) {
 	    fprintf(tfp, "\\thinlines\n");
 	} else if (VarWidth) {
-	    fprintf(tfp, "\\allinethickness{%4.3fpt}%%\n",w*80.0/DPI);
+	    fprintf(tfp, "\\allinethickness{%4.3fpt}%%\n",w*80.0/ppi);
 	} else {
 	    fprintf(tfp, "\\thicklines\n");
 	}
@@ -823,7 +794,7 @@ F_line *line;
 	fprintf(tfp, "\\dottedline{%d}", DotDist);
 	break;
     default:
-	fprintf(stderr,"Unknown Style\n");
+	fprintf(stderr,"Only solid, dashed, and dotted line styles supported by epic(eepic)\n");
 	exit(1);
     }
     fprintf(tfp, "(%d,%d)", p->x, p->y);
@@ -1374,7 +1345,7 @@ F_arc *arc;
     set_linewidth(arc->thickness);
     if (TeXLang == EEpic) {
 	set_pattern(arc->fill_style, arc->fill_color);
-        fprintf(tfp, "\\put(%4.3lf,%4.3lf){", ctr.x, ctr.y);
+        fprintf(tfp, "\\put(%4.3f,%4.3f){", ctr.x, ctr.y);
     } else {
 	fprintf(tfp, "\\drawline");
     }
@@ -1396,7 +1367,7 @@ F_arc *arc;
 #ifdef DrawOutLine
 	    if (OutLine==1) {
 		OutLine=0;
-	        fprintf(tfp, "\\put(%4.3lf,%4.3lf){", ctr.x, ctr.y);
+	        fprintf(tfp, "\\put(%4.3f,%4.3f){", ctr.x, ctr.y);
 		fprintf(tfp, "\\arc{%4.3f}{%2.4f}{%2.4f}}\n", 2*r1, th2, th2+theta);
 	    }
 #endif
@@ -1412,7 +1383,7 @@ F_arc *arc;
 #ifdef DrawOutLine
 	    if (OutLine==1) {
 		OutLine=0;
-	        fprintf(tfp, "\\put(%4.3lf,%4.3lf){", ctr.x, ctr.y);
+	        fprintf(tfp, "\\put(%4.3f,%4.3f){", ctr.x, ctr.y);
 		fprintf(tfp, "\\arc{%4.3f}{%2.4f}{%2.4f}}\n", 2*r2, th1, th1+theta);
 	    }
 #endif
@@ -1463,7 +1434,7 @@ double r, th1, angle;
             fprintf(tfp, "\n\t");
             pt_count = 1;
         }
-        fprintf(tfp, "(%.3lf,%.3lf)", ctr->x + cos(th1) * r,
+        fprintf(tfp, "(%.3f,%.3f)", ctr->x + cos(th1) * r,
                                 ctr->y + sin(th1) * r);
         th1 += delta;
     }

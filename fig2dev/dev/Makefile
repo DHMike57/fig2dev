@@ -290,8 +290,6 @@ PICFLAGS = -pic
 
 INCLUDES = -I.. -I../..
 
-EXTRA_INCLUDES = $(JPEGINC)
-
 READJPGS=readjpg.c
 READJPGO=readjpg.o
 
