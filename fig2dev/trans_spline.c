@@ -69,49 +69,19 @@ typedef struct zXPoint zXPoint;
 
 
 
-static void          spline_segment_computing(float step, int k,
-					      F_point *p0, F_point *p1,
-					      F_point *p2, F_point *p3,
-					      double s1, double s2);
-
-static float         step_computing(int k,
-				    F_point *p0, F_point *p1,
-				    F_point *p2, F_point *p3,
-				    double s1, double s2, float precision);
-
-static inline        point_adding(double *A_blend,
-				  F_point *p0, F_point *p1,
-				  F_point *p2, F_point *p3);
-
-static inline        point_computing(double *A_blend,
-				     F_point *p0, F_point *p1,
-				     F_point *p2, F_point *p3,
-				     int *x, int *y);
-
-static inline        negative_s1_influence(double t, double s1,
-					   double *A0, double *A2);
-
-static inline        negative_s2_influence(double t, double s1,
-					   double *A1, double *A3);
-
-static inline        positive_s1_influence(int k,
-					   double t, double s1,
-					   double *A0, double *A2);
-
-static inline        positive_s2_influence(int k,
-					   double t, double s1,
-					   double *A1, double *A3);
-
-static inline double f_blend(double numerator, double denominator);  
-
-static inline double g_blend(double u, double q);  
-
-static inline double h_blend(double u, double q);
-
-static               free_point_array(zXPoint *pts);
-
-static               num_points(F_point *points);
-
+static void          spline_segment_computing();
+static float         step_computing();
+static INLINE        point_adding();
+static INLINE        point_computing();
+static INLINE        negative_s1_influence();
+static INLINE        negative_s2_influence();
+static INLINE        positive_s1_influence();
+static INLINE        positive_s2_influence();
+static INLINE double f_blend();
+static INLINE double g_blend();
+static INLINE double h_blend();
+static               free_point_array();
+static               num_points();
 static F_arrow       *create_arrow();
 static F_line	     *create_line();
 static F_point	     *create_point();
@@ -305,7 +275,7 @@ compute_closed_spline(spline, precision)
 #define EQN_NUMERATOR(dim) \
   (A_blend[0]*p0->dim+A_blend[1]*p1->dim+A_blend[2]*p2->dim+A_blend[3]*p3->dim)
 
-static inline double
+static INLINE double
 f_blend(numerator, denominator)
      double numerator, denominator;
 {
@@ -316,14 +286,14 @@ f_blend(numerator, denominator)
   return (u * u2 * (10 - p + (2*p - 15)*u + (6 - p)*u2));
 }
 
-static inline double
+static INLINE double
 g_blend(u, q)             /* p equals 2 */
      double u, q;
 {
   return(u*(q + u*(2*q + u*(8 - 12*q + u*(14*q - 11 + u*(4 - 5*q))))));
 }
 
-static inline double
+static INLINE double
 h_blend(u, q)
      double u, q;
 {
@@ -331,7 +301,7 @@ h_blend(u, q)
    return (u * (q + u * (2 * q + u2 * (-2*q - u*q))));
 }
 
-static inline
+static INLINE
 negative_s1_influence(t, s1, A0, A2)
      double       t, s1, *A0 ,*A2;
 {
@@ -339,7 +309,7 @@ negative_s1_influence(t, s1, A0, A2)
   *A2 = g_blend(t, Q(s1));
 }
 
-static inline
+static INLINE
 negative_s2_influence(t, s2, A1, A3)
      double       t, s2, *A1 ,*A3;
 {
@@ -347,7 +317,7 @@ negative_s2_influence(t, s2, A1, A3)
   *A3 = h_blend(t-1, Q(s2));
 }
 
-static inline
+static INLINE
 positive_s1_influence(k, t, s1, A0, A2)
      int          k;
      double       t, s1, *A0 ,*A2;
@@ -361,7 +331,7 @@ positive_s1_influence(k, t, s1, A0, A2)
   *A2 = f_blend(t+k+1-Tk, k+2-Tk);
 }
 
-static inline
+static INLINE
 positive_s2_influence(k, t, s2, A1, A3)
      int          k;
      double       t, s2, *A1 ,*A3;
@@ -375,7 +345,7 @@ positive_s2_influence(k, t, s2, A1, A3)
   *A3 = (t+k+1>Tk) ? f_blend(t+k+1-Tk, k+3-Tk) : 0.0;
 }
 
-static inline
+static INLINE
 point_adding(A_blend, p0, p1, p2, p3)
      F_point     *p0, *p1, *p2, *p3;
      double      *A_blend;
@@ -388,7 +358,7 @@ point_adding(A_blend, p0, p1, p2, p3)
       too_many_points();
 }
 
-static inline
+static INLINE
 point_computing(A_blend, p0, p1, p2, p3, x, y)
      F_point     *p0, *p1, *p2, *p3;
      double      *A_blend;

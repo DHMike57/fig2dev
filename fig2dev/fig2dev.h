@@ -31,6 +31,12 @@ typedef char Boolean;
 
 #define DEFAULT_FONT_SIZE 11
 
+#ifdef USE_INLINE
+#define INLINE inline
+#else
+#define INLINE
+#endif /* USE_INLINE */
+
 /* include ctype.h for isascii() and isxdigit() macros */
 #include <ctype.h>
 

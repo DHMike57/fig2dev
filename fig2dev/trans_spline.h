@@ -29,8 +29,8 @@
 #define         HIGH_PRECISION 0.5
 #define         ARROW_START    4
 
-F_line          *create_line_with_spline(F_spline *s);
+F_line          *create_line_with_spline();
     
-int             make_control_factors(F_spline *spl);
+int             make_control_factors();
  
 #endif /* TRANS_SPLINE_H */
