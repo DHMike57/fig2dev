@@ -7,7 +7,7 @@
 #
 
 ###########################################################################
-# Makefile generated from "Imake.tmpl" and </tmp/IIf.a06414>
+# Makefile generated from "Imake.tmpl" and </tmp/IIf.a06353>
 # $XConsortium: Imake.tmpl,v 1.77 89/12/18 17:01:37 jim Exp $
 #
 # Platform-specific parameters may be set in the appropriate .cf
@@ -229,32 +229,49 @@
 ###########################################################################
 # start of Imakefile
 
+#	TransFig : Fig code translation Makefile creation program
 #
-#	Fig2dev Driver Library Makefile
+#	Micah Beck
 #
-# to set paper size to A4 			add -DA4d	to DEFINES list
-# to set IBM Graphics Enhancement Cartridge	add -DIBMGEC	to DEFINES list
-# to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEFINES list
-#
-DEFINES = -DDVIPS
+
 INCLUDES = -I..
 
-SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genpic.c genpictex.c \
-	genps.c genpstex.c gentextyl.c gentpic.c
-LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genpic.o genpictex.o \
-	genps.o genpstex.o gentextyl.o gentpic.o
+SCRS = transfig.c txfile.c mkfile.c sys.c
+OBJS = transfig.o txfile.o mkfile.o sys.o
 
-LIB = transfig
+ PROGRAM = transfig
 
-all:: lib$(LIB).a
+all:: transfig
 
-lib$(LIB).a: $(LIBOBJS)
+transfig: $(OBJS) $(DEPLIBS)
 	$(RM) $@
-	$(AR) $@ $(LIBOBJS)
-	$(RANLIB) $@
+	$(CC) -o $@ $(OBJS) $(LDOPTIONS) $(LOCAL_LIBRARIES) $(LDLIBS) $(EXTRA_LOAD_FLAGS)
+
+saber_transfig:
+	#load $(ALLDEFINES) $(SRCS) $(LOCAL_LIBRARIES) $(SYS_LIBRARIES) $(EXTRA_LIBRARIES)
+
+osaber_transfig:
+	#load $(ALLDEFINES) $(OBJS) $(LOCAL_LIBRARIES) $(SYS_LIBRARIES) $(EXTRA_LIBRARIES)
+
+install:: transfig
+	$(INSTALL) -c $(INSTPGMFLAGS)   transfig $(BINDIR)
+
+install.man:: transfig.man
+	$(INSTALL) -c $(INSTMANFLAGS) transfig.man $(MANDIR)/transfig.n
 
 depend::
 	$(DEPEND) -s "# DO NOT DELETE" -- $(ALLDEFINES) -- $(SRCS)
+
+lint:
+	$(LINT) $(LINTFLAGS) $(SRCS) $(LINTLIBS)
+lint1:
+	$(LINT) $(LINTFLAGS) $(FILE) $(LINTLIBS)
+
+clean::
+	$(RM) $(PROGRAM)
+
+transfig.man: ../doc/transfig.1
+	ln -s ../doc/transfig.1 transfig.man
 
 ###########################################################################
 # common rules for all Makefiles - do not edit

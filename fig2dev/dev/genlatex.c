@@ -1,20 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1991 Micah Beck, Cornell University
+ * Copyright (c) 1985 Supoj Sutantavibul
+ * Copyright (c) 1991 Micah Beck
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of Cornell University not be used in
- * advertising or publicity pertaining to distribution of the software without
- * specific, written prior permission.  Cornell University makes no
- * representations about the suitability of this software for any purpose.  It
- * is provided "as is" without express or implied warranty.
+ * documentation. The authors make no representations about the suitability 
+ * of this software for any purpose.  It is provided "as is" without express 
+ * or implied warranty.
  *
- * CORNELL UNIVERSITY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL CORNELL UNIVERSITY BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
  * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
  * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
@@ -39,8 +38,24 @@
 #include "object.h"
 #include "fig2dev.h"
 #include "texfonts.h"
+#include "pi.h"
 
-extern double rad2deg, sin(), cos(), acos(), fabs(), atan();
+#ifndef fabs
+extern double fabs();
+#endif
+#ifndef sin
+extern double sin();
+#endif
+#ifndef cos
+extern double cos();
+#endif
+#ifndef acos
+extern double acos();
+#endif
+#ifndef atan
+extern double atan();
+#endif
+extern double rad2deg;
 extern void unpsfont();
 
 #define rint(a) floor((a)+0.5)     /* close enough? */
@@ -56,14 +71,14 @@ extern void unpsfont();
  *		lines if line width = \thinlines
  *  THIN_LDOT	...  if line width = \thicklines
  */
-#define THICKDOT	"\\tenrm ."
-#define THINDOT		"\\sevrm ."
+#define THICKDOT	"\\SetFigFont{10}{12}{rm}."
+#define THINDOT		"\\SetFigFont{7}{8.4}{rm}."
 double	THIN_XOFF =	(0.1/72.0);
 double	THIN_YOFF =	(0.7/72.0);
 double	THICK_XOFF =	(0.4/72.0);
 double	THICK_YOFF =	(0.6/72.0);
-#define THICK_LDOT	"\\sevrm ."
-#define THIN_LDOT	"\\fivrm ."
+#define THICK_LDOT	"\\SetFigFont{7}{8.4}{rm}."
+#define THIN_LDOT	"\\SetFigFont{5}{6}{rm}."
 double	THIN_LXOFF =	(0.1/72.0);
 double	THIN_LYOFF =	(0.7/72.0);
 double	THICK_LXOFF =	(0.4/72.0);
@@ -89,6 +104,7 @@ double	THICK_LYOFF =	(0.6/72.0);
 #define	MAX(x,y)	(((x) >= (y))? (x): (y))
 #define	ABS(x)		(((x) >= 0)? (x): -(x))
 #define round4(x)	((round(10000.0*(x))/10000.0))
+#define round6(x)	((round(1000000.0*(x))/1000000.0))
 
 char		thindot [] = THINDOT;
 char		thickdot[] = THICKDOT;
@@ -150,7 +166,7 @@ char opt, *optarg;
 
     switch (opt) {
 	case 'a':
-	    capfonts = 1;
+	    fprintf(stderr, "warning: latex option -a obsolete");
 	    break;
 
 	case 'd':
@@ -224,8 +240,8 @@ F_compound	*objects;
 	if (lly > ury) SWAP(lly, ury)
 
 	/* LaTeX start */
-	fprintf(tfp, "\\setlength{\\unitlength}{%.4fin}%%\n",
-						round4(unitlength));
+	fprintf(tfp, "\\setlength{\\unitlength}{%.6fin}%%\n",
+						round6(unitlength));
 	fprintf(tfp, "\\begin{picture}(%d,%d)(%d,%d)\n",
 	 				 urx-llx, ury-lly, llx, lly);
 }
@@ -653,18 +669,26 @@ F_text	*t;
 		fprintf(stderr, "Text incorrectly positioned\n");
 	    }
 
-	/* raisebox is used to position text at baseline */
+	/* smash is used to position text at baseline */
 	unpsfont(t);
 	fprintf(tfp, 
-	  "\\put(%3d,%3d){\\makebox(0,0)%s{\\raisebox{0pt}[0pt][0pt]{",
+	  "\\put(%3d,%3d){\\makebox(0,0)%s{\\smash{",
 	  x, y, tpos);
 
 #ifdef DVIPS
         if(t->angle && t->type == T_LEFT_JUSTIFIED)
-          fprintf(tfp, "\\special{ps:gsave currentpoint currentpoint translate\n-%.1f rotate neg exch neg exch translate}", t->angle*180/M_PI);
+          fprintf(tfp, "\\special{ps:gsave currentpoint currentpoint translate\n%.1f rotate neg exch neg exch translate}", -t->angle*180/M_PI);
 #endif
 
-	fprintf(tfp, "\\%s%s ", TEXFONTMAG(t), TEXFONT(t->font));
+        { int texsize;
+          double baselineskip;
+
+	  texsize = TEXFONTMAG(t);
+	  baselineskip = (texsize * 1.2);
+
+ 	  fprintf(tfp, "\\SetFigFont{%d}{%.1f}{%s}",
+		texsize, baselineskip, TEXFONT(t->font));
+	}
 
 	set_color(t->color);
 

@@ -25,44 +25,45 @@
 #include <string.h>
 #else
 #include <strings.h>
-#ifndef NeXT
 #define	strchr	index
 #define	strrchr	rindex
 #endif
-#endif
 
-#define round(x)	((int) ((x) + ((x >= 0)? 0.5: -0.5)))
-
-/* 
- * Device driver interface structure
+/*
+ * converters program names
  */
-struct driver {
- 	void (*option)();	/* interpret driver-specific options */
-  	void (*start)();	/* output file header */
-	void (*arc)();		/* object generators */
-	void (*ellipse)();
-	void (*line)();
-	void (*spline)();
-	void (*text)();
-	void (*end)();		/* output file trailer */
-  	int text_include;	/* include text length in bounding box */
-#define INCLUDE_TEXT 1
-#define EXCLUDE_TEXT 0
-};
+#define FIG2DEV	"fig2dev"
+#define PIC2FIG "pic2fig"
+#define APG2FIG "apgto f"
 
-extern char *strchr();
+/*
+ * filename defaults
+ */
+#define MK "Makefile"
+#define TX "transfig.tex"
 
-extern char Err_badarg[];
-extern char Err_incomp[];
-extern char Err_mem[];
+enum language  {box, epic, eepic, eepicemu, latex,
+	pictex, postscript, psfig, pstex, textyl, tpic};
+#define MAXLANG tpic
 
-extern char *PSfontnames[];
+enum input {apg, fig, pic, ps};
+#define MAXINPUT xps
 
-extern char	*prog, *from;
-extern int	font_size;
-extern double	mag;
-extern FILE	*tfp;
+typedef struct argument{
+	char *name, *interm, *f, *s, *m, *o, *tofig, *topic, *tops;
+	enum language tolang;
+	enum input type;
+	struct argument *next;
+} argument ;
 
-extern int llx, lly, urx, ury, coord_system;
+extern enum language str2lang();
+extern char *lname[];
+extern char *iname[];
 
-extern void gendev_null();
+extern char *sysls(), *mksuff();
+extern argument *arglist;
+extern char *txfile, *mkfile;
+
+extern char *optarg;
+extern int optind;
+

@@ -7,7 +7,7 @@
 #
 
 ###########################################################################
-# Makefile generated from "Imake.tmpl" and </tmp/IIf.a06414>
+# Makefile generated from "Imake.tmpl" and </tmp/IIf.a06346>
 # $XConsortium: Imake.tmpl,v 1.77 89/12/18 17:01:37 jim Exp $
 #
 # Platform-specific parameters may be set in the appropriate .cf
@@ -229,32 +229,94 @@
 ###########################################################################
 # start of Imakefile
 
+#	Fig2dev : General Fig code translation program
 #
-#	Fig2dev Driver Library Makefile
+# to include drivers for the following languages,
+# add the corresponding symbol to the DEFINES list:
 #
-# to set paper size to A4 			add -DA4d	to DEFINES list
-# to set IBM Graphics Enhancement Cartridge	add -DIBMGEC	to DEFINES list
-# to set DVI-to-PostScript driver to dvips	add -DDVIPS	to DEFINES list
+# -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
 #
-DEFINES = -DDVIPS
+DEFINES = -DEPIC -DIBMGL -DLATEX -DPIC -DPICTEX -DPS -DPSTEX -DTEXTYL -DTPIC
+
+SUBDIRS = dev
+
 INCLUDES = -I..
 
-SRCS =  genbox.c genepic.c genibmgl.c genlatex.c genpic.c genpictex.c \
-	genps.c genpstex.c gentextyl.c gentpic.c
-LIBOBJS = genbox.o genepic.o genibmgl.o genlatex.o genpic.o genpictex.o \
-	genps.o genpstex.o gentextyl.o gentpic.o
+SRCS = fig2dev.c getopt.c psfonts.c iso2tex.c \
+	arrow.c bound.c free.c read.c read1_3.c latex_line.c $(STRSTRC)
+OBJS = fig2dev.o getopt.o psfonts.o iso2tex.o \
+	arrow.o bound.o free.o read.o read1_3.o latex_line.o $(STRSTRO) \
+	dev/libtransfig.a
 
-LIB = transfig
+EXTRA_LIBRARIES = -lm
 
-all:: lib$(LIB).a
+all::
+	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
+	for i in $(SUBDIRS) ;\
+	do \
+	(cd $$i ; echo "making" all "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) $(MFLAGS) 'CDEBUGFLAGS=$(CDEBUGFLAGS)' all); \
+	done
 
-lib$(LIB).a: $(LIBOBJS)
+depend::
+	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
+	for i in $(SUBDIRS) ;\
+	do \
+	(cd $$i ; echo "depending" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) $(MFLAGS)   depend); \
+	done
+
+ PROGRAM = fig2dev
+
+all:: fig2dev
+
+fig2dev: $(OBJS) $(DEPLIBS)
 	$(RM) $@
-	$(AR) $@ $(LIBOBJS)
-	$(RANLIB) $@
+	$(CC) -o $@ $(OBJS) $(LDOPTIONS) $(LOCAL_LIBRARIES) $(LDLIBS) $(EXTRA_LOAD_FLAGS)
+
+saber_fig2dev:
+	#load $(ALLDEFINES) $(SRCS) $(LOCAL_LIBRARIES) $(SYS_LIBRARIES) $(EXTRA_LIBRARIES)
+
+osaber_fig2dev:
+	#load $(ALLDEFINES) $(OBJS) $(LOCAL_LIBRARIES) $(SYS_LIBRARIES) $(EXTRA_LIBRARIES)
+
+install:: fig2dev
+	$(INSTALL) -c $(INSTPGMFLAGS)   fig2dev $(BINDIR)
+
+install.man:: fig2dev.man
+	$(INSTALL) -c $(INSTMANFLAGS) fig2dev.man $(MANDIR)/fig2dev.n
 
 depend::
 	$(DEPEND) -s "# DO NOT DELETE" -- $(ALLDEFINES) -- $(SRCS)
+
+lint:
+	$(LINT) $(LINTFLAGS) $(SRCS) $(LINTLIBS)
+lint1:
+	$(LINT) $(LINTFLAGS) $(FILE) $(LINTLIBS)
+
+clean::
+	$(RM) $(PROGRAM)
+
+install:: fig2ps2tex.script
+	$(INSTALL) -c $(INSTPGMFLAGS) fig2ps2tex.script $(BINDIR)/fig2ps2tex
+
+install:: pic2tpic.script
+	$(INSTALL) -c $(INSTPGMFLAGS) pic2tpic.script $(BINDIR)/pic2tpic
+
+install.man:: fig2ps2tex.man
+	$(INSTALL) -c $(INSTMANFLAGS) fig2ps2tex.man $(MANDIR)/fig2ps2tex.n
+
+install.man:: pic2tpic.man
+	$(INSTALL) -c $(INSTMANFLAGS) pic2tpic.man $(MANDIR)/pic2tpic.n
+
+fig2dev.man: ../doc/fig2dev.1
+	ln -s ../doc/fig2dev.1 fig2dev.man
+
+fig2ps2tex.man: ../doc/fig2ps2tex.1
+	ln -s ../doc/fig2ps2tex.1 fig2ps2tex.man
+
+pic2tpic.man: ../doc/pic2tpic.1
+	ln -s ../doc/pic2tpic.1 pic2tpic.man
 
 ###########################################################################
 # common rules for all Makefiles - do not edit
@@ -282,17 +344,106 @@ osaber:
 	#load $(ALLDEFINES) $(OBJS)
 
 ###########################################################################
-# empty rules for directories that do not have SUBDIRS - do not edit
+# rules for building in SUBDIRS - do not edit
 
 install::
-	@echo "install in $(CURRENT_DIR) done"
+	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
+	for i in $(SUBDIRS) ;\
+	do \
+	(cd $$i ; echo "installing" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) $(MFLAGS) DESTDIR='$(DESTDIR)' install); \
+	done
 
 install.man::
-	@echo "install.man in $(CURRENT_DIR) done"
+	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
+	for i in $(SUBDIRS) ;\
+	do \
+	(cd $$i ; echo "installing man pages" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) $(MFLAGS) DESTDIR='$(DESTDIR)' install.man); \
+	done
+
+clean::
+	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
+	for i in $(SUBDIRS) ;\
+	do \
+	(cd $$i ; echo "cleaning" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) $(MFLAGS) RM_CMD='$(RM_CMD)' clean); \
+	done
+
+tags::
+	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
+	for i in $(SUBDIRS) ;\
+	do \
+	(cd $$i ; echo "tagging" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) $(MFLAGS) TAGS='$(TAGS)' tags); \
+	done
 
 Makefiles::
+	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
+	for i in $(SUBDIRS) ;\
+	do \
+	echo "making Makefiles in $(CURRENT_DIR)/$$i..."; \
+	case "$$i" in \
+	./?*/?*/?*/?*) newtop=../../../../ sub=subsubsubsub;; \
+	./?*/?*/?*) newtop=../../../ sub=subsubsub;; \
+	./?*/?*) newtop=../../ sub=subsub;; \
+	./?*) newtop=../ sub=sub;; \
+	*/?*/?*/?*) newtop=../../../../ sub=subsubsubsub;; \
+	*/?*/?*) newtop=../../../ sub=subsubsub;; \
+	*/?*) newtop=../../ sub=subsub;; \
+	*) newtop=../ sub=sub;; \
+	esac; \
+	case "$(TOP)" in \
+	/?*) newtop= upprefix= ;; \
+	*) upprefix=../ ;; \
+	esac; \
+	$(MAKE) $${sub}dirMakefiles UPPREFIX=$$upprefix NEWTOP=$$newtop \
+	MAKEFILE_SUBDIR=$$i NEW_CURRENT_DIR=$(CURRENT_DIR)/$$i;\
+	done
+
+subdirMakefiles:
+	$(RM) $(MAKEFILE_SUBDIR)/Makefile.bak
+	-@if [ -f $(MAKEFILE_SUBDIR)/Makefile ]; then \
+	echo "	$(MV) $(MAKEFILE_SUBDIR)/Makefile $(MAKEFILE_SUBDIR)/Makefile.bak"; \
+	$(MV) $(MAKEFILE_SUBDIR)/Makefile $(MAKEFILE_SUBDIR)/Makefile.bak; \
+	else exit 0; fi
+	cd $(MAKEFILE_SUBDIR); $(IMAKE_CMD) -DTOPDIR=$(UPPREFIX)$(TOP) -DCURDIR=$(NEW_CURRENT_DIR); \
+	$(MAKE) $(MFLAGS) Makefiles
+
+subsubdirMakefiles:
+	$(RM) $(MAKEFILE_SUBDIR)/Makefile.bak
+	-@if [ -f $(MAKEFILE_SUBDIR)/Makefile ]; then \
+	echo "	$(MV) $(MAKEFILE_SUBDIR)/Makefile $(MAKEFILE_SUBDIR)/Makefile.bak"; \
+	$(MV) $(MAKEFILE_SUBDIR)/Makefile $(MAKEFILE_SUBDIR)/Makefile.bak; \
+	else exit 0; fi
+	cd $(MAKEFILE_SUBDIR); $(IMAKE_CMD) -DTOPDIR=$(UPPREFIX)$(UPPREFIX)$(TOP) -DCURDIR=$(NEW_CURRENT_DIR); \
+	$(MAKE) $(MFLAGS) Makefiles
+
+subsubsubdirMakefiles:
+	$(RM) $(MAKEFILE_SUBDIR)/Makefile.bak
+	-@if [ -f $(MAKEFILE_SUBDIR)/Makefile ]; then \
+	echo "	$(MV) $(MAKEFILE_SUBDIR)/Makefile $(MAKEFILE_SUBDIR)/Makefile.bak"; \
+	$(MV) $(MAKEFILE_SUBDIR)/Makefile $(MAKEFILE_SUBDIR)/Makefile.bak; \
+	else exit 0; fi
+	cd $(MAKEFILE_SUBDIR); $(IMAKE_CMD) -DTOPDIR=$(UPPREFIX)$(UPPREFIX)$(UPPREFIX)$(TOP) -DCURDIR=$(NEW_CURRENT_DIR); \
+	$(MAKE) $(MFLAGS) Makefiles
+
+subsubsubsubdirMakefiles:
+	$(RM) $(MAKEFILE_SUBDIR)/Makefile.bak
+	-@if [ -f $(MAKEFILE_SUBDIR)/Makefile ]; then \
+	echo "	$(MV) $(MAKEFILE_SUBDIR)/Makefile $(MAKEFILE_SUBDIR)/Makefile.bak"; \
+	$(MV) $(MAKEFILE_SUBDIR)/Makefile $(MAKEFILE_SUBDIR)/Makefile.bak; \
+	else exit 0; fi
+	cd $(MAKEFILE_SUBDIR); $(IMAKE_CMD) -DTOPDIR=$(UPPREFIX)$(UPPREFIX)$(UPPREFIX)$(UPPREFIX)$(TOP) -DCURDIR=$(NEW_CURRENT_DIR); \
+	$(MAKE) $(MFLAGS) Makefiles
 
 includes::
+	@case '${MFLAGS}' in *[ik]*) set +e;; esac; \
+	for i in $(SUBDIRS) ;\
+	do \
+	(cd $$i ; echo including "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) $(MFLAGS)   includes); \
+	done
 
 ###########################################################################
 # dependencies generated by makedepend

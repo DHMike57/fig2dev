@@ -21,48 +21,63 @@
  *
  */
 
-#ifdef SYSV
-#include <string.h>
-#else
-#include <strings.h>
-#ifndef NeXT
-#define	strchr	index
-#define	strrchr	rindex
-#endif
-#endif
+#include <stdio.h>
+#include "transfig.h"
 
-#define round(x)	((int) ((x) + ((x >= 0)? 0.5: -0.5)))
+#define MAXSYS 10000
+static char sysbuf[MAXSYS];
 
-/* 
- * Device driver interface structure
- */
-struct driver {
- 	void (*option)();	/* interpret driver-specific options */
-  	void (*start)();	/* output file header */
-	void (*arc)();		/* object generators */
-	void (*ellipse)();
-	void (*line)();
-	void (*spline)();
-	void (*text)();
-	void (*end)();		/* output file trailer */
-  	int text_include;	/* include text length in bounding box */
-#define INCLUDE_TEXT 1
-#define EXCLUDE_TEXT 0
-};
+char *sysls()
+{
+  FILE *ls;
+  int i;
+  char c;
 
-extern char *strchr();
+  ls = popen("/bin/ls *.fig", "r");
+  i = 0;
+  c = fgetc(ls);
+  while (c != EOF & i < MAXSYS-1)
+  {
+	sysbuf[i] = c;
+	i += 1;
+	c = fgetc(ls);
+  }
+  sysbuf[i] = '\0';
+  return sysbuf;
+}
 
-extern char Err_badarg[];
-extern char Err_incomp[];
-extern char Err_mem[];
+sysmv(f)
+char *f;
+{
+  sprintf(sysbuf, "%s~", f);
+  unlink(sysbuf);
+  if (!link(f, sysbuf)) unlink(f);
+}
 
-extern char *PSfontnames[];
+char *strip(str, suf)
+char *str, *suf;
+{
+  char *p1, *p2;
 
-extern char	*prog, *from;
-extern int	font_size;
-extern double	mag;
-extern FILE	*tfp;
+  for (p1 = &str[strlen(str)-1], p2 = &suf[strlen(suf)-1];
+	(p1 >= str && p2 >= suf) && (*p1 == *p2);
+	--p1, --p2);
 
-extern int llx, lly, urx, ury, coord_system;
+  if (p2 < suf)
+  {
+	*(p1+1) = '\0';
+	return str;
+  } else
+	return NULL;
+}
 
-extern void gendev_null();
+char *mksuff(name, suff)
+char *name, *suff;
+{
+  char *temp;
+
+  temp = (char *)malloc(strlen(name)+strlen(suff)+1);
+  strcpy(temp, name);
+  strcat(temp, suff);
+  return temp;
+}

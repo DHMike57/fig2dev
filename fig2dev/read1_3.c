@@ -1,20 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1991 Micah Beck, Cornell University
+ * Copyright (c) 1985 Supoj Sutantavibul
+ * Copyright (c) 1991 Micah Beck
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of Cornell University not be used in
- * advertising or publicity pertaining to distribution of the software without
- * specific, written prior permission.  Cornell University makes no
- * representations about the suitability of this software for any purpose.  It
- * is provided "as is" without express or implied warranty.
+ * documentation. The authors make no representations about the suitability 
+ * of this software for any purpose.  It is provided "as is" without express 
+ * or implied warranty.
  *
- * CORNELL UNIVERSITY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL CORNELL UNIVERSITY BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
  * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
  * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
@@ -155,7 +154,7 @@ FILE	*fp;
 	a->type = T_3_POINTS_ARC;
       	a->color = BLACK_COLOR;
 	a->depth = 0;
-	a->pen = NULL;
+	a->pen = 0;
 	a->for_arrow = NULL;
 	a->back_arrow = NULL;
 	a->next = NULL;
@@ -295,8 +294,8 @@ FILE	*fp;
       	e->color = BLACK_COLOR;
 	e->angle = 0.0;
 	e->depth = 0;
-	e->pen = NULL;
-	e->area_fill = NULL;
+	e->pen = 0;
+	e->area_fill = 0;
 	e->next = NULL;
 	n = fscanf(fp," %d %d %d %lf %d %d %d %d %d %d %d %d %d\n", 
 		&t, &e->style,
@@ -332,8 +331,8 @@ FILE			*fp;
 	Line_malloc(l);
       	l->color = BLACK_COLOR;
 	l->depth = 0;
-	l->pen = NULL;
-	l->area_fill = NULL;
+	l->pen = 0;
+	l->area_fill = 0;
 	l->for_arrow = NULL;
 	l->back_arrow = NULL;
 	l->next = NULL;
@@ -390,8 +389,8 @@ FILE	*fp;
 	Spline_malloc(s);
       	s->color = BLACK_COLOR;
 	s->depth = 0;
-	s->pen = NULL;
-	s->area_fill = NULL;
+	s->pen = 0;
+	s->area_fill = 0;
 	s->for_arrow = NULL;
 	s->back_arrow = NULL;
 	s->controls = NULL;
@@ -450,7 +449,7 @@ FILE	*fp;
 	t->flags = 0;
       	t->color = BLACK_COLOR;
 	t->depth = 0;
-	t->pen = NULL;
+	t->pen = 0;
 	t->angle = 0.0;
 	t->next = NULL;
 	n = fscanf(fp," %d %d %d %d %d %d %d %[^\n]", &t->font, 

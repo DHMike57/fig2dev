@@ -1,20 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1991 Micah Beck, Cornell University
+ * Copyright (c) 1985 Supoj Sutantavibul
+ * Copyright (c) 1991 Micah Beck
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of Cornell University not be used in
- * advertising or publicity pertaining to distribution of the software without
- * specific, written prior permission.  Cornell University makes no
- * representations about the suitability of this software for any purpose.  It
- * is provided "as is" without express or implied warranty.
+ * documentation. The authors make no representations about the suitability 
+ * of this software for any purpose.  It is provided "as is" without express 
+ * or implied warranty.
  *
- * CORNELL UNIVERSITY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL CORNELL UNIVERSITY BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
  * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
  * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
@@ -334,23 +333,55 @@ int		*xmin, *ymin, *xmax, *ymax;
 	    }
 	}
 
+double rot_x(x,y,angle) 
+double x,y,angle;
+{
+    return(x*cos(-angle)-y*sin(-angle));
+}
+
+double rot_y(x,y,angle)
+double x,y,angle;
+{
+ return(x*sin(-angle)+y*cos(-angle));
+}
+
+
 text_bound(t, xmin, ymin, xmax, ymax, include)
 F_text	*t;
 int	*xmin, *ymin, *xmax, *ymax;
 int	include;
 {
+    double dx1, dx2, dx3, dx4, dy1, dy2, dy3, dy4;
+
 	if (t->type == T_CENTER_JUSTIFIED) {
-		*xmin = t->base_x - t->length / 2;
-		*xmax = t->base_x + t->length / 2;
+	    dx1 = (t->length/2);     dy1 = 0.0;
+	    dx2 = -(t->length/2);    dy2 = 0.0;
+	    dx3 = (t->length/2);     dy3 = -t->height;
+	    dx4 = -(t->length/2);    dy4 = -t->height;
 	} else if (t->type == T_RIGHT_JUSTIFIED) {
-		*xmin = t->base_x - t->length;
-		*xmax = t->base_x;
+	    dx1 = 0.0;               dy1 = 0.0;
+	    dx2 = -t->length;        dy2 = 0.0;
+	    dx3 = 0.0;               dy3 = -t->height;
+	    dx4 = -t->length;        dy4 = -t->height;
 	} else {
-		*xmin = t->base_x;
-		*xmax = t->base_x + (include ? t->length : 0);
+	    dx1 = (include ? t->length : 0); dy1 = 0.0;
+	    dx2 = 0.0;                       dy2 = 0.0;
+	    dx3 = (include ? t->length : 0); dy3 = -t->height;
+	    dx4 = 0.0;                       dy4 = -t->height;
 	}
-	*ymax = t->base_y;
-	*ymin = t->base_y - t->height;
+    *xmax= t->base_x +
+           max( max( rot_x(dx1,dy1,t->angle), rot_x(dx2,dy2,t->angle) ), 
+	        max( rot_x(dx3,dy3,t->angle), rot_x(dx4,dy4,t->angle) ) );
+    *ymax= t->base_y + 
+           max( max( rot_y(dx1,dy1,t->angle), rot_y(dx2,dy2,t->angle) ), 
+	        max( rot_y(dx3,dy3,t->angle), rot_y(dx4,dy4,t->angle) ) );
+
+    *xmin= t->base_x + 
+           min( min( rot_x(dx1,dy1,t->angle), rot_x(dx2,dy2,t->angle) ), 
+	        min( rot_x(dx3,dy3,t->angle), rot_x(dx4,dy4,t->angle) ) );
+    *ymin= t->base_y + 
+           min( min( rot_y(dx1,dy1,t->angle), rot_y(dx2,dy2,t->angle) ), 
+	        min( rot_y(dx3,dy3,t->angle), rot_y(dx4,dy4,t->angle) ) );
 	}
 
 points_bound(points, xmin, ymin, xmax, ymax)

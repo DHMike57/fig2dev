@@ -11,6 +11,9 @@ MakeSubdirs($(SUBDIRS))
 DependSubdirs($(SUBDIRS))
 
 manual: 
+
+transfig.man: ../doc/transfig.1
+	ln -s ../doc/transfig.1 transfig.man
 	cd doc/manual; make; latex manual; latex manual
 
 clean::

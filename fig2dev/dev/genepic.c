@@ -1,20 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1991 Micah Beck, Cornell University
+ * Copyright (c) 1985 Supoj Sutantavibul
+ * Copyright (c) 1991 Micah Beck
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of Cornell University not be used in
- * advertising or publicity pertaining to distribution of the software without
- * specific, written prior permission.  Cornell University makes no
- * representations about the suitability of this software for any purpose.  It
- * is provided "as is" without express or implied warranty.
+ * documentation. The authors make no representations about the suitability 
+ * of this software for any purpose.  It is provided "as is" without express 
+ * or implied warranty.
  *
- * CORNELL UNIVERSITY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL CORNELL UNIVERSITY BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
  * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
  * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
@@ -205,7 +204,7 @@ char opt, *optarg;
 
         switch (opt) {
 	case 'a':
-	    capfonts = 1;
+	    fprintf(stderr, "warning: genepic option -a obsolete");
 	    break;
 
 	case 'f':
@@ -875,11 +874,13 @@ F_ellipse *ell;
     }
 }
 
+extern char *ISOtoTeX[];
 void genepic_text(text)
 F_text *text;
 {
     F_point pt;
-    char *tpos, *cp, *esc_cp, *special_index;
+    char *tpos, *esc_cp, *special_index;
+    unsigned char   *cp;
 
     pt.x=text->base_x;
     pt.y=text->base_y;
@@ -899,9 +900,11 @@ F_text *text;
 	fprintf(stderr, "unknown text position type\n");
 	exit(1);
     }
-    fprintf(tfp, "\\put(%d,%d){\\makebox(0,0)%s{\\raisebox{0pt}[0pt][0pt]{",
+    fprintf(tfp, "\\put(%d,%d){\\makebox(0,0)%s{\\smash{",
            pt.x, pt.y, tpos);
     /* Output a shortstack in case there are multiple lines. */
+    for(cp = (unsigned char*)text->cstring; *cp; cp++) {
+      if (*cp == TEXT_LINE_SEP) {
     fprintf(tfp, "\\shortstack" );
     /* Output the justification for the shortstack. */
     switch (text->type) {
@@ -917,13 +920,25 @@ F_text *text;
     default:
 	fprintf(stderr, "unknown text position type\n");
 	exit(1);
+	}
+	break;
+      }
     }
 
     unpsfont(text);
-    fprintf(tfp, "{{\\%s%s ", TEXFONTMAG(text), TEXFONT(text->font));
+    { int texsize;
+      double baselineskip;
+
+      texsize = TEXFONTMAG(text);
+      baselineskip = (texsize * 1.2);
+
+      fprintf(tfp, "{{\\SetFigFont{%d}{%.1f}{%s}",
+	      texsize, baselineskip, TEXFONT(text->font));
+    }
+
     if (!special_text(text))
 	/* This loop escapes special LaTeX characters. */
-	for(cp = text->cstring; *cp; cp++) {
+	for(cp = (unsigned char*)text->cstring; *cp; cp++) {
       	    if (special_index=strchr(latex_text_specials, *cp)) {
 	      /* Write out the replacement.  Implementation note: we can't
 		 use puts since that will output an additional newline. */
@@ -938,20 +953,41 @@ F_text *text;
 		 the current font, starting a new line, and then resuming with
 		 the current font. */
 	      fprintf(tfp, "} \\\\\n");
-	      fprintf(tfp, "{\\%s%s ", TEXFONTMAG(text), TEXFONT(text->font));
+
+ 	      { int texsize;
+ 		double baselineskip;
+ 
+ 		texsize = TEXFONTMAG(text);
+ 		baselineskip = (texsize * 1.2);
+ 		
+ 		fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}",
+ 			texsize, baselineskip, TEXFONT(text->font));
+  	      }
 	    }
 	    else
 		fputc(*cp, tfp);
       	}
     else 
-	for(cp = text->cstring; *cp; cp++) {
+	for(cp = (unsigned char*)text->cstring; *cp; cp++) {
 	  if (*cp == TEXT_LINE_SEP) {
 	      /* Handle multi-line text strings. */
 	      fprintf(tfp, "} \\\\\n");
-	      fprintf(tfp, "{\\%s%s ", TEXFONTMAG(text), TEXFONT(text->font));
+
+	      { int texsize;
+		double baselineskip;
+
+		texsize = TEXFONTMAG(text);
+		baselineskip = (texsize * 1.2);
+		
+		fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}",
+			texsize, baselineskip, TEXFONT(text->font));
+	      }
 	    }
-	    else 
-	      fputc(*cp, tfp);
+	    else
+	        if (*cp >= 0xa0)	/* we escape 8-bit char */
+	    		fprintf(tfp, "%s", ISOtoTeX[(int)*cp-0xa0]);
+		else
+			fputc(*cp, tfp);
 	  }
     fprintf(tfp, "}}}}}\n");
 }
@@ -1039,7 +1075,6 @@ F_arc *arc;
 		fprintf(tfp, "\\arc{%4.3f}{%2.4f}{%2.4f}}\n", 2*r2, th1, th1+theta);
 	    }
 #endif
-        } else {
             drawarc(&ctr, r2, 2*M_PI - th1 - theta, theta);
         }
     }

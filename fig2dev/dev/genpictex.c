@@ -1,20 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1991 Micah Beck, Cornell University
+ * Copyright (c) 1985 Supoj Sutantavibul
+ * Copyright (c) 1991 Micah Beck
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of Cornell University not be used in
- * advertising or publicity pertaining to distribution of the software without
- * specific, written prior permission.  Cornell University makes no
- * representations about the suitability of this software for any purpose.  It
- * is provided "as is" without express or implied warranty.
+ * documentation. The authors make no representations about the suitability 
+ * of this software for any purpose.  It is provided "as is" without express 
+ * or implied warranty.
  *
- * CORNELL UNIVERSITY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL CORNELL UNIVERSITY BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
  * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
  * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
@@ -26,7 +25,6 @@
  *	genpictex.C : PiCTeX driver for fig2dev
  *
  * 	Author Micah Beck, Cornell University, 4/88
- *	(beck@svax.cs.cornell.edu)
  *    Color, rotated text and ISO-chars added by Herbert Bauer 11/91
 */
 #if defined(hpux) || defined(SYSV)
@@ -43,7 +41,18 @@
 #define UNIT "cm"       /* dip */
 #define CONVUNIT 2.54   /* dip */
 
-extern double sin(), cos(), acos(), fabs();
+#ifndef fabs
+extern double fabs();
+#endif
+#ifndef sin
+extern double sin();
+#endif
+#ifndef cos
+extern double cos();
+#endif
+#ifndef acos
+extern double acos();
+#endif
 extern char *ISOtoTeX[];
 
 void genpictex_ctl_spline(), genpictex_itp_spline();
@@ -63,7 +72,7 @@ char opt, *optarg;
 	switch (opt) {
 
 		case 'a':
-		    capfonts = 1;
+		    fprintf(stderr, "warning: pictex option -a obsolete\n");
 		    break;
 
 		case 'f':			/* set default text font */
@@ -559,7 +568,15 @@ F_text	*t;
 	    }
 
 	unpsfont(t);
-	fprintf(tfp, "\\put {\\%s%s ", TEXFONTMAG(t), TEXFONT(t->font));
+        { int texsize;
+          double baselineskip;
+
+	  texsize = TEXFONTMAG(t);
+	  baselineskip = (texsize * 1.2);
+
+ 	  fprintf(tfp, "\\put{\\SetFigFont{%d}{%.1f}{%s}",
+		texsize, baselineskip, TEXFONT(t->font));
+	}
 
 #ifdef DVIPS
 	if(t->angle && t->type == T_LEFT_JUSTIFIED)
@@ -599,7 +616,6 @@ F_text	*t;
 	     fprintf(stderr, "Rotated Text only for left justified text\n");
 	}
 #endif
-
  	fprintf(tfp, "} %s at %6.3f %6.3f\n",
 	    tpos, (x)*CONVUNIT, (y)*CONVUNIT);
 	}

@@ -1,20 +1,19 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1991 Micah Beck, Cornell University
+ * Copyright (c) 1985 Supoj Sutantavibul
+ * Copyright (c) 1991 Micah Beck
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of Cornell University not be used in
- * advertising or publicity pertaining to distribution of the software without
- * specific, written prior permission.  Cornell University makes no
- * representations about the suitability of this software for any purpose.  It
- * is provided "as is" without express or implied warranty.
+ * documentation. The authors make no representations about the suitability 
+ * of this software for any purpose.  It is provided "as is" without express 
+ * or implied warranty.
  *
- * CORNELL UNIVERSITY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL CORNELL UNIVERSITY BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
  * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
  * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
  * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
@@ -28,6 +27,8 @@
  *      Modified by Herbert Bauer to support ISO-Characters,
  *      multiple page output, color mode etc.
  *      heb@regent.e-technik.tu-muenchen.de
+ *
+ *	Modified by Eric Picheral to support the whole set of ISO-Latin-1
 */
 
 #if defined(hpux) || defined(SYSV)
@@ -78,7 +79,7 @@ extern int 	v2_flag, v21_flag;
 #define GRAYVAL(F)	((F) <= 21 ? ((F)-1)/20.0 : 1.0)
 
 #define		BEGIN_PROLOG	"\
-/$F2psDict 64 dict def \n\
+/$F2psDict 200 dict def \n\
 $F2psDict begin\n\
 $F2psDict /mtrx matrix put\n\
 /l {lineto} bind def\n\
@@ -113,87 +114,31 @@ newfont /FontName newfontname put newcodesandnames aload pop\n\
 newcodesandnames length 2 idiv { newfont /Encoding get 3 1 roll put } repeat\n\
 newfontname newfont definefont pop end } def\n\
 /isovec [ \n\
-8#200 /grave 8#201 /acute 8#202 /circumflex 8#203 /tilde \n\
-8#204 /macron 8#205 /breve 8#206 /dotaccent 8#207 /dieresis \n\
-8#210 /ring 8#211 /cedilla 8#212 /hungarumlaut 8#213 /ogonek \n\
-8#214 /caron \n\
-8#244 /currency \
-8#252 /ordfeminine \
-8#255 /endash \
-8#270 /oslash \
-\n\
-8#271 /dotlessi \
-8#272 /ordmasculine \
-8#300 /Agrave \
-8#301 /Aacute \
-\n\
-8#302 /Acircumflex \
-8#303 /Atilde \
-8#304 /Adieresis \
-8#305 /Aring \
-\n\
-8#306 /AE \
-8#307 /Ccedilla \
-8#310 /Egrave \
-8#311 /Eacute \
-\n\
-8#312 /Ecircumflex \
-8#313 /Edieresis \
-8#314 /Igrave \
-8#315 /Iacute \
-\n\
-8#316 /Icircumflex \
-8#317 /Idieresis \
-8#321 /Ntilde \
-8#322 /Ograve \
-\n\
-8#323 /Oacute \
-8#324 /Ocircumflex \
-8#325 /Otilde \
-8#326 /Odieresis \
-\n\
-8#330 /Oslash \
-8#331 /Ugrave \
-8#332 /Uacute \
-8#333 /Ucircumflex \
-\n\
-8#334 /Udieresis \
-8#337 /germandbls \
-8#340 /agrave \
-8#341 /aacute \
-\n\
-8#342 /acircumflex \
-8#343 /atilde \
-8#344 /adieresis \
-8#345 /aring \
-\n\
-8#346 /ae \
-8#347 /ccedilla \
-8#350 /egrave \
-8#351 /eacute \
-\n\
-8#352 /ecircumflex \
-8#353 /edieresis \
-8#354 /igrave \
-8#355 /iacute \
-\n\
-%8#356 /icircumflex \
-8#357 /idieresis \
-8#361 /ntilde \
-8#362 /ograve \
-\n\
-8#363 /oacute \
-8#364 /ocircumflex \
-8#365 /otilde \
-8#366 /odieresis \
-\n\
-8#370 /oslash \
-8#371 /ugrave \
-8#372 /uacute \
-8#373 /ucircumflex \
-\n\
-8#374 /udieresis \
-8#377 /ydieresis \
+8#200 /grave 8#201 /acute 8#202 /circumflex 8#203 /tilde\n\
+8#204 /macron 8#205 /breve 8#206 /dotaccent 8#207 /dieresis\n\
+8#210 /ring 8#211 /cedilla 8#212 /hungarumlaut 8#213 /ogonek 8#214 /caron\n\
+8#220 /dotlessi 8#240 /space 8#241 /exclamdown 8#242 /cent 8#243 /sterling\n\
+8#244 /currency 8#245 /yen 8#246 /brokenbar 8#247 /section 8#250 /dieresis\n\
+8#251 /copyright 8#252 /ordfeminine 8#253 /guillemotleft 8#254 /logicalnot\n\
+8#255 /endash 8#256 /registered 8#257 /macron 8#260 /degree 8#261 /plusminus\n\
+8#262 /twosuperior 8#263 /threesuperior 8#264 /acute 8#265 /mu 8#266 /paragraph\n\
+8#267 /periodcentered 8#270 /cedilla 8#271 /onesuperior 8#272 /ordmasculine\n\
+8#273 /guillemotright 8#274 /onequarter 8#275 /onehalf \n\
+8#276 /threequarters 8#277 /questiondown 8#300 /Agrave 8#301 /Aacute\n\
+8#302 /Acircumflex 8#303 /Atilde 8#304 /Adieresis 8#305 /Aring\n\
+8#306 /AE 8#307 /Ccedilla 8#310 /Egrave 8#311 /Eacute\n\
+8#312 /Ecircumflex 8#313 /Edieresis 8#314 /Igrave 8#315 /Iacute\n\
+8#316 /Icircumflex 8#317 /Idieresis 8#320 /Eth 8#321 /Ntilde 8#322 /Ograve\n\
+8#323 /Oacute 8#324 /Ocircumflex 8#325 /Otilde 8#326 /Odieresis 8#327 /multiply\n\
+8#330 /Oslash 8#331 /Ugrave 8#332 /Uacute 8#333 /Ucircumflex\n\
+8#334 /Udieresis 8#335 /Yacute 8#336 /Thorn 8#337 /germandbls 8#340 /agrave\n\
+8#341 /aacute 8#342 /acircumflex 8#343 /atilde 8#344 /adieresis 8#345 /aring\n\
+8#346 /ae 8#347 /ccedilla 8#350 /egrave 8#351 /eacute\n\
+8#352 /ecircumflex 8#353 /edieresis 8#354 /igrave 8#355 /iacute\n\
+8#356 /icircumflex 8#357 /idieresis 8#360 /eth 8#361 /ntilde 8#362 /ograve\n\
+8#363 /oacute 8#364 /ocircumflex 8#365 /otilde 8#366 /odieresis 8#367 /divide\n\
+8#370 /oslash 8#371 /ugrave 8#372 /uacute 8#373 /ucircumflex\n\
+8#374 /udieresis 8#375 /yacute 8#376 /thorn 8#377 /ydieresis \
 ] def\n\
 "
 
@@ -208,7 +153,7 @@ newfontname newfont definefont pop end } def\n\
 	/savematrix mtrx currentmatrix def\n\
 	x y translate xrad yrad scale 0 0 1 startangle endangle arc\n\
 	savematrix setmatrix\n\
-	} def newpath 0 0 0 0 0 1 DrawEllipse stroke\n\
+	} def\n\
 "
 /* The original PostScript definition for adding a spline section to the
  * current path uses recursive bisection.  The following definition using the
@@ -236,9 +181,9 @@ newfontname newfont definefont pop end } def\n\
 "
 #define		END_PROLOG	"\
 	end\n\
-	/$F2psBegin {$F2psDict begin /$F2psEnteredState save def} def\n\
-	/$F2psEnd {$F2psEnteredState restore end} def\n\
-	%%EndProlog\n\
+/$F2psBegin {$F2psDict begin /$F2psEnteredState save def} def\n\
+/$F2psEnd {$F2psEnteredState restore end} def\n\
+%%EndProlog\n\
 "
 
 static double		tx, scalex, scaley;
@@ -314,16 +259,34 @@ F_compound	*objects;
 	if (landscape)
 	{
 	   itmp = pageheight; pageheight = pagewidth; pagewidth = itmp;
+	   itmp = llx; llx = lly; lly = itmp;
+	   itmp = urx; urx = ury; ury = itmp;
 	}
-	if (center && show_page)
+	if (show_page)
 	{
-	   origx = (pagewidth - urx - llx)/2.0;
-	   origy = (pageheight + ury + lly)/2.0;
+	   if (center)
+	   {
+              if (landscape)
+              {
+                 origx = (pageheight - urx - llx)/2.0;
+                 origy = (pagewidth - ury - lly)/2.0;
+              }
+              else
+              {
+                 origx = (pagewidth - urx - llx)/2.0;
+                 origy = (pageheight + ury + lly)/2.0;
+              }
+	   }
+	   else
+	   {
+	      origx = 0.0;
+	      origy = landscape ? 0.0 : pageheight;
+	   }
 	}
 	else
 	{
-	   origx = 0.0;
-	   origy = pageheight;
+	   origx = -llx;
+	   origy = landscape ? -lly : ury;
 	}
 
 	if (coord_system == 2) scaley = -scaley;
@@ -341,19 +304,16 @@ F_compound	*objects;
 			who->pw_name, host, who->pw_gecos);
 
 	if (!center)
-           pages = (urx/pagewidth+1)*(ury/pageheight+1);
+	   pages = (urx/pagewidth+1)*(ury/pageheight+1);
 	else
 	   pages = 1;
-	if (show_page)
-        {
-	  fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n", llx, lly, urx, ury);
-	  fprintf(tfp, "%%%%Pages: %d\n", pages);
-        }
-	else
-        { /* put the picture in the lower left corner */
-	  fprintf(tfp, "%%%%BoundingBox: 0 0 %d %d\n", urx-llx, ury-lly);
-	  fprintf(tfp, "%%%%Pages: %d\n", show_page);
-        }
+        if (landscape)
+	   fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n", 
+	      (int)origx+llx, (int)origy+lly, (int)origx+urx, (int)origy+ury);
+        else
+	   fprintf(tfp, "%%%%BoundingBox: %d %d %d %d\n", 
+	      (int)origx+llx, (int)origy-ury, (int)origx+urx, (int)origy-lly);
+        fprintf(tfp, "%%%%Pages: %d\n", show_page ? pages : 0 );
 
 	fprintf(tfp, "%%%%EndComments\n");
 	fprintf(tfp, "%s", BEGIN_PROLOG);
@@ -373,11 +333,12 @@ F_compound	*objects;
             multi_page = TRUE;
  	else
  	{
-            if (!show_page) fprintf(tfp, "%d %d translate\n", -llx, lly);
-            if (landscape)
-                fprintf(tfp, "%d 0 translate 90 rotate\n", pageheight);
-            fprintf(tfp, "%.1f %.1f translate %.3f %.3f scale\n",
-                 origx, (show_page ? origy : (double)ury-lly), scalex, scaley);
+	    fprintf (tfp, "%.1f %.1f translate", origx, origy);
+	    if (landscape)
+	    {
+	       fprintf (tfp, " 90 rotate");
+	    }
+	    fprintf (tfp, " %.3f %.3f scale\n", scalex, scaley );
 	}
 }
 
@@ -392,15 +353,13 @@ void genps_end()
        {
          for (dx=0;dx<(urx-pagewidth*0.1);dx+=pagewidth*0.9)
          {
-            if (landscape)
-            {
-                fprintf(tfp, "%d 0 translate 90 rotate\n", pagewidth);
-                fprintf(tfp, "%f %f translate %.3f %.3f scale\n",
-                        origx+dx, origy+dy, scalex, scaley);
-            } else {
-               fprintf(tfp, "%f %f translate %.3f %.3f scale\n",
-                       origx-dx, origy+dy, scalex, scaley);
-            }
+	    fprintf (tfp, "%.1f %.1f translate", 
+		origx+dx, origy+(landscape?-dy:dy));
+	    if (landscape)
+	    {
+	       fprintf(tfp, " 90 rotate");
+	    }
+	    fprintf (tfp, " %.3f %.3f scale\n", scalex, scaley);
             for (i=0; i<no_obj; i++)
 	    {
 	       fprintf(tfp, "o%d ", i);
@@ -464,7 +423,8 @@ F_line	*l;
 	
 	if (multi_page)
 	   fprintf(tfp, "/o%d {", no_obj++);
-	set_linewidth(l->thickness);
+	if (l->type != T_EPS_BOX)  /* eps object has no line thickness */
+		set_linewidth(l->thickness);
 	radius = l->radius;                /* radius of rounded-corner boxes */
 	p = l->points;
 	q = p->next;
@@ -479,7 +439,8 @@ F_line	*l;
 	    draw_arrow_head((double)q->x, (double)q->y, (double)p->x,
 			(double)p->y, l->back_arrow->ht, l->back_arrow->wid,
 			l->color);
-	set_style(l->style, l->style_val);
+	if (l->type != T_EPS_BOX)  /* eps object has no line style */
+		set_style(l->style, l->style_val);
 	fprintf(tfp, "%% Polyline\n");
 
         xmin = xmax = p->x;
@@ -639,21 +600,23 @@ ugh tr to tl */
 	    		}
 		}
 	}
-	if (l->type == T_POLYLINE)
-	    fprintf(tfp, " %d %d l ", q->x, q->y);
-	else
-	    fprintf(tfp, " clp ");
-	if (l->area_fill && (int)l->area_fill != DEFAULT)
-	    fill_area(l->area_fill, l->color);
-	if (l->thickness > 0)
-             fprintf(tfp, "gs col%d s gr\n",
-			l->color > MAXCOLORS ? -1 : l->color);
+	if (l->type != T_EPS_BOX) {
+		if (l->type == T_POLYLINE)
+		    fprintf(tfp, " %d %d l ", q->x, q->y);
+		else 
+		    fprintf(tfp, " clp ");
+		if (l->area_fill && (int)l->area_fill != DEFAULT)
+		    fill_area(l->area_fill, l->color);
+		if (l->thickness > 0)
+		     fprintf(tfp, "gs col%d s gr\n",
+				l->color > MAXCOLORS ? -1 : l->color);
 
-	reset_style(l->style, l->style_val);
-	if (l->for_arrow && l->thickness > 0)
-	    draw_arrow_head((double)p->x, (double)p->y, (double)q->x,
-			(double)q->y, l->for_arrow->ht, l->for_arrow->wid,
-			l->color);
+		reset_style(l->style, l->style_val);
+		if (l->for_arrow && l->thickness > 0)
+		    draw_arrow_head((double)p->x, (double)p->y, (double)q->x,
+				(double)q->y, l->for_arrow->ht, l->for_arrow->wid,
+				l->color);
+	}
 	if (multi_page)
 	   fprintf(tfp, "} bind def\n");
 	}
@@ -790,9 +753,6 @@ F_ellipse	*e;
 	    fprintf(tfp, "%% Rotated Ellipse\n");
 	    fprintf(tfp, "gs\n");
 	    fprintf(tfp, "%d %d translate\n",e->center.x, e->center.y);
-	    /* changed to give -angle so that positive angles rotate CCW -
-		Don't know why it isn't working naturally, since the RED Book
-		says that rotation is positive for CCW anyway */
 	    fprintf(tfp, "%6.3f rotate\n",-e->angle*180/M_PI);
 	    fprintf(tfp, "n 0 0 %d %d 0 360 DrawEllipse ",
 		 e->radiuses.x, e->radiuses.y);

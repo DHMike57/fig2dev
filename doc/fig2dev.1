@@ -45,7 +45,7 @@ Fig2dev is compatible with Fig versions 1.3, 1.4, 2.0, and 2.1.
 .B \-L
 Set the output graphics language.
 Valid languages are
-\fBbox, epic, eepic, eepicemu, latex, null, pic, pictex, ps, pstex, pstex_t,textyl,\fR
+\fBbox, epic, eepic, eepicemu, ibmgl, latex, null, pic, pictex, ps, pstex, pstex_t,textyl,\fR
 and
 .B tpic.
 .TP
@@ -69,6 +69,7 @@ Set the default font size (in points) for text objects to
 .I fsize.
 The default is 11*mag, and thus is scaled by the \fB-m\fR option.
 If there is no scaling, the default font is eleven point Roman."
+.TP
 .B \-V
 Print the program version number only.
 .TP
@@ -89,12 +90,6 @@ Computer Science at University of California, Davis.
 .LP
 EEPIC-EMU is an EEPIC emulation package which does not use tpic specials.
 .TP
-.B \-a
-Generate alternate font size commands which have an initial captial letter.
-These can be translated into latex type size commands by including the macro
-file figfonts.tex.  In the resulting document, type size changes apply
-to text math mode as well as straight text.
-.TP
 .B \-l
 Use "\fB\\thicklines\fR" when width of the line is wider than 
 .I lwidth.
@@ -104,7 +99,7 @@ The default is 2.
 Include comments in the output file.
 .TP
 .B \-P
-Generate a complete LaTeX file. In other words, the ouput file can be
+Generate a complete LaTeX file. In other words, the output file can be
 formatted without requiring any changes. The additional text inserted
 in the beginning and at the end of the file is controlled by the
 configuration parameter "Preamble" and "Postamble".
@@ -136,13 +131,90 @@ wide lines but the next line width is already 2pt. One possible
 solution is to set \fILineThick\fR to 1 and set the width of the
 those lines you want to be drawn in "\fB\\thinlines\fR"  to 0.
 
-Due to this problem, Varible line width \fIVarWidth\fR
+Due to this problem, Variable line width \fIVarWidth\fR
 is defaulted to be false.
 
-.SH LATEX OPTIONS
+.SH IBM-GL OPTIONS
+IBM-GL (International Business Machines Graphics Language) is compatible
+with HP-GL (Hewlett-Packard Graphics Language).
 .TP
 .B \-a
-Generate alternate font size commands - see epic options.
+Select ISO A4 (ANSI A) paper size if the default is ANSI A (ISO A4) paper size.
+.TP
+.B \-c
+Generate instructions for an IBM 6180 Color Plotter
+with (without) an IBM Graphics Enhancement Cartridge (IBM-GEC).
+.TP
+.B \-d
+Restrict plotting to a rectangular area of the plotter paper which has
+a lower left hand corner at
+.I (xll,yll)
+and a upper right hand corner at
+.I (xur,yur).
+All four numbers are in inches and follow \fB-d\fR in a comma-sparated list -
+.I xll,yll,xur,yur
+- with no spaces between them.
+.TP
+.B \-f
+Load text character specifications from the table in the
+.I fonts
+file.
+The table must have 36 entries - one for each font plus a default.
+Each entry consists of 5 numbers
+which specify the
+1.) standard character set (0 - 4, 6 - 9, 30 - 39),
+2.) alternate character set (0 - 4, 6 - 9, 30 - 39),
+3.) character slant angle (degrees),
+4.) character width scale factor and
+5.) character height scale factor.
+.TP
+.B \-l
+Load area fill line patterns from the table in the
+.I patterns
+file.
+The table must have 21 entries - one for each of the area fill patterns.
+Each entry consists of 5 numbers which specify the
+1.) pattern number (-1 - 6),
+2.) pattern length (inches),
+3.) fill type (1 - 5),
+4.) fill spacing (inches) and
+5.) fill angle (degrees).
+.TP
+.B \-m
+The magnification may appear as the first element in a comma sepatated list -
+.I mag,x0,y0
+- where the second and third parameters specify an offset in inches.
+.TP
+.B \-p
+Load plotter pen specifications from the table in the
+.I pens
+file.
+The table must have 9 entries - one for each color plus a default.
+Each entry consists of 2 numbers which specify the
+1.) pen number (1 - 8) and
+2.) pen thickness (millimeters).
+.TP
+.B \-P
+Rotate the figure to portrait mode. The default is landscape mode.
+.TP
+.B \-S
+Set the pen speed to
+.I speed
+(centimeters/second).
+.TP
+.B \-v
+Plot the figure upside-down in portrait mode or backwards in landscape mode.
+This allows you to write on the top surface of overhead transparencies without
+disturbing the plotter ink on the bottom surface.
+.LP
+Fig2dev may be installed with either ANSI A or ISO A4 default paper size.
+The \fB-a\fR option selects the alternate paper size.
+Fig2dev does not fill closed splines.
+The IBM-GEC is required to fill other polygons.
+Fig2dev may be installed for plotters with or without the IBM-GEC.
+The \fB-c\fR option selects the alternate instruction set.
+
+.SH LATEX OPTIONS
 .TP
 .B \-l
 Sets the threshold between LaTeX thin and thick lines to 
@@ -156,7 +228,7 @@ Also affects the size of dots in dotted line style.
 The default is 0.
 .TP
 .B \-d
-Set a seperate magnification for the length of line dashes to
+Set a separate magnification for the length of line dashes to
 .I dmag.
 .TP
 .B \-v
@@ -171,12 +243,9 @@ messages when objects cannot be drawn accurately
 
 .SH PIC OPTIONS
 .TP
-.B \-a
-Generate alternate font size commands - see epic options.
-.TP
 .B -p
 Enables the use of certain PIC extensions which are known to work with
-the groff package; compatibility with DWB PIC is unkown.
+the groff package; compatibility with DWB PIC is unknown.
 The extensions enabled by each option are:
 .LP
 .TP
@@ -191,6 +260,13 @@ Allow ellipses to be filled
 .TP
 .B all
 Use all of the above
+.TP
+.B psfont
+Don't convert Postscript fonts generic type (useful for files going to be
+Ditroff'ed for and printed on PS printer). DWB-compatible.
+.TP
+.B allps
+Use all of the above (i.e. "all" + "psfont")
 .EP
 .EP
 
@@ -207,7 +283,7 @@ The size of TeX's memory limits the number of plot symbols in a picture.
 As a result, it is best to use PiCTeX to generate small pictures.
 
 .SH POSTSCRIPT OPTIONS
-With Postscript, Fig can be used to create large posters. The figure
+With PostScript, Fig can be used to create large posters. The figure
 will be created by printing multiple pages which can be glued together.
 Due to memory limitations of most laser printers, the figure should not
 be too complicated. Great for text with very big letters.
@@ -224,9 +300,6 @@ grayscales.
 Filled objects are printed using the given grayscale. If filled
 with grayscale set to 100%, the object will be filled with the same
 color as the enclosing line.
-.TP
-.B \-a
-Generate alternate font size commands - see epic options.
 .TP
 .B -c
 option centers the figure on the page.
@@ -267,7 +340,7 @@ The
 .B pstex_t
 option 
 .B -p file
-specifies the name of the PostScript file to be overlayed.
+specifies the name of the PostScript file to be overlaid.
 If not set or its value is null then no PS file will be inserted.
 .LP
 
@@ -282,8 +355,28 @@ There are no tpic-specific options.
 pic(1)
 pic2fig(1),
 transfig(1)
+.SH COPYRIGHT
+Copyright (c) 1985 Supoj Sutantavibul
+.br
+Copyright (c) 1991 Micah Beck
+.LP
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation. The authors make no representations about the suitability 
+of this software for any purpose.  It is provided "as is" without express 
+or implied warranty.
+.LP
+THE AUTHORS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
+EVENT SHALL THE AUTHORS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
 .SH AUTHORS
-Micah Beck (beck@svax.cs.cornell.edu)
+Micah Beck
 .br
 Cornell University
 .br
