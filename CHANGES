@@ -1,0 +1,13 @@
+Transfig version 2.1.6
+
+Changes from 2.1.5:
+
+o Courier-BoldItalic changed to Courier-BoldOblique for PostScript fonts
+o "if" statement replaces copysign() call since some machines don't have it
+o some backslashes ('\') corrected in printf statements in transfig/mkfile.c and
+	fig2dev/iso2tex.c
+o changed header for postscript files from "%!" to "%!PS-Adobe-2.0" when using
+	-P (showpage) option and "%!PS-Adobe-2.0 EPSF" otherwise (Encapsulated)
+o corrupt transfig/Imakefile and typo (SCRS instead of SRCS)
+o some variables (cur_thickness and coord_system) were multiply defined in 
+	various drivers in fig2dev/dev - made those static

@@ -58,7 +58,7 @@ extern double fabs();
 
 void gentextyl_ctl_spline(), gentextyl_itp_spline();
 
-int		coord_system;
+static int		coord_system;
 static double		dash_length = -1;
 static int		line_style = 0; /* Textyl solid line style */
 static int 		linethick = 2;  /* Range is 1-12 `pixels' */

@@ -86,7 +86,7 @@ argument *arg_list;
 
         case psfig:
                 puttarget(mk, i, "tex", "ps");
-                fprintf(mk,"\techo \'\\strut\\psfig\{figure=%s.ps\}\' >%s.tex\n",
+                fprintf(mk,"\techo \'\\strut\\psfig\\{figure=%s.ps\\}\' >%s.tex\n",
                           i, i);
 		needps = 1;
                 break;

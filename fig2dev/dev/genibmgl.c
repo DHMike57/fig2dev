@@ -527,7 +527,10 @@ double	sx, sy, cx, cy, theta, delta;
 			cx, cy, theta*DPR, delta*DPR);
 	else {
 	    double	alpha;
-	    delta	 = copysign(delta, theta);
+	    if (theta < 0.0)
+		delta = -fabs(delta);
+	    else
+		delta = fabs(delta);
 	    for (alpha = delta; fabs(alpha) < fabs(theta); alpha += delta) {
 		fprintf(tfp, "PA%.4f,%.4f;\n",
 	    		cx + (sx - cx)*cos(alpha) - (sy - cy)*sin(alpha),
@@ -1007,4 +1010,3 @@ struct driver dev_ibmgl = {
 	genibmgl_end,
 	EXCLUDE_TEXT
 	};
-

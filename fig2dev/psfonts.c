@@ -44,7 +44,7 @@ char			*PSfontnames[] = {
 			"Courier",	
 			"Courier-Oblique",
 			"Courier-Bold",
-			"Courier-BoldItalic",
+			"Courier-BoldOblique",
 			"Helvetica",
 			"Helvetica-Oblique",
 			"Helvetica-Bold",

@@ -64,9 +64,9 @@
 
 int		pagewidth = PAGE_WIDTH;
 int		pageheight = PAGE_HEIGHT;
-int		coord_system;
+static int	coord_system;
 int		show_page = 0;
-int		cur_thickness;
+static int	cur_thickness;
 int		center = 0;
 int		landscape = 0;
 int		pages;
@@ -291,7 +291,10 @@ F_compound	*objects;
 
 	if (coord_system == 2) scaley = -scaley;
 
-	fprintf(tfp, "%%!\n");	/* PostScript magic strings */
+	if (show_page)
+	    fprintf(tfp, "%%!PS-Adobe-2.0\n");		/* PostScript magic strings */
+	else
+	    fprintf(tfp, "%%!PS-Adobe-2.0 EPSF\n");	/* Encapsulated PostScript */
 	who = getpwuid(getuid());
 	if (-1 == gethostname(host, sizeof(host)))
 	    (void)strcpy(host, "unknown-host!?!?");

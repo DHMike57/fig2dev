@@ -111,7 +111,7 @@ char		thickdot[] = THICKDOT;
 char		thin_ldot [] = THIN_LDOT;
 char		thick_ldot[] = THICK_LDOT;
 
-int		coord_system;
+static	int	coord_system;
 int		verbose = 0;
 double		dash_mag = 1.0;
 int		thick_width = 1;
@@ -120,7 +120,7 @@ double		arc_tolerance = 1.0;
 int		(*translate_coordinates)() = NULL;
 int		(*translate_coordinates_d)() = NULL;
 double		unitlength;
-int		cur_thickness = -1;
+static int	cur_thickness = -1;
 double		ldot_diameter = 1.0/72.0;
 char		*dot_cmd = thindot;
 char		*ldot_cmd = thin_ldot;

@@ -57,12 +57,12 @@ extern char *ISOtoTeX[];
 
 void genpictex_ctl_spline(), genpictex_itp_spline();
 
-int		coord_system;
+static int		coord_system;
 static double		dash_length = -1;
 static int		line_style = SOLID_LINE;
 static char 		*linethick = "1pt";
 static char		*plotsymbol = "\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}";
-static int	cur_thickness = -1;
+static int		cur_thickness = -1;
 
 static void genpictex_option(opt, optarg)
 char opt, *optarg;

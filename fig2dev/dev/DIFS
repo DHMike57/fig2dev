@@ -1,0 +1,119 @@
+*** genepic.c.orig	Wed Oct 14 14:31:58 1992
+--- genepic.c	Tue Nov 10 10:23:29 1992
+***************
+*** 112,117 ****
+--- 112,118 ----
+  typedef struct fp_struct FPoint;
+  
+  /* Local to the file only */
++ static int coord_system;
+  static int CoordSys = 2;
+  static double Threshold;
+  static int DPI;
+*** genlatex.c.orig	Tue Oct 20 09:11:43 1992
+--- genlatex.c	Tue Nov 10 10:25:45 1992
+***************
+*** 111,117 ****
+  char		thin_ldot [] = THIN_LDOT;
+  char		thick_ldot[] = THICK_LDOT;
+  
+! int		coord_system;
+  int		verbose = 0;
+  double		dash_mag = 1.0;
+  int		thick_width = 1;
+--- 111,117 ----
+  char		thin_ldot [] = THIN_LDOT;
+  char		thick_ldot[] = THICK_LDOT;
+  
+! static	int	coord_system;
+  int		verbose = 0;
+  double		dash_mag = 1.0;
+  int		thick_width = 1;
+***************
+*** 120,126 ****
+  int		(*translate_coordinates)() = NULL;
+  int		(*translate_coordinates_d)() = NULL;
+  double		unitlength;
+! int		cur_thickness = -1;
+  double		ldot_diameter = 1.0/72.0;
+  char		*dot_cmd = thindot;
+  char		*ldot_cmd = thin_ldot;
+--- 120,126 ----
+  int		(*translate_coordinates)() = NULL;
+  int		(*translate_coordinates_d)() = NULL;
+  double		unitlength;
+! static int	cur_thickness = -1;
+  double		ldot_diameter = 1.0/72.0;
+  char		*dot_cmd = thindot;
+  char		*ldot_cmd = thin_ldot;
+*** genpictex.c.orig	Wed Oct 14 14:32:06 1992
+--- genpictex.c	Tue Nov 10 10:24:12 1992
+***************
+*** 57,68 ****
+  
+  void genpictex_ctl_spline(), genpictex_itp_spline();
+  
+! int		coord_system;
+  static double		dash_length = -1;
+  static int		line_style = SOLID_LINE;
+  static char 		*linethick = "1pt";
+  static char		*plotsymbol = "\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}";
+! static int	cur_thickness = -1;
+  
+  static void genpictex_option(opt, optarg)
+  char opt, *optarg;
+--- 57,68 ----
+  
+  void genpictex_ctl_spline(), genpictex_itp_spline();
+  
+! static int		coord_system;
+  static double		dash_length = -1;
+  static int		line_style = SOLID_LINE;
+  static char 		*linethick = "1pt";
+  static char		*plotsymbol = "\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}";
+! static int		cur_thickness = -1;
+  
+  static void genpictex_option(opt, optarg)
+  char opt, *optarg;
+*** genps.c.orig	Thu Oct 29 16:59:17 1992
+--- genps.c	Tue Nov 10 10:24:48 1992
+***************
+*** 64,72 ****
+  
+  int		pagewidth = PAGE_WIDTH;
+  int		pageheight = PAGE_HEIGHT;
+! int		coord_system;
+  int		show_page = 0;
+! int		cur_thickness;
+  int		center = 0;
+  int		landscape = 0;
+  int		pages;
+--- 64,72 ----
+  
+  int		pagewidth = PAGE_WIDTH;
+  int		pageheight = PAGE_HEIGHT;
+! static int	coord_system;
+  int		show_page = 0;
+! static int	cur_thickness;
+  int		center = 0;
+  int		landscape = 0;
+  int		pages;
+*** gentextyl.c.orig	Wed Oct 14 14:32:10 1992
+--- gentextyl.c	Tue Nov 10 10:25:22 1992
+***************
+*** 58,64 ****
+  
+  void gentextyl_ctl_spline(), gentextyl_itp_spline();
+  
+! int		coord_system;
+  static double		dash_length = -1;
+  static int		line_style = 0; /* Textyl solid line style */
+  static int 		linethick = 2;  /* Range is 1-12 `pixels' */
+--- 58,64 ----
+  
+  void gentextyl_ctl_spline(), gentextyl_itp_spline();
+  
+! static int		coord_system;
+  static double		dash_length = -1;
+  static int		line_style = 0; /* Textyl solid line style */
+  static int 		linethick = 2;  /* Range is 1-12 `pixels' */

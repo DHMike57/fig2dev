@@ -49,11 +49,11 @@ char *ISOtoTeX[] =   /* starts at octal 240 */
   "{}",		/* trademark */
   "{}",		/* overscore */
 /* 0xb0 */
-  "{\\lower.2ex\\hbox{\\char\'27}}",		/* degree */
+  "{\\lower.2ex\\hbox{\\char\\'27}}",		/* degree */
   "\\mbox{$\\pm$}",	/* plus minus - math mode */
   "\\mbox{$\\mathsurround 0pt{}^2$}",		/* squared  - math mode */
   "\\mbox{$\\mathsurround 0pt{}^3$}",		/* cubed  - math mode */
-  "\'{}",		/* accent egue */
+  "\\'{}",		/* accent egue */
   "\\mbox{$\\mu$}",	/* greek letter mu - math mode */
   "\\P{}",	/* paragraph */
   "\\mbox{$\\cdot$}",	/* centered dot  - math mode */
@@ -83,7 +83,7 @@ char *ISOtoTeX[] =   /* starts at octal 240 */
   "\\^I",
   "\\\"I",
 /* 0xd0 */
-  "{\rlap{\raise.3ex\hbox{--}}D}", /* Eth */
+  "{\\rlap{\\raise.3ex\\hbox{--}}D}", /* Eth */
   "\\~N",
   "\\`O",
   "\\'O",

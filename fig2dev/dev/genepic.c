@@ -112,6 +112,7 @@ struct fp_struct {
 typedef struct fp_struct FPoint;
 
 /* Local to the file only */
+static int coord_system;
 static int CoordSys = 2;
 static double Threshold;
 static int DPI;
