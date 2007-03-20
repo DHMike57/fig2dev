@@ -24,6 +24,7 @@
 #include "alloc.h"
 #include "fig2dev.h"
 #include "object.h"
+#include "free.h"
 
 /*******    Fig 1.3 subtype of objects    *******/
 #define			DRAW_ELLIPSE_BY_RAD 	1

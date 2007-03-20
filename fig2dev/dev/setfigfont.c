@@ -28,6 +28,7 @@
 
 Boolean FontSizeOnly = False;
 
+void
 define_setfigfont(tfp)
      FILE *tfp;
 {
@@ -48,7 +49,7 @@ define_setfigfont(tfp)
   \\fontfamily{#3}\\fontseries{#4}\\fontshape{#5}%%\n\
   \\selectfont}%%\n\
 \\fi\\endgroup%%\n");
-#else
+#else /* NFSS */
   fprintf(tfp, "%%\n\
 \\begingroup\\makeatletter\\ifx\\SetFigFont\\undefined\n\
 %% extract first six characters in \\fmtname\n\
@@ -71,5 +72,5 @@ define_setfigfont(tfp)
   \\csname #3\\endcsname}%%\n\
 \\fi\n\
 \\fi\\endgroup\n");
-#endif
+#endif /* NFSS */
 }

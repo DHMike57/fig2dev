@@ -40,8 +40,8 @@
 #include "picfonts.h"
 #include "picpsfonts.h"
 
-void genpic_ctl_spline(), genpic_itp_spline();
-void genpic_open_spline(), genpic_closed_spline();
+static void genpic_ctl_spline(), genpic_itp_spline();
+static void genpic_open_spline(), genpic_closed_spline();
 
 #define			TOP	10.5	/* top of page is 10.5 inch */
 static int LineThickness = 0;
@@ -127,8 +127,8 @@ F_compound	*objects;
 	    fprintf(tfp,".\\\"\n");
 	}
 
-	fprintf(tfp, ".PS\n.ps %d\n", 		/* PIC preamble */
-		font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
+	fprintf(tfp, ".PS\n.ps %d\n",	 	/* PIC preamble */
+		(int)(font_size != 0.0? (int) font_size : DEFAULT_FONT_SIZE));
 }
 
 int
@@ -150,7 +150,7 @@ genpic_end()
   won't take the legitimate line thickness command.
 */
 
-static
+static void
 set_linewidth(w)
 int	w;
 {
@@ -215,7 +215,7 @@ F_line *l;
     q = q->next;
   }
 
-  if (Valid = (count == 5))		/* Valid box? */
+  if ((Valid = (count == 5)))		/* Valid box? */
   { fprintf(tfp, "box");
     if (l->thickness == 0)
       fprintf(tfp, " invis");
@@ -326,7 +326,7 @@ F_spline	*s;
 	    genpic_ctl_spline(s);
 	}
 
-void
+static void
 genpic_ctl_spline(s)
 F_spline	*s;
 {
@@ -336,7 +336,7 @@ F_spline	*s;
 	    genpic_open_spline(s);
 	}
 
-void
+static void
 genpic_open_spline(s)
 F_spline	*s;
 {
@@ -477,7 +477,6 @@ void
 genpic_arc(a)
 F_arc	*a;
 {
-	double		x, y;
 	double		cx, cy, sx, sy, ex, ey;
 
 	/* print any comments */
@@ -522,52 +521,9 @@ F_arc	*a;
 	fprintf(tfp, "\n");
 }
 
-void
-arc_tangent(x1, y1, x2, y2, direction, x, y)
-double	x1, y1, x2, y2, *x, *y;
-int	direction;
-{
-	if (direction)	/* counter clockwise  */
-	{   *x = x2 + (y2 - y1);
-	    *y = y2 - (x2 - x1);
-	}
-	else
-	{   *x = x2 - (y2 - y1);
-	    *y = y2 + (x2 - x1);
-	}
-}
-
-/*	draw arrow heading from (x1, y1) to (x2, y2)	*/
-
-draw_arrow_head(x1, y1, x2, y2, arrowht, arrowwid)
-double	x1, y1, x2, y2, arrowht, arrowwid;
-{
-	double	x, y, xb, yb, dx, dy, l, sina, cosa;
-	double	xc, yc, xd, yd;
-
-	dx = x2 - x1;  dy = y1 - y2;
-	l = sqrt((dx*dx + dy*dy));
-	if (l == 0) {
-	     return;
-	}
-	else {
-	     sina = dy / l;  cosa = dx / l;
-	}
-	xb = x2*cosa - y2*sina;
-	yb = x2*sina + y2*cosa;
-	x = xb - arrowht;
-	y = yb - arrowwid / 2;
-	xc = x*cosa + y*sina;
-	yc = -x*sina + y*cosa;
-	y = yb + arrowwid / 2;
-	xd = x*cosa + y*sina;
-	yd = -x*sina + y*cosa;
-	fprintf(tfp, "line from %.3f,%.3f to %.3f,%.3f to %.3f,%.3f\n",
-		xc, yc, x2, y2, xd, yd);
-	}
-
 #define		THRESHOLD	.05	/* inch */
 
+static void
 quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
 double	a1, b1, a2, b2, a3, b3, a4, b4;
 {
@@ -634,6 +590,31 @@ F_spline	*s;
 	fprintf(tfp, "\n");
 }
 
+static void
+bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
+double	a0, b0, a1, b1, a2, b2, a3, b3;
+{
+	double	x0, y0, x3, y3;
+	double	sx1, sy1, sx2, sy2, tx, ty, tx1, ty1, tx2, ty2, xmid, ymid;
+
+	x0 = a0; y0 = b0;
+	x3 = a3; y3 = b3;
+	if (fabs(x0 - x3) < THRESHOLD && fabs(y0 - y3) < THRESHOLD)
+	{ fprintf(tfp, " to %.3f,%.3f", x3, y3);
+	}
+	else {
+	    tx = (a1 + a2) / 2;		ty = (b1 + b2) / 2;
+	    sx1 = (x0 + a1) / 2;	sy1 = (y0 + b1) / 2;
+	    sx2 = (sx1 + tx) / 2;	sy2 = (sy1 + ty) / 2;
+	    tx2 = (a2 + x3) / 2;	ty2 = (b2 + y3) / 2;
+	    tx1 = (tx2 + tx) / 2;	ty1 = (ty2 + ty) / 2;
+	    xmid = (sx2 + tx1) / 2;	ymid = (sy2 + ty1) / 2;
+
+	    bezier_spline(x0, y0, sx1, sy1, sx2, sy2, xmid, ymid);
+	    bezier_spline(xmid, ymid, tx1, ty1, tx2, ty2, x3, y3);
+	    }
+	}
+
 void
 genpic_itp_spline(s)
 F_spline	*s;
@@ -670,30 +651,6 @@ F_spline	*s;
 	    fprintf(tfp, "\n");
 	    }
 
-	}
-
-bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
-double	a0, b0, a1, b1, a2, b2, a3, b3;
-{
-	double	x0, y0, x3, y3;
-	double	sx1, sy1, sx2, sy2, tx, ty, tx1, ty1, tx2, ty2, xmid, ymid;
-
-	x0 = a0; y0 = b0;
-	x3 = a3; y3 = b3;
-	if (fabs(x0 - x3) < THRESHOLD && fabs(y0 - y3) < THRESHOLD)
-	{ fprintf(tfp, " to %.3f,%.3f", x3, y3);
-	}
-	else {
-	    tx = (a1 + a2) / 2;		ty = (b1 + b2) / 2;
-	    sx1 = (x0 + a1) / 2;	sy1 = (y0 + b1) / 2;
-	    sx2 = (sx1 + tx) / 2;	sy2 = (sy1 + ty) / 2;
-	    tx2 = (a2 + x3) / 2;	ty2 = (b2 + y3) / 2;
-	    tx1 = (tx2 + tx) / 2;	ty1 = (ty2 + ty) / 2;
-	    xmid = (sx2 + tx1) / 2;	ymid = (sy2 + ty1) / 2;
-
-	    bezier_spline(x0, y0, sx1, sy1, sx2, sy2, xmid, ymid);
-	    bezier_spline(xmid, ymid, tx1, ty1, tx2, ty2, x3, y3);
-	    }
 	}
 
 struct driver dev_pic = {

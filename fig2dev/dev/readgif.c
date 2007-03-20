@@ -49,7 +49,6 @@ extern	int	 _read_pcx();
 static Boolean	 ReadColorMap();
 static Boolean	 DoGIFextension();
 static int	 GetDataBlock();
-static int	 GetCode();
 
 #define LOCALCOLORMAP		0x80
 #define	ReadOK(file,buffer,len)	(fread(buffer, len, 1, file) != 0)
@@ -98,7 +97,7 @@ read_gif(filename,filetype,pic,llx,lly)
 	/* open the file */
 	if ((file=open_picfile(filename, &filetype, False, realname)) == NULL) {
 		fprintf(stderr,"No such GIF file: %s\n",realname);
-		return;
+		return 0;
 	}
 
 	/* first read header to look for any transparent color extension */
@@ -324,47 +323,4 @@ unsigned char 	*buf;
 	}
 
 	return count;
-}
-
-static int
-GetCode(fd, code_size, flag)
-FILE	*fd;
-int	code_size;
-int	flag;
-{
-	static unsigned char	buf[280];
-	static int		curbit, lastbit, done, last_byte;
-	int			i, j, ret;
-	unsigned char		count;
-
-	if (flag) {
-		curbit = 0;
-		lastbit = 0;
-		done = False;
-		return 0;
-	}
-
-	if ( (curbit+code_size) >= lastbit) {
-		if (done) {
-			/* if (curbit >= lastbit) then ran off the end of bits */
-			return -1;
-		}
-		buf[0] = buf[last_byte-2];
-		buf[1] = buf[last_byte-1];
-
-		if ((count = GetDataBlock(fd, &buf[2])) == 0)
-			done = True;
-
-		last_byte = 2 + count;
-		curbit = (curbit - lastbit) + 16;
-		lastbit = (2+count)*8 ;
-	}
-
-	ret = 0;
-	for (i = curbit, j = 0; j < code_size; ++i, ++j)
-		ret |= ((buf[ i / 8 ] & (1 << (i % 8))) != 0) << j;
-
-	curbit += code_size;
-
-	return ret;
 }

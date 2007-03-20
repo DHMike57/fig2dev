@@ -28,6 +28,8 @@
  * The pstex driver is like a PostScript driver that translates 
  * everything except for text in the default font.
  *
+ * The pdftex_t and pdftex are drivers for combined PDF/LaTeX.
+ *
  * The option '-p file' added to the pstex_t translator specifies
  * the name of the PostScript file to be called in the psfig macro.
  * If not set or its value is null then no PS file will be inserted.
@@ -83,6 +85,7 @@ void genpstex_t_start(objects)
 F_compound	*objects;
 {
 	/* Put PostScript Image if any*/
+fprintf(stderr,"here pstex_file[0] = %d\n",pstex_file[0]);
         if (pstex_file[0] != '\0') {
 		fprintf(tfp, "\\begin{picture}(0,0)%%\n");
 /* newer includegraphics directive suggested by Stephen Harker 1/13/99 */
@@ -95,6 +98,7 @@ F_compound	*objects;
 #else
 		fprintf(tfp, "\\special{psfile=%s}%%\n",pstex_file);
 #endif
+fprintf(stderr,"end picture\n");
 		fprintf(tfp, "\\end{picture}%%\n");
 	}
         genlatex_start(objects);
@@ -122,7 +126,8 @@ F_text	*t;
 void genpstex_option(opt, optarg)
 char opt, *optarg;
 {
-       if (opt != 'p') genlatex_option(opt, optarg);
+       if (opt != 'p')
+	   genlatex_option(opt, optarg);
 }
 
 struct driver dev_pstex_t = {

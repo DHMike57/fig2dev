@@ -30,14 +30,14 @@ READXPMS=readxpm.c
 READXPMO=readxpm.o
 #endif
 
-SRCS =  genbox.c gencgm.c genepic.c genibmgl.c genlatex.c genmap.c genmf.c genpic.c \
+SRCS =  genbox.c gencgm.c gendxf.c genepic.c genibmgl.c genlatex.c genmap.c genmf.c genpic.c \
 	genpictex.c genps.c genpdf.c genpstex.c gentextyl.c gentk.c genptk.c gentpic.c \
-	genbitmaps.c genge.c genmp.c genemf.c gensvg.c setfigfont.c psencode.c \
+	genbitmaps.c genge.c genmp.c genemf.c gensvg.c genshape.c setfigfont.c psencode.c \
 	readpics.c readeps.c readgif.c readpcx.c readppm.c \
 	readxbm.c readtif.c readjpg.c asc85ec.c $(READPNGS) $(READXPMS)
-LIBOBJS = genbox.o gencgm.o genepic.o genibmgl.o genlatex.o genmap.o genmf.o genpic.o \
+LIBOBJS = genbox.o gencgm.o gendxf.o genepic.o genibmgl.o genlatex.o genmap.o genmf.o genpic.o \
 	genpictex.o genps.o genpdf.o genpstex.o gentextyl.o gentk.o genptk.o gentpic.o \
-	genbitmaps.o genge.o genmp.o genemf.o gensvg.o setfigfont.o psencode.o \
+	genbitmaps.o genge.o genmp.o genemf.o gensvg.o genshape.o setfigfont.o psencode.o \
 	readpics.o readeps.o readgif.o readpcx.o readppm.o \
 	readxbm.o readtif.o readjpg.o asc85ec.o $(READPNGO) $(READXPMO)
 
@@ -49,3 +49,25 @@ SpecialObjectRule(genemf.o, genemf.c genemf.h, )
 
 NormalLibraryTarget($(LIB),$(LIBOBJS))
 DependTarget()
+
+#ifdef I18N
+install::
+	InstallNonExecFile(japanese.ps,FIG2DEV_LIBDIR)
+	( cd $(DESTDIR)FIG2DEV_LIBDIR; \
+	  rm -f ja.ps ja_JP.ps ja_JP.ujis.ps ja_JP.eucJP.ps ja_JP.EUC.ps; \
+	  $(LN) japanese.ps ja.ps; $(LN) japanese.ps ja_JP.ps; \
+	  $(LN) japanese.ps ja_JP.ujis.ps; $(LN) japanese.ps ja_JP.eucJP.ps; \
+	  $(LN) japanese.ps ja_JP.EUC.ps )
+	InstallNonExecFile(korean.ps,FIG2DEV_LIBDIR)
+	( cd $(DESTDIR)FIG2DEV_LIBDIR; \
+	  rm -f ko.ps ko_KR.ps ko_KR.eucKR.ps ko_KR.EUC.ps; \
+	  $(LN) korean.ps ko.ps; $(LN) korean.ps ko_KR.ps; \
+	  $(LN) korean.ps ko_KR.eucKR.ps; $(LN) korean.ps ko_KR.EUC.ps )
+	InstallNonExecFile(cs_CZ.ps,FIG2DEV_LIBDIR)
+	( cd $(DESTDIR)FIG2DEV_LIBDIR; \
+	  rm -f hr_HR.ps hu_HU.ps pl_PL.ps ro_RO.ps sk_SK.ps sl_SI.ps; \
+	  $(LN) cs_CZ.ps hr_HR.ps; $(LN) cs_CZ.ps hu_HU.ps; \
+	  $(LN) cs_CZ.ps ro_RO.ps; $(LN) cs_CZ.ps pl_PL.ps; \
+	  $(LN) cs_CZ.ps sk_SK.ps; $(LN) cs_CZ.ps sl_SI.ps )
+#endif
+

@@ -25,6 +25,7 @@
 
 #include "fig2dev.h"
 #include "object.h"
+#include "readxbm.h"
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
@@ -33,7 +34,6 @@
 
 static void
 	drawBitmap(F_line *),
-	drawLine(F_point *, int, int, int, int, int),
 	drawShape(void (*)(), void *, int, int, int, int),
 	niceLine(char *),
 	ptkArc(void *, unsigned int, unsigned int, unsigned int, int),
@@ -109,7 +109,6 @@ void
 genptk_start(F_compound *objects)
 {
 	char		stfp[1024];
-	int		coord_system;
 	float		wid, ht, swap;
 	struct paperdef	*pd;
 
@@ -396,7 +395,7 @@ drawBitmap(F_line *l)
 		/* first make a name without the .gif part */
 		char pname[PATH_MAX], *dot;
 		strcpy(pname,p->file);
-		if (dot=strchr(pname,'.'))
+		if ((dot=strchr(pname,'.')))
 			*dot='\0';
 		/* image create */
 		sprintf(stfp, "$img{\"%s\"} = $top->Photo(-file => \"%s\");\n",pname, p->file);
@@ -448,8 +447,7 @@ drawBitmap(F_line *l)
 void
 genptk_text(F_text * t)
 {
-	char		stfp[2048], *tpos;
-	float           y;
+	char		stfp[2048];
 	int		i, j;
 
 	/* I'm sure I'm just too dense to have seen a better way of doing this... */
@@ -625,7 +623,7 @@ genptk_text(F_text * t)
 
 #define		THRESHOLD	.05	/* inch */
 
-static
+static void
 bezierSpline(double a0, double b0, double a1, double b1, double a2, double b2,
 	double a3, double b3)
 {
@@ -753,7 +751,7 @@ genptk_itpSpline(F_spline *s)
  *   q u a d r a t i c S p l i n e ( )
  */
 
-static
+static void
 quadraticSpline(double a1, double b1, double a2, double b2, double a3,
 	double b3, double a4, double b4)
 {
@@ -945,7 +943,8 @@ genptk_ctlSpline(F_spline *s)
  *   g e n p T k S p l i n e ( )
  */
 
-void genptk_spline(F_spline *s)
+void 
+genptk_spline(F_spline *s)
 {
 	/* print any comments prefixed with "#" */
 	print_comments("# ",s->comments, "");
@@ -1046,13 +1045,12 @@ void
 ptkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
 	unsigned int fillPattern, int thickness)
 {
-	char	dir[8], stfp[1024];
+	char	stfp[1024];
 	double	cx, cy,	/* Center of circle containing arc. */
 		sx, sy,	/* Start point of arc. */
 		ex, ey,	/* Stop point of arc. */
 		angle1, angle2, extent, radius, startAngle;
 	F_arc	*a;
-	F_arrow	*r;
 
 	a = (F_arc *) shape;
 	cx = X(a->center.x);		/* Center. */

@@ -1,6 +1,8 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1994 by Dietrich Paulus, Ruediger Bess, and Georg Stemmer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -13,14 +15,8 @@
  *
  */
 
-/* #includes & #defines needed by *_figure.c*/
-
-#define min2(a, b)      (((a) < (b)) ? (a) : (b))
-#define max2(a, b)      (((a) > (b)) ? (a) : (b))
-#define signof(a)       (((a) < 0) ? -1 : 1)
-
-/* rotn axis */
-#define  UD_FLIP 1
-#define  LR_FLIP 2
-
-#define T_CLOSED_INTERP 3
+extern int	read_fig();
+extern int	readfp_fig();
+extern void	read_fail_message();
+extern int	read_1_3_objects();
+extern void	print_comments();

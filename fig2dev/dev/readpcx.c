@@ -82,8 +82,6 @@ _read_pcx(pcxfile,pic)
 	long		 bytemax,bytesdone;
 	byte		 inbyte,inbyte2;
 	int		 real_bpp;		/* how many bpp file really is */
-	int		 mult, neu_stat, numcols, size, x3;
-	byte		 col[3];
 
 	fprintf(tfp, "%% Begin Imported PCX File: %s\n\n", pic->file);
 	pic->subtype = P_PCX;
@@ -189,9 +187,9 @@ _read_pcx(pcxfile,pic)
 		    /* if user wants grayscale (-N) then map to gray */
 		    if (grayonly)
 			pic->cmap[RED][x] = pic->cmap[GREEN][x] = pic->cmap[BLUE][x] = 
-			    (int) (rgb2luminance(pic->cmap[RED][x]/256.0, 
-						pic->cmap[GREEN][x]/256.0, 
-						pic->cmap[BLUE][x]/256.0)*256.0);
+			    (int) (rgb2luminance(pic->cmap[RED][x]/255.0, 
+						pic->cmap[GREEN][x]/255.0, 
+						pic->cmap[BLUE][x]/255.0)*255.0);
 		}
 		break;
 
@@ -205,9 +203,9 @@ _read_pcx(pcxfile,pic)
 		    /* if user wants grayscale (-N) then map to gray */
 		    if (grayonly)
 			pic->cmap[RED][x] = pic->cmap[GREEN][x] = pic->cmap[BLUE][x] = 
-			    (int) (rgb2luminance(pic->cmap[RED][x]/256.0, 
-						pic->cmap[GREEN][x]/256.0, 
-						pic->cmap[BLUE][x]/256.0)*256.0);
+			    (int) (rgb2luminance(pic->cmap[RED][x]/255.0, 
+						pic->cmap[GREEN][x]/255.0, 
+						pic->cmap[BLUE][x]/255.0)*255.0);
 		}
 		pic->numcols = 256;
 		break;

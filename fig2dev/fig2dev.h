@@ -22,7 +22,6 @@
 #include <sys/file.h>
 #include <signal.h>
 #include <string.h>
-#include <varargs.h>
 #include <pwd.h>
 #include <errno.h>
 #include <time.h>
@@ -112,6 +111,10 @@ struct driver {
 };
 
 extern float	rgb2luminance();
+extern void	put_msg();
+extern void	unpsfont();
+extern void	print_comments();
+extern int	lookup_X_color();
 
 extern char	Err_badarg[];
 extern char	Err_mem[];

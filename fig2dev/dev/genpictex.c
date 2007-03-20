@@ -24,6 +24,8 @@
 
 #include "fig2dev.h"
 #include "object.h"
+#include "genlatex.h"
+#include "setfigfont.h"
 #include "texfonts.h"
 
 #define UNIT "cm"       /* dip */
@@ -33,14 +35,14 @@ extern char	*ISO1toTeX[];
 extern char	*ISO2toTeX[];
 extern Boolean	 FontSizeOnly;	/* defined in setfigfont.c */
 
-static void genpictex_ctl_spline(), genpictex_itp_spline();
-static bezier_spline();
-static put_box();
-static set_style();
-static putline();
-static arc_tangent();
-static rtop();
-static draw_arrow_head();
+static void	genpictex_ctl_spline(), genpictex_itp_spline();
+static void	bezier_spline();
+static void	put_box();
+static void	set_style();
+static void	putline();
+static void	rtop();
+static void	draw_arrow_head();
+static void	set_linewidth();
 
 #define rint(a) floor((a)+0.5)     /* close enough? */
 static int		encoding = 1;
@@ -176,7 +178,7 @@ genpictex_end()
 	return 0;
 }
 
-static
+static void
 set_linewidth(w)
 int	w;
 {
@@ -348,7 +350,7 @@ F_line	*l;
 /*
  * draw box
  */
-static
+static void
 put_box (llx, lly, urx, ury, l)
 int	llx, lly, urx, ury;
 F_line	*l;
@@ -442,7 +444,7 @@ F_line	*l;
 /* 
  * set_style - issue style commands as appropriate
  */
-static
+static void
 set_style(style, dash_len)
 int style;
 double dash_len;
@@ -473,7 +475,7 @@ double dash_len;
 /*
  * putline - use rules if possible
  */
-static
+static void
 putline (start_x, start_y, end_x, end_y, next_x, next_y,
                 first_start_x, first_start_y, first_end_x, first_end_y)
 int	start_x, start_y, next_x, next_y;
@@ -761,7 +763,7 @@ F_arc	*a;
 /*
  * rtop - rectangular to polar conversion
  */
-static
+static void
 rtop(x, y, r, th)
 double x, y, *r, *th;
 {
@@ -771,24 +773,9 @@ double x, y, *r, *th;
 	if (y < 0) *th = 2*M_PI - *th;
 }
 
-static
-arc_tangent(x1, y1, x2, y2, direction, x, y)
-double	x1, y1, x2, y2, *x, *y;
-int	direction;
-{
-	if (direction) { /* counter clockwise  */
-	    *x = x2 + (y2 - y1);
-	    *y = y2 - (x2 - x1);
-	    }
-	else {
-	    *x = x2 - (y2 - y1);
-	    *y = y2 + (x2 - x1);
-	    }
-	}
-
 /*	draw arrow heading from (x1, y1) to (x2, y2)	*/
 
-static
+static void
 draw_arrow_head(x1, y1, x2, y2, arrowht, arrowwid)
 double	x1, y1, x2, y2, arrowht, arrowwid;
 {
@@ -837,7 +824,7 @@ double	x1, y1, x2, y2, arrowht, arrowwid;
 
 #define		THRESHOLD	.05	/* inch */
 
-static
+static void
 quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
 double	a1, b1, a2, b2, a3, b3, a4, b4;
 {
@@ -956,7 +943,8 @@ F_spline	*s;
 		s->for_arrow->ht/ppi, s->for_arrow->wid/ppi);
 	}
 
-static bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
+static void
+bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
 double	a0, b0, a1, b1, a2, b2, a3, b3;
 {
 	double	x0, y0, x3, y3;

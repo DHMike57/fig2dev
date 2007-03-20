@@ -193,7 +193,10 @@ genbitmaps_end()
 	/* add a showpage so ghostscript will produce output */
 	fprintf(tfp, "showpage\n");
 
-	if (pclose(tfp) != 0) {
+	status = pclose(tfp);
+	/* we've already closed the original output file */
+	tfp = 0;
+	if (status != 0) {
 	    fprintf(stderr,"Error in ghostcript command\n");
 	    fprintf(stderr,"command was: %s\n", gscom);
 	    return -1;
@@ -284,8 +287,6 @@ genbitmaps_end()
 	    unlink(tmpname);
 	    unlink(errfname);
 	}
-	/* we've already closed the original output file */
-	tfp = 0;
 
 	return status;
 }

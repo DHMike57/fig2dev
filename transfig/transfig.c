@@ -50,6 +50,7 @@ char *lname[] = {
 		"eps",
 		"gif",
 		"ibmgl",
+		"dxf",
 		"jpeg",
 		"latex",
 		"map",
@@ -64,6 +65,7 @@ char *lname[] = {
 		"png",
 		"ppm",
 		"ps",
+		"psfig",
 		"pstex",
 		"ptk",
 		"sld",
@@ -95,64 +97,63 @@ char *argv[];
 
   for ( optind = 1; optind < argc; optind++ ) {
     cp = argv[optind];
-    if (*cp == '-')
-    {
-  	if (!cp[1])
-	{
+    if (*cp == '-') {
+  	if (!cp[1]) {
 		fprintf(stderr, "transfig: bad option format '-'\n");
 		exit(1);
 	}
-	if (cp[1] == 'V') 
-	{
+	if (cp[1] == 'V') {
 		fprintf(stderr, "TransFig Version %s Patchlevel %s\n",
 							VERSION, PATCHLEVEL);
 		exit(0);
+	} else if (cp[1] == 'h') {
+		fprintf(stderr,"usage: transfig <option> ... [[<flag> ... ] [<figure>] ... ] ...\n");
+		fprintf(stderr,"where:	<option> = -L <language> | -M <makefile> | -T <texfile>\n");
+		fprintf(stderr,"	<flag>	 = -f <font> | -s <size> | -m <scale>\n");
+		exit(0);
 	}
-	if (cp[2])
-	{
+
+	if (cp[2]) {
 		optarg = &cp[2];
-	} else
-	{
-		if (cp[1] != 'a') {
-			optind += 1;
-			if (optind == argc)
-			{
-				fprintf(stderr,
-					"transfig: no value for '%c' arg\n", cp[1]);
-				exit(1);
-			}
-			optarg = argv[optind];
+	} else {
+	    if (cp[1] != 'a') {
+		optind += 1;
+		if (optind == argc) {
+		    fprintf(stderr, "transfig: no value for '%c' arg\n", cp[1]);
+		    exit(1);
 		}
+		optarg = argv[optind];
+	    }
 	}
  	switch (cp[1]) {
 
-	case 'I':
+	    case 'I':
 		input = optarg;
 		break;
 
-  	case 'L':
+  	    case 'L':
 		tolang = str2lang(optarg);
 		break;
-  	case 'M':
+  	    case 'M':
 		mkfile = optarg;
 		break;
-  	case 'T':
+  	    case 'T':
 		txfile = optarg;
 		break;
-	case 'a':
+	    case 'a':
 		altfonts = 1;
 		break;
-	case 'f':
+	    case 'f':
 		arg_f = optarg;
 		break;
-	case 's':
+	    case 's':
 		arg_s = optarg;	
 		break;
-	case 'm':
+	    case 'm':
 		arg_m = optarg;	
 		break;
 
-	case 'o':
+	    case 'o':
 		arg_o = optarg;
 		break;
 

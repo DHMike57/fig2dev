@@ -1,4 +1,4 @@
-.TH FIG2DEV 1 "Version 3.2.4 Oct 2002"
+.TH FIG2DEV 1 "Version 3.2.5-alpha7 Oct 2005"
 .SH NAME
 fig2dev \- translates Fig code to various graphics languages
 
@@ -45,7 +45,7 @@ for each Fig object.  These comments are output with several of the output langu
 such as PostScript, CGM, EMF, LaTeX, MetaFont, PicTeX, (as % comments),
 tk (as # comments), and pic (as .\\" comments).
 
-.SH GENERAL OPTIONS
+.SH GENERAL OPTIONS (all drivers)
 .TP
 .B "\-L language"
 Set the output graphics language.
@@ -55,7 +55,8 @@ latex, map (HTML image map), mf (MetaFont),
 mp (MetaPost), mmp (Multi-MetaPost),
 pcx, pdf, pdftex, pdftex_t, pic, pictex, png, ppm, ps,
 pstex, pstex_t, ptk (Perl/tk),
-sld (AutoCad slide format), textyl,
+shape (LaTeX shaped paragraphs), sld (AutoCad slide format), 
+svg (beta driver), textyl,
 tiff, tk (tcl/tk), tpic, xbm and
 xpm\fR.
 
@@ -75,11 +76,22 @@ package to get gif, xbm, xpm, and sld output.
 Print help message with all options for all output languages then exit.
 
 .TP
+.B \-V
+Print the program version number and exit.
+
+.TP
 .B "\-D +/-rangelist"
 With +rangelist, keep only those depths in the list.  With -rangelist, keep all
 depths except those in the list. The rangelist may be a list of comma-separated
 numbers or ranges separated by colon (:). For example, -D +10,40,55:70,80
 means keep only layers 10, 40, 55 \fBthrough\fR 70, and 80.
+
+.TP
+.B -K
+The selection of the depths with the '-D +/-rangelist' option does normally not
+affect the calcualtion of the bounding box. Thus the generated document might 
+have a much larger bounding box than necessary. If -K is given then the 
+bounding box is adjusted to include only those objects in the selected depths.
 
 .TP
 .B "\-f font"
@@ -114,6 +126,7 @@ Enable the I18N internationalization facility.
 Set the magnification at which the figure is rendered to
 .I mag.
 The default is 1.0.
+This may not be used with the maxdimension option (-Z).
 
 .TP
 .B "\-s size"
@@ -123,8 +136,12 @@ The default is 11*mag, and thus is scaled by the \fB-m\fR option.
 If there is no scaling, the default font is eleven point Roman."
 
 .TP
-.B \-V
-Print the program version number and exit.
+.B "\-Z maxdimension"
+Scale the figure so that the maximum dimension (width or height) is
+.I maxdimension
+inches or cm, depending on whether the figure was saved with
+imperial or metric units.
+This may not be used with the magnification option (-m).
 
 .TP
 .I other options
@@ -372,8 +389,8 @@ Make blank border around figure of width
 
 .TP
 .B \-F
-Use correct font sizes (points) instead of the traditional size that xfig/fig2dev uses,
-which is 1/80 inch.  The corresponding xfig command-line option is -correct_font_size.
+Use correct font sizes (points, 1/72 inch) instead of the traditional size that xfig/fig2dev uses,
+which is (1/80 inch).  The corresponding xfig command-line option is -correct_font_size.
 
 .TP
 .B \-g color
@@ -562,7 +579,6 @@ The extensions enabled by each option are:
 \fBallps\fR	Use all of the above (i.e. "all" + "psfont")
 .in
 .fi
-.EP
 
 .SH PICTEX OPTIONS
 In order to include PiCTeX pictures into a document, it is necessary to
@@ -609,6 +625,7 @@ The EPS driver has the following two special options:
 .B -B 'Wx [Wy X0 Y0]'
 This specifies that the bounding box of the EPS file should have the
 width Wx and the height Wy. 
+Note that it doesn't scale the figure to this size, it merely sets the bounding box.
 If a value less than or equal to 0 is specified for Wx or Wy, these are set 
 to the width/height respectively of the figure. Origin is relative to
 screen (0,0) (upper-left).

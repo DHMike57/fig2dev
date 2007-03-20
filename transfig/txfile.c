@@ -20,10 +20,11 @@
 /*
  * create appropriate .tex file
  */
+void
 texfile(tx, in, arg_list)
-FILE *tx;
-char *in;
-argument *arg_list;
+    FILE	*tx;
+    char	*in;
+    argument	*arg_list;
 {
   enum language to;
   argument *a, *arg_l;

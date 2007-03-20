@@ -38,8 +38,9 @@
 
 #include <sys/stat.h>
 #include "fig2dev.h"
-#include "figure.h"
 #include "object.h"
+#include "bound.h"
+#include "psencode.h"
 #include "psfonts.h"
 
 /* for the xpm package */
@@ -94,20 +95,31 @@ static float	fllx, flly, furx, fury;
 /* arrowhead arrays */
 Point		bpoints[50], fpoints[50];
 int		nbpoints, nfpoints;
+Point		bfillpoints[50], ffillpoints[50], clippoints[50];
+int		nbfillpoints, nffillpoints, nclippoints;
 int		fpntx1, fpnty1;	/* first point of object */
 int		fpntx2, fpnty2;	/* second point of object */
 int		lpntx1, lpnty1;	/* last point of object */
 int		lpntx2, lpnty2;	/* second-to-last point of object */
 
-static		arc_tangent();
-static		fill_area();
-static		clip_arrows();
-static		draw_arrow();
-static		iso_text_exist();
-static		encode_all_fonts();
-static		ellipse_exist();
-static		approx_spline_exist();
-static		set_linewidth();
+static void	fill_area();
+static void	clip_arrows();
+static void	draw_arrow();
+static void	encode_all_fonts();
+static void	set_linewidth();
+static void	genps_std_colors();
+static void	genps_usr_colors();
+static Boolean	iso_text_exist();
+static Boolean	ellipse_exist();
+static Boolean	approx_spline_exist();
+static void	draw_gridline();
+static void	set_style();
+static void	reset_style();
+static void	set_linejoin();
+static void	set_linecap();
+static void	convert_xpm_colors();
+static void	genps_itp_spline();
+static void	genps_ctl_spline();
 
 #define SHADEVAL(F)	1.0*(F)/(NUMSHADES-1)
 #define TINTVAL(F)	1.0*(F-NUMSHADES+1)/NUMTINTS
@@ -173,28 +185,28 @@ char	*fill_def[NUMPATTERNS] = {
 	};
 
 int	patmat[NUMPATTERNS][2] = {
-	16,  -8,
-	16,  -8,
-	16,  -8,
-	16, -16,
-	16, -16,
-	16, -16,
-	16,  16,
-	16, -16,
-	16,  -8,
-	 8, -16,
-	16, -16,
-	24, -24,
-	24, -24,
-	24, -24,
-	24, -24,
-	16,  -8,
-	 8,  -8,
-	16, -16,
-	30, -18,
-	16, -16,
-	16,  -8,
-	 8, -16,
+	{16,  -8},
+	{16,  -8},
+	{16,  -8},
+	{16, -16},
+	{16, -16},
+	{16, -16},
+	{16,  16},
+	{16, -16},
+	{16,  -8},
+	{ 8, -16},
+	{16, -16},
+	{24, -24},
+	{24, -24},
+	{24, -24},
+	{24, -24},
+	{16,  -8},
+	{ 8,  -8},
+	{16, -16},
+	{30, -18},
+	{16, -16},
+	{16,  -8},
+	{ 8, -16},
 	};
 
 static double	scalex, scaley;
@@ -290,6 +302,16 @@ char *optarg;
 
 	switch (opt) {
 
+	  /* don't do anything for the following args (already parsed in main) */
+
+      	  case 'F':			/* fontsize */
+      	  case 'G':			/* grid */
+      	  case 'L':			/* language */
+      	  case 'm':			/* magnification (already parsed in main) */
+	  case 's':			/* default font size */
+	  case 'Z':			/* max dimension */
+		break;
+
 	  case 'A':			/* add ASCII preview */
 		asciipreview = True;
 		break;
@@ -352,10 +374,6 @@ char *optarg;
 		}
 		break;
 
-      	  case 'm':			/* magnification (already parsed in main) */
-		magspec = True;		/* user-specified */
-		break;
-
 	  case 'M':			/* multi-page option */
 		if (!epsflag) {
 		    multi_page = True;
@@ -399,15 +417,6 @@ char *optarg;
 	  case 'T':			/* add monochrome TIFF preview (for MicroSloth) */
 		tiffpreview = True;
 		tiffcolor = False;
-		break;
-
-	  /* don't do anything for fontsize, grid, language and font size 
-		(already parsed in main) */
-
-      	  case 'F':			/* fontsize */
-      	  case 'G':			/* grid */
-      	  case 'L':			/* language */
-	  case 's':			/* default font size */
 		break;
 
 	  case 'x':			/* x offset on page */
@@ -513,10 +522,6 @@ F_compound	*objects;
 	    /* eps or pdf, shift figure to 0,0 */
 	    origx = -fllx;
 	    origy =  fury;
-	    if (pdfflag && landscape) {
-		origx = -flly;
-		origy = -fllx;
-	    }
 	    if (epsflag && boundingboxspec) {
 		    jtmp=sscanf(boundingbox,"%lf %lf %lf %lf",
 					&userwidthx,&userwidthy,&userorigx,&userorigy); 
@@ -598,7 +603,7 @@ F_compound	*objects;
 	}
 
 	/* finally, adjust by any offset the user wants */
-	if (!epsflag || pdfflag) {
+	if (!epsflag && !pdfflag) {
 	    if (landscape) {
 		origx += yoff;
 		origy += xoff;
@@ -629,18 +634,22 @@ F_compound	*objects;
 	/* calc initial clipping area to size of the bounding box (this is needed
 		for later clipping by arrowheads */
 	cliplx = cliply = 0;
-	if (epsflag || (pdfflag && !multi_page)) {
-	    /* eps and single-page pdf */
-	    if (pdfflag && landscape) {
-		clipux = (int) ceil(fury-flly);
-		clipuy = (int) ceil(furx-fllx);
-	    } else {
-		clipux = (int) ceil(furx-fllx);
-		clipuy = (int) ceil(fury-flly);
-	    }
+	if (epsflag && !pdfflag) {
+	    /* EPS */
+	    clipux = (int) ceil(furx-fllx);
+	    clipuy = (int) ceil(fury-flly);
 	    pages = 1;
-	} else if (!epsflag) {
-	    /* ps and multipage pdf */
+	} else if (pdfflag) {
+	    /* PDF */
+	    clipux = (int) ceil(furx-fllx);
+	    clipuy = (int) ceil(fury-flly);
+	    pages = 1;
+	    if (multi_page) {
+		pages = (int)(1.11111*(furx-0.1*pagewidth)/pagewidth+1)*
+				(int)(1.11111*(fury-0.1*pageheight)/pageheight+1);
+	    }
+	} else {
+	    /* PS */
 	    if (landscape) {
 		clipux = pageheight;
 		clipuy = pagewidth;
@@ -685,22 +694,24 @@ F_compound	*objects;
 	    fprintf(tfp, "%%%%DocumentPaperSizes: %s\n",psize);
 	    fprintf(tfp, "%%%%BeginSetup\n");
 	    fprintf(tfp, "[{\n");
-	    fprintf(tfp, "%%BeginFeature: *PageRegion %s\n", papersize);
+	    fprintf(tfp, "%%%%BeginFeature: *PageRegion %s\n", papersize);
 	    if (landscape)
 		fprintf(tfp, "<</PageSize [%d %d]>> setpagedevice\n", pageheight, pagewidth);
 	    else
 		fprintf(tfp, "<</PageSize [%d %d]>> setpagedevice\n", pagewidth, pageheight);
-	    fprintf(tfp, "%%EndFeature\n");
+	    fprintf(tfp, "%%%%EndFeature\n");
 	    fprintf(tfp, "} stopped cleartomark\n");
 	    fprintf(tfp, "%%%%EndSetup\n");
 	} else if (pdfflag) {
-	    /* set the page size for PDF */
+	    /* set the page size for PDF to the figure size */
 	    fprintf(tfp, "<< /PageSize [%d %d] >> setpagedevice\n",
 					clipux-cliplx,clipuy-cliply);
 	}
 
+
 	/* put in the magnification for information purposes */
-	fprintf(tfp, "%%%%Magnification: %.4f\n",metric? mag*76.2/80.0 : mag);
+	fprintf(tfp, "%%Magnification: %.4f\n",metric? mag*76.2/80.0 : mag);
+	fprintf(tfp, "%%%%EndComments\n");
 
 	/* if the user wants an ASCII preview, route the rest of the eps to a temp file */
 	if (asciipreview) {
@@ -712,7 +723,6 @@ F_compound	*objects;
 		exit(1);
 	    }
 	}
-	fprintf(tfp, "%%%%EndComments\n");
 
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {
@@ -723,9 +733,9 @@ F_compound	*objects;
 
 	/* insert PostScript codes to select paper size, if exist */
 	libdir = getenv("FIG2DEV_LIBDIR");
-#ifdef FIG2DEV_LIBDIR
+#ifdef FIG2DEV_LIBDIR_STR
 	if (libdir == NULL)
-	    libdir = FIG2DEV_LIBDIR;
+	    libdir = FIG2DEV_LIBDIR_STR;
 #endif
 	if (libdir != NULL) {
 	  sprintf(filename, "%s/%s.ps", libdir, papersize);
@@ -764,13 +774,13 @@ F_compound	*objects;
 					clipux, clipuy, cliplx, clipuy);
 	    if (grayonly)
 		fprintf(tfp, "closepath %.2f setgray fill\n\n",
- 		    rgb2luminance(background.red/65536.0, background.green/65536.0,
-				    background.blue/65536.0));
+ 		    rgb2luminance(background.red/65535.0, background.green/65535.0,
+				    background.blue/65535.0));
 	    else
 		fprintf(tfp, "closepath %.2f %.2f %.2f setrgbcolor fill\n\n",
- 		    background.red/65536.0,
- 		    background.green/65536.0,
- 		    background.blue/65536.0);
+ 		    background.red/65535.0,
+ 		    background.green/65535.0,
+ 		    background.blue/65535.0);
  	}
 
 	/* translate (in multi-page mode this is done at end of this proc) */
@@ -783,10 +793,6 @@ F_compound	*objects;
 	}
 	if (pats_used) {
 	    int i;
-	    fprintf(tfp, "\n%s%s%s", FILL_PROLOG1,FILL_PROLOG2,FILL_PROLOG3);
-	    fprintf(tfp, "\n%s%s%s", FILL_PROLOG4,FILL_PROLOG5,FILL_PROLOG6);
-	    fprintf(tfp, "\n%s%s%s", FILL_PROLOG7,FILL_PROLOG8,FILL_PROLOG9);
-	    fprintf(tfp, "\n%s%s",   FILL_PROLOG10,FILL_PROLOG11);
 	    /* only define the patterns that are used */
 	    for (i=0; i<NUMPATTERNS; i++)
 		if (pattern_used[i])
@@ -807,8 +813,10 @@ F_compound	*objects;
 	    char localefile[512], str[512];
 	    FILE *fp;
 	    libdir = getenv("FIG2DEV_LIBDIR");
+#ifdef FIG2DEV_LIBDIR_STR
 	    if (libdir == NULL)
-		libdir = FIG2DEV_LIBDIR;
+		libdir = FIG2DEV_LIBDIR_STR;
+#endif
 	    locale = getenv("LANG");
 	    if (locale == NULL) {
 		fprintf(stderr, "fig2dev: LANG not defined; assuming C locale\n");
@@ -950,6 +958,7 @@ genps_grid(major, minor)
 	}
 }
 
+static void
 draw_gridline(x1, y1, x2, y2)
     float	x1, y1, x2, y2;
 {
@@ -1089,6 +1098,10 @@ genps_end()
 	unlink(tmpeps);
 	unlink(tmpprev);
     }
+    /* put any cleanup between %%Trailer and %EOF */
+    fprintf(tfp, "%%%%Trailer\n");
+    /* final DSC comment for eps output (EOF = end of document) */
+    fprintf(tfp, "%%EOF\n");
 
     /* all ok */
     return 0;
@@ -1166,7 +1179,7 @@ int	 width, height;
 }
 
 
-static
+static void
 set_style(s, v)
 int	s;
 double	v;
@@ -1196,7 +1209,7 @@ double	v;
 	}
 }
 
-static
+static void
 reset_style(s, v)
 int	s;
 double	v;
@@ -1212,7 +1225,7 @@ double	v;
 	fprintf(tfp, "\n");
 }
 
-static
+static void
 set_linejoin(j)
 int	j;
 {
@@ -1222,7 +1235,7 @@ int	j;
 	}
 }
 
-static
+static void
 set_linecap(j)
 int	j;
 {
@@ -1232,7 +1245,7 @@ int	j;
 	}
 }
 
-static
+static void
 set_linewidth(w)
 double	w;
 {
@@ -1251,9 +1264,8 @@ genps_line(l)
 F_line	*l;
 {
 	F_point		*p, *q;
-	/* JNT */
 	int		 radius;
-	int		 i, j;
+	int		 i;
 	FILE		*picf;
 	char		 buf[512], realname[PATH_MAX];
 	int		 xmin,xmax,ymin,ymax;
@@ -1709,9 +1721,9 @@ F_line	*l;
 		reset_style(l->style, l->style_val);
 
 		if (l->back_arrow && l->thickness > 0)
-		    draw_arrow(l, l->back_arrow, bpoints, nbpoints, l->pen_color);
+		    draw_arrow(l, l->back_arrow, bpoints, nbpoints, bfillpoints, nbfillpoints, l->pen_color);
 		if (l->for_arrow && l->thickness > 0)
-		    draw_arrow(l, l->for_arrow, fpoints, nfpoints, l->pen_color);
+		    draw_arrow(l, l->for_arrow, fpoints, nfpoints, ffillpoints, nffillpoints, l->pen_color);
 	}
 	if (multi_page)
 	   fprintf(tfp, "} bind def\n");
@@ -1745,6 +1757,7 @@ F_spline	*s;
 	   fprintf(tfp, "} bind def\n");
 }
 
+static void
 genps_itp_spline(s)
 F_spline	*s;
 {
@@ -1804,12 +1817,13 @@ F_spline	*s;
 
 	/* draw arrowheads after spline for open arrow */
 	if (s->back_arrow && s->thickness > 0)
-	    draw_arrow(s, s->back_arrow, bpoints, nbpoints, s->pen_color);
+	    draw_arrow(s, s->back_arrow, bpoints, nbpoints, bfillpoints, nbfillpoints, s->pen_color);
 
 	if (s->for_arrow && s->thickness > 0)
-	    draw_arrow(s, s->for_arrow, fpoints, nfpoints, s->pen_color);
+	    draw_arrow(s, s->for_arrow, fpoints, nfpoints, ffillpoints, nffillpoints, s->pen_color);
 }
 
+static void
 genps_ctl_spline(s)
 F_spline	*s;
 {
@@ -1916,9 +1930,9 @@ F_spline	*s;
 
 	/* draw arrowheads after spline */
 	if (s->back_arrow && s->thickness > 0)
-	    draw_arrow(s, s->back_arrow, bpoints, nbpoints, s->pen_color);
+	    draw_arrow(s, s->back_arrow, bpoints, nbpoints, bfillpoints, nbfillpoints, s->pen_color);
 	if (s->for_arrow && s->thickness > 0)
-	    draw_arrow(s, s->for_arrow, fpoints, nfpoints, s->pen_color);
+	    draw_arrow(s, s->for_arrow, fpoints, nfpoints, ffillpoints, nffillpoints, s->pen_color);
 }
 
 void
@@ -1958,6 +1972,10 @@ F_arc	*a;
 	else
 	    angle2 = atan2(ey-cy, ex-cx) * 180.0 / M_PI;
 
+	/* workaround for arcs with start point = end point; make angles slightly different */
+	if (fabs(angle1 - angle2) < 0.001)
+	    angle2 = angle1 + 0.01;
+
 	if ((a->type == T_OPEN_ARC) && (a->thickness != 0) && (a->back_arrow || a->for_arrow)) {
 	    /* set clipping for any arrowheads */
 	    fprintf(tfp, "gs ");
@@ -1969,7 +1987,7 @@ F_arc	*a;
 
 	/* draw the arc now */
 	/* direction = 1 -> Counterclockwise */
-	fprintf(tfp, "n %.1f %.1f %.1f %.1f %.1f %s\n",
+	fprintf(tfp, "n %.1f %.1f %.1f %.4f %.4f %s\n",
 		cx, cy, radius, angle1, angle2,
 		((direction == 1) ? "arcn" : "arc"));
 
@@ -1992,10 +2010,10 @@ F_arc	*a;
 
 	/* now draw the arrowheads, if any */
 	if (a->type == T_OPEN_ARC) {
-	    if (a->for_arrow && a->thickness > 0)
-		draw_arrow(a, a->for_arrow, fpoints, nfpoints, a->pen_color);
 	    if (a->back_arrow && a->thickness > 0)
-		draw_arrow(a, a->back_arrow, bpoints, nbpoints, a->pen_color);
+		draw_arrow(a, a->back_arrow, bpoints, nbpoints, bfillpoints, nbfillpoints, a->pen_color);
+	    if (a->for_arrow && a->thickness > 0)
+		draw_arrow(a, a->for_arrow, fpoints, nfpoints, ffillpoints, nffillpoints, a->pen_color);
 	}
 	if (multi_page)
 	   fprintf(tfp, "} bind def\n");
@@ -2174,12 +2192,12 @@ F_text	*t;
 
 /* draw arrow from the points array */
 
-static
-draw_arrow(obj, arrow, points, npoints, col)
+static void
+draw_arrow(obj, arrow, points, npoints, fillpoints, nfillpoints, col)
 F_line	*obj;
 F_arrow	*arrow;
-Point	*points;
-int	npoints;
+Point	*points, *fillpoints;
+int	npoints, nfillpoints;
 int	col;
 {
 	int i, type;
@@ -2200,15 +2218,46 @@ int	col;
 	}
 
 	type = arrow->type;
-	if (type != 0 && type != 6 && type < 9)  /* old heads, close the path */
+	if (type != 0 && type != 6 && type < 13)  			/* old heads, close the path */
 	    fprintf(tfp, " cp ");
-	if (type != 0) {
-	    if (arrow->style == 0)		/* hollow, fill with white */
+	if (type == 0) {
+	    /* stroke */
+	    fprintf(tfp, " col%d s\n",col);
+	} else {
+	    if (arrow->style == 0 && nfillpoints == 0) {		/* hollow, fill with white */
 		fill_area(NUMSHADES-1, WHITE_COLOR, WHITE_COLOR, 0, 0);
-	    else if (type < 9)			/* solid, fill with color  */
-		fill_area(NUMSHADES-1, col, col, 0, 0);
+		/* stroke */
+		fprintf(tfp, " col%d s\n",col);
+	    } else {
+		if (nfillpoints == 0) {
+		    if (type < 13) {
+			if (arrow->style == 0)
+			    fill_area(NUMSHADES-1, WHITE_COLOR, WHITE_COLOR, 0, 0);	/* fill with white */
+			else
+			    fill_area(NUMSHADES-1, col, col, 0, 0);		/* fill with color */
+		    }
+		    /* stroke */
+		    fprintf(tfp, " col%d s\n",col);
+		} else {
+		    /* special fill, first fill whole head with white */
+		    fill_area(NUMSHADES-1, WHITE_COLOR, WHITE_COLOR, 0, 0);
+		    /* stroke */
+		    fprintf(tfp, " col%d s\n",col);
+		    /* now describe the special fill area */
+		    fprintf(tfp, "n ");
+		    for (i=0; i<nfillpoints; i++) {
+			fprintf(tfp, "%d %d ",fillpoints[i].x,fillpoints[i].y);
+			if (i==0)
+			    fprintf(tfp, "m ");
+			else
+			    fprintf(tfp, "l ");
+			if ((i+1)%5 == 0)
+			    fprintf(tfp,"\n");
+		    }
+		    fill_area(NUMSHADES-1, col, col, 0, 0);		/* then fill special fill area */
+		}
+	    }
 	}
-	fprintf(tfp, " col%d s\n",col);
 }
 
 /****************************************************************
@@ -2225,14 +2274,12 @@ int	col;
 
 ****************************************************************/
 
-static
+static void
 clip_arrows(obj, objtype)
     F_line	   *obj;
     int		    objtype;
 {
-    int		    fcx1, fcy1, fcx2, fcy2;
-    int		    bcx1, bcy1, bcx2, bcy2;
-    int		    i,nbndpts;
+    int		    i;
 
     /* get current clip area */
     fprintf(tfp," clippath\n");
@@ -2247,14 +2294,12 @@ clip_arrows(obj, objtype)
 	    			(double) lpntx1, (double) lpnty1,
 				a->direction, a->for_arrow, &lpntx2, &lpnty2);
 	}
-	calc_arrow(lpntx2, lpnty2, lpntx1, lpnty1, &fcx1, &fcy1, &fcx2, &fcy2,
-		   obj->for_arrow, fpoints, &nfpoints, &nbndpts);
-	/* set clipping to the *outside* of the first nbndpts points of the 
-	   arrowhead and the box surrounding it */
-	/* draw the box clockwise */
-	fprintf(tfp, "%d %d m %d %d l ",fcx1, fcy1, fcx2, fcy2);
-	for (i=nbndpts-1; i>=0; i--) {
-	    fprintf(tfp,"%d %d l ",fpoints[i].x,fpoints[i].y);
+	calc_arrow(lpntx2, lpnty2, lpntx1, lpnty1, 
+		   obj->thickness, obj->for_arrow, 
+		   fpoints, &nfpoints, ffillpoints, &nffillpoints, clippoints, &nclippoints);
+	/* set the clipping area */
+	for (i=nclippoints-1; i>=0; i--) {
+	    fprintf(tfp,"%d %d %c ",clippoints[i].x,clippoints[i].y, i==nclippoints-1? 'm': 'l');
 	}
 	fprintf(tfp, "cp\n");
     }
@@ -2270,14 +2315,12 @@ clip_arrows(obj, objtype)
 				(double) fpntx1, (double) fpnty1,
 				a->direction ^ 1, a->back_arrow, &fpntx2, &fpnty2);
 	}
-	calc_arrow(fpntx2, fpnty2, fpntx1, fpnty1, &bcx1, &bcy1, &bcx2, &bcy2,
-		    obj->back_arrow, bpoints, &nbpoints, &nbndpts);
-	/* set clipping to the *outside* of the first three points of the 
-	   arrowhead and the box surrounding it */
-	/* draw the box clockwise */
-	fprintf(tfp, "%d %d m %d %d l ",bcx1, bcy1, bcx2, bcy2);
-	for (i=nbndpts-1; i>=0; i--) {
-	    fprintf(tfp,"%d %d l ",bpoints[i].x,bpoints[i].y);
+	calc_arrow(fpntx2, fpnty2, fpntx1, fpnty1, 
+		    obj->thickness, obj->back_arrow, 
+		    bpoints, &nbpoints, bfillpoints, &nbfillpoints, clippoints, &nclippoints);
+	/* set the clipping area */
+	for (i=nclippoints-1; i>=0; i--) {
+	    fprintf(tfp,"%d %d %c ",clippoints[i].x,clippoints[i].y, i==nclippoints-1? 'm': 'l');
 	}
 	fprintf(tfp, "cp\n");
     }
@@ -2287,25 +2330,10 @@ clip_arrows(obj, objtype)
     fprintf(tfp, "eoclip\n");
 }
 
-static
-arc_tangent(x1, y1, x2, y2, direction, x, y)
-double	x1, y1, x2, y2;
-int	*x, *y;
-int	direction;
-{
-    if (direction==0) { /* counter clockwise  */
-	*x = round(x2 + (y2 - y1));
-	*y = round(y2 - (x2 - x1));
-    } else {
-	*x = round(x2 - (y2 - y1));
-	*y = round(y2 + (x2 - x1));
-    }
-}
-
 /* uses eofill (even/odd rule fill) */
 /* ulx and uly define the upper-left corner of the object for pattern alignment */
 
-static
+static void
 fill_area(fill, pen_color, fill_color, ulx, uly)
 int fill, pen_color, fill_color, ulx, uly;
 {
@@ -2346,24 +2374,32 @@ int fill, pen_color, fill_color, ulx, uly;
     else {
 	/* one of the patterns */
 	int patnum = fill-NUMSHADES-NUMTINTS+1;
+	char colorspace[13], pencolor[25], fillcolor[25];
+	
 	if (grayonly) {
 	    float grayfill, graypen;
 	    grayfill = rgb2luminance(fill_r, fill_g, fill_b);
 	    graypen  = rgb2luminance(pen_r, pen_g, pen_b);
-	    fprintf(tfp, "gs /PC [[%.2f %.2f %.2f] [%.2f %.2f %.2f]] def\n",
-			grayfill, grayfill, grayfill, graypen, graypen, graypen);
+	    sprintf(colorspace, "/DeviceGray");
+	    sprintf(fillcolor, "%.2f", grayfill);
+	    sprintf(pencolor, "%.2f", graypen);
 	} else {
-	    fprintf(tfp, "gs /PC [[%.2f %.2f %.2f] [%.2f %.2f %.2f]] def\n",
-			fill_r, fill_g, fill_b, pen_r, pen_g, pen_b);
+	    sprintf(colorspace, "/DeviceRGB");
+	    sprintf(fillcolor, "%.2f %.2f %.2f", fill_r, fill_g, fill_b);
+	    sprintf(pencolor, "%.2f %.2f %.2f", pen_r, pen_g, pen_b);
 	}
-	fprintf(tfp, "%.2f %.2f sc P%d [%d 0 0 %d %.2f %.2f] PATmp PATsp ef gr PATusp ",
-			THICK_SCALE, THICK_SCALE, patnum,
-			patmat[patnum-1][0],patmat[patnum-1][1],
-		        (float)ulx/THICK_SCALE, (float)uly/THICK_SCALE);
+	
+	fprintf(tfp, "\n%% Fill with pattern background color\n");
+	fprintf(tfp, "gs %s setcolorspace %s setcolor fill gr\n",
+	       		colorspace, fillcolor);
+	fprintf(tfp, "\n%% Fill with pattern pen color\n");
+	fprintf(tfp, "gs %s setcolorspace %s P%d setpattern fill gr\n\n",
+			colorspace, pencolor, patnum);
     }
 }
 
 /* define standard colors as "col##" where ## is the number */
+static void
 genps_std_colors()
 {
     int i;
@@ -2378,22 +2414,23 @@ genps_std_colors()
 }
 	
 /* define user colors as "col##" where ## is the number */
+static void
 genps_usr_colors()
 {
     int i;
     for (i=0; i<num_usr_cols; i++) {
 	if (grayonly)
 	    fprintf(tfp, "/col%d {%.3f setgray} bind def\n", i+NUM_STD_COLS,
-			rgb2luminance(user_colors[i].r/256.0,
-					user_colors[i].g/256.0,
-					user_colors[i].b/256.0));
+			rgb2luminance(user_colors[i].r/255.0,
+					user_colors[i].g/255.0,
+					user_colors[i].b/255.0));
 	else
 	    fprintf(tfp, "/col%d {%.3f %.3f %.3f srgb} bind def\n", i+NUM_STD_COLS,
-			user_colors[i].r/256.0, user_colors[i].g/256.0, user_colors[i].b/256.0);
+			user_colors[i].r/255.0, user_colors[i].g/255.0, user_colors[i].b/255.0);
     }
 }
 	
-static
+static Boolean
 iso_text_exist(ob)
 F_compound      *ob;
 {
@@ -2403,22 +2440,25 @@ F_compound      *ob;
 
     if (ob->texts != NULL) {
 	for (t = ob->texts; t != NULL; t = t->next) {
+	    /* look for any ISO (non-ASCII) chars in non-special text except for pstex */
+	    if (!strcmp(lang,"pstex") && special_text(t))
+		continue;
 	    for (s = (unsigned char*)t->cstring; *s != '\0'; s++) {
 		/* look for characters >= 128 or ASCII '-' */
-		if ((*s>127) || (*s==45))
-		    return 1;
+		if ((*s>127) || (*s=='-'))
+		    return True;
 	    }
 	}
     }
 
     for (c = ob->compounds; c != NULL; c = c->next) {
 	if (iso_text_exist(c))
-	    return 1;
+	    return True;
     }
-    return 0;
+    return False;
 }
 
-static
+static void
 encode_all_fonts(ob)
 F_compound	*ob;
 {
@@ -2438,24 +2478,24 @@ F_compound	*ob;
     }
 }
 
-static
+static Boolean
 ellipse_exist(ob)
 F_compound	*ob;
 {
 	F_compound	*c;
 
 	if (NULL != ob->ellipses) 
-		return 1;
+		return True;
 
 	for (c = ob->compounds; c != NULL; c = c->next) {
 	    if (ellipse_exist(c))
-		return 1;
+		return True;
 	}
 
-	return 0;
+	return False;
 	}
 
-static
+static Boolean
 approx_spline_exist(ob)
 F_compound	*ob;
 {
@@ -2464,15 +2504,15 @@ F_compound	*ob;
 
 	for (s = ob->splines; s != NULL; s = s->next) {
 	    if (approx_spline(s))
-		return 1;
+		return True;
 	}
 
 	for (c = ob->compounds; c != NULL; c = c->next) {
 	    if (approx_spline_exist(c))
-		return 1;
+		return True;
 	}
 
-	return 0;
+	return False;
 	}
 
 #ifdef USE_XPM
@@ -2484,6 +2524,7 @@ F_compound	*ob;
 /* lookup color names and return rgb values from X11
    RGB database file (e.g. /usr/lib/X11/rgb.XXX) */
 
+static void
 convert_xpm_colors(cmap, coltabl, ncols)
 	unsigned char cmap[3][MAXCOLORMAPSIZE];
 	XpmColor *coltabl;
@@ -2505,9 +2546,9 @@ convert_xpm_colors(cmap, coltabl, ncols)
 	    /* if user wants grayscale (-N) then pass through ppmtopgm too */
 	    if (grayonly)
 		cmap[RED][i] = cmap[GREEN][i] = cmap[BLUE][i] = 
-		    (int) (rgb2luminance(cmap[RED][i]/256.0, 
-					cmap[GREEN][i]/256.0, 
-					cmap[BLUE][i]/256.0)*256.0);
+		    (int) (rgb2luminance(cmap[RED][i]/255.0, 
+					cmap[GREEN][i]/255.0, 
+					cmap[BLUE][i]/255.0)*255.0);
 	}
 }
 
@@ -2535,9 +2576,11 @@ do_split(actual_depth)
 	    fig_number++;
 	    /* reset cur_values for multi-postscript. So a new
 	       image gets values being set */
-	    cur_joinstyle = 0;
-	    cur_capstyle = 0;
-	    cur_thickness = 0;
+	    /* This forces the procs that emit the codes to reset their current values
+	     * because these sections of code may be rearranged */
+	    cur_thickness = -1;
+	    cur_capstyle = -1;
+	    cur_joinstyle = -1;
 	}
     }
     last_depth = actual_depth;

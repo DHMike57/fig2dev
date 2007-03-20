@@ -28,16 +28,20 @@
 #include "alloc.h"
 #include "object.h"
 #include "drivers.h"
+#include "bound.h"
+#include "read.h"
 
 extern	int	 fig_getopt();
 extern	char	*optarg;
 extern	int	 optind;
 char		 lang[40];
 int		 parse_gridspec();
+static void	 grid_usage();
+int		 gendev_objects();
 
 void	help_msg();
 void	depth_option();
-int	depth_filter();
+int	depth_filter(int);
 
 /* hex names for Fig colors */
 char	*Fig_color_names[] = {
@@ -81,8 +85,9 @@ Boolean	centerspec = False;	/* set if the user specs. the justification */
 Boolean	magspec = False;	/* set if the user specs. the magnification */
 Boolean	transspec = False;	/* set if the user specs. the GIF transparent color */
 Boolean	multispec = False;	/* set if the user specs. multiple pages */
-Boolean	paperspec = False;	/* set if the user specs. the paper size */
-Boolean	boundingboxspec = False;/* set if the user specs. the paper size */
+Boolean	paperspec = False;	/* set if the user specs. the paper size (-z) */
+Boolean	boundingboxspec = False;/* set if the user specs. the bounding box (-B or -R) */
+Boolean maxdimspec = False;	/* set fi the user specs. the max size of the figure (-Z) */
 Boolean	pats_used, pattern_used[NUMPATTERNS];
 Boolean	multi_page = False;	/* multiple page option for PostScript */
 Boolean	overlap = False;	/* overlap pages in multiple page output */
@@ -99,6 +104,7 @@ float	grid_minor_spacing=0.0;	/* grid minor spacing (if any) */
 float	grid_major_spacing=0.0;	/* grid major spacing (if any) */
 float	mult;			/* multiplier for grid spacing */
 char	gscom[1000];		/* to build up a command for ghostscript */
+float	max_dimension;		/* if the user chooses max figure dimension (-Z) */
 
 Boolean	psencode_header_done = False; /* if we have already emitted PSencode header */
 Boolean	transp_header_done = False;   /* if we have already emitted transparent image header */
@@ -117,6 +123,7 @@ struct depth_opts {
 } depth_opt[NUMDEPTHS+1];
 int	depth_index = 0;
 char	depth_op;		/* '+' for skip all but those listed */
+int     adjust_boundingbox = 0;
 
 /* be sure to update NUMPAPERSIZES in fig2dev.h if this table changes */
 
@@ -160,7 +167,15 @@ char   *format, *arg1, *arg2, *arg3, *arg4, *arg5, *arg6, *arg7, *arg8;
 {
 	fprintf(stderr, format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 	fprintf(stderr, "\n");
-	}
+}
+
+/* all option letters must be in this string */
+
+#ifdef I18N
+#define ARGSTRING	"AaB:b:C:cD:d:E:eFf:G:g:hI:i:jkKl:L:Mm:Nn:OoPp:q:R:rS:s:Tt:UVvX:x:Y:y:WwZ:z:?"
+#else
+#define ARGSTRING	"AaB:b:C:cD:d:E:eFf:G:g:hI:i:kKl:L:Mm:Nn:OoPp:q:R:rS:s:Tt:UVvX:x:Y:y:WwZ:z:?"
+#endif
 
 void
 get_args(argc, argv)
@@ -173,15 +188,10 @@ char	*argv[];
 	float	 numer, denom;
 
 	prog = *argv;
-/* add :? */
 	/* sum of all arguments */
-#ifdef I18N
-	while ((c = fig_getopt(argc, argv, "AaB:b:C:cD:d:E:eFf:G:g:hI:i:jkl:L:Mm:Nn:OoPp:q:R:rS:s:Tt:UVvX:x:Y:y:Wwz:?")) != EOF) {
-#else
-	while ((c = fig_getopt(argc, argv, "AaB:b:C:cD:d:E:eFf:G:g:hI:i:kl:L:Mm:Nn:OoPp:q:R:rS:s:Tt:UVvX:x:Y:y:Wwz:?")) != EOF) {
-#endif
+	while ((c = fig_getopt(argc, argv, ARGSTRING)) != EOF) {
 
-	  /* generic option handling */
+	  /* global (all drivers) option handling */
 	  switch (c) {
 
 		case 'h':	/* print version message for -h too */
@@ -193,13 +203,23 @@ char	*argv[];
 		    exit(0);
 		    break;
 
+	        case 'D':	                /* depth filtering */
+		    depth_option(optarg);
+		    continue;			/* don't pass to driver */
+
+   	        case 'K':
+		    /* adjust bounding box according to selected depth range
+		       given with '-D RANGE' option above */
+		    adjust_boundingbox = 1;
+		    continue;  /* don't pass this option to driver */
+		  
 		case 'F':			/* use correct font size */
 		    correct_font_size = True;
 		    break;
 
 		case 'G':			/* Grid */
 		    /* if major AND minor are specified */
-		    if (p = strchr(optarg,':')) {
+		    if ((p = strchr(optarg,':'))) {
 			/* parse minor grid spec first */
 			if (p != optarg) {
 			    if ((nvals=parse_gridspec(optarg, &numer, &denom, 
@@ -261,27 +281,29 @@ char	*argv[];
 		    }
 		    break;
 
+		case 'm':			/* set magnification */
+		    fontmag = mag = atof(optarg);
+		    magspec = True;		/* user-specified */
+		    continue;			/* don't pass this option to driver */
+
 		case 's':			/* set default font size */
 		    font_size = atof(optarg);
 		    /* max size is checked in respective drivers */
 		    if (font_size <= 0.0)
 			font_size = DEFAULT_FONT_SIZE;
-		    font_size = font_size * fontmag;
 		    break;
 
-		case 'm':			/* set magnification */
-		    fontmag = mag = atof(optarg);
-		    magspec = True;		/* user-specified */
-		    break;
+		case 'Z':			/* scale to requested size (inches/cm) */
+		    maxdimspec = True;
+		    max_dimension = atof(optarg);
+		    continue;  			/* don't pass this option to driver */
 
 #ifdef I18N
 		case 'j':			/* set magnification */
 		    support_i18n = True;
-		    continue;  /* don't pass this option to driver */
+		    continue;  			/* don't pass this option to driver */
 #endif /* I18N */
-	        case 'D':	                /* depth filtering */
-		    depth_option(optarg);
-		    continue;	/* this opts parser is a mess */
+
 		case '?':			/* usage 		*/
 			fprintf(stderr,Usage,prog);
 			exit(1);
@@ -294,10 +316,20 @@ char	*argv[];
 	    }
 	    dev->option(c, optarg);
       	}
+	/* adjust font size after option loop to make sure we have any -m first,
+	   which affects fontmag */
+	font_size = font_size * fontmag;
+
       	if (!dev) {
 		fprintf(stderr, "No graphics language specified.\n");
 		exit(1);
       	}
+
+	/* make sure user doesn't specify both mag and max dimension */
+	if (magspec && maxdimspec) {
+		fprintf(stderr, "Must specify only one of -m (magnification) and -Z (max dimension).\n");
+		exit(1);
+	}
 
 	if (optind < argc)
 		from = argv[optind++];	/*  from file  */
@@ -329,6 +361,7 @@ parse_gridspec(string, numer, denom, spacing, nchrs)
     return 0;
 }
 
+static void
 grid_usage()
 {
      fprintf(stderr,"Can't parse grid spec. Format is -G [minor_tick][:major_tick]unit ");
@@ -349,7 +382,10 @@ char	*argv[];
 	setmode(1,O_BINARY); /* stdout is binary */
 #endif
 
+	/* get the options */
 	get_args(argc, argv);
+
+	/* read the Fig file */
 
 	if (from)
 	    status = read_fig(from, &objects);
@@ -379,6 +415,28 @@ char	*argv[];
 	    }
 	}
 
+	/* Compute bounding box of objects, supressing texts if indicated */
+	compound_bound(&objects, &llx, &lly, &urx, &ury, dev->text_include);
+
+	/* make sure bounding box has width and height (if there is only latex special
+	 * text, it may be 0 width */
+	if (urx-llx == 0)
+	     urx = llx+100;
+	if (ury-lly == 0)
+	     ury = lly+100;
+
+	/* if user has specified the maximum dimension, adjust mag to produce that */
+	if (maxdimspec) {
+	    float maxdim;
+
+	    if (metric)
+		max_dimension /= 2.54;
+	    /* find larger of width and height */
+	    maxdim = MAX(urx - llx, ury - lly)/ppi;
+	    /* override any mag specified in the Fig file */
+	    mag = max_dimension/maxdim;
+	}
+
 	/* If metric, adjust scale for difference between FIG PIX/CM (450) and actual (472.44)
 	   NOTE: we don't adjust font sizes by this amount because they are in points,
 	   not inches or cm */
@@ -396,7 +454,7 @@ help_msg()
 {
     int i;
 
-    printf("General Options:\n");
+    printf("General Options (all drivers):\n");
     printf("  -L language	choose output language (this must be first)\n");
     /* display available languages - 23/01/90 */
     printf("                Available languages are:");
@@ -406,20 +464,27 @@ help_msg()
 	printf("%s ",drivers[i].name);
     }
     printf("\n");
-    printf("  -D +/-list	include or exclude depths listed\n");
-    printf("  -f font	set default font\n");
-    printf("  -G minor[:major][:unit] draw light gray grid with thin/thick lines at minor/major units.\n");
-    printf("			(e.g. -G .25:1cm draws thin line every .25 cm and thick every 1 cm\n");
-    printf("		Only available for PostScript, EPS, PDF, and bitmap (GIF, JPEG, etc) drivers for now.\n");
     printf("  -h		print this message, fig2dev version number and exit\n");
+    printf("  -V		print fig2dev version number and exit\n");
+    printf("  -D +/-list	include or exclude depths listed\n");
+    printf("  -K		adjust bounding box according to selected depths\n" );
+    printf("		        given with '-D +/-list' option.\n");
+    printf("  -f font	set default font\n");
+    printf("  -G minor[:major][unit] draw light gray grid with thin/thick lines at minor/major units.\n");
+    printf("		  (e.g. -G .25:1cm draws thin line every .25 cm and thick every 1 cm\n");
+    printf("		  Only available for PostScript, EPS, PDF, and bitmap (GIF, JPEG, etc)\n");
+    printf("		  drivers for now.\n");
 #ifdef I18N
     printf("  -j		enable i18n facility\n");
 #endif
-    printf("  -m mag	set magnification\n");
+    printf("  -m mag	set magnification.  This may not be used with the -Z (maxdim) option.\n");
     printf("  -s size	set default font size in points\n");
-    printf("  -V		print fig2dev version number and exit\n");
+    printf("  -Z maxdim	Scale the figure so that the maximum dimension (width or height) is\n");
+    printf("		  maxdim inches/cm.  This may not be used with the magnification option (-m).\n");
     printf("\n");
 
+    printf("--------------------------------------------------------------------------------------------\n");
+    printf("Vector formats:\n");
     printf("CGM Options:\n");
     printf("  -b dummyarg	generate binary output (dummy argument required after \"-b\")\n");
     printf("  -r		position arrowheads for CGM viewers that display rounded arrowheads\n");
@@ -427,15 +492,15 @@ help_msg()
 
     printf("EPIC Options:\n");
     printf("  -A scale	scale arrowheads by dividing their size by scale\n");	
-    printf("  -E num	set encoding for text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)\n");
+    printf("  -E num	set encoding for text translation (0 no translation,\n");
+    printf("		  1 ISO-8859-1, 2 ISO-8859-2)\n");
 #ifdef NFSS
-    printf("  -F		don't set font family/series/shape, so you can\n");
-    printf("		  set it from latex\n");
+    printf("  -F		don't set font family/series/shape, so you can set it from latex\n");
 #endif /* NFSS */
     printf("  -l lwidth	use \"thicklines\" when width of line is > lwidth\n");
     printf("  -P		generate a complete LaTeX file\n");
 #ifdef NFSS
-    printf("  -R		allow rotated text (uses \\rotatebox) (requires compilation with NFSS)\n");
+    printf("  -R dummyarg	allow rotated text (uses \\rotatebox) (requires compilation with NFSS)\n");
 #endif /* NFSS */
     printf("  -S scale	scale figure\n");
     printf("  -t strch  	set the stretch of dashed lines (default = 30)\n");
@@ -446,7 +511,7 @@ help_msg()
     printf("EPS (Encapsulated PostScript) Options:\n");
     printf("  -A		add ASCII (EPSI) preview\n");
     printf("  -B \"Wx [Wy X0 Y0]\" force width, height and origin in absolute coordinates\n");
-    printf("  -b width	specify width of blank border around figure\n");
+    printf("  -b width	specify width of blank border around figure (1/72 inch)\n");
     printf("  -C dummyarg	add color TIFF preview (for Microsoft apps)\n");
     printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
     printf("  -g color	background color\n");
@@ -469,27 +534,15 @@ help_msg()
     printf("  -S speed	set pen speed in cm/sec\n");
     printf("  -v		print figure upside-down in portrait or backwards in landscape\n");
 
-    printf("Options common to all bitmap languages:\n");
-    printf("  -b width	specify width of blank border around figure\n");
-    printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
-    printf("  -g color	background color\n");
-    printf("  -N        	convert all colors to grayscale\n");
-    printf("  -S smooth	specify smoothing factor [1=none, 2=some 4=more]\n");
-
-    printf("GIF Options:\n");
-    printf("  -t color	specify GIF transparent color in hexadecimal (e.g. #ff0000=red)\n");
-
-    printf("JPEG Options:\n");
-    printf("  -q quality	specify image quality factor (0-100)\n");
-
     printf("LaTeX Options:\n");
     printf("  -d dmag	set separate magnification for length of line dashes to dmag\n");
-    printf("  -E num	set encoding for latex text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)\n");
+    printf("  -E num	set encoding for text translation (0 no translation,\n");
+    printf("		  1 ISO-8859-1, 2 ISO-8859-2)\n");
     printf("  -l lwidth	set threshold between thin and thick lines to lwidth\n");
-    printf("  -v	verbose mode\n");
+    printf("  -v		verbose mode\n");
 
     printf("MAP (HTML image map) Options:\n");
-    printf("  -b width	specify width of blank border around figure\n");
+    printf("  -b width	specify width of blank border around figure (1/72 inch)\n");
 
     printf("METAFONT Options:\n");
     printf("  -C code	specifies the starting METAFONT font code\n");
@@ -502,20 +555,21 @@ help_msg()
     printf("  -Y xmax	specifies maximum y coordinate of figure (inches)\n");
 
     printf("METAPOST Options:\n");
-    printf("  -i file   includes file content via \\input-command\n");
-    printf("  -I file   adds file content as additional header\n");
-    printf("  -o        old mode (no latex)\n");
-    printf("  -p number adds the line \"prologues:=number\"\n");
+    printf("  -i		fileincludes file content via \\input-command\n");
+    printf("  -I		fileadds file content as additional header\n");
+    printf("  -o		old mode (no latex)\n");
+    printf("  -p number	adds the line \"prologues:=number\"\n");
 
     printf("PIC Options:\n");
     printf("  -p ext	enables certain PIC extensions (see man pages)\n");
 
     printf("PICTeX Options:\n");
-    printf("  -E num	set encoding for text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)\n");
+    printf("  -E num	set encoding for text translation (0 no translation,\n");
+    printf("		  1 ISO-8859-1, 2 ISO-8859-2)\n");
 
-    printf("PostScript and PDF Options:\n");
+    printf("PostScript Options:\n");
     printf("  -A		add ASCII (EPSI) preview\n");
-    printf("  -b width	specify width of blank border around figure\n");
+    printf("  -b width	specify width of blank border around figure (1/72 inch)\n");
     printf("  -C dummyarg	add color TIFF preview (for Microsoft apps)\n");
     printf("  -c		center figure on page\n");
     printf("  -e		put figure at left edge of page\n");
@@ -532,24 +586,53 @@ help_msg()
     printf("  -y offset	shift figure up/down by offset units (1/72 inch)\n");
     printf("  -z papersize	set the papersize (see man pages for available sizes)\n");
 
+    printf("PDF Options:\n");
+    printf("  -b width	specify width of blank border around figure (1/72 inch)\n");
+    printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
+    printf("  -g color	background color\n");
+    printf("  -M		generate multiple pages for large figure\n");
+    printf("  -N        	convert all colors to grayscale\n");
+    printf("  -O        	overlap pages in multiple page mode (-M)\n");
+    printf("  -S dummyarg	generate single page\n");
+
     printf("PSTEX Options:\n");
+    printf("  -b width	specify width of blank border around figure (1/72 inch)\n");
     printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
     printf("  -g color	background color\n");
     printf("  -n name	set title part of PostScript output to name\n");
 
     printf("PSTEX_T Options:\n");
-    printf("  -E num	set encoding for latex text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)\n");
+    printf("  -b width	specify width of blank border around figure (1/72 inch)\n");
+    printf("  -E num	set encoding for text translation (0 no translation,\n");
+    printf("		  1 ISO-8859-1, 2 ISO-8859-2)\n");
 #ifdef NFSS
     printf("  -F		don't set font family/series/shape, so you can\n");
     printf("		  set it from latex\n");
 #endif /* NFSS */
     printf("  -p name	name of the PostScript file to be overlaid\n");
 
+    printf("SHAPE (ShapePar driver) Options:\n");
+    printf("  -n name	Set basename of the macro (e.g. \"face\" gives faceshape and facepar)\n");
     printf("Tcl/Tk (tk) and Perl/Tk (ptk) Options:\n");
     printf("  -l dummyarg	landscape mode (dummy argument required after \"-l\")\n");
     printf("  -p dummyarg	portrait mode (dummy argument required after \"-p\")\n");
     printf("  -P		generate canvas of full page size instead of figure bounds\n");
     printf("  -z papersize	set the papersize (see man pages for available sizes)\n");
+
+    printf("---------------------------------------------------------------------\n");
+    printf("Bitmap formats:\n");
+    printf("Options common to all bitmap formats:\n");
+    printf("  -b width	specify width of blank border around figure (pixels)\n");
+    printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
+    printf("  -g color	background color\n");
+    printf("  -N		convert all colors to grayscale\n");
+    printf("  -S smooth	specify smoothing factor [1=none, 2=some 4=more]\n");
+
+    printf("GIF Options:\n");
+    printf("  -t color	specify GIF transparent color in hexadecimal (e.g. #ff0000=red)\n");
+
+    printf("JPEG Options:\n");
+    printf("  -q quality	specify image quality factor (0-100)\n");
 
 }
 
@@ -621,9 +704,6 @@ gendev_objects(objects, dev)
 	int	status;
 	struct	obj_rec *rec_array, *r; 
 
-	/* Compute bounding box of objects, supressing texts if indicated */
-	compound_bound(objects, &llx, &lly, &urx, &ury, dev->text_include);
-
 	/* dump object pointers to an array */
 	obj_count = compound_dump(objects, 0, 0, dev);
 	if (!obj_count) {
@@ -644,7 +724,7 @@ gendev_objects(objects, dev)
 
 	/* generate objects in sorted order */
 	for (r = rec_array; r<rec_array+obj_count; r++)
-	  if (depth_filter(r))
+	  if (depth_filter(r->depth))
 	    (*(r->gendev))(r->obj);
 
 	/* generate trailer */
@@ -675,6 +755,7 @@ void gendev_null() {
  *  d1:d2   include/exclude this range of depths
  */
 
+static void
 depth_usage()
 {
     fprintf(stderr,"%s: help for -D option:\n",prog);
@@ -707,12 +788,12 @@ char *s;
       depth_usage();
     switch(*s) {		/* what's the delim? */
       case ':':			/* parse a range */
-	d->d2 = strtol(++s,&s,10);
+	d->d2 = strtol(s+1,&s,10);
 	if (d->d2 < d->d1) 
 	    depth_usage();
 	break;
       case ',':			/* just start the next one */
-	++s;
+	s++;
 	break;
     }
   }
@@ -724,8 +805,8 @@ char *s;
 }
 
 int
-depth_filter(r)
-struct obj_rec *r;
+depth_filter(obj_depth)
+int obj_depth;
 {
   struct depth_opts *d;
   
@@ -733,10 +814,10 @@ struct obj_rec *r;
     return 1;
   for (d = depth_opt; d->d1 >= 0; d++)
     if (d->d2 >= 0) {		/* it's a range comparison */
-      if (r->depth >= d->d1 && r->depth <= d->d2)
+      if (obj_depth >= d->d1 && obj_depth <= d->d2)
 	return (depth_op=='+')? 1:0;
     } else {			/* it's a single-value comparison */
-      if (d->d1 == r->depth)
+      if (d->d1 == obj_depth)
 	return (depth_op=='+')? 1:0;
     }
   return (depth_op=='-')? 1:0;

@@ -14,13 +14,27 @@ XCOMM the Software, and to permit persons who receive copies from any such
 XCOMM party to do so, with the only requirement being that this copyright 
 XCOMM notice remain intact.
 
-XCOMM Uncomment the USELATEX2E flag in the transfig/Imakefile file to use the
+XCOMM ******
+XCOMM If you want to install transfig in a directory other than the default X11 binary
+XCOMM directory, uncomment the following "BINDIR" line and change the path
+XCOMM to the full path of the directory where you want transfig to be installed.
+XCOMM Also, you may have to uncomment and redefine MKDIRHIER because "make" looks
+XCOMM for it relative to the BINDIR variable.
+XCOMM
+XCOMM BINDIR = /usr/bin/X11
+XCOMM MKDIRHIER = /bin/sh /usr/bin/X11/mkdirhier
+
+XCOMM MANDIR tells where the standard man pages should go (no need to change it
+XCOMM if you want the man pages installed in the standard place on your system
+XCOMM MANDIR = $(MANSOURCEPATH)$(MANSUFFIX)
+
+XCOMM Uncomment the USELATEX2E flag to use the
 XCOMM \\usepackage{} command for LaTeX2e. 
 XCOMM The default is to use \\documentstyle{} for LaTeX209.
 
 XCOMM USELATEX2E = -DLATEX2E
 
-XCOMM ******* DON'T CHANGE ANYTHIN BELOW THIS POINT *******
+XCOMM ******* DON'T CHANGE ANYTHING BELOW THIS POINT *******
 
 DEFINES = $(USELATEX2E)
 DEPLIBS =

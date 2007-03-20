@@ -92,7 +92,7 @@ void gentpic_ctl_spline(), gentpic_itp_spline();
 void gentpic_open_spline(), gentpic_closed_spline();
 void gentpic_spline(), gentpic_ellipse(), gentpic_text();
 void gentpic_arc(), gentpic_line();
-static bezier_spline();
+static void bezier_spline();
 static void newline();
 
 void gentpic_option(opt, optarg)
@@ -151,7 +151,7 @@ gentpic_end()
  * tpic's line thickness is given in milli-inches with a default of 8
  * milli-inches. We simply multiply this default with the Fig pixel width.
  */
-static set_linewidth(w)
+static void set_linewidth(w)
 int	w;
 {
 	static int	cur_thickness = -1;
@@ -163,7 +163,7 @@ int	w;
 	    }
 	}
 
-static set_style(s, v)
+static void set_style(s, v)
 int	s;
 float	v;
 {
@@ -176,7 +176,7 @@ float	v;
 	    }
 	}
 
-static set_baseline(b)
+static void set_baseline(b)
 int	b;
 {
 	static int	cur_baseline = -1;
@@ -187,7 +187,7 @@ int	b;
 	}
 }
 
-static set_texture(cur_texture)
+static void set_texture(cur_texture)
 int	cur_texture;
 {
 	/*
@@ -207,7 +207,7 @@ int	cur_texture;
  * otherwise, it should do a normal gray-scale fill. Note that the gray-
  * scale fill parameter is wired for fig2.X (the constant 0.05).
  */
-static set_fill(cur_fill)
+static void set_fill(cur_fill)
 int	cur_fill;
 {
 	if(cur_fill < WHITE_FILL ||
@@ -627,7 +627,8 @@ F_arc	*a;
 
 	}
 
-static arc_tangent(x1, y1, x2, y2, direction, x, y)
+#if 0 /* function arc_tangent() is unused */
+static void arc_tangent(x1, y1, x2, y2, direction, x, y)
 double	x1, y1, x2, y2, *x, *y;
 int	direction;
 {
@@ -639,11 +640,12 @@ int	direction;
 	    *x = x2 - (y2 - y1);
 	    *y = y2 + (x2 - x1);
 	    }
-	}
+}
+#endif /* function arc_tangent() is unused */
 
 #define		THRESHOLD	.05	/* inch */
 
-static quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
+static void quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
 double	a1, b1, a2, b2, a3, b3, a4, b4;
 {
 	double	x1, y1, x4, y4;
@@ -669,7 +671,7 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	    quadratic_spline(xmid, ymid, ((a2+3*a3)/4), ((b2+3*b3)/4),
 			((a3+x4)/2), ((b3+y4)/2), x4, y4);
 	    }
-	}
+}
 
 void gentpic_closed_spline(s)
 F_spline	*s;
@@ -755,7 +757,7 @@ F_spline	*s;
 
 	}
 
-static bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
+static void bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
 double	a0, b0, a1, b1, a2, b2, a3, b3;
 {
 	double	x0, y0, x3, y3;

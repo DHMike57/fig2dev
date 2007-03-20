@@ -3,6 +3,211 @@ Changes to Transfig/fig2dev
 Version 3.2
 ===============================================================================
 
+Patchlevel 5 (Feb 27, 2007)
+
+NEW FEATURES
+	o SVG driver adds color and pattern filling to arcs
+	  from Martin Kroeker
+
+BUGS FIXED:
+	o bug which made arrowheads too short fixed
+	o SVG driver corrects the ugly arrowheads on stick arrows
+	  from Martin Kroeker
+	o EMF driver would crash when fed stdin
+	  from Martin Kroeker
+	o Unhandled case for linetypes in latex driver
+	o CUPS didn't like the order of some of the Postscript header
+	  from Ian Dall
+
+-------------------------------------
+Patchlevel 5-alpha7 (Oct, 27, 2005)
+
+NEW FEATURES
+	o Updated SVG driver from Martin Kroeker was missing from alpha6
+	o Another SVG update: Use a font-family list of "Times,Symbol" for symbol
+	  characters - the Times fontface does not contain all elements of the
+	  Symbol font on all platforms
+	
+BUGS FIXED:
+	o Typo in font name (was cmit10, should be cmti10) in MetaPost driver
+	  This bug fix was omitted from alpha6
+
+Patchlevel 5-alpha6 (Oct, 12, 2005)
+
+NEW FEATURES:
+	o Added -dPDFSETTINGS=/prepress option to ghostscript when generating
+	  PDF output to improve quality of bitmap graphics
+	o Fill patterns now use PostScript Level 2 built-in pattern commands
+	  for Postscript/EPS/PDF and bitmap output
+	  From Konstantin Shemyak
+	o Updated SVG driver from Martin Kroeker
+	o New -K option to size bounding box to whole figure when exporting
+	  only certain depths
+	  From Dirk Osswald
+
+BUGS FIXED:
+	o Typo in font name (was cmit10, should be cmti10) in MetaPost driver
+	o When all texts were "special" (LaTeX coded) in a figure, ISO
+	  characters weren't encoded in straight PS and PDF output
+	o Bug in radius for circles in SVG driver (dev/gensvg.c)
+	o fig2dev.man was missing many papersize options
+	o Double fclose() in bitmap driver
+
+-------------------------------------
+Patchlevel 5-alpha5 (April, 26, 2004)
+
+NEW FEATURES:
+	o Raster picture support added to SVG driver. (In SVG, this translates
+	  to a link to the image file plus rotation/scaling information. 
+	  While 'conformant' SVG viewers need only support PNG and JPEG, there
+	  is no a filetype test, as there is no limit on supported formats
+	  in the standard, and e.g. Batik is able to display XBM and GIF in
+	  addition.  Added code for rounded boxes (polyline subtype 4).
+	  Added code for boxes, explicit support for polygons.  Added
+	  xml-space:preserve qualifier on texts to preserve whitespace. Rewrote
+	  fill pattern handling to generate patterns as needed - adding support
+	  for penwidth and color.  Corrected tiling of all shingle patterns and
+	  reversal of horizontal shingles.
+	  From Martin Kroeker
+	o Better arrowheads in SVG driver.  Corrected font family selection.
+	  Corrected (and simplified) calculation of white-tinted fill colors
+	  (and removed the HSV/RGB conversion code).
+	  From Justus Piater
+
+BUGS FIXED:
+	o Typo in LATEX_AND_XFIG file. Text should be: 
+	  \convertMPtoPDF{foo.0}{1}{1}
+	  It was missing parameters {1}{1}
+	o Depth filter option -D was parsing range (e.g. 40:80) incorrectly
+	  Fix from Justus Piater
+	o C++ style comments "//" changed to "/* */" in genmp.c
+	o Integer overflow in computing some spline steps
+	o \pagestyle{empty} added for epic/eepic driver so it doesn't produce
+	  unnecessary page number when LaTeXing
+
+---------------------------------
+Patchlevel 5-alpha4 (Feb 19, 2004)
+
+NEW FEATURES
+	o Many SVG driver enhancements from Martin Kroeker
+	  (martin@ruby.chemie.uni-freiburg.de)
+	o New features in EMF driver from ITOH Yasufumi:
+	    support for locale text (if iconv() is available),
+	    arc box, open arc, rotated ellipse, picture,
+	    dash-triple-dotted line style, and all fill patterns.
+
+BUGS FIXED
+	o "cleandir" directive missing from doc/manual/Makefile
+	o Added note about requiring dummy argument for -R option
+	o SVG driver bug fixes: semicolon missing in CSS properties, multiline
+	  string problem, width, height and viewbox attributes now relative to
+	  figure bounds instead of pagesize. Fixes from Justus Piater.
+	o Font info was put in the pstex file even when there were only special
+	  texts.
+
+---------------------------------
+Patchlevel 5-alpha3 (Dec 9, 2003)
+
+NEW FEATURES
+	o Global option "-Z maxdim" to scale figure so that largest dimension
+	  (width or height) is maxdim inches
+	o Shapepar driver to generate shaped paragraphs for LaTeX (-L shape)
+	  from Christian Gollwitzer
+	o I18N support postscript file installation moved to fig2dev/dev
+	  directory and installed with InstallNonExecFile (imake directive)
+	o options -dAutoFilterColorImages=false and -dColorImageFilter=/FlateEncode
+	  added to ghostscript call when exporting to pdf to improve image
+	  quality during compression
+	o "Epoch" added to rpm spec
+	o New HP/GL2 driver from Glenn Burkhardt with paper size selection,
+	  offset, centering and orientation options
+
+BUGS FIXED
+	o comments about BINDIR added to fig2dev/Imakefile and transfig/Imakefile
+	  so user can easily change installation directory of both programs
+	o MKDIRHIER used in Imakefile for installing support files instead of mkdir
+	o commands like \\small used instead of SetFigFont for thick and thin
+	  dots for LaTeX export
+	  From Bo Thilde
+	o removed typedefs of uint, ushort and ulong from genemf.h because
+	  systems should already have those defined
+	o SVG driver not mentioned in fig2dev.1 (.man)
+	o shortened two fprintf calls in gensvg.c for HP-UX which can't handle
+	  long strings
+	o If an imported picture path points to some directory which is not the
+	  current directory, and there exists a picture file of the same name in
+	  the current directory, and the correct file is not compressed, fig2dev
+	  would use the file in the current directory because it stripped off
+	  the path first.  This was fixed by looking for the uncompressed name
+	  first.
+	o Color values should be divided by 255, not 256 to produce values from
+	  0 to 1.0 in LaTeX, Tk and PostScript drivers, and readpng and readpcx
+	  utilities
+	o Increased precision of arc angles from %.1f to %.4f in PS/EPS/PDF
+	  driver
+	o Postscript support files now installed with r/w permissions only (was
+	  r/w/x)
+	o Metapost (mp) driver now generates all Fig styles of arrowheads
+	  From Tim Braun
+	o Bug in pic preamble - default font size either 0 or garbage
+	o PDF not rotated anymore for landscape mode (similar to eps)
+	o fontmag not set when magnification was read from Fig file
+	o When there were only LaTeX special texts without backslashes (\) and
+	  no other objects in the figure, a bounding box of 0 width was produced
+	  for EPS, PS and PSTEX output.
+	o Added ZLIBDIR variable in fig2dev/Imakefile to specify zlib directory
+	  if different from standard location
+	o pstex_t export lacked border option (-b) to align LaTeX text when
+	  pstex figure specified border (also fixed in xfig Combined PS/LaTeX)
+	o warnings in gentpic.c caused failure of gcc on hppa architecture under
+	  Debian
+	o cleaned up lots of implicit declarations of functions/procs
+	o transfig: the "psfig" language was missing from the list of languages,
+	  making things go out of sync past "ps".
+	o transfig: "transfig -L pstex" was generating rules for ps not eps
+	o slight margin added to text bounds
+	o an incorrect printf specification (%d instead of %ld) in gemp.c
+	o "#include <varargs.h>" no longer needed (and is unsupported by gcc 3.3)
+	o Not a bug, really but a workaround for programs that generate Fig files
+	  with arcs that have coincident start and end points with the intent
+	  of making a circle (TCM apparently does this).  Without this
+	  workaround, such arcs have the same start and end angle, which
+	  ghostcript and probably other PostScript interpreters take to mean
+	  "don't draw anything".  This fix adds 0.01 degrees to the end angle
+	  if it is identical to the start angle.
+	o Exporting a file with a picture containing a path with blanks failed
+	o Incorrect ISO translation was: 
+	      "\\.S", /* latin capital letter S with dot above */
+	  Should be:
+	      "\\.Z", /* latin capital letter Z with dot above */
+	o LaTeX: Correction to the ISO-8859-2 ogonek diacritic mark now uses \k
+	  instead of cedilla (\c).  If the macro \k isn't defined in your
+	  situation or you don't see the ogonek then define the macro: \def\k#1{\c{#1}}
+	  before the \begin{document}.  
+	  From Jerzy Sobczyk
+	o Bug in user-defined colors when exporting to CGM. If color numbers
+	  weren't contiguous, e.g. 32, 34, then it couldn't find color 34.
+	o glyphs in the Symbol font that have descenders weren't taken into
+	  account when calculating text bounds
+	o missing blue and extra brown color in LaTeX driver
+	o \smash directive added back to text objects in eepic driver (was removed 
+	  in 3.2.4)
+	o Quotes in FIG2DEV_LIBDIR definition (fig2dev/Imakefile) interferred when
+	  using $DESTDIR
+	o Comments not inserted in EMF output anymore (not valid in language)
+	o float/int mixup in printf in pic driver for font size caused default
+	  font size to be 0
+	o bug in hp/gl (ibmgl) driver produced incorrect JCL code to enter HP/GL
+	  mode when using -k option
+	o point size factor changed from 72.27 to 72 points per inch as specified
+	  by HP tech notes
+	o change in 3.2.4 which included all "special" (LaTeX) texts in the
+	  bounding box that don't have any backslashes ("\") in them failed to
+	  take into account inline equations using the "$".  Now those special
+	  texts are also excluded from the bounding box calculation.
+	o various man page format errors fixed
+
+-----------------------------
 Patchlevel 4 (December 2002)
 
 NEW FEATURES

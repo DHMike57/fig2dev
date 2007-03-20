@@ -17,7 +17,9 @@
 
 #include "fig2dev.h"
 #include "object.h"
+#include "free.h"
 
+void
 free_arc(list)
 F_arc	**list;
 {
@@ -33,6 +35,7 @@ F_arc	**list;
 	*list = NULL;
 	}
 
+void
 free_compound(list)
 F_compound	**list;
 {
@@ -52,6 +55,7 @@ F_compound	**list;
 	*list = NULL;
 	}
 
+void
 free_ellipse(list)
 F_ellipse	**list;
 {
@@ -65,6 +69,7 @@ F_ellipse	**list;
 	*list = NULL;
 	}
 
+void
 free_line(list)
 F_line	**list;
 {
@@ -78,6 +83,7 @@ F_line	**list;
 	*list = NULL;
 	}
 
+void
 free_text(list)
 F_text	**list;
 {
@@ -92,6 +98,7 @@ F_text	**list;
 	*list = NULL;
 	}
 
+void
 free_spline(list)
 F_spline	**list;
 {
@@ -105,6 +112,7 @@ F_spline	**list;
 	*list = NULL;
 	}
 
+void
 free_splinestorage(s)
 F_spline      *s;
 {
@@ -124,6 +132,7 @@ F_spline      *s;
         free((char*)s);
         }
 
+void
 free_linestorage(l)
 F_line	*l;
 {

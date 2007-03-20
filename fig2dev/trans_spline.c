@@ -16,6 +16,7 @@
 #include "fig2dev.h"
 #include "alloc.h"
 #include "object.h"
+#include "free.h"
 #include "trans_spline.h"
 
 
@@ -57,18 +58,18 @@ typedef struct zXPoint zXPoint;
 
 static void          spline_segment_computing();
 static float         step_computing();
-static INLINE        point_adding();
-static INLINE        point_computing();
-static INLINE        negative_s1_influence();
-static INLINE        negative_s2_influence();
-static INLINE        positive_s1_influence();
-static INLINE        positive_s2_influence();
+static INLINE void   point_adding();
+static INLINE void   point_computing();
+static INLINE void   negative_s1_influence();
+static INLINE void   negative_s2_influence();
+static INLINE void   positive_s1_influence();
+static INLINE void   positive_s2_influence();
 static INLINE double f_blend();
 static INLINE double g_blend();
 static INLINE double h_blend();
-static               free_point_array();
-static               num_points();
-static F_arrow       *create_arrow();
+static void          free_point_array();
+static int           num_points();
+static void          too_many_points();
 static F_line	     *create_line();
 static F_point	     *create_point();
 static F_control     *create_cpoint();
@@ -81,7 +82,7 @@ static int	max_points;
 static int	allocstep;
 
 
-static
+static void
 free_point_array(pts)
      zXPoint *pts;
 {
@@ -109,6 +110,7 @@ init_point_array(init_size, step_size)
 
 
 
+static void
 too_many_points()
 {
   fprintf(stderr,
@@ -224,7 +226,7 @@ compute_closed_spline(spline, precision)
      F_spline	   *spline;
      float         precision;
 {
-  int k, npoints = num_points(spline->points), i;
+  int k, i;
   float     step;
   F_point   *p0, *p1, *p2, *p3, *first;
   F_control *s0, *s1, *s2, *s3, *s_first;
@@ -287,7 +289,7 @@ h_blend(u, q)
    return (u * (q + u * (2 * q + u2 * (-2*q - u*q))));
 }
 
-static INLINE
+static INLINE void
 negative_s1_influence(t, s1, A0, A2)
      double       t, s1, *A0 ,*A2;
 {
@@ -295,7 +297,7 @@ negative_s1_influence(t, s1, A0, A2)
   *A2 = g_blend(t, Q(s1));
 }
 
-static INLINE
+static INLINE void
 negative_s2_influence(t, s2, A1, A3)
      double       t, s2, *A1 ,*A3;
 {
@@ -303,7 +305,7 @@ negative_s2_influence(t, s2, A1, A3)
   *A3 = h_blend(t-1, Q(s2));
 }
 
-static INLINE
+static INLINE void
 positive_s1_influence(k, t, s1, A0, A2)
      int          k;
      double       t, s1, *A0 ,*A2;
@@ -317,7 +319,7 @@ positive_s1_influence(k, t, s1, A0, A2)
   *A2 = f_blend(t+k+1-Tk, k+2-Tk);
 }
 
-static INLINE
+static INLINE void
 positive_s2_influence(k, t, s2, A1, A3)
      int          k;
      double       t, s2, *A1 ,*A3;
@@ -331,7 +333,7 @@ positive_s2_influence(k, t, s2, A1, A3)
   *A3 = (t+k+1>Tk) ? f_blend(t+k+1-Tk, k+3-Tk) : 0.0;
 }
 
-static INLINE
+static INLINE void
 point_adding(A_blend, p0, p1, p2, p3)
      F_point     *p0, *p1, *p2, *p3;
      double      *A_blend;
@@ -344,7 +346,7 @@ point_adding(A_blend, p0, p1, p2, p3)
       too_many_points();
 }
 
-static INLINE
+static INLINE void
 point_computing(A_blend, p0, p1, p2, p3, x, y)
      F_point     *p0, *p1, *p2, *p3;
      double      *A_blend;
@@ -444,7 +446,7 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
   xlength = xend - xstart;
   ylength = yend - ystart;
 
-  start_to_end_dist = (int)sqrt((double)(xlength*xlength + ylength*ylength));
+  start_to_end_dist = (int)sqrt((double)xlength*(double)xlength + (double)ylength*(double)ylength);
 
   /* more steps if segment's origin and extremity are remote */
   number_of_steps = (int)sqrt((double)start_to_end_dist)/2;
@@ -668,19 +670,6 @@ create_line()
     return l;
 }
 
-
-
-static F_arrow *
-create_arrow()
-{
-    F_arrow	   *a;
-
-    if ((a = (F_arrow *) malloc(ARROW_SIZE)) == NULL)
-	fprintf(stderr,Err_mem);
-    return a;
-}
-
-
 static F_point	       *
 create_point()
 {
@@ -693,7 +682,8 @@ create_point()
 
 
 
-static num_points(points)
+static int
+num_points(points)
     F_point	   *points;
 {
     int		    n;

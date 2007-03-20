@@ -35,19 +35,22 @@
  */
 #include "fig2dev.h"
 #include "object.h"
+#include "genlatex.h"
+#include "setfigfont.h"
 #include "texfonts.h"
 
 extern double rad2deg;
+extern void get_slope();
 extern void unpsfont();
 extern Boolean	FontSizeOnly;	/* defined in setfigfont.c */
 
-static put_box();
-static put_arc_box();
-static single_line();
-static put_solidline();
-static put_dashline();
-static put_dotline();
-static put_quarter();
+static void put_box();
+static void put_arc_box();
+static void single_line();
+static void put_solidline();
+static void put_dashline();
+static void put_dotline();
+static void put_quarter();
 
 #define rint(a) floor((a)+0.5)     /* close enough? */
 
@@ -63,22 +66,22 @@ static put_quarter();
  *  THIN_LDOT	...  if line width = \thicklines
  */
 #ifdef NFSS
-#define THICKDOT	"\\SetFigFont{10}{12}{\\rmdefault}{\\mddefault}{\\updefault}."
-#define THINDOT	"\\SetFigFont{7}{8.4}{\\rmdefault}{\\mddefault}{\\updefault}."
+#define THICKDOT	"\\normalsize{\\rmdefault}{\\mddefault}{\\updefault}."
+#define THINDOT		"\\small{\\rmdefault}{\\mddefault}{\\updefault}."
 #else
-#define THICKDOT	"\\SetFigFont{10}{12}{rm}."
-#define THINDOT	"\\SetFigFont{7}{8.4}{rm}."
+#define THICKDOT	"\\normalsize{rm}."
+#define THINDOT		"\\small{rm}."
 #endif
 double	THIN_XOFF =	(0.1/72.0);
 double	THIN_YOFF =	(0.7/72.0);
 double	THICK_XOFF =	(0.4/72.0);
 double	THICK_YOFF =	(0.6/72.0);
 #ifdef NFSS
-#define THICK_LDOT	"\\SetFigFont{7}{8.4}{\\rmdefault}{\\mddefault}{\\updefault}."
-#define THIN_LDOT	"\\SetFigFont{5}{6}{\\rmdefault}{\\mddefault}{\\updefault}."
+#define THICK_LDOT	"\\small{\\rmdefault}{\\mddefault}{\\updefault}."
+#define THIN_LDOT	"\\tiny{\\rmdefault}{\\mddefault}{\\updefault}."
 #else
-#define THICK_LDOT	"\\SetFigFont{7}{8.4}{rm}."
-#define THIN_LDOT	"\\SetFigFont{5}{6}{rm}."
+#define THICK_LDOT	"\\small{rm}."
+#define THIN_LDOT	"\\tiny{rm}."
 #endif
 double	THIN_LXOFF =	(0.1/72.0);
 double	THIN_LYOFF =	(0.7/72.0);
@@ -116,8 +119,8 @@ double		dash_mag = 1.0;
 int		thick_width = 2;
 double		tolerance = 2.0;
 double		arc_tolerance = 1.0;
-int		(*translate_coordinates)() = NULL;
-int		(*translate_coordinates_d)() = NULL;
+void		(*translate_coordinates)() = NULL;
+void		(*translate_coordinates_d)() = NULL;
 double		unitlength;
 static int	cur_thickness = -1;
 double		ldot_diameter = 1.0/72.0;
@@ -127,19 +130,12 @@ double		dot_xoffset;
 double		dot_yoffset;
 double		ldot_xoffset;
 double		ldot_yoffset;
+static int	border_margin = 0;
 
 extern char *ISO1toTeX[];
 extern char *ISO2toTeX[];
 
-static
-translate1(xp, yp)
-  int	*xp, *yp;
-{
-	*xp = *xp + 1;
-	*yp = *yp + 1;
-	}
-
-static
+static void
 translate2(xp, yp)
   int	*xp, *yp;
 {
@@ -147,15 +143,7 @@ translate2(xp, yp)
 	*yp = (double)(TOP - *yp -1);
 	}
 
-static
-translate1_d(xp, yp)
-  double	*xp, *yp;
-{
-	*xp = *xp + 1.0;
-	*yp = *yp + 1.0;
-	}
-
-static
+static void
 translate2_d(xp, yp)
   double	*xp, *yp;
 {
@@ -175,35 +163,35 @@ genlatex_option(opt, optarg)
 	    fprintf(stderr, "warning: latex option -a obsolete");
 	    break;
 
+	case 'b':			/* border margin around figure */
+	    sscanf(optarg,"%d",&border_margin);
+	    break;
+
 	case 'd':
 	    dash_mag = atof(optarg);	/* set dash magnification */
 	    break;
 
 	case 'F':
-	    FontSizeOnly = 1;
+	    FontSizeOnly = True;
 	    break;
 
-	case 'f':		/* set default text font */
+	case 'f':			/* set default text font */
 	    for ( i = 1; i <= MAX_FONT; i++ )
 		if ( !strcmp(optarg, texfontnames[i]) ) break;
 
-	    if ( i > MAX_FONT)
-			{
-			  fprintf(stderr,
-						 "warning: non-standard font name %s ignored\n", optarg);
-			}
-		 else
-			{
-			  texfontnames[0] = texfontnames[i];
+	    if ( i > MAX_FONT) {
+		  fprintf(stderr, "warning: non-standard font name %s ignored\n", optarg);
+	    } else {
+		  texfontnames[0] = texfontnames[i];
 #ifdef NFSS
-			  texfontfamily[0] = texfontfamily[i];
-			  texfontseries[0] = texfontseries[i];
-			  texfontshape[0] = texfontshape[i];
+		  texfontfamily[0] = texfontfamily[i];
+		  texfontseries[0] = texfontseries[i];
+		  texfontshape[0] = texfontshape[i];
 #endif
-			}
+	    }
 	    break;
 
-	case 'l':		/* set thin/thick line threshold */
+	case 'l':			/* set thin/thick line threshold */
 	    thick_width = atoi(optarg);
 	    break;
 
@@ -214,7 +202,7 @@ genlatex_option(opt, optarg)
 	case 'E':
 	    encoding = atoi(optarg);
 	    if (encoding < 0 || encoding > 2)
-	      encoding = 1;
+		encoding = 1;
 	    break;
 
 	case 'L':
@@ -225,7 +213,7 @@ genlatex_option(opt, optarg)
 	default:
 	    put_msg(Err_badarg, opt, "latex");
 	    exit(1);
-	}
+    }
 }
 
 void
@@ -239,6 +227,14 @@ genlatex_start(objects)
 
  	unitlength = mag/ppi;
 	dash_mag /= unitlength*80.0;
+	border_margin /= unitlength*72.0;
+
+	/* adjust for any border margin */
+
+	llx -= border_margin;
+	lly -= border_margin;
+	urx += border_margin;
+	ury += border_margin;
 
 	translate_coordinates = translate2;
 	translate_coordinates_d = translate2_d;
@@ -274,7 +270,7 @@ genlatex_end()
 	return 0;
 }
 
-static
+static void
 set_linewidth(w)
   int	w;
 {
@@ -373,7 +369,7 @@ genlatex_line(l)
 	reset_color(l->pen_color);
 	}
 
-static
+static void
 single_line (x1, y1, x2, y2, arrow, style, val)
   int	x1, y1, x2, y2, arrow, style;
   double	val;
@@ -410,6 +406,9 @@ single_line (x1, y1, x2, y2, arrow, style, val)
 	    case DOTTED_LINE:
 		put_dotline(x1, y1, sx, sy, l, arrow, val);
 		break;
+	    default:
+		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
+		break;
 	    }
 	}
 
@@ -417,14 +416,15 @@ single_line (x1, y1, x2, y2, arrow, style, val)
 /*
  * draw arc box
  */
-static put_arc_box (llx, lly, urx, ury, radius, style, val)
+static void
+put_arc_box (llx, lly, urx, ury, radius, style, val)
 int	llx, lly, urx, ury, radius, style;
 double	val;
 {
         int     radius2= 2*radius;
 	double  swidth = (double)(urx-llx-radius2);
 	double  sheight= (double)(ury-lly-radius2);
-	int (*put_line)();
+	void (*put_line)();
 
 	switch (style) {
 	    case SOLID_LINE:
@@ -438,12 +438,16 @@ double	val;
 		fprintf(stderr, "Dotted arc boxes approximated with solid arcs\n");
 	        put_line = put_dotline;
 		break;
+	    default:
+		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
+		break;
 	    }
+        put_line = put_solidline;
 	fprintf(tfp, 
 		"\\put(%3d,%3d){\\oval(%3d,%3d)[bl]}\n"
 		"\\put(%3d,%3d){\\oval(%3d,%3d)[tl]}\n"
 		"\\put(%3d,%3d){\\oval(%3d,%3d)[br]}\n"
-		"\\put(%3d,%3d){\\oval(%3d,%3d)[tr]}\n",
+		"\\iut(%3d,%3d){\\oval(%3d,%3d)[tr]}\n",
 		llx+radius,lly+radius,radius2,radius2,
 		llx+radius,ury-radius,radius2,radius2,
 		urx-radius,lly+radius,radius2,radius2,
@@ -458,7 +462,7 @@ double	val;
 /*
  * draw box
  */
-static
+static void
 put_box (llx, lly, urx, ury, style, val)
   int	llx, lly, urx, ury, style;
   double	val;
@@ -481,6 +485,9 @@ put_box (llx, lly, urx, ury, style, val)
 		put_dotline (llx, lly, 0, 1, (double)(ury-lly), 0, val);
 		put_dotline (urx, lly, 0, 1, (double)(ury-lly), 0, val);
 		break;
+	    default:
+		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
+		break;
 	    }
 	return;
 	}
@@ -488,7 +495,7 @@ put_box (llx, lly, urx, ury, style, val)
 /*
  * draw a solid line given latex slope
  */
-static
+static void
 put_solidline (x, y, sx, sy, l, arrow, val)
   int	x, y, sx, sy, arrow;
   double	l;
@@ -548,7 +555,7 @@ put_solidline (x, y, sx, sy, l, arrow, val)
 /*
  * draw a dashed line given latex slope
  */
-static
+static void
 put_dashline (x, y, sx, sy, l, arrow, val)
   int	x, y, sx, sy, arrow;
   double	l;
@@ -611,7 +618,7 @@ put_dashline (x, y, sx, sy, l, arrow, val)
 /*
  * draw a dotted line given latex slope
  */
-static
+static void
 put_dotline (x, y, sx, sy, l, arrow, val)
   int	x, y, sx, sy, arrow;
   double	l;
@@ -695,6 +702,9 @@ genlatex_ellipse(e)
 		break;
 	    case DOTTED_LINE:
 		fprintf(stderr, "Dotted circles and elipses not supported\n");
+		break;
+	    default:
+		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
 		break;
 	    }
 
@@ -878,6 +888,9 @@ genlatex_arc(a)
 	    case DOTTED_LINE:
 		fprintf(stderr, "Dotted arcs not supported\n");
 		break;
+	    default:
+		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
+		break;
 	}
 	if (a->direction == 1) {
 	    p1 = a->point[0];
@@ -939,7 +952,7 @@ genlatex_arc(a)
 	reset_color(a->pen_color);
 	}
 
-static
+static void
 put_quarter(p1, p2, q)
   F_pos	p1, p2;
   int	q;
@@ -984,6 +997,7 @@ put_quarter(p1, p2, q)
 /* need this for communication between color routines. Sorry */
 static int lastcolor=-1;
 
+void
 set_color(col)
 int col;
 {
@@ -999,6 +1013,7 @@ int col;
    "0,0,.56",	/* dk blue */
    "0,0,.69",	/* md blue */
    "0,0,.82",	/* lt blue */
+   ".53,.81,1",	/* blue4 */
    "0,.56,0",	/* dk green */
    "0,.69,0",	/* md green */
    "0,.82,0",	/* lt green */
@@ -1014,7 +1029,6 @@ int col;
    ".5,.17,0",	/* dk brown */
    ".63,.25,0",	/* md brown1 */
    ".75,.38,0",	/* md brown1 */
-   ".88,.44,0",	/* lt brown */
    "1,.5,.5",	/* dk pink */
    "1,.63,.63",	/* md pink1 */
    "1,.75,.75",	/* md pink2 */
@@ -1033,15 +1047,16 @@ int col;
 	    fprintf(tfp, "\\color[rgb]{%s}",colors[col]);
 	else
 	    fprintf(tfp, "\\color[rgb]{%.3f,%.3f,%.3f}",
-				user_colors[col-NUM_STD_COLS].r/256.0,
-				user_colors[col-NUM_STD_COLS].g/256.0,
-				user_colors[col-NUM_STD_COLS].b/256.0);
+				user_colors[col-NUM_STD_COLS].r/255.0,
+				user_colors[col-NUM_STD_COLS].g/255.0,
+				user_colors[col-NUM_STD_COLS].b/255.0);
        lastcolor = col;
    }
 #endif
    return;
 }
 
+void
 reset_color(col)
 int col;
 {

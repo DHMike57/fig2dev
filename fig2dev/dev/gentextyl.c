@@ -29,16 +29,17 @@
 #include "object.h"
 #include "texfonts.h"
 
-static putline();
+static void putline();
 
 #define rint(a) floor((a)+0.5)     /* close enough? */
 
 static void gentextyl_ctl_spline(), gentextyl_itp_spline();
-static bezier_spline();
-static draw_arrow_head();
-static set_style();
-static arc_tangent();
-static rtop();
+static void bezier_spline();
+static void draw_arrow_head();
+static void set_style();
+static void rtop();
+static void set_linewidth();
+static void set_style();
 
 static int		line_style = 0; /* Textyl solid line style */
 static int 		linethick = 2;  /* Range is 1-12 `pixels' */
@@ -99,12 +100,14 @@ char opt, *optarg;
 #define SCALE (65536.0*72.27)
 #define measure 'S'
 
+static int
 convy(a)
 double a;
 {
    return (int)(((ury - a) * SCALE) / ppi);
 }
 
+static int
 convx(a)
 double a; {
   float f;
@@ -140,7 +143,8 @@ gentextyl_end()
 }
 
 
-static set_linewidth(w)
+static void
+set_linewidth(w)
 int	w;
 {
 /* Nop */
@@ -195,7 +199,8 @@ F_line	*l;
 /* 
  * set_style - issue style commands as appropriate
  */
-static set_style(style, dash_len)
+static void
+set_style(style, dash_len)
      int style;
      double dash_len;
 {
@@ -218,7 +223,8 @@ static set_style(style, dash_len)
 /*
  * putline
  */
-static putline (start_x, start_y, end_x, end_y)
+static void
+putline (start_x, start_y, end_x, end_y)
 int	start_x, start_y, end_x, end_y;
 {
 
@@ -390,7 +396,7 @@ F_arc	*a;
 /*
  * rtop - rectangular to polar conversion
  */
-static
+static void
 rtop(x, y, r, th)
 double x, y, *r, *th;
 {
@@ -400,24 +406,9 @@ double x, y, *r, *th;
 	if (y < 0) *th = 2*M_PI - *th;
 }
 
-static
-arc_tangent(x1, y1, x2, y2, direction, x, y)
-double	x1, y1, x2, y2, *x, *y;
-int	direction;
-{
-	if (direction) { /* counter clockwise  */
-	    *x = x2 + (y2 - y1);
-	    *y = y2 - (x2 - x1);
-	    }
-	else {
-	    *x = x2 - (y2 - y1);
-	    *y = y2 + (x2 - x1);
-	    }
-	}
-
 /*	draw arrow heading from (x1, y1) to (x2, y2)	*/
 
-static
+static void
 draw_arrow_head(x1, y1, x2, y2, arrowht, arrowwid)
 double	x1, y1, x2, y2;
 double  arrowht, arrowwid;
@@ -455,7 +446,7 @@ double  arrowht, arrowwid;
 #define THRESHOLD (10.0)
 double last_x, last_y;
 
-static
+static void
 quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
 double	a1, b1, a2, b2, a3, b3, a4, b4;
 {
@@ -490,8 +481,8 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	    }
 	}
 
-static
-void gentextyl_ctl_spline(s)
+static void
+gentextyl_ctl_spline(s)
 F_spline	*s;
 {
 	F_point	*p;
@@ -550,8 +541,8 @@ F_spline	*s;
 
 	}
 
-static
-void gentextyl_itp_spline(s)
+static void 
+gentextyl_itp_spline(s)
 F_spline	*s;
 {
   F_point	*p1, *p2;
@@ -583,7 +574,7 @@ F_spline	*s;
 		    s->for_arrow->ht, s->for_arrow->wid);
 }
 
-static
+static void
 bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
 double	a0, b0, a1, b1, a2, b2, a3, b3;
 {

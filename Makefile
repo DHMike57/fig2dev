@@ -40,9 +40,9 @@ all::
 
 # platform:  $XFree86: xc/config/cf/linux.cf,v 3.165 2001/04/19 19:54:43 dawes Exp $
 
-# operating system:  Linux 2.4.9-31 i686 [ELF] (2.4.9)
-# libc:	(6.2.5)
-# binutils:	(32)
+# operating system:  Linux 2.4.18-14 i686 [ELF] (2.4.18)
+# libc:	(6.2.93)
+# binutils:	(33)
 
 # $Xorg: lnxLib.rules,v 1.3 2000/08/17 19:41:47 cpqbld Exp $
 # $XFree86: xc/config/cf/lnxLib.rules,v 3.40 2001/02/16 01:26:08 dawes Exp $
@@ -109,8 +109,8 @@ TCLIBDIR =
           PATHSEP = /
             SHELL = /bin/sh -e
 
-              TOP = ../..
-      CURRENT_DIR = fig2dev/dev
+              TOP = .
+      CURRENT_DIR = .
 
             IMAKE = imake
            DEPEND = gccmakedep
@@ -812,13 +812,13 @@ CXXPROJECT_DEFINES =
 # ----------------------------------------------------------------------
 # start of Imakefile
 
-#
-#	Fig2dev Driver Library Makefile
-#
-# Copyright (c) 1994 Micah Beck
-# Parts Copyright (c) 1995-1999 Micah Beck
-# Parts Copyright (c) 1995-2002 by Brian V. Smith
-#
+# Top level Makefile for TransFig
+
+# TransFig: Facility for Translating Fig code
+# Copyright (c) 1985-1988 Supoj Sutantavibul
+# Copyright (c) 1991 Micah Beck
+# Copyright (c) 1994-2002 Brian V. Smith
+
 # Any party obtaining a copy of these files is granted, free of charge, a
 # full and unrestricted irrevocable, world-wide, paid up, royalty-free,
 # nonexclusive right and license to deal in this software and
@@ -828,42 +828,38 @@ CXXPROJECT_DEFINES =
 # party to do so, with the only requirement being that this copyright
 # notice remain intact.
 
-INCLUDES = -I.. -I../..
+# to make transfig and fig2dev:
+# type "xmkmf", "make Makefiles", "make" then "make install"
 
-READPNGS=readpng.c
-READPNGO=readpng.o
+DEPLIBS =
+SUBDIRS = fig2dev transfig
 
-READXPMS=readxpm.c
-READXPMO=readxpm.o
-
-SRCS =  genbox.c gencgm.c genepic.c genibmgl.c genlatex.c genmap.c genmf.c genpic.c 	genpictex.c genps.c genpdf.c genpstex.c gentextyl.c gentk.c genptk.c gentpic.c 	genbitmaps.c genge.c genmp.c genemf.c gensvg.c setfigfont.c psencode.c 	readpics.c readeps.c readgif.c readpcx.c readppm.c 	readxbm.c readtif.c readjpg.c asc85ec.c $(READPNGS) $(READXPMS)
-
-LIBOBJS = genbox.o gencgm.o genepic.o genibmgl.o genlatex.o genmap.o genmf.o genpic.o 	genpictex.o genps.o genpdf.o genpstex.o gentextyl.o gentk.o genptk.o gentpic.o 	genbitmaps.o genge.o genmp.o genemf.o gensvg.o setfigfont.o psencode.o 	readpics.o readeps.o readgif.o readpcx.o readppm.o 	readxbm.o readtif.o readjpg.o asc85ec.o $(READPNGO) $(READXPMO)
-
-LIB = transfig
-
-genps.o:	 genps.c ../../patchlevel.h
-	$(RM) $@
-	 $(CC) -c $(CFLAGS)   $*.c
-
-genmf.o:	 genmf.c ../../patchlevel.h
-	$(RM) $@
-	 $(CC) -c $(CFLAGS)   $*.c
-
-genemf.o:	 genemf.c genemf.h
-	$(RM) $@
-	 $(CC) -c $(CFLAGS)   $*.c
-
-all:: lib$(LIB).a
-
-lib$(LIB).a: $(LIBOBJS) $(EXTRALIBRARYDEPS)
-	$(RM) $@
-	$(AR) $@ $(LIBOBJS)
-	$(RANLIB) $@
-	$(_NULLCMD_)
+all::
+	@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[ik]*) set +e;; esac; done; \
+	for i in $(SUBDIRS) ;\
+	do \
+	echo "making" all "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) -C $$i $(MFLAGS) $(PARALLELMFLAGS) 'CDEBUGFLAGS=$(CDEBUGFLAGS)' all; \
+	done
 
 depend::
-	$(DEPEND) $(DEPENDFLAGS) -- $(ALLDEFINES) $(DEPEND_DEFINES) -- $(SRCS)
+	@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[ik]*) set +e;; esac; done; \
+	for i in $(SUBDIRS) ;\
+	do \
+	echo "depending" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) -C $$i $(MFLAGS) $(PARALLELMFLAGS)  depend; \
+	done
+
+manual:
+
+transfig.man:: doc/transfig.1
+	-ln -s ../doc/transfig.1 transfig.man
+	cd doc/manual; $(MAKE); latex manual; latex manual
+
+cleandir::
+	cd doc/manual; $(MAKE) cleandir
 
 # ----------------------------------------------------------------------
 # common rules for all Makefiles - do not edit
@@ -902,22 +898,136 @@ clean:: cleandir
 distclean:: cleandir
 
 # ----------------------------------------------------------------------
-# empty rules for directories that do not have SUBDIRS - do not edit
+# rules for building in SUBDIRS - do not edit
 
 install::
-	@echo "install in $(CURRENT_DIR) done"
+	@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[ik]*) set +e;; esac; done; \
+	for i in $(SUBDIRS) ;\
+	do \
+	echo "installing" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) -C $$i $(MFLAGS) $(PARALLELMFLAGS) DESTDIR=$(DESTDIR) install; \
+	done
 
 install.man::
-	@echo "install.man in $(CURRENT_DIR) done"
+	@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[ik]*) set +e;; esac; done; \
+	for i in $(SUBDIRS) ;\
+	do \
+	echo "installing man pages" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) -C $$i $(MFLAGS) $(PARALLELMFLAGS) DESTDIR=$(DESTDIR) install.man; \
+	done
 
 install.sdk::
-	@echo "install.sdk in $(CURRENT_DIR) done"
+	@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[ik]*) set +e;; esac; done; \
+	for i in $(SUBDIRS) ;\
+	do \
+	echo "installing driver SDK" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) -C $$i $(MFLAGS) $(PARALLELMFLAGS) DESTDIR='$(DESTDIR)' install.sdk; \
+	done
+
+clean::
+	@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[ik]*) set +e;; esac; done; \
+	for i in $(SUBDIRS) ;\
+	do \
+	echo "cleaning" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) -C $$i $(MFLAGS) $(PARALLELMFLAGS) 	 clean; \
+	done
+
+tags::
+	@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[ik]*) set +e;; esac; done; \
+	for i in $(SUBDIRS) ;\
+	do \
+	echo "tagging" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) -C $$i $(MFLAGS) $(PARALLELMFLAGS) TAGS='$(TAGS)' tags; \
+	done
+
+$(ONESUBDIR)/Makefile:
+	@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[n]*) executeit="no";; esac; done; \
+	cd $(ONESUBDIR) && \
+	if [ "$$executeit" != "no" ]; then \
+	$(IMAKE_CMD) -DTOPDIR=$(IMAKETOP) -DCURDIR=$(ONECURDIR)$(ONESUBDIR); \
+	fi;
 
 Makefiles::
+	-@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[ik]*) set +e;; esac; done; \
+	for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[n]*) executeit="no";; esac; done; \
+	for i in $(SUBDIRS) ;\
+	do \
+	case "$(CURRENT_DIR)" in \
+	.) curdir= ;; \
+	*) curdir=$(CURRENT_DIR)/ ;; \
+	esac; \
+	echo "making Makefiles in $$curdir$$i..."; \
+	itmp=`echo $$i | sed -e 's;^\./;;g' -e 's;/\./;/;g'`; \
+	curtmp="$(CURRENT_DIR)" \
+	toptmp=""; \
+	case "$$itmp" in \
+	../?*) \
+	while echo "$$itmp" | grep '^\.\./' > /dev/null;\
+	do \
+	toptmp="/`basename $$curtmp`$$toptmp"; \
+	curtmp="`dirname $$curtmp`"; \
+	itmp="`echo $$itmp | sed 's;\.\./;;'`"; \
+	done \
+	;; \
+	esac; \
+	case "$$itmp" in \
+	*/?*/?*/?*/?*)	newtop=../../../../..;; \
+	*/?*/?*/?*)	newtop=../../../..;; \
+	*/?*/?*)	newtop=../../..;; \
+	*/?*)		newtop=../..;; \
+	*)		newtop=..;; \
+	esac; \
+	newtop="$$newtop$$toptmp"; \
+	case "$(TOP)" in \
+	/?*) imaketop=$(TOP) \
+	imakeprefix= ;; \
+	.) imaketop=$$newtop \
+	imakeprefix=$$newtop/ ;; \
+	*) imaketop=$$newtop/$(TOP) \
+	imakeprefix=$$newtop/ ;; \
+	esac; \
+	$(RM) $$i/Makefile.bak; \
+	if [ -f $$i/Makefile ]; then \
+	echo "	$(MV) Makefile Makefile.bak"; \
+	if [ "$$executeit" != "no" ]; then \
+	$(MV) $$i/Makefile $$i/Makefile.bak; \
+	fi; \
+	fi; \
+	$(MAKE) $(MFLAGS) $(MAKE_OPTS) ONESUBDIR=$$i ONECURDIR=$$curdir IMAKETOP=$$imaketop IMAKEPREFIX=$$imakeprefix $$i/Makefile; \
+	if [ -d $$i ] ; then \
+	cd $$i; \
+	$(MAKE) $(MFLAGS) Makefiles; \
+	cd $$newtop; \
+	else \
+	exit 1; \
+	fi; \
+	done
 
 includes::
+	@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[ik]*) set +e;; esac; done; \
+	for i in $(SUBDIRS) ;\
+	do \
+	echo including "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) -C $$i $(MFLAGS) $(PARALLELMFLAGS)  includes; \
+	done
 
-depend::
+distclean::
+	@for flag in ${MAKEFLAGS} ''; do \
+	case "$$flag" in *=*) ;; *[ik]*) set +e;; esac; done; \
+	for i in $(SUBDIRS) ;\
+	do \
+	echo "cleaning" "in $(CURRENT_DIR)/$$i..."; \
+	$(MAKE) -C $$i $(MFLAGS) $(PARALLELMFLAGS)  distclean; \
+	done
 
 distclean::
 	$(RM) Makefile

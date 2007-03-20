@@ -11,3 +11,4 @@ trans.tex: trans.fig Makefile
 clean::
 	rm -f trans.tex
 
+cleandir::

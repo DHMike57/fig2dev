@@ -32,11 +32,15 @@
 
 static float	scale;
 
-static		set_color();
-static		set_linewidth();
-static		set_stip();
-static		set_fill();
-static		set_style();
+static void	set_color();
+static void	set_linewidth();
+static void	set_stip();
+static void	set_fill();
+static void	set_style();
+static void	for_arrow();
+static void	back_arrow();
+static void	genge_itp_spline();
+static void	genge_ctl_spline();
 
 				    /* color mapping		*/
 				    /* xfig	ge		*/
@@ -209,6 +213,7 @@ F_spline	*s;
 	    for_arrow(s);
 }
 
+static void
 genge_itp_spline(s)
 F_spline	*s;
 {
@@ -241,6 +246,7 @@ F_spline	*s;
 
 }
 
+static void
 genge_ctl_spline(s)
 F_spline	*s;
 {
@@ -413,12 +419,14 @@ F_text	*t;
 	fprintf(tfp,"l0 ;\n");
 }
 
+static void
 for_arrow(l)
     F_line	*l;
 {
     fprintf(tfp,"w%01d%01d ",(int)(l->for_arrow->wid/15),(int)(l->for_arrow->ht/15));
 }
 
+static void
 back_arrow(l)
     F_line	*l;
 {
@@ -427,6 +435,7 @@ back_arrow(l)
 
 /* set the color attribute */
 
+static void
 set_color(col)
     int col;
 {
@@ -435,6 +444,7 @@ set_color(col)
 
 /* set fill if there is a fill style */
 
+static void
 set_fill(style, color)
     int style,color;
 {
@@ -442,6 +452,7 @@ set_fill(style, color)
 	    fprintf(tfp,"C%02d ",GE_COLORS[color]);
 }
 	
+static void
 set_stip(stip)
     int stip;
 {
@@ -450,7 +461,7 @@ set_stip(stip)
 
 /* the dash length, v, is not used in GE */
 
-static
+static void
 set_style(s, v)
 int	s;
 double	v;
@@ -470,7 +481,7 @@ double	v;
 	}
 }
 
-static
+static void
 set_linewidth(w)
 int	w;
 {

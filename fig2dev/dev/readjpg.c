@@ -70,7 +70,7 @@ read_jpg(file, filetype, pic, llx, lly)
 	/* read image parameters and fill image struct */
 	if (!AnalyzeJPEG(&image)) {
 	    fprintf(stderr, "Error: '%s' is not a proper JPEG file!\n", image.filename);
-	    return;
+	    return 0;
 	}
 
 	*llx = *lly = 0;

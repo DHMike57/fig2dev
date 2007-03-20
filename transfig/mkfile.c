@@ -16,13 +16,20 @@
 #include <stdio.h>
 #include "transfig.h"
 
+void puttarget();
+void putfig();
+void putoptions();
+void putclean();
+
 /*
  * create an appropriate makefile
  */
+
+void
 makefile(mk, altfonts, arg_list)
-FILE *mk;
-int  altfonts;
-argument *arg_list;
+    FILE	*mk;
+    int		 altfonts;
+    argument	*arg_list;
 {
   argument *a;
   char *i;
@@ -101,7 +108,6 @@ argument *arg_list;
 		puttarget(mk, i, "tex", "pdf");
 		fprintf(mk, "\tfig2dev -L pdftex_t -p %s.pdf ", i);
 		putoptions(mk, altfonts, a->f, a->s, a->m, a->o, i, "tex");
-		needps = 1;
 		break;
 
 	  case pictex:
@@ -140,7 +146,7 @@ argument *arg_list;
 		puttarget(mk, i, "tex", "eps");
 		fprintf(mk, "\tfig2dev -L pstex_t -p %s.eps ", i);
 		putoptions(mk, altfonts, a->f, a->s, a->m, a->o, i, "tex");
-		needps = 1;
+		needeps = 1;
 		break;
 
 
@@ -215,18 +221,20 @@ argument *arg_list;
   }
 }
 
+void
 puttarget(mk, i, suf1, suf2)
-FILE *mk;
-char *i, *suf1, *suf2;
+    FILE	*mk;
+    char	*i, *suf1, *suf2;
 {
     fprintf(mk, "%s.%s: %s.%s %s\n", i, suf1, i, suf2, mkfile);
 }
 
+void
 putfig(mk, to, altfonts, f, s, m, o, i, suf)
-FILE *mk;
-enum language to;
-int altfonts;
-char *f, *s, *m, *o, *i, *suf;
+    FILE	*mk;
+    enum	 language to;
+    int		 altfonts;
+    char	 *f, *s, *m, *o, *i, *suf;
 {
   fprintf(mk, "%s%s%s: %s.fig %s\n",
 	       i, (suf ? "." : ""), (suf ? suf : ""), i, mkfile);
@@ -239,10 +247,11 @@ char *f, *s, *m, *o, *i, *suf;
   putoptions(mk, altfonts, f, s, m, o, i, suf);
 }
 
+void
 putoptions(mk, altfonts, f, s, m, o, i, suf)
-FILE *mk;
-int altfonts;
-char *f, *s, *m, *o, *i, *suf;
+    FILE	*mk;
+    int		 altfonts;
+    char	*f, *s, *m, *o, *i, *suf;
 {
   if (altfonts==1) fprintf(mk, "-a ");
   if (f && *f) fprintf(mk, "-f %s ", f);
@@ -253,9 +262,10 @@ char *f, *s, *m, *o, *i, *suf;
   fprintf(mk, "%s.fig %s%s%s\n", i, i, (suf ? "." : ""), (suf ? suf : ""));
 }
 
+void
 putclean(mk, i, suf)
-FILE *mk;
-char *i, *suf;
+    FILE	*mk;
+    char	*i, *suf;
 {
    fprintf(mk, "clean::\n");
    fprintf(mk, "\trm -f %s.%s\n", i, suf);

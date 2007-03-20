@@ -22,43 +22,43 @@
 #include "fig2dev.h"
 #include "object.h"
 
-char			*PSfontnames[] = {
-			"Times-Roman",			/* default */ 
-			"Times-Roman",
-			"Times-Italic",			/* italic */
-			"Times-Bold",			/* bold */
-			"Times-BoldItalic",
-			"AvantGarde-Book",
-			"AvantGarde-BookOblique",
-			"AvantGarde-Demi",
-			"AvantGarde-DemiOblique",
-			"Bookman-Light",
-			"Bookman-LightItalic",
-			"Bookman-Demi",
-			"Bookman-DemiItalic",
-			"Courier",	
-			"Courier-Oblique",
-			"Courier-Bold",
-			"Courier-BoldOblique",
-			"Helvetica",
-			"Helvetica-Oblique",
-			"Helvetica-Bold",
-			"Helvetica-BoldOblique",
-			"Helvetica-Narrow",
-			"Helvetica-Narrow-Oblique",
-			"Helvetica-Narrow-Bold",
-			"Helvetica-Narrow-BoldOblique",
-			"NewCenturySchlbk-Roman",
-			"NewCenturySchlbk-Italic",
-			"NewCenturySchlbk-Bold",
-			"NewCenturySchlbk-BoldItalic",
-			"Palatino-Roman",
-			"Palatino-Italic",
-			"Palatino-Bold",
-			"Palatino-BoldItalic",
-			"Symbol",
-			"ZapfChancery-MediumItalic",
-			"ZapfDingbats"
+char		*PSfontnames[] = {
+		"Times-Roman",			/* default */ 
+		"Times-Roman",
+		"Times-Italic",			/* italic */
+		"Times-Bold",			/* bold */
+		"Times-BoldItalic",
+		"AvantGarde-Book",
+		"AvantGarde-BookOblique",
+		"AvantGarde-Demi",
+		"AvantGarde-DemiOblique",
+		"Bookman-Light",
+		"Bookman-LightItalic",
+		"Bookman-Demi",
+		"Bookman-DemiItalic",
+		"Courier",	
+		"Courier-Oblique",
+		"Courier-Bold",
+		"Courier-BoldOblique",
+		"Helvetica",
+		"Helvetica-Oblique",
+		"Helvetica-Bold",
+		"Helvetica-BoldOblique",
+		"Helvetica-Narrow",
+		"Helvetica-Narrow-Oblique",
+		"Helvetica-Narrow-Bold",
+		"Helvetica-Narrow-BoldOblique",
+		"NewCenturySchlbk-Roman",
+		"NewCenturySchlbk-Italic",
+		"NewCenturySchlbk-Bold",
+		"NewCenturySchlbk-BoldItalic",
+		"Palatino-Roman",
+		"Palatino-Italic",
+		"Palatino-Bold",
+		"Palatino-BoldItalic",
+		"Symbol",
+		"ZapfChancery-MediumItalic",
+		"ZapfDingbats"
 		};
 
 static int	PSfontmap[] = {

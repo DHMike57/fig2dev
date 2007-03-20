@@ -18,7 +18,7 @@
 
 #include "fig2dev.h"
 
-#define MAXWIDTH       4096
+#define MAXWIDTH       8192
 
 #define put_string nc=strlen(s); for(i=0;i<nc;i++) (putc((s[i]),tfp)); Nbyte += nc
 
@@ -27,6 +27,7 @@ static	char		**str;
 
 /* output PSencode header */
 
+void
 PSencode_header()
 {
   static char *PSencodeheader[] = {
@@ -103,6 +104,7 @@ PSencode_header()
 
 /* output transparentimage header */
 
+void
 PStransp_header()
 {
   static char *Transpheader[] = {

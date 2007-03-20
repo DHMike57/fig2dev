@@ -45,6 +45,19 @@ To make TransFig:
 5. Do a "make install" to install them in the system
 6. Do a "make install.man" to put the manual pages in the proper directories
 
+o If you want to install transfig and fig2dev in a directory other than the
+  default X11 binary directory, uncomment "BINDIR=<directory>" in both
+  transfig/Imakefile and fig2dev/Imakefile, and change <directory> to the full
+  path of the directory where you want the programs to be installed.
+
+o You may also have to redefine MKDIRHIER because "make" looks for it relative
+  to the BINDIR variable.  Set it to: "MKDIRHIER = /bin/sh <path>/mkdirhier"
+  where <path> is the path to mkdirhier. This should be changed in both the
+  transfig/Imakefile and fig2dev/Imakefile.
+
+o To change where the standard "man" pages go, uncommand and change MANDIR=<path>
+  in both the transfig/Imakefile and fig2dev/Imakefile.
+
 o Uncomment the USELATEX2E flag in the transfig/Imakefile file to use the
   \\usepackage{} command for LaTeX2e.
   The default is to use \\documentstyle{} for LaTeX209.
@@ -121,11 +134,11 @@ o As of version 3.2.0 (final), fig2dev has taken over the translating of Fig
 
 *************************************************************************
 Please send email about any questions/bug fixes/contributions etc. about
-TransFig or xfig to xfig-bugs@epb1.lbl.gov.
+TransFig or xfig to bvsmith@lbl.gov.
 
 Brian V. Smith
 Lawrence Berkeley National Laboratory
-xfig-bugs@epb1.lbl.gov
+bvsmith@lbl.gov
 *************************************************************************
 
 Note that although I work at Lawrence Berkeley Laboratory (LBL) I don't speak

@@ -146,9 +146,9 @@ read_png(file,filetype,pic,llx,lly)
 	    /* if user wants grayscale (-N) then map to gray */
 	    if (grayonly)
 		pic->cmap[RED][i] = pic->cmap[GREEN][i] = pic->cmap[BLUE][i] = 
-		    (int) (rgb2luminance(pic->cmap[RED][i]/256.0, 
-					pic->cmap[GREEN][i]/256.0, 
-					pic->cmap[BLUE][i]/256.0)*256.0);
+		    (int) (rgb2luminance(pic->cmap[RED][i]/255.0, 
+					pic->cmap[GREEN][i]/255.0, 
+					pic->cmap[BLUE][i]/255.0)*255.0);
 	}
     }
     rowsize = w;

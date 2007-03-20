@@ -31,7 +31,7 @@ read_tif(filename,filetype,pic,llx,lly)
 {
 	char	 buf[2*PATH_MAX+40],pcxname[PATH_MAX];
 	FILE	*tiftopcx;
-	int	 stat, size;
+	int	 stat;
 
 	*llx = *lly = 0;
 	/* output PostScript comment */

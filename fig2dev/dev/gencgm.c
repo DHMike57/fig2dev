@@ -398,20 +398,6 @@ static int conv_color(color)
     color = 0;	
   else if (color == FILL_COLOR_INDEX)	/* special index used for solid */
     color = NUM_STD_COLS + num_usr_cols;  /* fill color, see fillshade() */
-  else if (color >= NUM_STD_COLS) {	/* user defined color */
-    int i;
-    for (i=0; i<num_usr_cols; i++) {
-      if (color == user_col_indx[i])
-	break;
-    }
-    if (i < num_usr_cols) {
-      color = NUM_STD_COLS + i;
-    } else {
-      fprintf(stderr, "Color %d is undefined, using standard color %d.\n",
-	      color, color%NUM_STD_COLS);
-      color %= NUM_STD_COLS;
-    }
-  }
 
   return color+1;	/* CGM counts colors starting from 1 instead of 0 */
 }
@@ -709,7 +695,7 @@ typedef struct Dir {double x, y;} Dir;
  * for both lines and arc (in that case l should be a F_arc *). */
 
 static void
-arrow(P, a, l, dir)
+cgm_arrow(P, a, l, dir)
     F_point	*P;
     F_arrow	*a;
     F_line	*l;
@@ -916,7 +902,7 @@ polyline(l)
 	lineattr(0, l->thickness*3/2, 7);
 	line(&Q, &P0);
       }
-      arrow(p, l->back_arrow, l, &dir);
+      cgm_arrow(p, l->back_arrow, l, &dir);
     }
   }
 
@@ -931,7 +917,7 @@ polyline(l)
 	lineattr(0, l->thickness*3/2, 7);
 	line(&Pn, &Q);
       }
-      arrow(p, l->for_arrow, l, &dir);
+      cgm_arrow(p, l->for_arrow, l, &dir);
     }
   }
 }
@@ -1341,7 +1327,7 @@ arc_arrow(p, q, arw, arc)
 
   pos2point(&P, p);
   direction(&P, q, &dir, &d);
-  arrow(&P, arw, (F_line *)arc, &dir);
+  cgm_arrow(&P, arw, (F_line *)arc, &dir);
   if (arw->type == 0) {
     /* draw middle leg of old-style stick arrow */
     double f = arrow_length(arw);

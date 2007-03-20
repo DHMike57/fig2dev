@@ -58,6 +58,7 @@ char	*optarg;		/* argument associated with option */
 #define tell(s)	fputs(*nargv,stderr);fputs(s,stderr); \
 		fputc(optopt,stderr);fputc('\n',stderr);return(BADCH);
 
+int
 fig_getopt(nargc,nargv,ostr)
   int	nargc;
   char	**nargv,

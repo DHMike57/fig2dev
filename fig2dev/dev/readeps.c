@@ -21,6 +21,8 @@
 		    0 : failure
 */
 
+static int	read_eps_pdf();
+
 /* read a PDF file */
 
 int
@@ -49,7 +51,7 @@ read_eps(file, filetype, pic, llx, lly)
     return read_eps_pdf(file,filetype,pic,llx,lly,False);
 }
 
-int
+static int
 read_eps_pdf(file, filetype, pic, llx, lly, pdf_flag)
     FILE	   *file;
     int		    filetype;
@@ -77,8 +79,8 @@ read_eps_pdf(file, filetype, pic, llx, lly, pdf_flag)
 	    if (pdf_flag) {
 		if (!strncmp(buf, "/MediaBox", 8)) {	/* look for the MediaBox spec */
 		    c = strchr(buf,'[')+1;
-		    if (c && sscanf(c,"%d %d %d %d",&llx,&lly,&urx,&ury) < 4) {
-			llx = lly = 0;
+		    if (c && sscanf(c,"%d %d %d %d",llx,lly,&urx,&ury) < 4) {
+			*llx = *lly = 0;
 			urx = paperdef[0].width*72;
 			ury = paperdef[0].height*72;
 			put_msg("Bad MediaBox in imported PDF file %s, assuming %s size", 

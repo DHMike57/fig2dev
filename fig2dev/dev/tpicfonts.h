@@ -100,11 +100,11 @@ static int		TeXfontsizes[] = {
 
 #define MAXFONTSIZE 25
 
-#define TEXFONT(F)	(texfontnames[((F) <= MAX_TPICFONT) ? (F) : MAX_TPICFONT])
-#define TEXFONTSIZE(S)	(texfontsizes[((S) <= MAXFONTSIZE) ? (S) : MAXFONTSIZE])
-#define TEXFONTMAG(T)	TEXFONTSIZE((int)(T->size*(rigid_text(T) ? 1.0 : fontmag)))
-#define TEXFONTSIZEINT(S)	(TeXfontsizes[((S) <= MAXFONTSIZE) ? (S) : MAXFONTSIZE])
-#define TEXFONTMAGINT(T)	TEXFONTSIZEINT((int)(T->size*(rigid_text(T) ? 1.0 : fontmag)))
+#define TEXFONT(F)		(texfontnames[((F) <= MAX_TPICFONT) ? (F) : MAX_TPICFONT])
+#define TEXFONTSIZE(S)		(texfontsizes[((S) <= MAXFONTSIZE) ? (int)round((S)) : MAXFONTSIZE])
+#define TEXFONTMAG(T)		TEXFONTSIZE(T->size*(rigid_text(T) ? 1.0 : fontmag))
+#define TEXFONTSIZEINT(S)	(TeXfontsizes[(int)(((S) <= MAXFONTSIZE) ? (S) : MAXFONTSIZE)])
+#define TEXFONTMAGINT(T)	TEXFONTSIZEINT(T->size*(rigid_text(T) ? 1.0 : fontmag))
 
 static char	*texture_patterns[] = {
 	"8 0 8 0 4 1 3 e 0 8 0 8 1 4 e 3",	/* scales */

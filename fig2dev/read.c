@@ -21,6 +21,8 @@
 #include "alloc.h"
 #include "fig2dev.h"
 #include "object.h"
+#include "free.h"
+#include "read.h"
 #include "trans_spline.h"
 #include "../patchlevel.h"
 
@@ -48,6 +50,13 @@ static F_arc		*read_arcobject();
 static F_compound	*read_compoundobject();
 static F_comment	*attach_comments();
 static void		 count_lines_correctly();
+static void		 init_pats_used();
+static int		 read_objects();
+static int		 get_line();
+static void		 note_pattern();
+static void		 skip_line();
+static int		 backslash_count();
+static int		 save_comment();
 
 #define			FILL_CONVERT(f) \
 				((v2_flag || (f) < WHITE_FILL) \
@@ -74,6 +83,7 @@ char		*comments[MAXCOMMENTS];	/* comments saved for current object */
 int		 numcom;		/* current comment index */
 Boolean		 com_alloc = False;	/* whether or not the comment array has been init. */
 
+void
 read_fail_message(file, err)
 char	*file;
 int	err;
@@ -113,6 +123,7 @@ err_no : if file can not be read for various reasons
 The resolution (ppi) is stored in global "ppi"
 **********************************************************/
 
+int
 read_fig(file_name, obj)
 char		*file_name;
 F_compound	*obj;
@@ -128,6 +139,7 @@ F_compound	*obj;
 	    return readfp_fig(fp, obj);
 }
 
+int
 readfp_fig(fp, obj)
 FILE	*fp;
 F_compound	*obj;
@@ -246,7 +258,7 @@ F_compound	*obj;
 		if (!paperspec) {
 		    strcpy(papersize,buf);
 		    /* and truncate at first blank, if any */
-		    if (p=strchr(papersize,' '))
+		    if ((p=strchr(papersize,' ')))
 			*p = '\0';
 		}
 
@@ -258,7 +270,7 @@ F_compound	*obj;
 		/* if the users hasn't specified a magnification on the command line,
 		   use the one in the file */
 		if (!magspec)
-		    mag = atof(buf)/100.0;
+		    fontmag = mag = atof(buf)/100.0;
 
 		/* read the multiple page flag */
 		if (get_line(fp) < 0) {
@@ -450,6 +462,7 @@ read_colordef(fp)
     user_colors[num_usr_cols].b = b;
 }
 
+static void
 fix_color(color)
     int		    *color;
 {
@@ -803,7 +816,7 @@ FILE	*fp;
 		return (NULL);
 	    }
 	    if (get_line(fp) < 0 || 
-	      sscanf(buf, "%d %s", &l->pic->flipped, file) != 2) {
+	      sscanf(buf, "%d %[^\n]", &l->pic->flipped, file) != 2) {
 	        put_msg(Err_incomp,
 		    "Picture object", line_no);
 	        put_msg(Err_incomp, "Picture object", line_no);
@@ -814,7 +827,7 @@ FILE	*fp;
 	    if (from && file[0] != '/') {
 		/* copy the .fig filename to pic filename */
 		strcpy(l->pic->file, from);
-		if (c = strrchr(l->pic->file,'/')) {
+		if ((c = strrchr(l->pic->file,'/'))) {
 		    /* there is a '/', copy the filename past the last one */
 		    strcpy(c+1, file);
 		} else {
@@ -1152,7 +1165,9 @@ FILE	*fp;
 		len = strlen(s);
 		for (l=0,n=0; l < len; l++) {
 		    if (s[l]=='\\') {
-			if (l < len && s[l+1] != '\\') {
+			/* a backslash, see if a digit follows */
+			if (l < len && isdigit(s[l+1])) {
+			    /* yes, scan for 3 digit octal value */
 			    if (sscanf(&s[l+1],"%3o",&num)!=1) {
 				put_msg("Error in parsing text string on line",line_no);
 				return NULL;
@@ -1160,7 +1175,7 @@ FILE	*fp;
 			    buf[n++]= (unsigned char) num;	/* put char in */
 			    l += 3;			/* skip over digits */
 			} else {
-			    buf[n++] = s[++l];		/* "\\" */
+			    buf[n++] = s[++l];		/* some other escaped character */
 			}
 		    } else {
 			buf[n++] = s[l];		/* ordinary character */
@@ -1246,7 +1261,7 @@ int strcasecmp(const char* s1, const char* s2)
  
 /* count consecutive backslashes backwards */
 
-int
+static int
 backslash_count(cp, start)
     char cp[];
     int start;
@@ -1288,6 +1303,7 @@ attach_comments()
     return icomp;
 }
 
+static int
 get_line(fp)
     FILE	   *fp;
 {
@@ -1312,6 +1328,7 @@ get_line(fp)
 
 /* save a comment line to be stored with the *subsequent* object */
 
+static int
 save_comment(fp)
     FILE	   *fp;
 {
@@ -1336,6 +1353,7 @@ save_comment(fp)
 
 /* skip to the end of the current line and any subsequent blank lines */
 
+static void
 skip_line(fp)
     FILE	   *fp;
 {
@@ -1346,6 +1364,7 @@ skip_line(fp)
 }
 
 /* keep track which patterns are used (if any) */
+static void
 note_pattern(fill_style)
 int	 fill_style;
 {
@@ -1357,6 +1376,7 @@ int	 fill_style;
 	
 /* reset pattern_used[] array */
 
+static void
 init_pats_used()
 {
 	int i;
@@ -1475,6 +1495,7 @@ static int pop() {
 
 /* print comments to the output file preceded by string1 and succeeded by string2 */
 
+void
 print_comments(string1, comment, string2)
     char	*string1;
     F_comment	*comment;

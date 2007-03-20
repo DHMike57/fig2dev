@@ -34,6 +34,8 @@
 /*====================================================================
   Changes:
 
+  Brian Smith
+  - add \smash back to text objects
   Gabriel Zachmann <Gabriel.Zachmann@gmx.net>:
   - remove \smash in text objects
   - add option -F; this allows you to define the font in the latex file
@@ -91,6 +93,7 @@
   
 #include "fig2dev.h"
 #include "object.h"
+#include "setfigfont.h"
 #include "texfonts.h"
 
 extern float	THICK_SCALE;	/* ratio of dpi/80 */
@@ -117,13 +120,21 @@ int OutLine=0;
 #define Economic 1
 #define DottedDash 2
 
-static void genepic_ctl_spline(), genepic_int_spline(); 
-static void genepic_open_spline(), genepic_closed_spline(); 
-static quadratic_spline();
-static bezier_spline();
-static arc_tangent();
-static arc_arrow();
-static draw_arrow_head();
+static void genepic_ctl_spline(); 
+static void genepic_open_spline();
+static void genepic_closed_spline(); 
+static void quadratic_spline();
+static void bezier_spline();
+static void arc_arrow();
+static void draw_arrow_head();
+static void set_style();
+static void genepic_itp_spline();
+static void quadratic_spline();
+static void chaikin_curve();
+static void rtop();
+static void drawarc();
+static void fdraw_arrow_head();
+static char *FillCommands();
 
 /* Structure for Point with "double" values */
 struct fp_struct {
@@ -208,7 +219,7 @@ double	DashScale;
 int	EllipseCmd=0;
 int	UseBox=BoxTypeNone;
 int	DashType=Normal;
-char	*Preamble="\\documentstyle[epic,eepic]{article}\n\\begin{document}\n\\begin{center}\n";
+char	*Preamble="\\documentstyle[epic,eepic]{article}\n\\pagestyle{empty}\\begin{document}\n\\begin{center}\n";
 char	*Postamble="\\end{center}\n\\end{document}\n";
 int	VarWidth=False;
 int	DashStretch=30;
@@ -304,7 +315,7 @@ char opt, *optarg;
 	    break;
 
 	  case 'F':
-	    FontSizeOnly = 1;
+	    FontSizeOnly = True;
 	    break;
 
 	  case 'R':
@@ -317,7 +328,7 @@ char opt, *optarg;
         }
 }
 
-static
+static void
 fconvertCS(fpt)
 FPoint *fpt;
 {
@@ -326,6 +337,7 @@ FPoint *fpt;
     fpt->y -= LLY;
 }
 
+static void
 convertCS(pt)
 F_point *pt;
 {
@@ -419,7 +431,7 @@ genepic_end()
     return 0;
 }
 
-static
+static void
 set_linewidth(w)
 int w;
 {
@@ -439,6 +451,7 @@ int w;
     }
 }
 
+static void
 set_pattern(type, color)
 int type, color;
 {
@@ -868,6 +881,7 @@ F_line *line;
     }
 }
 
+static void
 set_style(style, dash_len)
 int style;
 double dash_len;
@@ -890,7 +904,7 @@ double dash_len;
 }
 
 
-void
+static void
 genepic_spline(s)
 F_spline *s;
 {
@@ -1022,6 +1036,7 @@ F_spline *spl;
     fprintf(tfp, "\n");
 }
 
+static void
 chaikin_curve(a1, b1, a2, b2, a3, b3)
 double a1, b1, a2, b2, a3, b3;
 {
@@ -1041,7 +1056,7 @@ double a1, b1, a2, b2, a3, b3;
     }
 }
 
-static
+static void
 quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
 double	a1, b1, a2, b2, a3, b3, a4, b4;
 {
@@ -1068,6 +1083,7 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
     }
 }
 
+static void
 genepic_itp_spline(spl)
 F_spline *spl;
 {
@@ -1122,7 +1138,7 @@ F_spline *spl;
     }
 }
 
-static
+static void
 bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
 double	a0, b0, a1, b1, a2, b2, a3, b3;
 {
@@ -1265,6 +1281,8 @@ genepic_text(text)
     else
 	fprintf(tfp, "\\makebox(0,0)%s{", tpos);
 
+    fprintf(tfp, "\\smash{");
+
     /* Output a shortstack in case there are multiple lines. */
     for(cp = (unsigned char*)text->cstring; *cp; cp++) {
       if (*cp == TEXT_LINE_SEP) {
@@ -1293,7 +1311,7 @@ genepic_text(text)
 
     if (!special_text(text))
 	/* This loop escapes special LaTeX characters. */
-	for(cp = (unsigned char*)text->cstring; *cp; cp++) {
+	for (cp = (unsigned char*)text->cstring; *cp; cp++) {
       	    if (special_index=strchr(latex_text_specials, *cp)) {
 	      /* Write out the replacement.  Implementation note: we can't
 		 use puts since that will output an additional newline. */
@@ -1315,7 +1333,7 @@ genepic_text(text)
 		fputc(*cp, tfp);
       	}
     else 
-	for(cp = (unsigned char*)text->cstring; *cp; cp++) {
+	for (cp = (unsigned char*)text->cstring; *cp; cp++) {
 	    if (*cp == TEXT_LINE_SEP) {
 		/* Handle multi-line text strings. */
 		fprintf(tfp, "} \\\\\n");
@@ -1345,7 +1363,7 @@ genepic_text(text)
 		    fputc(*cp, tfp);
 	  }
 	}
-    fprintf(tfp, "}}}\n");
+    fprintf(tfp, "}}}}\n");
 }
 
 void
@@ -1456,6 +1474,7 @@ F_arc *arc;
     }
 }
 
+static void
 drawarc(ctr, r, th1, angle)
 FPoint *ctr;
 double r, th1, angle;
@@ -1479,20 +1498,6 @@ double r, th1, angle;
     fprintf(tfp, "\n");
 }
 
-static
-arc_tangent(pt1, pt2, direction, pt3)
-FPoint *pt1, *pt2, *pt3;
-int direction;
-{
-    if (direction) {
-	pt3->x = pt2->x + (pt2->y - pt1->y);
-	pt3->y = pt2->y - (pt2->x - pt1->x);
-    } else {
-	pt3->x = pt2->x - (pt2->y - pt1->y);
-	pt3->y = pt2->y + (pt2->x - pt1->x);
-    }
-}
-
 /*************************** ARROWS *****************************
 
  arc_arrow - Computes a point on a line which is a chord to the 
@@ -1507,7 +1512,7 @@ int direction;
 
 ****************************************************************/
 
-static
+static void
 arc_arrow(pt1, pt2, direction, arrow, pt3)
 FPoint *pt1, *pt2, *pt3;
 int direction;
@@ -1533,7 +1538,7 @@ F_arrow *arrow;
 
     /* radius too small for this method, use normal method */
     if (h > 2.0*r) {
-	arc_tangent(pt1,pt2,direction,pt3);
+	arc_tangent(pt1->x,pt1->y,pt2->x,pt2->y,direction,&pt3->x,&pt3->y);
 	return;
     }
 
@@ -1548,6 +1553,7 @@ F_arrow *arrow;
     pt3->y=y1+r*cos(beta+alpha);
 }
 
+static void
 rtop(x, y, r, th)
 double x, y, *r, *th;
 {
@@ -1557,7 +1563,7 @@ double x, y, *r, *th;
     if (y < 0) *th = 2*M_PI - *th;
 }
 
-static
+static void
 draw_arrow_head(pt1, pt2, arrowht, arrowwid, type, style, thickness)
 F_point *pt1, *pt2;
 int type, style;
@@ -1572,6 +1578,7 @@ double arrowht, arrowwid, thickness;
     fdraw_arrow_head(&fpt1, &fpt2, arrowht, arrowwid, type, style, thickness);
 }
 
+static void
 fdraw_arrow_head(pt1, pt2, arrowht, arrowwid, type, style, thickness)
 FPoint *pt1, *pt2;
 int type, style;
@@ -1609,11 +1616,12 @@ double arrowht, arrowwid, thickness;
 
     if (Verbose) fprintf(tfp, "%%\n%% arrow head\n%%\n");
 
-    if (type)
+    if (type) {
       if (style == 1)
 	fprintf(tfp, "\\blacken");
       else
 	fprintf(tfp, "\\whiten");
+    }
     set_linewidth((int) thickness);
 
     switch(type) {
@@ -1636,7 +1644,8 @@ double arrowht, arrowwid, thickness;
     }
 }
 
-char* FillCommands(style, color)
+static char* 
+FillCommands(style, color)
 int style, color;
 {
   static char empty[]= "";
@@ -1647,17 +1656,19 @@ int style, color;
   if (style == UNFILLED)
     return empty;
 
-  if (style == WHITE_FILL)
+  if (style == WHITE_FILL) {
     if (color == BLACK_COLOR || color == DEFAULT)
       return whiten;
     else
       return blacken;
+  }
 
-  if (style == BLACK_FILL)
+  if (style == BLACK_FILL) {
     if (color == BLACK_COLOR || color == DEFAULT)
       return blacken;
     else
       return whiten;
+  }
 
   return shaded;
 }

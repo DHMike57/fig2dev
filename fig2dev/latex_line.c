@@ -39,7 +39,10 @@
  */
 double rad2deg = 57.295779513082320877;
 
-int  pgcd(a,b)
+int	gcd();
+
+int 
+pgcd(a,b)
     int a, b;
 /*
  *  compute greatest common divisor, assuming 0 < a <= b
@@ -49,7 +52,8 @@ int  pgcd(a,b)
     return (b)? gcd(b, a): a;
 }
 
-int  gcd(a, b)
+int
+gcd(a, b)
     int a, b;
 /*
  *  compute greatest common divisor
@@ -60,7 +64,8 @@ int  gcd(a, b)
     return (a <= b)? pgcd(a, b): pgcd(b, a);
 }
 
-int  lcm(a, b)
+int
+lcm(a, b)
     int a, b;
 /*
  *  Compute least common multiple
@@ -126,6 +131,7 @@ struct angle_table arrow_angles[N_ARROW] =
     {4, 3, 36.869897645844021297},
   };
 
+void
 get_slope(dx, dy, sxp, syp, arrow)
     int  dx, dy, *sxp, *syp, arrow;
 /*

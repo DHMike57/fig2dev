@@ -134,7 +134,7 @@ char *ISO1toTeX[] =   /* starts at octal 240 */
 char *ISO2toTeX[] =   /* starts at octal 240 */
 {
   "{}",		/* no-break space */
-  "\\c{A}",	/* latin capital letter A with ogonek */
+  "\\k{A}",	/* latin capital letter A with ogonek */
   "\\u{}",	/* breve */
   "{\\L}",	/* latin capital letter L with stroke */
   "{}",		/* currency sign */
@@ -148,11 +148,11 @@ char *ISO2toTeX[] =   /* starts at octal 240 */
   "\\'Z", 	/* latin capital letter Z with acute */
   "{-}",	/* soft hyphen */
   "\\v{Z}",	/* latin capital letter Z with caron */
-  "\\.S",	/* latin capital letter S with dot above */
+  "\\.Z",	/* latin capital letter Z with dot above */
 /* 0xb0 */
   "{\\lower.2ex\\hbox{\\char\\'27}}",		/* degree sign */
-  "\\c{a}",	/* latin small letter A with ogonek */
-  "\\c{}",	/* ogonek */
+  "\\k{a}",	/* latin small letter A with ogonek */
+  "\\k{}",	/* ogonek */
   "{\\l}",	/* latin small letter L with stroke */
   "\\'{}",	/* acute accent */
   "\\v{l}",	/* latin small letter L with caron */
@@ -177,7 +177,7 @@ char *ISO2toTeX[] =   /* starts at octal 240 */
   "\\c{C}",	/* latin capital letter C with cedilla */
   "\\v{C}",	/* latin capital letter C with caron */
   "\\'E",	/* latin capital letter E with acute */
-  "\\c{E}",	/* latin capital letter E with ogonek */
+  "\\k{E}",	/* latin capital letter E with ogonek */
   "\\\"E",	/* latin capital letter E with diaeresis */
   "\\v{E}",	/* latin capital letter E with caron */
   "\\'I",	/* latin capital letter I with acute */
@@ -211,7 +211,7 @@ char *ISO2toTeX[] =   /* starts at octal 240 */
   "\\c{c}",	/* latin small letter C with cedilla */
   "\\v{c}",	/* latin small letter C with caron */
   "\\'e",	/* latin small letter E with acute */
-  "\\c{e}",	/* latin small letter E with ogonek */
+  "\\k{e}",	/* latin small letter E with ogonek */
   "\\\"e",	/* latin small letter E with diaeresis */
   "\\v{e}",	/* latin small letter E with caron */
   "\\'\\i{}",	/* latin small letter I with acute */

@@ -42,6 +42,9 @@ extern struct driver dev_ge;
 extern struct driver dev_bitmaps;
 extern struct driver dev_map;
 extern struct driver dev_svg;
+extern struct driver dev_shape;
+
+extern struct driver dev_dxf;
 
 /* all the bitmap formats use the dev_bitmaps driver */
 
@@ -58,6 +61,7 @@ struct
 		{"ge",		&dev_ge},
 		{"gif",		&dev_bitmaps},
 		{"ibmgl",	&dev_ibmgl},
+		{"dxf",		&dev_dxf},
 		{"jpeg",	&dev_bitmaps},
 		{"latex",	&dev_latex},
 		{"map",		&dev_map},
@@ -76,6 +80,7 @@ struct
 		{"pstex",	&dev_pstex},
 		{"pstex_t",	&dev_pstex_t},
 		{"ptk",		&dev_ptk},
+		{"shape",	&dev_shape},
 		{"sld",		&dev_bitmaps},
 		{"svg",		&dev_svg},
 		{"textyl",	&dev_textyl},

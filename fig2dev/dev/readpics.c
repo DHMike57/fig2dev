@@ -21,7 +21,7 @@
 char * xf_basename();
 
 /* 
-   Open the file 'name' and return its type (pipe or real file) in 'type'.
+   Open the file 'name' and return its type (real file=0, pipe=1) in 'type'.
    Return the full name in 'retname'.  This will have a .gz or .Z if the file is
    zipped/compressed.
    The return value is the FILE stream.
@@ -49,46 +49,53 @@ open_picfile(name, type, pipeok, retname)
     /* see if the filename ends with .Z or .z or .gz */
     if ((strlen(name) > 3 && !strcmp(".gz", name + (strlen(name)-3))) ||
 	      ((strlen(name) > 2 && !strcmp(".z", name + (strlen(name)-2))))) {
+	/* yes, make command to uncompress it */
 	sprintf(unc,"gunzip -q %s %s", gzoption, name);
 	*type = 1;
-    /* none of the above, see if the file with .gz, .z or .Z appended exists */
+    /* no, see if the file with .gz, .z or .Z appended exists */
     /* failing that, if there is an absolute path, strip it and look in current directory */
     } else {
-	/* check for .gz first */
-	strcpy(retname, name);
-	strcat(retname, ".gz");
-	if (!stat(retname, &status)) {
-	    /* yes, found with .gz */
-	    sprintf(unc, "gunzip %s %s", gzoption, retname);
-	    *type = 1;
-	    name = retname;
+	/* check for straight name first */
+	if (!stat(name, &status)) {
+	    /* found it, skip other checks */
+	    *type = 0;
 	} else {
-	    /* no, check for .z */
+	    /* no, check for .gz */
 	    strcpy(retname, name);
-	    strcat(retname, ".z");
+	    strcat(retname, ".gz");
 	    if (!stat(retname, &status)) {
-		/* yes, found with .z */
+		/* yes, found with .gz */
 		sprintf(unc, "gunzip %s %s", gzoption, retname);
 		*type = 1;
 		name = retname;
 	    } else {
-		/* no, check for .Z */
+		/* no, check for .z */
 		strcpy(retname, name);
-		strcat(retname, ".Z");
+		strcat(retname, ".z");
 		if (!stat(retname, &status)) {
-		    /* yes, found with .Z */
+		    /* yes, found with .z */
 		    sprintf(unc, "gunzip %s %s", gzoption, retname);
 		    *type = 1;
 		    name = retname;
 		} else {
-		    /* can't find it, if there is an absolute path, strip it and look in
-		       current directory */
-		    if (strchr(name,'/')) {
-			/* yes, strip it off */
-			strcpy(retname, xf_basename(name));
-			if (!stat(retname, &status)) {
-			    *type = 0;
-			    strcpy(name, retname);
+		    /* no, check for .Z */
+		    strcpy(retname, name);
+		    strcat(retname, ".Z");
+		    if (!stat(retname, &status)) {
+			/* yes, found with .Z */
+			sprintf(unc, "gunzip %s %s", gzoption, retname);
+			*type = 1;
+			name = retname;
+		    } else {
+			/* can't find it, if there is an absolute path, strip it and look in
+			   current directory */
+			if (strchr(name,'/')) {
+			    /* yes, strip it off */
+			    strcpy(retname, xf_basename(name));
+			    if (!stat(retname, &status)) {
+				*type = 0;
+				strcpy(name, retname);
+			    }
 			}
 		    }
 		}

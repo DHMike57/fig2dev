@@ -24,6 +24,7 @@
 
 #include "fig2dev.h"
 #include "object.h"
+#include "readxbm.h"
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
@@ -33,12 +34,13 @@
 static void
 	drawBitmap(F_line *),
 	drawLine(F_point *, int, int, int, int, int),
-	drawShape(void (*)(), void *, int, int, int, int),
+	drawShape(void (*)(), void *, int, int, int, int, int, double),
 	niceLine(char *),
 	tkArc(void *, unsigned int, unsigned int, unsigned int, int),
 	tkEllipse(void *, unsigned int, unsigned int, unsigned int, int),
-	tkLine(void *, unsigned int, unsigned int, unsigned int, int),
-	tkPolygon(void *, unsigned int, unsigned int, unsigned int, int);
+	tkLine(void *, unsigned int, unsigned int, unsigned int, int, int, double),
+	tkPolygon(void *, unsigned int, unsigned int, unsigned int, int, int, double),
+	tk_setstyle(int style, double v);
 
 static unsigned int
 	rgbColorVal(int);
@@ -130,7 +132,7 @@ gentk_start(F_compound *objects)
 	sprintf(stfp, "# The canvas name (\".c\") can be changed to anything you "
 		"like.  It only\n");
 	niceLine(stfp);
-	sprintf(stfp, "# occurs in the following three lines.  The canvas size"
+	sprintf(stfp, "# occurs in the following line.  The canvas size"
 		" can be changed as well.\n\n");
 	niceLine(stfp);
 
@@ -181,18 +183,16 @@ gentk_start(F_compound *objects)
 	    }
 	}
 
-	sprintf(stfp, "canvas .c -width %.2fi -height %.2fi", wid, ht);
+	sprintf(stfp, "set %s [canvas .c -width %.2fi -height %.2fi]", canvas+1, wid, ht);
  	if (bgspec) {
 	    sprintf(bkgnd, " -bg #%02x%02x%02x",
- 	    background.red/256,
- 	    background.green/256,
- 	    background.blue/256);
+ 	    background.red/255,
+ 	    background.green/255,
+ 	    background.blue/255);
 	    strcat(stfp, bkgnd);
 	}
 	strcat(stfp, "\n");
 
-	niceLine(stfp);
-	sprintf(stfp, "set %s .c\n\n", canvas+1);	/* "+1" to skip "$" */
 	niceLine(stfp);
 	sprintf(stfp, "$xfigCanvas config -xscrollincrement 1p -yscrollincrement 1p\n");
 	niceLine(stfp);
@@ -257,7 +257,7 @@ gentk_arc(F_arc *a)
     if (a->type == T_OPEN_ARC && (a->for_arrow || a->back_arrow))
 	fprintf(stderr, "gentk_arc: arc arrows not supported by Tk.\n");
     drawShape(tkArc, (void *) a, a->thickness,
-	a->pen_color, a->fill_color, a->fill_style);
+	a->pen_color, a->fill_color, a->fill_style, a->style, a->style_val);
 }
 
 /*
@@ -278,7 +278,7 @@ gentk_ellipse(F_ellipse *e)
 		if (e->style > 0)
 		    fprintf(stderr, "gentk_ellipse: only solid lines supported.\n");
 		drawShape(tkEllipse, (void *) e, e->thickness,
-			e->pen_color, e->fill_color, e->fill_style);
+			e->pen_color, e->fill_color, e->fill_style, e->style, e->style_val);
 		break;
 	default:
 		/* Stole this line from Netscape 3.03... */
@@ -305,20 +305,17 @@ gentk_line(F_line *l)
 	case T_POLYLINE:
 		/* Take care of filled regions first. */
 		drawShape(tkPolygon, (void *) l->points, 0,
-			l->pen_color, l->fill_color, l->fill_style);
+			l->pen_color, l->fill_color, l->fill_style, 0, 0.0);
 		/* Now draw line itself. */
 		drawShape(tkLine, (void *) l, l->thickness, l->pen_color,
-			NONE, UNFILLED);
+			NONE, UNFILLED, l->style, l->style_val);
 		break;
 	case T_PIC_BOX:
 		drawBitmap(l);
 		break;
 	case T_POLYGON:
-		if (l->style > 0) {
-		    fprintf(stderr, "gentk_line: only solid line styles supported.\n");
-		}
 		drawShape(tkPolygon, (void *) l->points, l->thickness,
-			l->pen_color, l->fill_color, l->fill_style);
+			l->pen_color, l->fill_color, l->fill_style, l->style, l->style_val);
 		break;
 	default:
 		fprintf(stderr, "gentk_line: Whatchew talkin' 'bout, Willis?\n");
@@ -335,7 +332,7 @@ gentk_line(F_line *l)
 static void
 drawBitmap(F_line *l)
 {
-	char	stfp[128];
+	char	stfp[256];
 	double	dx, dy;
 	int	x, y;
 	F_pic	*p;
@@ -379,7 +376,7 @@ drawBitmap(F_line *l)
 
 	    close_picfile(fd,filtype);
 	    strcpy(pname,p->file);
-	    if (dot=strchr(pname,'.'))
+	    if ((dot=strchr(pname,'.')))
 		*dot='\0';
 	    /* image create */
 	    sprintf(stfp, "image create photo %s -file %s\n",pname, p->file);
@@ -555,7 +552,7 @@ gentk_text(F_text * t)
 
 	if (psfont_text(t)) {
 		sprintf(stfp, " -font \"%s%d%s\"", fontNames[t->font+1].prefix,
-			(int) t->size, fontNames[t->font+1].suffix);
+			(int) (t->size*mag), fontNames[t->font+1].suffix);
 		niceLine(stfp);
 	} else {	/* Rigid, special, and LaTeX fonts. */
 		int fnum;
@@ -585,7 +582,7 @@ gentk_text(F_text * t)
 			break;
 		}
 		sprintf(stfp, " -font \"%s%d%s\"", fontNames[fnum].prefix,
-			(int) t->size, fontNames[fnum].suffix);
+			(int) (t->size*mag), fontNames[fnum].suffix);
 		niceLine(stfp);
 	}
 	if (t->color != BLACK_COLOR && t->color != DEFAULT) {
@@ -607,7 +604,7 @@ gentk_text(F_text * t)
 
 #define		THRESHOLD	.05	/* inch */
 
-static
+static void
 bezierSpline(double a0, double b0, double a1, double b1, double a2, double b2,
 	double a3, double b3)
 {
@@ -640,7 +637,7 @@ bezierSpline(double a0, double b0, double a1, double b1, double a2, double b2,
 static void
 gentk_itpSpline(F_spline *s)
 {
-	char		dir[8], stfp[128];
+	char		dir[8], stfp[256];
 	F_arrow		*a;
 	F_point		*p1, *p2;
 	F_control	*cp1, *cp2;
@@ -733,7 +730,7 @@ gentk_itpSpline(F_spline *s)
  *   q u a d r a t i c S p l i n e ( )
  */
 
-static
+static void
 quadraticSpline(double a1, double b1, double a2, double b2, double a3,
 	double b3, double a4, double b4)
 {
@@ -770,7 +767,7 @@ quadraticSpline(double a1, double b1, double a2, double b2, double a3,
 static void
 gentk_ctlSpline(F_spline *s)
 {
-	char	dir[8], stfp[128];
+	char	dir[8], stfp[256];
 	double	cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4;
 	double	x1, y1, x2, y2;
 	F_arrow	*a;
@@ -944,7 +941,7 @@ void gentk_spline(F_spline *s)
 
 static void
 drawShape(void (*tkShape)(), void *p, int thickness, int penColor,
-	int fillColor, int fillStyle)
+	int fillColor, int fillStyle, int style, double style_val)
 {
 	/* Draw filled and/or stippled region enclosed by shape. */
 	if (fillStyle != UNFILLED) {
@@ -955,53 +952,53 @@ drawShape(void (*tkShape)(), void *p, int thickness, int penColor,
 			if (fillStyle < 20) {
 				/* Draw underlying shape. */
 				tkShape(p, NONE, rgbColorVal(fillColor)
-					^ 0xffffff, NONE, 0);
+					^ 0xffffff, NONE, 0, 0, 0.0);
 				/* Draw stipple pattern in fill color. */
 				tkShape(p, NONE, rgbColorVal(fillColor),
-					fillStyle, 0);
+					fillStyle, 0, 0, 0.0);
 			} else if (fillStyle == 20) {
 				/* Draw underlying shape. */
 				tkShape(p, NONE, rgbColorVal(fillColor),
-					NONE, 0);
+					NONE, 0, 0, 0.0);
 			} else if (fillStyle <= 40) {
 				/* Should never get here... */
 				fprintf(stderr, "drawShape: b&w error.\n");
 			} else {
 				/* Draw underlying shape with fill color. */
 				tkShape(p, NONE, rgbColorVal(fillColor),
-					NONE, 0);
+					NONE, 0, 0, 0.0);
 				/* Draw fill pattern with pen color. */
 				tkShape(p, NONE, rgbColorVal(penColor),
-					fillStyle, 0);
+					fillStyle, 0, 0, 0.0);
 			}
 			break;
 		default:
 			if (fillStyle < 20) {
 				/* First, fill region with black. */
-				tkShape(p, NONE, 0x000000, NONE, 0);
+				tkShape(p, NONE, 0x000000, NONE, 0, 0, 0.0);
 				/* Then, stipple pattern in fill color. */
 				tkShape(p, NONE, rgbColorVal(fillColor),
-					fillStyle, 0);
+					fillStyle, 0, 0, 0.0);
 			} else if (fillStyle == 20) {
 				/* Full saturation of fill color. */
 				tkShape(p, NONE, rgbColorVal(fillColor),
-					NONE, 0);
+					NONE, 0, 0, 0.0);
 			} else if (fillStyle < 40) {
 				/* First, fill region with fill color. */
 				tkShape(p, NONE, rgbColorVal(fillColor),
-					NONE, 0);
+					NONE, 0, 0, 0.0);
 				/* Then, draw stipple pattern in white. */
-				tkShape(p, NONE, 0xffffff, fillStyle-20, 0);
+				tkShape(p, NONE, 0xffffff, fillStyle-20, 0, 0, 0.0);
 			} else if (fillStyle == 40) {
 				/* Maximally tinted: white. */
-				tkShape(p, NONE, 0xffffff, NONE, 0);
+				tkShape(p, NONE, 0xffffff, NONE, 0, 0, 0.0);
 			} else {
 				/* Draw underlying shape with fill color. */
 				tkShape(p, NONE, rgbColorVal(fillColor),
-					NONE, 0);
+					NONE, 0, 0, 0.0);
 				/* Draw fill pattern with pen color. */
 				tkShape(p, NONE, rgbColorVal(penColor),
-					fillStyle, 0);
+					fillStyle, 0, 0, 0.0);
 			}
 			break;
 		}
@@ -1009,7 +1006,7 @@ drawShape(void (*tkShape)(), void *p, int thickness, int penColor,
 
 	/* Finally draw shape itself. */
 	if (thickness > 0)
-		tkShape(p, rgbColorVal(penColor), NONE, NONE, thickness/15);
+		tkShape(p, rgbColorVal(penColor), NONE, NONE, thickness/15, style, style_val);
 }
 
 /*
@@ -1024,7 +1021,7 @@ void
 tkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
 	unsigned int fillPattern, int thickness)
 {
-	char	stfp[128];
+	char	stfp[256];
 	double	cx, cy,	/* Center of circle containing arc. */
 		sx, sy,	/* Start point of arc. */
 		ex, ey,	/* Stop point of arc. */
@@ -1114,7 +1111,7 @@ void
 tkEllipse(void *shape, unsigned int outlineColor, unsigned int fillColor,
 	unsigned int fillPattern, int thickness)
 {
-	char		stfp[128];
+	char		stfp[256];
 	F_ellipse	*e;
 
 	e = (F_ellipse *) shape;
@@ -1157,9 +1154,9 @@ tkEllipse(void *shape, unsigned int outlineColor, unsigned int fillColor,
 
 static void
 tkLine(void * shape, unsigned int penColor, unsigned int fillColor,
-	unsigned int fillPattern, int thickness)
+	unsigned int fillPattern, int thickness, int style, double style_val)
 {
-	char		dir[8], stfp[128];
+	char		dir[8], stfp[256];
 	extern char	*canvas;	/* Tk canvas name. */
 	F_arrow		*a;
 	F_line		*l;
@@ -1183,20 +1180,6 @@ tkLine(void * shape, unsigned int penColor, unsigned int fillColor,
 			sprintf(stfp, " %fi %fi", X(q->x), Y(q->y));
 			niceLine(stfp);
 		}
-	}
-
-	switch (l->style) {
-	case -1:/* Default. */
-	case 0:	/* Solid line. */
-		break;
-	case 1:	/* Dashed line. */
-	case 2:	/* Dotted line. */
-	case 3:	/* Dash-dotted line. */
-	case 4:	/* Dash-double-dotted line. */
-	case 5:	/* Dash-triple-dotted line. */
-	default:
-		fprintf(stderr, "tkLine: only solid line styles supported.\n");
-		break;
 	}
 
 	a = NULL;
@@ -1239,34 +1222,37 @@ tkLine(void * shape, unsigned int penColor, unsigned int fillColor,
 			break;
 		}
 
+	/* set line style here */
+	tk_setstyle(style, style_val);
+
 	switch (l->join_style) {
-	case 0:	/* Miter (Tk default). */
+	    case 0:	/* Miter (Tk default). */
 		break;
-	case 1:	/* Round. */
+	    case 1:	/* Round. */
 		sprintf(stfp, " -joinstyle round");
 		niceLine(stfp);
 		break;
-	case 2:	/* Bevel. */
+	    case 2:	/* Bevel. */
 		sprintf(stfp, " -joinstyle bevel");
 		niceLine(stfp);
 		break;
-	default:
+	    default:
 		fprintf(stderr, "tkLine: unknown join style.\n");
 		break;
 	}
 
 	switch (l->cap_style) {
-	case 0:	/* Butt (Tk default). */
+	    case 0:	/* Butt (Tk default). */
 		break;
-	case 1:	/* Round. */
+	    case 1:	/* Round. */
 		sprintf(stfp, " -capstyle round");
 		niceLine(stfp);
 		break;
-	case 2: /* Projecting. */
+	    case 2: /* Projecting. */
 		sprintf(stfp, " -capstyle projecting");
 		niceLine(stfp);
 		break;
-	default:
+	    default:
 		fprintf(stderr, "tkLine: unknown cap style.\n");
 		break;
 	}
@@ -1288,9 +1274,9 @@ tkLine(void * shape, unsigned int penColor, unsigned int fillColor,
 
 static void
 tkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
-	unsigned int fillPattern, int thickness)
+	unsigned int fillPattern, int thickness, int style, double style_val)
 {
-	char		stfp[128];
+	char		stfp[256];
 	extern char	*canvas;	/* Tk canvas name. */
 	F_point 	*p, *q;
 	int		pts;
@@ -1316,6 +1302,9 @@ tkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
 		niceLine(stfp);
 	}
 
+	/* set line style here */
+	tk_setstyle(style, style_val);
+
 	if (outlineColor == NONE)
 		sprintf(stfp, " -outline {}");
 	else
@@ -1339,6 +1328,38 @@ tkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
 	}
 
 	niceLine("\n");
+}
+
+static void 
+tk_setstyle(int style, double v)
+{
+	char stfp[200];
+
+	if (style == DASH_LINE) {
+	    if (v > 0.0) sprintf(stfp, " -dash {%d %d}", round(v), round(v));
+	} else if (style == DOTTED_LINE) {
+	    if (v > 0.0) sprintf(stfp, " -dash {%d %d}", round(v), round(v));
+	} else if (style == DASH_DOT_LINE) {
+	    if (v > 0.0) sprintf(stfp, " -dash {%d %d %d %d}", 
+		round(v), round(v*0.5),
+		round(ppi/80.0), round(v*0.5));
+	} else if (style == DASH_2_DOTS_LINE) {
+	    if (v > 0.0) sprintf(stfp, " -dash {%d %d %d %d %d %d}", 
+		round(v), round(v*0.45),
+		round(ppi/80.0), round(v*0.333),
+		round(ppi/80.0), round(v*0.45));
+	} else if (style == DASH_3_DOTS_LINE) {
+	    if (v > 0.0) sprintf(stfp, 
+                " -dash {%d %d %d %d %d %d %d %d}", 
+		round(v), round(v*0.4),
+		round(ppi/80.0), round(v*0.3),
+		round(ppi/80.0), round(v*0.3),
+		round(ppi/80.0), round(v*0.4));
+	} else {
+	    return;
+	}
+
+	niceLine(stfp);
 }
 
 /*

@@ -40,9 +40,9 @@ all::
 
 # platform:  $XFree86: xc/config/cf/linux.cf,v 3.165 2001/04/19 19:54:43 dawes Exp $
 
-# operating system:  Linux 2.4.9-31 i686 [ELF] (2.4.9)
-# libc:	(6.2.5)
-# binutils:	(32)
+# operating system:  Linux 2.4.18-14 i686 [ELF] (2.4.18)
+# libc:	(6.2.93)
+# binutils:	(33)
 
 # $Xorg: lnxLib.rules,v 1.3 2000/08/17 19:41:47 cpqbld Exp $
 # $XFree86: xc/config/cf/lnxLib.rules,v 3.40 2001/02/16 01:26:08 dawes Exp $
@@ -824,13 +824,27 @@ CXXPROJECT_DEFINES =
 # party to do so, with the only requirement being that this copyright
 # notice remain intact.
 
-# Uncomment the USELATEX2E flag in the transfig/Imakefile file to use the
+# ******
+# If you want to install transfig in a directory other than the default X11 binary
+# directory, uncomment the following "BINDIR" line and change the path
+# to the full path of the directory where you want transfig to be installed.
+# Also, you may have to uncomment and redefine MKDIRHIER because "make" looks
+# for it relative to the BINDIR variable.
+#
+# BINDIR = /usr/bin/X11
+# MKDIRHIER = /bin/sh /usr/bin/X11/mkdirhier
+
+# MANDIR tells where the standard man pages should go (no need to change it
+# if you want the man pages installed in the standard place on your system
+# MANDIR = $(MANSOURCEPATH)$(MANSUFFIX)
+
+# Uncomment the USELATEX2E flag to use the
 # \\usepackage{} command for LaTeX2e.
 # The default is to use \\documentstyle{} for LaTeX209.
 
 # USELATEX2E = -DLATEX2E
 
-# ******* DON'T CHANGE ANYTHIN BELOW THIS POINT *******
+# ******* DON'T CHANGE ANYTHING BELOW THIS POINT *******
 
 DEFINES = $(USELATEX2E)
 DEPLIBS =

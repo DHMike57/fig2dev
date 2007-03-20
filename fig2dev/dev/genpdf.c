@@ -34,9 +34,9 @@ genpdf_option(opt, optarg)
 char opt;
 char *optarg;
 {
-	/* just use the ps options */
+	/* just use the eps options */
 	pdfflag = True;
-	epsflag = False;
+	epsflag = True;
 	gen_ps_eps_option(opt, optarg);
 }
 
@@ -53,7 +53,7 @@ F_compound	*objects;
     /* make up the command for gs */
     ofile = (to == NULL? "-": to);
     sprintf(gscom,
-	 "gs -q -dNOPAUSE -sAutoRotatePages=None -sDEVICE=pdfwrite -sOutputFile=%s - -c quit",
+	 "gs -q -dNOPAUSE -sAutoRotatePages=None -dAutoFilterColorImages=false -dColorImageFilter=/FlateEncode -sDEVICE=pdfwrite -dPDFSETTINGS=/prepress -sOutputFile=%s - -c quit",
 		ofile);
     (void) signal(SIGPIPE, gs_broken_pipe);
     if ((tfp = popen(gscom,"w" )) == 0) {

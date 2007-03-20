@@ -84,7 +84,7 @@ static char		texfontsizes[] = {
 #define TEXFONT(F)	(texfontnames[((F) <= MAX_FONT) ? (F) : (MAX_FONT-1)])
 
 
-#define TEXFONTSIZE(S)	(texfontsizes[((S) <= MAXFONTSIZE) ? round(S)\
+#define TEXFONTSIZE(S)	(texfontsizes[((S) <= MAXFONTSIZE) ? (int)(round(S))\
 				      				: (MAXFONTSIZE-1)])
 #define TEXFONTMAG(T)	TEXFONTSIZE(T->size*(rigid_text(T) ? 1.0 : fontmag))
 

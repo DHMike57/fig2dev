@@ -30,6 +30,21 @@
  * 	Author Micah Beck, Cornell University, 4/88
  *	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
  *	PCL job control option added Brian V. Smith 1/2001
+ *      Page size handling, orientation, offset, centering
+ *         added by Glenn Burkhardt, 11/2003.
+*/
+
+/* Notes on offsets and scaling:
+
+   When sending files to a PCL5 printer, e.g., HP4000, Lexmark E312,
+   the origin of the plot is the origin of the PCL logical page, which
+   is inside the physical page.  In order to get pictures centered on
+   these printers, an offset of x=-0.25, y=-0.5 is needed.  Other printers
+   have different built in offsets (sometimes, none!).
+
+   Not all printers support all fonts; some printers support only the
+   HP stick font.  Default font size values have been chosen to make
+   the characters very close to the Courier fixed spacing font.
 */
 
 #include "fig2dev.h"
@@ -42,12 +57,14 @@ static set_style();
 #define		PATTERNS 		21
 #define		DPR	 	180.0/M_PI	/* degrees/radian	*/
 #define		DELTA	 	M_PI/36.0	/* radians		*/
-#define		POINT_PER_INCH		72.27	/* points/inch		*/
-#define		CMPP		254.0/7227.0	/* centimeters/point	*/
-#define		UNITS_PER_INCH		 1016.0	/* plotter units/inch	*/
-#define		HEIGHT			 7650.0	/* plotter units	*/
-#define		ISO_A4			10900.0	/* plotter units	*/
-#define		ANSI_A			10300.0	/* plotter units	*/
+#define		UNITS_PER_INCH		 1016.0	/* plotter units/inch
+						   1 plotter unit = .025 mm
+						*/
+
+#define		ISO_A4_HEIGHT		842	/* 297 mm, in 1/72" points */
+#define         ISO_A4_WIDTH		595     /* 210 mm, in 1/72" points */
+#define		ANSI_A_HEIGHT		792	/* 11 in, in 1/72" points */
+#define		ANSI_A_WIDTH		612	/* 8.5 in, in 1/72" points */
 #define		SPEED_LIMIT		128.0	/* centimeters/second	*/
 
 #ifdef IBMGEC
@@ -66,18 +83,23 @@ static	int	line_style	 = SOLID_LINE;
 static	int	fill_pattern	 = DEFAULT;
 static	double	dash_length	 = DEFAULT;	/* in pixels		*/
 #ifdef A4
-static	double	pagelength	 = ISO_A4/UNITS_PER_INCH;
+static	double	pageheight	 = ISO_A4_HEIGHT;
+static	double	pagewidth	 = ISO_A4_WIDTH;
 #else
-static	double	pagelength	 = ANSI_A/UNITS_PER_INCH;
+static	double	pageheight	 = ANSI_A_HEIGHT;
+static	double	pagewidth	 = ANSI_A_WIDTH;
 #endif
-static	double	pageheight	 = HEIGHT/UNITS_PER_INCH;
 static	double	pen_speed	 = SPEED_LIMIT;
 static	double	xz		 =  0.0;	/* inches		*/
 static	double	yz		 =  0.0;	/* inches		*/
+
+/* Default plottable area, changeable with "-d".  Use ISO-B0 for default
+   bounds; the page size parameter can further restrict the plottable view.
+*/
 static	double	xl		 =  0.0;	/* inches		*/
 static	double	yl		 =  0.0;	/* inches		*/
-static	double	xu		 = 32.25;	/* inches		*/
-static	double	yu		 = 32.25;	/* inches		*/
+static	double	xu		 = 1456/25.4;	/* inches		*/
+static	double	yu		 = 1030/25.4;	/* inches		*/
 
 static	int	pen_number[]	 = { 1, 2, 3, 4, 5, 6, 7, 8, 1};
 static	double	pen_thickness[]	 = {.3,.3,.3,.3,.3,.3,.3,.3,.3};
@@ -99,10 +121,60 @@ static	int	alternate[]	 = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 	     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 static	double	slant[]		 = { 0,10, 0,10, 0,10, 0,10, 0,10, 0,10, 0,10,
 	     0,10, 0,10, 0,10, 0,10, 0,10, 0,10, 0,10, 0,10, 0,10, 0,10, 0, 0};
-static	double	wide[]		 = {.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,
-	    .6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6,.6};
-static	double	high[]		 = {.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,
-	    .8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8};
+
+/* Make font width/height close to Courier fixed.
+ */
+static	double	wide[] 
+= {.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,
+   .401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,
+   .401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401};
+static	double	high[] 
+= {.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,
+   .561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,
+   .561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561};
+
+/* Map of Postscript font number to HPGL/2 Fonts
+ */
+static struct {
+    int font, italic, bold;
+} psfont2hpgl[] =
+{
+    /* "Times-Roman",			0 */  { 5, 0, 0 },
+    /* "Times-Italic",			1 */  { 5, 1, 0 },
+    /* "Times-Bold",			2 */  { 5, 0, 3 },
+    /* "Times-BoldItalic",		3 */  { 5, 1, 3 },
+    /* "AvantGarde-Book",		4 */  { 31, 0, 0 },
+    /* "AvantGarde-BookOblique",	5 */  { 31, 1, 0 },
+    /* "AvantGarde-Demi",		6 */  { 31, 0, 3 },
+    /* "AvantGarde-DemiOblique",	7 */  { 31, 1, 3 },
+    /* "Bookman-Light",			8 */  { 47, 0, 0 },
+    /* "Bookman-LightItalic",		9 */  { 47, 1, 0 },
+    /* "Bookman-Demi",			10 */ { 47, 0, 3 },
+    /* "Bookman-DemiItalic",		11 */ { 47, 1, 3 },
+    /* "Courier",			12 */ { 3, 0, 0 },
+    /* "Courier-Oblique",		13 */ { 3, 1, 0 },
+    /* "Courier-Bold",			14 */ { 3, 0, 3 },
+    /* "Courier-BoldOblique",		15 */ { 3, 1, 3 },
+    /* "Helvetica",			16 */ { 4, 0, 0 },
+    /* "Helvetica-Oblique",		17 */ { 4, 1, 0 },
+    /* "Helvetica-Bold",		18 */ { 4, 0, 3 },
+    /* "Helvetica-BoldOblique",		19 */ { 4, 1, 3 },
+    /* "Helvetica-Narrow",		20 */ { 4, 0, 0 },
+    /* "Helvetica-Narrow-Oblique",	21 */ { 4, 1, 0 },
+    /* "Helvetica-Narrow-Bold",		22 */ { 4, 0, 3 },
+    /* "Helvetica-Narrow-BoldOblique",	23 */ { 4, 1, 3 },
+    /* "NewCenturySchlbk-Roman",	24 */ { 23, 0, },
+    /* "NewCenturySchlbk-Italic",	25 */ { 23, 1, },
+    /* "NewCenturySchlbk-Bold",		26 */ { 23, 0, },
+    /* "NewCenturySchlbk-BoldItalic",	27 */ { 23, 1, },
+    /* "Palatino-Roman",		28 */ { 15, 0, 0 },
+    /* "Palatino-Italic",		29 */ { 15, 1, 0 },
+    /* "Palatino-Bold",			30 */ { 15, 0, 3 },
+    /* "Palatino-BoldItalic",		31 */ { 15, 1, 3 },
+    /* "Symbol",			32 */ { 52, 0, 0 }, /* Univers */
+    /* "ZapfChancery-MediumItalic",	33 */ { 43, 0, 0 },
+    /* "ZapfDingbats",			34 */ { 45, 0, 0 },
+};
 
 static void genibmgl_option(opt, optarg)
 char opt, *optarg;
@@ -115,9 +187,11 @@ char opt, *optarg;
 
 	    case 'a':				/* paper size		*/
 #ifdef A4
-		pagelength	 = ANSI_A/UNITS_PER_INCH;
+	        pageheight	 = ANSI_A_HEIGHT;
+		pagewidth	 = ANSI_A_WIDTH;
 #else
-		pagelength	 = ISO_A4/UNITS_PER_INCH;
+		pageheight	 = ISO_A4_HEIGHT;
+		pagewidth	 = ISO_A4_WIDTH;
 #endif
 		break;
 
@@ -162,6 +236,9 @@ char opt, *optarg;
 		fclose(ffp);
 		break;
 
+      	    case 'F':				/* use specified font,
+						   i.e., SD command
+						 */
 	    case 's':
 	    case 'L':				/* language		*/
 		break;
@@ -199,6 +276,11 @@ char opt, *optarg;
 		reflected	 = True;	/* mirror image		*/
 		break;
 
+	    case 'z':			/* papersize */
+	        (void) strcpy (papersize, optarg);
+		paperspec = True;	/* user-specified */
+		break;	    
+
 	    default:
 		put_msg(Err_badarg, opt, "ibmgl");
 		exit(1);
@@ -207,30 +289,55 @@ char opt, *optarg;
 
 static double		cpi;			/*       cent/inch	*/
 static double		cpp;			/*       cent/pixel	*/
-static double		wcmpp	 = CMPP;	/* centimeter/point	*/
-static double		hcmpp	 = CMPP;	/* centimeter/point	*/
+static double		wcmpp;			/* centimeter/point	*/
+static double		hcmpp;			/* centimeter/point	*/
 
 void genibmgl_start(objects)
 F_compound	*objects;
 {
 	int	 P1x, P1y, P2x, P2y;
 	int	 Xll, Yll, Xur, Yur;
-	double	Xmin,Xmax,Ymin,Ymax;
-	double	height, length;
+	double	Xmin,Xmax,Ymin,Ymax,xoff=0,yoff=0;
+	double	height, width, points_per_inch;
+	struct paperdef	*pd;
 
 	if (fabs(mag) < 1.0/2048.0){
 	    fprintf(stderr, "|mag| < 1/2048\n");
 	    exit(1);
 	    }
 
+	if (paperspec) {
+	    /* convert ledger (deprecated) to tabloid */
+	    if (strcasecmp(papersize, "ledger") == 0)
+		strcpy(papersize, "tabloid");
+
+	    for (pd = paperdef; pd->name != NULL; pd++)
+		if (strcasecmp (papersize, pd->name) == 0) {
+		    pagewidth = pd->width;	/* in points, 1/72" */
+		    pageheight = pd->height;
+		    strcpy(papersize,pd->name);	/* use the "nice" form */
+		    break;
+		    }
+	
+	    if (pagewidth < 0 || pageheight < 0) {
+		fprintf (stderr, "Unknown paper size `%s'\n", papersize);
+		exit (1);
+	        }
+	    }
+
+	points_per_inch = 72;
+	pagewidth  /= points_per_inch;	/* convert to inches */
+	pageheight /= points_per_inch;
+	wcmpp = hcmpp = 2.54/points_per_inch;
+
 	if (xl < xu)
 	    if (0.0 < xu)
-		if (xl < pagelength) {
+		if (xl < pageheight) {
 		    xl	 = (0.0 < xl) ? xl: 0.0;
-		    xu	 = (xu < pagelength) ? xu: pagelength;
+		    xu	 = (xu < pageheight) ? xu: pageheight;
 		    }
 		else {
-		    fprintf(stderr, "xll >= %.2f\n", pagelength);
+		    fprintf(stderr, "xll >= %.2f\n", pageheight);
 		    exit(1);
 		    }
 	    else {
@@ -244,12 +351,12 @@ F_compound	*objects;
 
 	if (yl < yu)
 	    if (0.0 < yu)
-		if (yl < pageheight) {
+		if (yl < pagewidth) {
 		    yl	 = (0.0 < yl) ? yl: 0.0;
-		    yu	 = (yu < pageheight) ? yu: pageheight;
+		    yu	 = (yu < pagewidth) ? yu: pagewidth;
 		    }
 		else {
-		    fprintf(stderr, "yll >= %.2f\n", pageheight);
+		    fprintf(stderr, "yll >= %.2f\n", pagewidth);
 		    exit(1);
 		    }
 	    else {
@@ -265,18 +372,22 @@ F_compound	*objects;
 	cpp	 = cpi/ppi;
 
 	/* IBMGL start */
-	if (pcljcl)
-	    fprintf(tfp,"\033%%0B\033%%E\n");	/* set to HP/GL mode and reset printer */
-	fprintf(tfp, "IN;\n");			/* initialize plotter	*/
+	if (pcljcl) {
+	    fprintf(tfp,"\033E");
+	    if (landscape) fprintf(tfp, "\033&l1O");
+	    fprintf(tfp, "\033%%0B");	/* reset and set to HP/GL mode */
+	}
+
+	fprintf(tfp, "BP;IN;\n");		/* initialize plotter	*/
 
 	if (!landscape) {			/* portrait mode	*/
 	    fprintf(tfp, "RO90;\n");		/* rotate 90 degrees	*/
 	    Xll	 = yl*UNITS_PER_INCH;
 	    Xur	 = yu*UNITS_PER_INCH;
-	    Yll	 = (pagelength - xu)*UNITS_PER_INCH;
-	    Yur	 = (pagelength - xl)*UNITS_PER_INCH;
-	    length	 = yu - yl;
-	    height	 = xu - xl;
+	    Yll	 = (pageheight - xu)*UNITS_PER_INCH;
+	    Yur	 = (pageheight - xl)*UNITS_PER_INCH;
+	    height	 = yu - yl;
+	    width	 = xu - xl;
 	    P1x	 	 = Xll;
 	    P2x		 = Xur;
 	    if (reflected)			/* upside-down text	*/
@@ -288,13 +399,21 @@ F_compound	*objects;
 		P1y	 = Yur;
 		P2y	 = Yll;
 	    }
-	} else {					/* landscape mode	*/
+
+	    /* If asked to center, use the plot bounds, and page size
+	       to get offsets.
+	    */
+	    if (center) {
+		yoff = (pageheight - (urx - llx)*mag/ppi)/2 - llx*mag/ppi;
+		xoff = (pagewidth - (ury - lly)*mag/ppi)/2 - lly*mag/ppi;
+	    }
+	} else {				      /* landscape mode	*/
 	    Xll	 = xl*UNITS_PER_INCH;
 	    Yll	 = yl*UNITS_PER_INCH;
 	    Yur	 = yu*UNITS_PER_INCH;
 	    Xur	 = xu*UNITS_PER_INCH;
-	    length	 = xu - xl;
-	    height	 = yu - yl;
+	    height	 = xu - xl;
+	    width	 = yu - yl;
 	    if (reflected) {			/* flipped   or not	*/
 		wcmpp	 = -wcmpp;		/* backward text	*/
 		P1x	 = Xur;
@@ -305,17 +424,34 @@ F_compound	*objects;
 	    }
 	    P1y	 = Yur;
 	    P2y	 = Yll;
+
+	    /* If asked to center, use the plot bounds, border, and page size
+	       to get offsets.
+	    */
+	    if (center) {
+		xoff = (pageheight - (urx - llx)*mag/ppi)/2 - llx*mag/ppi;
+		yoff = (pagewidth - (ury - lly)*mag/ppi)/2 - lly*mag/ppi;
+	    }
 	}
 
-	Xmin	 = xz;
-	Ymin	 = yz;
-	Xmax	 = xz + length/mag;
-	Ymax	 = yz + height/mag;
+	if (xoff < 0) xoff = 0;
+	if (yoff < 0) yoff = 0;
 
-	fprintf(tfp, "IP%d,%d,%d,%d;\n",
+	Xmin	 = -xz - xoff;			/* Inches */
+	Ymin	 = yz - yoff;
+	Xmax	 = -xz - xoff + height/mag;
+	Ymax	 = yz - yoff + width/mag;
+
+	fprintf(tfp, "IP%d,%d,%d,%d;\n",    /* reference points for scaling */
 		P1x, P1y, P2x, P2y);
-	fprintf(tfp, "IW%d,%d,%d,%d;\n",
+	fprintf(tfp, "IW%d,%d,%d,%d;\n",    /* soft clip limits */
 		Xll, Yll, Xur, Yur);
+
+	/* 'SC' maps the coordinates used in the plotting commands to the
+	   absolute plotter coordinates (units of .025mm).  This
+	   can both translate and scale.  The values given are mapped
+	   onto the absolute plotter coords given in the 'IP' command
+	*/
 	fprintf(tfp, "SC%.4f,%.4f,%.4f,%.4f;\n",
 		Xmin,Xmax,Ymin,Ymax);
 	if (0.0 < pen_speed && pen_speed < SPEED_LIMIT)
@@ -429,11 +565,21 @@ double	length;
 
 /* 
  * set_width - issue line width commands as appropriate
- *		NOTE: for HP plotters we can't do anything
+ *		NOTE: HPGL/2 command used
  */
 static set_width(w)
     int	w;
 {
+    static int current_width=-1;
+
+    if (w == current_width) return;
+
+    /* Default line width is 0.3 mm; back off to original xfig pen
+       thickness number, and re-size.
+    */
+    fprintf(tfp, "PW%.1f;\n", w*80/ppi * 0.3);
+
+    current_width = w;
 }
 
 /* 
@@ -453,7 +599,7 @@ static set_color(color)
 		}
 	    if (thickness != pen_thickness[color]) {
 		thickness  = pen_thickness[color];
-		fprintf(tfp, "PT%.4f;\n", pen_thickness[color]);
+		fprintf(tfp, "PW%.4f;\n", pen_thickness[color]);
 		}
 	    }
 }
@@ -887,13 +1033,13 @@ F_spline	*s;
 		genibmgl_itp_spline(s);
 	    else
 		genibmgl_ctl_spline(s);
+	}
 
-	    }
 	if (0 < s->fill_style && s->fill_style < patterns)
 	    fprintf(stderr, "Spline area fill not implemented\n");
 }
 
-#define	FONT(T) ((-1 < (T) && (T) < fonts) ? (T): fonts)
+#define	FONT(T) ((-1 < (T) && (T) < FONTS) ? (T): fonts)
 void genibmgl_text(t)
 F_text	*t;
 {
@@ -905,37 +1051,46 @@ static	double	theta	 = 0.0;		/* character slant  in degrees	*/
 static	double	angle	 = 0.0;		/* label direction  in radians	*/
 	double	width;			/* character width  in centimeters */
 	double	height;			/* character height in centimeters */
+	Boolean newfont=False, newsize=False;
 
 	if (font != FONT(t->font)) {
 	    font  = FONT(t->font);
-	    if (cs != standard[font]) {
-		cs  = standard[font];
-		fprintf(tfp, "CS%d;", cs);
-		}
-	    if (ca != alternate[font]) {
-		ca  = alternate[font];
-		fprintf(tfp, "CA%d;", ca);
-		}
+	    /* Simulate italic fonts with a 10 degree slant */
 	    if (theta != slant[font]) {
 		theta  = slant[font];
 		fprintf(tfp, "SL%.4f;", tan(theta*M_PI/180.0));
-		}
 	    }
+	    newfont = True;
+	}
+	
 	if (size != t->size) {
-	    size  = t->size;
-	    width	 = size*wcmpp*wide[font];
-	    height	 = size*hcmpp*high[font];
-	    fprintf(tfp, "SI%.4f,%.4f;", width*mag, height*mag);
+	    size  = t->size;	/* in points */
+	    newsize = True;
+	    if (!correct_font_size) {
+		/* HP Stick Font only:  use the 'SI' command to set the 
+		   cap height and pitch.
+		*/
+		width	 = size*wcmpp*wide[font];
+		height	 = size*hcmpp*high[font];
+		fprintf(tfp, "SI%.4f,%.4f;", width*mag, height*mag);
 	    }
+	}
+
+	if (correct_font_size && (newfont || newsize)) {
+	    /* Use 'SD' command to set the font */
+	    fprintf(tfp, "SD2,1,4,%d,5,%d,6,%d,7,%d;SS;\n",
+		    (int)(size*mag+.5), psfont2hpgl[font].italic,
+		    psfont2hpgl[font].bold, psfont2hpgl[font].font);
+	}
+
 	if (angle != t->angle) {
 	    angle  = t->angle;
 	    fprintf(tfp, "DI%.4f,%.4f;",
 		    cos(angle), sin(reflected ? -angle: angle));
-	    }
+	}
 	set_color(t->color);
 
-	fprintf(tfp, "PA%.4f,%.4f;\n",
-		t->base_x/ppi, t->base_y/ppi);
+	fprintf(tfp, "PA%.4f,%.4f;\n", t->base_x/ppi, t->base_y/ppi);
 
 	switch (t->type) {
 	    case DEFAULT:
@@ -950,16 +1105,19 @@ static	double	angle	 = 0.0;		/* label direction  in radians	*/
 	    default:
 		fprintf(stderr, "unknown text position type\n");
 		exit(1);
-	    }    
+	}    
 
 	fprintf(tfp, "LB%s\003\n", t->cstring);
-	}
+}
 
 int
 genibmgl_end()
 {
 	/* IBMGL ending */
 	fprintf(tfp, "PU;SP;IN;\n");
+
+	if (pcljcl)
+	    fprintf(tfp, "\033%%0A\033E");	/* end job and eject page */
 
 	/* all ok */
 	return 0;

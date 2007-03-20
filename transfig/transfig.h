@@ -30,7 +30,7 @@
 /* Also, be sure to change MAXLANG if the list extends beyond the current lang */
 
 enum language  {box, cgm, eepic, eepicemu, emf, epic, eps, gif,
-	ibmgl, jpeg, latex, map, mf, mmp, mp, pcx, pdf, pdftex,
+	ibmgl, dxf, jpeg, latex, map, mf, mmp, mp, pcx, pdf, pdftex,
 	pic, pictex, png, ppm, ps, psfig, pstex, ptk, sld, svg,
 	textyl, tiff, tk, tpic, xbm, xpm};
 #define MAXLANG xpm

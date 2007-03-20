@@ -107,6 +107,8 @@
  *
  *                   Changes by Christian Spannagel <cspannagel@web.de>
  *                   Thanks to Dirk Krause for his suggestions.
+ *
+ *   02 Feb 2003 - all arrowhead types supported now.  Tim Braun
  */
 
 /*
@@ -145,7 +147,6 @@ char	*genmp_fillcolor(int, int);
 char	*genmp_pencolor(int);
 void	genmp_writefontmacro_tex(double, char *, char *);
 void    genmp_writefontmacro_latex(F_text *, char *);
-void	genmp_arrowstats(F_arrow *);
 void	do_split(int); /* new procedure to split different depths' objects */
 #define	getfont(x,y)	((x & 0x4)?xfigpsfonts[y]:xfiglatexfonts[y])
 #define ispsfont(x) (x & 0x4)
@@ -238,7 +239,7 @@ static char xfiglatexfonts[6][FONTNAMESIZE] = {
 	"cmr10",         /* DEFAULT = Computer Modern Roman */
 	"cmr10",         /* Computer Modern Roman */
 	"cmbx10",        /* Computer Modern Roman Bold */
-	"cmit10",        /* Computer Modern Roman Italic */
+	"cmti10",        /* Computer Modern Roman Italic */
 	"cmss10",        /* Computer Modern Sans Serif */
 	"cmtt10",        /* Computer Modern Typewriter */
 };
@@ -303,7 +304,7 @@ F_compound	*objects;
 
     /* print the "prologues:=n;" line */
     if (has_prologues) {
-	fprintf(tfp,"prologues:=%d;\n\n",prologues_nr);
+	fprintf(tfp,"prologues:=%ld;\n\n",prologues_nr);
     }
 
 
@@ -359,28 +360,6 @@ F_compound	*objects;
 	fprintf(tfp,"etex\n\n");
     }
 
-	fprintf(tfp,"%% Make arrowheads mitered by default\n");
-	fprintf(tfp,"%% NOTE: subject to change (edited from plain.mp)\n");
-	fprintf(tfp,"    def forwarr(text t) expr p =\n");
-	fprintf(tfp,"      _apth:=p;_finarrf(t)\n");
-	fprintf(tfp,"    enddef;\n");
-	fprintf(tfp,"    def backarr(text t) expr p =\n");
-	fprintf(tfp,"      _apth:=p;_finarrb(t)\n");
-	fprintf(tfp,"    enddef;\n");
-	fprintf(tfp,"    def _finarrf(text s) text t =\n");
-	fprintf(tfp,"      if (s=0):fill arrowhead _apth  t withcolor white\n");
-	fprintf(tfp,"      else: fill arrowhead _apth  t fi;\n");
-	fprintf(tfp,"      linejoin:=0;\n");
-	fprintf(tfp,"      draw arrowhead _apth  t\n");
-	fprintf(tfp,"    enddef;\n");
-	fprintf(tfp,"    def _finarrb(text s) text t =\n");
-	fprintf(tfp,"      if (s=0):fill arrowhead reverse _apth  t withcolor white\n");
-	fprintf(tfp,"      else: fill arrowhead reverse _apth  t fi;\n");
-	fprintf(tfp,"      linejoin:=0;\n");
-	fprintf(tfp,"      draw arrowhead reverse _apth  t\n");
-	fprintf(tfp,"    enddef;\n");
-	fprintf(tfp,"\n\n");
-
 	if (split) {
 	      /*
 	       * We need a bounding box around all objects in all
@@ -401,8 +380,6 @@ F_compound	*objects;
 	}
 
 	fprintf(tfp,"%% Some reasonable defaults\n");
-	fprintf(tfp,"  ahlength:=7;\n");
-	fprintf(tfp,"  ahangle:=30;\n");
 	fprintf(tfp,"  labeloffset:=0;\n");
 
 	/* For our overlapping figures we must keep the (invisible) bounding
@@ -482,6 +459,225 @@ char opt, *optarg;
     }
 }
 
+/* Changes for arrowhead support start here 
+   several parts taken and adapted from genps.c
+   Copyright (c) 1991 by Micah Beck
+   Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+   Parts Copyright (c) 1989-2002 by Brian V. Smith */
+
+
+/* draws an arrowhead with direction given by from and to points
+   and style given by arrow object */
+void genmp_drawarrow(from_x, from_y, to_x, to_y, obj, arr)
+	int     from_x, from_y, to_x, to_y;
+	F_line  *obj;
+	F_arrow *arr;
+{
+    int    i, type;
+    Point  points[50], fillpoints[50], clippoints[50];
+    int    numpoints, nfillpoints, nclippoints;
+    
+    type = arr->type;
+    
+    /* use xfig calculation method to generate arrow outline in points array.
+       Information on clipping is discarded */
+    calc_arrow(from_x, from_y, to_x, to_y, 
+	       obj->thickness, arr, points, &numpoints, fillpoints, &nfillpoints, clippoints, &nclippoints);
+    
+    fprintf(tfp,"%% Draw arrowhead type %d\n",type);
+    fprintf(tfp,"  linecap:=0;\n");     /* butt line cap for arrowheads */
+    fprintf(tfp,"  linejoin:=0;\n");	/* miter join for sharp points */
+    fprintf(tfp,"  pickup pencircle scaled %.2lf;\n",fig2bp(arr->thickness));
+    
+    fprintf(tfp,"  path arr;\n");
+    fprintf(tfp,"  arr = (%.2lf, %.2lf)",
+	    fig2bp(points[0].x),
+	    y_off(fig2bp(points[0].y)));
+    for (i=1; i<numpoints; i++) {
+	fprintf(tfp, "\n      --(%.2lf, %.2lf)",
+		fig2bp(points[i].x),
+		y_off(fig2bp(points[i].y)));
+    }
+
+   if (type != 0 && type != 6 && type < 9)  {
+        /* old heads, close the path */
+	fprintf(tfp, " -- cycle");
+    }
+    fprintf(tfp,";\n");
+
+    if (type != 0) {
+	if (arr->style == 0) { /* hollow, fill with white */
+	    fprintf(tfp,"  fill arr withcolor white;\n");
+	} else if (type < 9) {
+	    /* solid, fill with color  */
+	    fprintf(tfp,"  fill arr withcolor %s;\n",
+		    genmp_pencolor(obj->pen_color));
+	}
+    }
+    fprintf(tfp,"  draw arr withcolor %s;\n",
+	    genmp_pencolor(obj->pen_color));
+}
+
+
+void genmp_arrowheads(obj, objtype)
+	F_line	*obj;
+	int	objtype;
+{
+    double      x1,x2,x3,y1,y2,y3,c,d;
+    int	        i;
+    int         from_x, from_y, to_x, to_y;
+    F_point     *p, *old_p;
+    F_control   *ctl;
+    F_arc       *a;
+    F_spline    *s;
+
+    /* generate two points to determine direction of arrowhead.
+       Start with forward arrow */
+    
+    if (obj->for_arrow) {
+	
+	switch(objtype) {
+	    
+	  case O_ARC:
+	      /* find arrowhead direction for arcs */
+	      a = (F_arc *) obj;
+	      /* last point */
+	      to_x = a->point[2].x;
+	      to_y = a->point[2].y;
+	      compute_arcarrow_angle(a->center.x, a->center.y, 
+				     (double) to_x, (double) to_y,
+				     a->direction, a->for_arrow,
+				     &from_x, &from_y);
+	      break;
+	      
+	  case O_SPLINE:
+	      /* find arrowhead direction for splines.
+		 UNTESTED!! Not used by current implementation*/
+	      s = (F_spline *) obj;
+	      p = s->points;
+	      if (int_spline(s)) {
+		  ctl = s->controls;
+		  /* the two last control points of the interpolated spline
+		     determine the direction of the arrow */
+		  p = p->next;
+		  for ( ; p->next != NULL; p=p->next ) 
+		      ctl = ctl->next;
+		  /* next-to-last control point */
+		  from_x = round(ctl->lx);
+		  from_y = round(ctl->ly);
+		  /* last point */
+		  to_x = p->x;		    
+		  to_y = p->y;
+	      } else {
+		  /* for control point splines, arrow direction has to be calculated
+		     adapted from genps.c  */
+ 		  x1 = p->x;
+		  y1 = p->y;
+		  old_p = p;
+		  p = p->next;
+		  c = p->x;
+		  d = p->y;
+		  x3  = (x1 + c) / 2;
+		  y3  = (y1 + d) / 2;
+
+		  /* in case there are only two points in this spline */
+		  x2 = x1;
+		  y2 = y1;
+		  /* go through the points to find the last two */
+		  for ( ; p->next != NULL; p = p->next) {
+		      old_p = p;
+		      x1 = x3;
+		      y1 = y3;
+		      x2 = c;
+		      y2 = d;
+		      c = p->x;
+		      d = p->y;
+		      x3 = (x2 + c) / 2;
+		      y3 = (y2 + d) / 2;
+		  }
+		  
+		  /* next to last point */
+		  from_x = round(x2);
+		  from_y = round(y2);
+		  /* last point */
+		  to_x = round(c);
+		  to_y = round(d);
+	      }
+	      break;
+	      
+	  case O_POLYLINE:
+	  default:
+	      /* the two last points of the polyline determine the direction of the arrow */
+	      p = obj->points;
+	      old_p = p;    
+	      p = p->next;
+	      for ( ; p->next != NULL; p=p->next )
+		  old_p = p;
+	      from_x = old_p->x;
+	      from_y = old_p->y;
+	      to_x = p->x;		    
+	      to_y =p->y;
+	}
+
+	/* draw the arrow */
+	genmp_drawarrow(from_x, from_y, to_x, to_y, obj, obj->for_arrow);    	    
+    }
+    
+    /* get points for any backward arrowhead */
+  if (obj->back_arrow) {
+
+	switch(objtype) {
+	    
+	  case O_ARC:
+	    a = (F_arc *) obj;
+	    /* first point */
+	    to_x = a->point[0].x;
+	    to_y = a->point[0].y;
+	    compute_arcarrow_angle(a->center.x, a->center.y,
+				   (double) to_x, (double) to_y,
+				   a->direction ^ 1, a->back_arrow,
+				   &from_x, &from_y);
+	    break;
+	    
+	  case O_SPLINE:
+	      /* find arrowhead direction for splines.
+		UNTESTED!! Not used by current implementation*/
+	      s = (F_spline *) obj;
+	      p = s->points;
+	      if (int_spline(s)) {
+		  ctl = s->controls;
+		  /* first point */
+		  to_x = p->x;
+		  to_y = p->y;
+		  /* second point */
+		  from_x = round(ctl->rx);
+		  from_y = round(ctl->ry);
+	      } else {
+		  /* first point */
+		  to_x = p->x;
+		  to_y = p->y;
+		  /* second point */
+		  from_x = round(((double) p->x + (double) p->next->x) / 2);
+		  from_y = round(((double) p->y + (double) p->next->y) / 2);
+	      }
+	      break;
+	      
+	  case O_POLYLINE:
+	  default:
+	      p=obj->points;
+	      to_x = p->x;
+	      to_y = p->y;
+	      from_x = p->next->x;		    
+	      from_y = p->next->y;
+	}
+	
+	/* draw the arrow */
+	genmp_drawarrow(from_x, from_y, to_x, to_y, obj, obj->back_arrow);
+  }
+}
+
+/* Changes for arrowhead support end here */
+
 void
 genmp_line(l)
 F_line *l;
@@ -528,18 +724,9 @@ F_line *l;
 	            fprintf(tfp," dashed withdots scaled %.2lf;\n",l->style_val/4.75);
 	         } else           /* plain */
 	            fprintf(tfp,";\n");
-	         if ((l->for_arrow != NULL) || (l->back_arrow != NULL)) {
-	            if (l->for_arrow != NULL) {
-	               genmp_arrowstats(l->for_arrow);
-	               fprintf(tfp,"  forwarr(%d) p ",(l->for_arrow)->style);
-	               fprintf(tfp,"withcolor %s;\n",genmp_pencolor(l->pen_color));
-	            }
-	            if (l->back_arrow != NULL) {
-	               genmp_arrowstats(l->back_arrow);
-	               fprintf(tfp,"  backarr(%d) p ",(l->back_arrow)->style);
-	               fprintf(tfp,"withcolor %s;\n",genmp_pencolor(l->pen_color));
-	            }
-	         }
+
+		 if ((l->for_arrow != NULL) || (l->back_arrow != NULL))
+		     genmp_arrowheads(l, O_POLYLINE);
 	      }
 	      break;
 	   case 4:            /* arc box */
@@ -669,18 +856,9 @@ F_spline *s;
 	            fprintf(tfp," dashed withdots scaled %.2lf;\n",s->style_val/4.75);
 	         } else           /* plain */
 	            fprintf(tfp,";\n");
-	         if ((s->for_arrow != NULL) || (s->back_arrow != NULL)) {
-	            if (s->for_arrow != NULL) {
-	               genmp_arrowstats(s->for_arrow);
-	               fprintf(tfp,"  forwarr(%d) s ",(s->for_arrow)->style);
-	               fprintf(tfp,"withcolor %s;\n",genmp_pencolor(s->pen_color));
-	            }
-	            if (s->back_arrow != NULL) {
-	               genmp_arrowstats(s->back_arrow);
-	               fprintf(tfp,"  backarr(%d) s ",(s->back_arrow)->style);
-	               fprintf(tfp,"withcolor %s;\n",genmp_pencolor(s->pen_color));
-	            }
-	         }
+		 
+		 if ((s->for_arrow != NULL) || (s->back_arrow != NULL))
+		     genmp_arrowheads(s, O_SPLINE);
 	      }
 	      break;
 	   case 2:         /* interpolated spline (open) */
@@ -717,18 +895,9 @@ F_spline *s;
 	            fprintf(tfp," dashed withdots scaled %.2lf;\n",s->style_val/4.75);
 	         } else           /* plain */
 	            fprintf(tfp,";\n");
-	         if ((s->for_arrow != NULL) || (s->back_arrow != NULL)) {
-	            if (s->for_arrow != NULL) {
-	               genmp_arrowstats(s->for_arrow);
-	               fprintf(tfp,"  forwarr(%d) s ",(s->for_arrow)->style);
-	               fprintf(tfp,"withcolor %s;\n",genmp_pencolor(s->pen_color));
-	            }
-	            if (s->back_arrow != NULL) {
-	               genmp_arrowstats(s->back_arrow);
-	               fprintf(tfp,"  backarr(%d) s ",(s->back_arrow)->style);
-	               fprintf(tfp,"withcolor %s;\n",genmp_pencolor(s->pen_color));
-	            }
-	         }
+
+		 if ((s->for_arrow != NULL) || (s->back_arrow != NULL))
+		     genmp_arrowheads(s, O_SPLINE);
 	      }
 	      break;
 	   default:
@@ -840,18 +1009,9 @@ F_arc *a;
 	            fprintf(tfp," dashed withdots scaled %.2lf;\n",a->style_val/4.75);
 	         } else           /* plain */
 	            fprintf(tfp,";\n");
-	         if ((a->for_arrow != NULL) || (a->back_arrow != NULL)) {
-	            if (a->for_arrow != NULL) {
-	               genmp_arrowstats(a->for_arrow);
-	               fprintf(tfp,"  forwarr(%d) a ",(a->for_arrow)->style);
-	               fprintf(tfp,"withcolor %s;\n",genmp_pencolor(a->pen_color));
-	            }
-	            if (a->back_arrow != NULL) {
-	               genmp_arrowstats(a->back_arrow);
-	               fprintf(tfp,"  backarr(%d) a ",(a->back_arrow)->style);
-	               fprintf(tfp,"withcolor %s;\n",genmp_pencolor(a->pen_color));
-	            }
-	         }
+
+		 if ((a->for_arrow != NULL) || (a->back_arrow != NULL))
+		     genmp_arrowheads(a, O_ARC);
 	      }
 	      break;
 	   default:
@@ -925,7 +1085,7 @@ F_text *t;
 
 	    /* This loop escapes special (La)TeX characters. */
 	    for(cp = t->cstring; *cp; cp++) {
-		if (special_index=strchr(tex_text_specials, *cp)) {
+		if ((special_index=strchr(tex_text_specials, *cp))) {
 		    /* Write out the replacement.  Implementation note: we can't
 		     * use puts since that will output an additional newline.
 		     */
@@ -1091,17 +1251,6 @@ int c,s;
 	      genmp_pencolor(c),(double)(s-20)/20.0);
 	return(f_string);
 }
-
-void
-genmp_arrowstats(a)
-F_arrow *a;
-{
-	fprintf(tfp,"  ahlength:=%.2lf;\n",fig2bp(a->ht));
-	fprintf(tfp,"  ahangle:=angle (%.2lf,%.2lf) * 2.0;\n",fig2bp(a->ht),
-	   fig2bp(a->wid)/2.0);
-	return;
-}
-
 
 void
 genmp_writefontmacro_latex(t,name)

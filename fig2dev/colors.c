@@ -22,6 +22,7 @@ struct color_db {
     int   red, green, blue;
 };
 
+static 	int	  read_colordb();
 struct	color_db *Xcolors;
 int	numXcolors, maxcolors;
 Boolean	have_read_X_colors = False;
@@ -90,6 +91,7 @@ lookup_X_color(name, rgb)
 
 /* read the X11 RGB color database (ASCII .txt) file */
 
+int
 read_colordb()
 {
     FILE	*fp;

@@ -49,6 +49,7 @@
 
 #include "fig2dev.h"
 #include "object.h"
+#include "readxbm.h"
 
 #define MAX_SIZE 255
 
@@ -128,7 +129,8 @@ static void initHexTable()
  *	read next hex value in the input stream, return -1 if EOF
  */
 
-static NextInt (file)
+static int
+NextInt (file)
     FILE *file;
 {
     int	ch;

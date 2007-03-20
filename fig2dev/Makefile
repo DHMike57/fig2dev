@@ -40,9 +40,9 @@ all::
 
 # platform:  $XFree86: xc/config/cf/linux.cf,v 3.165 2001/04/19 19:54:43 dawes Exp $
 
-# operating system:  Linux 2.4.9-31 i686 [ELF] (2.4.9)
-# libc:	(6.2.5)
-# binutils:	(32)
+# operating system:  Linux 2.4.18-14 i686 [ELF] (2.4.18)
+# libc:	(6.2.93)
+# binutils:	(33)
 
 # $Xorg: lnxLib.rules,v 1.3 2000/08/17 19:41:47 cpqbld Exp $
 # $XFree86: xc/config/cf/lnxLib.rules,v 3.40 2001/02/16 01:26:08 dawes Exp $
@@ -109,8 +109,8 @@ TCLIBDIR =
           PATHSEP = /
             SHELL = /bin/sh -e
 
-              TOP = ..
-      CURRENT_DIR = fig2dev
+              TOP = .
+      CURRENT_DIR = .
 
             IMAKE = imake
            DEPEND = gccmakedep
@@ -827,16 +827,30 @@ CXXPROJECT_DEFINES =
 # notice remain intact.
 
 # ******
+# If you want to install fig2dev in a directory other than the default X11 binary
+# directory, uncomment the following "BINDIR" line and change the path
+# to the full path of the directory where you want fig2dev to be installed.
+# Also, you may have to uncomment and redefine MKDIRHIER because "make" looks
+# for it relative to the BINDIR variable.
+#
+# BINDIR = /usr/bin/X11
+# MKDIRHIER = /bin/sh /usr/bin/X11/mkdirhier -p
+
+# MANDIR tells where the standard man pages should go (no need to change it
+# if you want the man pages installed in the standard place on your system
+# MANDIR = $(MANSOURCEPATH)$(MANSUFFIX)
+
+# ******
 # You should point XFIGLIBDIR to the same directory you did when you compiled
 # and installed xfig.
 
 XFIGLIBDIR =	/usr/local/lib/X11/xfig
 
 # ******
-# If your system has the strerror() function (doesn't have sys_errlist) then
-# comment out NEED_STRERROR with an # comment.
+# If your system doesn't have the strerror() function (has sys_errlist) then
+# uncomment NEED_STRERROR.
 
-NEED_STRERROR = -DNEED_STRERROR
+# NEED_STRERROR = -DNEED_STRERROR
 
 # The following probably only applies to Windows 9x/NT:
 # If your system can open files in text and binary modes and has the
@@ -864,10 +878,11 @@ RGB = $(LIBDIR)/rgb.txt
 # Uncomment the #define for USEPNG if you want to be able to import
 # PNG (Portable Network Graphics) files.
 
-# Redefine the following if your PNG library and/or include file
-# are in different places
+# Redefine the following if your PNG library, zlib library and/or include
+# file are in different places
 
 PNGLIBDIR = $(USRLIBDIR)
+ZLIBDIR = $(USRLIBDIR)
 PNGINC = -I/usr/include/X11
 
 # ****************
@@ -926,18 +941,7 @@ DDDVIPS = -DDVIPS
 
 I18N_DEFS = -DI18N
 FIG2DEV_LIBDIR = /usr/local/lib/fig2dev
-I18N_DEV_DEFS = $(I18N_DEFS) -DFIG2DEV_LIBDIR=\\\"$(FIG2DEV_LIBDIR)\\\"
-
-install::
-	[ -d $(DESTDIR)$(FIG2DEV_LIBDIR) ] || mkdir $(DESTDIR)$(FIG2DEV_LIBDIR)
-	$(INSTALL) -c dev/japanese.ps $(DESTDIR)$(FIG2DEV_LIBDIR)
-	( cd $(DESTDIR)$(FIG2DEV_LIBDIR); 	  rm -f ja.ps ja_JP.ps ja_JP.ujis.ps ja_JP.eucJP.ps ja_JP.EUC.ps; 	  $(LN) japanese.ps ja.ps; $(LN) japanese.ps ja_JP.ps; 	  $(LN) japanese.ps ja_JP.ujis.ps; $(LN) japanese.ps ja_JP.eucJP.ps; 	  $(LN) japanese.ps ja_JP.EUC.ps )
-
-	$(INSTALL) -c  dev/korean.ps $(DESTDIR)$(FIG2DEV_LIBDIR)
-	( cd $(DESTDIR)$(FIG2DEV_LIBDIR); 	  rm -f ko.ps ko_KR.ps ko_KR.eucKR.ps ko_KR.EUC.ps; 	  $(LN) korean.ps ko.ps; $(LN) korean.ps ko_KR.ps; 	  $(LN) korean.ps ko_KR.eucKR.ps; $(LN) korean.ps ko_KR.EUC.ps )
-
-	$(INSTALL) -c  dev/cs_CZ.ps $(DESTDIR)$(FIG2DEV_LIBDIR)
-	( cd $(DESTDIR)$(FIG2DEV_LIBDIR); 	  rm -f hr_HR.ps hu_HU.ps pl_PL.ps ro_RO.ps sk_SK.ps sl_SI.ps; 	  $(LN) cs_CZ.ps hr_HR.ps; $(LN) cs_CZ.ps hu_HU.ps; 	  $(LN) cs_CZ.ps ro_RO.ps; $(LN) cs_CZ.ps pl_PL.ps; 	  $(LN) cs_CZ.ps sk_SK.ps; $(LN) cs_CZ.ps sl_SI.ps )
+I18N_DEV_DEFS = $(I18N_DEFS) -DFIG2DEV_LIBDIR=$(FIG2DEV_LIBDIR) -DFIG2DEV_LIBDIR_STR=\\\"$(FIG2DEV_LIBDIR)\\\"
 
 # **************************************************************
 # *** You shouldn't have to change anything below this point ***
@@ -946,16 +950,16 @@ install::
 DIR_DEFS=	-DBITMAPDIR=\\\"$(DESTDIR)$(XFIGLIBDIR)/bitmaps\\\"
 
 DUSEPNG = -DUSE_PNG
-PNGLIBS = -L$(PNGLIBDIR) -lpng -lz
+PNGLIBS = -L$(PNGLIBDIR) -lpng -L$(ZLIBDIR) -lz
 
 DUSEXPM = -DUSE_XPM
 XPMLIBS = -L$(XPMLIBDIR) -lXpm -lX11
 
 DEFINES = $(NEED_STRERROR) $(HAVE_NO_STRCASECMP) $(HAVE_NO_STRNCASECMP) $(DDNFSS) $(USEINLINE) 	$(I18N_DEFS) $(HAVE_SETMODE) $(DUSEPNG) $(DUSEXPM) $(PNGINC) $(XPMINC)
 
-IMAKE_DEFINES = $(DUSEPNG) $(DUSEXPM)
+IMAKE_DEFINES = $(DUSEPNG) $(DUSEXPM) $(I18N_DEV_DEFS)
 
-DEVDEFINES = $(DUSEPNG) $(DUSEXPM) $(XPMINC) $(DDNFSS) $(DDA4) 		$(DDLATEX2E_GRAPHICS) $(DDEPSFIG) $(DDIBMGEC) $(DDDVIPS) $(I18N_DEV_DEFS)
+DEVDEFINES = $(DUSEPNG) $(DUSEXPM) $(PNGINC) $(XPMINC) $(DDNFSS) $(DDA4) 		$(DDLATEX2E_GRAPHICS) $(DDEPSFIG) $(DDIBMGEC) $(DDDVIPS) $(I18N_DEV_DEFS)
 
 DEVDIR = dev
 
@@ -974,9 +978,9 @@ DEPLIBS = $(LIBTRANSFIG)
 GETOPTC=   getopt.c
 GETOPTO=   getopt.o
 
-SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c colors.c trans_spline.c 	free.c read.c read1_3.c latex_line.c $(STRSTRC) $(GETOPTC)
+SRCS = fig2dev.c psfonts.c iso2tex.c arrow.c bound.c colors.c trans_spline.c 	free.c read.c read1_3.c latex_line.c localmath.c $(STRSTRC) $(GETOPTC)
 
-OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o colors.o trans_spline.o 	free.o read.o read1_3.o latex_line.o $(STRSTRO) $(GETOPTO)
+OBJS = fig2dev.o psfonts.o iso2tex.o arrow.o bound.o colors.o trans_spline.o 	free.o read.o read1_3.o latex_line.o localmath.o $(STRSTRO) $(GETOPTO)
 
 fig2dev: $(DEPLIBS)
 
