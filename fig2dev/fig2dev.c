@@ -460,7 +460,7 @@ help_msg()
     printf("                Available languages are:");
     for (i=0; *drivers[i].name; i++) {
 	if (i%9 == 0)
-	printf("\n\t\t  ");
+	    printf("\n\t\t  ");
 	printf("%s ",drivers[i].name);
     }
     printf("\n");

@@ -3,9 +3,45 @@ Changes to Transfig/fig2dev
 Version 3.2
 ===============================================================================
 
+Patchlevel 5a (Jun 1, 2009)
+
+NEW FEATURES:
+	o 22 new arrowhead types
+	o HTML map now produces reference to .png file instead of .gif
+
+BUGS FIXED:
+	o CreationDate in pictex output was either wrong or caused segfault
+	o bugs fixed in SVG Driver:
+	  - blue component of shaded colors was always zero
+	  - line protruding beyond arrowhead on long arrows
+	  - wrong position of back arrowhead on double-headed arrows
+	  - fill patterns either missing or using incorrect linewidth
+	  - lowercase greek phi did not match its X11 counterpart
+	  from Martin Kroeker
+	o dubious printf(j++,j++) in MP driver
+	o missing #includes in MP driver
+	o added !defined(__FreeBSD) to fig2dev.h def for sys_nerr and errno
+	  From Eric Scott
+	o added -quiet options to giftopnm and ppmtopcs in reading GIF files
+	  From Eric Scott
+	o Typo in LaTeX driver when generating arc-box. "iut" should be "put"
+	o extraneous stroke:black in svg header removed along with stroke color
+	  for text, since the text fill color does the whole job
+	o fig2dev produces more correctly structured PostScript.  Files get printed via
+	  CUPS on PostScript printers.  When viewing a .ps-file in gv you can go to the
+	  last page and back and to the last page again without getting PostScript errors.
+	  From Ronald Lembcke
+	o Renamed the macro \SetFigFont to \SetFigFontNFSS if NFSS is #defined to alleviate
+	  some problems. From Roland Rosenfeld.
+	o Grid in metric mode was incorrectly scaled
+	o Removes any %EOF or %%EOF from imported EPS pictures before exporting.  
+	  Also doesn't add %EOF when importing JPEG file now.
+	o Missing call to get local time before converting to string in genpictex.c
+
+-------------------------------------
 Patchlevel 5 (Feb 27, 2007)
 
-NEW FEATURES
+NEW FEATURES:
 	o SVG driver adds color and pattern filling to arcs
 	  from Martin Kroeker
 

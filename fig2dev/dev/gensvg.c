@@ -2,7 +2,7 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1999 by T. Sato
  * Parts Copyright (c) 2002 by Anthony Starks
- * Parts Copyright (c) 2002,2003,2004,2005 by Martin Kroeker
+ * Parts Copyright (c) 2002,2003,2004,2005,2006 by Martin Kroeker
  * Parts Copyright (c) 2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
@@ -118,6 +118,16 @@
  *  MK 26-Feb-06: Added support for dashed circles, ellipses and arcs.
  *		  Dash/gap lengths are now drawn according to style_val. 
  *		  Fixed several glitches uncovered by splint.
+ *  MK 22-Apr-06: Corrected blue component of shaded colors (was always 
+ *		  zero due to missing parentheses around typecast). Corrected
+ *		  arrowheads of large arrows by adding an increased miterlimit.
+ * 		  Corrected position of backward arrowheads on polylines with
+ *		  both forward and backward arrows.
+ *  MK  2-Jul-06: Patterns do not inherit their line width from the parent object
+ *                (which may be zero if no visible boundary is desired), so always 
+ *                use linewidth:1 
+ *  MK 22-Oct-06: Changed unicode variant of lowercase phi to match its X11 Symbol 
+ *                counterpart.
  *  *********************************************************************************
  *  W3 recommendations for 
  *  1.3 SVG Namespace, Public Identifier and System Identifier
@@ -175,7 +185,7 @@ static unsigned int symbolchar[256]=
 0x03A6,0x0393,0x0397,0x0399,0x03D1,0x039A,0x039B,0x039C,0x039D,0x039F,0x03A0,
 0x0398,0x03A1,0x03A3,0x03A4,0x03A5,0x03C2,0x03A9,0x039E,0x03A8,0x0396,
 0x005B,0x2234,0x005D,0x22A5,0x005F,0xF8E5,0x03B1,0x03B2,0x03C7,0x03B4,0x03B5,
-0x03C6,0x03B3,0x03B7,0x03B9,0x03D5,0x03BA,0x03BB,0x03BC,0x03BD,0x03BF,
+0x03D5 /*0x03C6*/,0x03B3,0x03B7,0x03B9,0x03D5,0x03BA,0x03BB,0x03BC,0x03BD,0x03BF,
 0x03C0,0x03B8,0x03C1,0x03C3,0x03C4,0x03C5,0x03D6,0x03C9,0x03BE,0x03C8,0x03B6,
 0x007B,0x007C,0x007D,0x223C,0,0,0,0,0,0,0,0,0, 
 0,0,0,0,0,0,0,0,0,0, 
@@ -295,11 +305,10 @@ rgbFillVal (int colorIndex, int area_fill)
 
       rgb = ((r &0xff) << 16) + ((g&0xff) << 8) + (b&0xff);
       	}
-      	else
+      	else 
       	    rgb = (((int) ((area_fill / 20.) * ((rgb & ~0xFFFF) >> 16)) << 16) +
       		   ((int) ((area_fill / 20.) * ((rgb & 0xFF00) >> 8)) << 8)
-      		   + ((int) (area_fill / 20.) * (rgb & ~0xFFFF00)));
-
+      		   + ((int) ((area_fill / 20.) * (rgb & ~0xFFFF00))) );
     }
     else {
       	if (colorIndex == 0 || colorIndex == DEFAULT)
@@ -393,7 +402,7 @@ gensvg_start (objects)
 
     if (objects->comments)
 	print_comments ("<desc>", objects->comments, "</desc>");
-    fprintf (tfp, "<g style=\"stroke-width:.025in; stroke:black; fill:none\">\n");
+    fprintf (tfp, "<g style=\"stroke-width:.025in; fill:none\">\n");
     /* only define the patterns if one is used */
 
 
@@ -412,7 +421,7 @@ gensvg_line (l)
 {
 int px,py,firstpoint;
 int px2,py2,width,height,rotation;
-double dx,dy,len,cosa,sina;
+double dx,dy,len,cosa,sina,cosa1,sina1;
 double hl;
 
 
@@ -486,8 +495,8 @@ double hl;
 
     if (l->fill_style > 40) { /*repeat object to paint pattern over fill */
 	
-	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:%d\" >\n",
-	rgbColorVal(l->pen_color), (int)ceil (linewidth_adj(l->thickness)*mag) );
+	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
+	rgbColorVal(l->pen_color));
 	generate_tile(l->fill_style - 40);
 	fprintf (tfp, "</g>\n");	
 	
@@ -520,14 +529,14 @@ double hl;
 		dx=(double)(p->x-px);
 		dy=(double)(p->y-py);
 		len=sqrt(dx*dx+dy*dy);
-		sina= dy/len;
-		cosa= dx/len;
+		sina1= dy/len;
+		cosa1= dx/len;
 		if (l->back_arrow->type != 0 )
 		hl= l->back_arrow->ht;
 		else
                   hl = 1.1 * l->thickness;
-		px += (int)(hl * cosa +0.5);
-		py += (int)(hl * sina +0.5);
+		px += (int)(hl * cosa1 +0.5);
+		py += (int)(hl * sina1 +0.5);
 		firstpoint=0;	
 		}
 	fprintf(tfp, "%d,%d\n", (int) (px*mag), (int) (py*mag));
@@ -571,8 +580,8 @@ double hl;
 
     if (l->fill_style > 40) { /*repeat object to paint pattern over fill */
 
-	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:%d\" >\n",
-	rgbColorVal(l->pen_color), (int)ceil (linewidth_adj(l->thickness)*mag) );
+	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
+	rgbColorVal(l->pen_color) );
 	generate_tile(l->fill_style - 40);
 	fprintf (tfp, "</g>\n");	
 
@@ -600,8 +609,8 @@ double hl;
     svg_arrow(l, l->for_arrow, l->pen_color);
     p = l->points;
     if (!p) return; /*safeguard against old, buggy fig files*/
-    arrowx2=p->x-(int)(l->thickness*cosa);
-    arrowy2=p->y-(int)(l->thickness*sina);
+    arrowx2=p->x - l->thickness*cosa1  ;
+    arrowy2=p->y - l->thickness*sina1 ;
     p = p->next;
     if (!p) return; /*safeguard against old, buggy fig files*/
     arrowx1 = p->x;
@@ -680,8 +689,8 @@ gensvg_arc (a)
 
 	if (a->fill_style > 40) {
 
-	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:%d\" >\n",
-	rgbColorVal(a->pen_color), (int)ceil (linewidth_adj(a->thickness)*mag) );
+	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
+	rgbColorVal(a->pen_color) );
 	generate_tile(a->fill_style - 40);
 	fprintf (tfp, "</g>\n");	
 	
@@ -738,8 +747,8 @@ gensvg_ellipse (e)
 
 	if (e->fill_style > 40) {
 
-	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:%d\" >\n",
-	rgbColorVal(e->pen_color), (int)ceil (linewidth_adj(e->thickness)*mag) );
+	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
+	rgbColorVal(e->pen_color) );
 	generate_tile(e->fill_style - 40);
 	fprintf (tfp, "</g>\n");	
 	
@@ -766,8 +775,8 @@ gensvg_ellipse (e)
 
 	if (e->fill_style > 40) {
 
-	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:%d\" >\n",
-	rgbColorVal(e->pen_color), (int)ceil (linewidth_adj(e->thickness)*mag) );
+	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
+	rgbColorVal(e->pen_color) );
 	generate_tile(e->fill_style - 40);
 	fprintf (tfp, "</g>\n");	
 	fprintf (tfp, "<ellipse transform=\"translate(%d,%d) rotate(%.8lf)\" rx=\"%d\" ry=\"%d\"\n style=\"",
@@ -802,9 +811,9 @@ gensvg_text (t)
 		 x, y, degrees (t->angle));
 	x = y = 0;
     }
-    fprintf (tfp, "<text xml:space=\"preserve\" x=\"%d\" y=\"%d\" stroke=\"#%6.6x\" fill=\"#%6.6x\"  font-family=\"%s\" "\
+    fprintf (tfp, "<text xml:space=\"preserve\" x=\"%d\" y=\"%d\" fill=\"#%6.6x\"  font-family=\"%s\" "\
 	     "font-style=\"%s\" font-weight=\"%s\" font-size=\"%d\" text-anchor=\"%s\">",
-	     x, y, rgbColorVal (t->color), rgbColorVal (t->color), family[t->font / 4],
+	     x, y, rgbColorVal (t->color), family[t->font / 4],
 	     ( (t->font % 2 == 0 || t->font >31) ? "normal" : "italic"),
 	     ( (t->font % 4 < 2 || t->font >31) ? "normal" : "bold"), (int) (ceil (t->size * 12 * mag)),
 	     anchor[t->type]);
@@ -904,7 +913,7 @@ svg_arrow(F_line *obj, F_arrow *arrow, int pen_color)
       }
       if (arrow->type > 0)
           fprintf (tfp, "\n");
-      fprintf (tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;\n",
+      fprintf (tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;stroke-miterlimit:8;\n",
       	 rgbColorVal (pen_color), (int) ceil (linewidth_adj((int)arrow->thickness) * mag));
       if (arrow->type > 0) {
 	    if (arrow->style == 0 && nfillpoints == 0)
@@ -923,7 +932,7 @@ svg_arrow(F_line *obj, F_arrow *arrow, int pen_color)
 			     (int) (fillpoints[i].y * mag));
 		    }
 		    fprintf (tfp, "Z\n");
-		    fprintf (tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;\n",
+		    fprintf (tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;stroke-miterlimit:8;\n",
 			 rgbColorVal (pen_color), (int) ceil (linewidth_adj((int)arrow->thickness) * mag));
 		    fprintf (tfp, "fill:#%6.6x;\"/>\n", rgbColorVal (pen_color));
 		}

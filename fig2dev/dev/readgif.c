@@ -197,7 +197,7 @@ read_gif(filename,filetype,pic,llx,lly)
 	/* make name for temp output file */
 	sprintf(pcxname, "%s/%s%06d.pix", TMPDIR, "xfig-pcx", getpid());
 	/* make command to convert gif to pcx into temp file */
-	sprintf(buf, "giftopnm | ppmtopcx > %s 2> /dev/null", pcxname);
+	sprintf(buf, "giftopnm -quiet | ppmtopcx -quiet > %s 2> /dev/null", pcxname);
 	if ((giftopcx = popen(buf,"w" )) == 0) {
 	    fprintf(stderr,"Cannot open pipe to giftoppm\n");
 	    return 0;

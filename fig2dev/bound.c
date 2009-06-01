@@ -72,7 +72,6 @@ static struct _arrow_shape arrow_shapes[NUM_ARROW_TYPES] = {
 		   { 5, 1, 0, True, True, False, 1.5, {{-0.75,0.5},{0,0},{-0.75,-0.5},{-1.0,0},{-0.75,0.5}}},
 		   /* type 3b filled convex spearhead */
 		   { 5, 1, 0, True, True, False, 1.5, {{-0.75,0.5},{0,0},{-0.75,-0.5},{-1.0,0},{-0.75,0.5}}},
-#ifdef NEWARROWTYPES
 		   /* type 4a diamond */
 		   { 5, 1, 0, True, True, False, 1.15, {{-0.5,0.5},{0,0},{-0.5,-0.5},{-1.0,0},{-0.5,0.5}}},
 		   /* type 4b filled diamond */
@@ -120,7 +119,6 @@ static struct _arrow_shape arrow_shapes[NUM_ARROW_TYPES] = {
 		   { 4, 0, 0, True, True, False, -1.0, {{0,0.5},{-1.0,0.5},{-1.0,-0.5},{0,-0.5}}},
 		   /* type 14b backward two-prong fork */
 		   { 4, 1, 0, True, True, False, 0.0, {{-1.0,0.5,},{0,0.5},{0,-0.5},{-1.0,-0.5}}},
-#endif /* NEWARROWTYPES */
 		};
 
 void

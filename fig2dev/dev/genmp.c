@@ -129,6 +129,8 @@
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
+#include "setfigfont.h"
+#include "bound.h"
 
 /*
  *  Definitions
@@ -524,7 +526,6 @@ void genmp_arrowheads(obj, objtype)
 	int	objtype;
 {
     double      x1,x2,x3,y1,y2,y3,c,d;
-    int	        i;
     int         from_x, from_y, to_x, to_y;
     F_point     *p, *old_p;
     F_control   *ctl;
@@ -833,12 +834,14 @@ F_spline *s;
 	         y_off(fig2bp(p->y)));
 	      p = p->next;
 	      for ( ; p->next != NULL; ) {  /* 3 or more points */
-	         fprintf(tfp,"    p%d..controls c%d and c%d..\n",i++,j++,j++);
+	         fprintf(tfp,"    p%d..controls c%d and c%d..\n",i++,j,j+1);
+	         j += 2;
 	         p = p->next;
 	      }
-	      if (s->type == 1)     /* closed spline */
-	         fprintf(tfp,"    p%d..controls c%d and c%d..cycle;\n",i++,j++,j++);
-	      else
+	      if (s->type == 1) {     /* closed spline */
+	         fprintf(tfp,"    p%d..controls c%d and c%d..cycle;\n",i++,j,j+1);
+	         j += 2;
+	      } else
 	         fprintf(tfp,"    p%d..(%.2lf,%.2lf);\n",i,
 	            fig2bp(p->x),y_off(fig2bp(p->y)));
 	      if (s->fill_style != -1) {   /* Filled? */

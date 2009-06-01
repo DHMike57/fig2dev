@@ -205,7 +205,6 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
 	    ASCIIHexEncode(JPEG->fp, PSfile);
 	    break;
     }
-    fprintf(PSfile, "\n%%%%EOF\n");
 
     /* close the jpeg file */
     close_picfile(JPEG->fp, filtype);

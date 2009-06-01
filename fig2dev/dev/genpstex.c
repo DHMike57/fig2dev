@@ -85,7 +85,6 @@ void genpstex_t_start(objects)
 F_compound	*objects;
 {
 	/* Put PostScript Image if any*/
-fprintf(stderr,"here pstex_file[0] = %d\n",pstex_file[0]);
         if (pstex_file[0] != '\0') {
 		fprintf(tfp, "\\begin{picture}(0,0)%%\n");
 /* newer includegraphics directive suggested by Stephen Harker 1/13/99 */
@@ -98,7 +97,6 @@ fprintf(stderr,"here pstex_file[0] = %d\n",pstex_file[0]);
 #else
 		fprintf(tfp, "\\special{psfile=%s}%%\n",pstex_file);
 #endif
-fprintf(stderr,"end picture\n");
 		fprintf(tfp, "\\end{picture}%%\n");
 	}
         genlatex_start(objects);

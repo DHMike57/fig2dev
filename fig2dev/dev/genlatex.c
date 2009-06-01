@@ -447,7 +447,7 @@ double	val;
 		"\\put(%3d,%3d){\\oval(%3d,%3d)[bl]}\n"
 		"\\put(%3d,%3d){\\oval(%3d,%3d)[tl]}\n"
 		"\\put(%3d,%3d){\\oval(%3d,%3d)[br]}\n"
-		"\\iut(%3d,%3d){\\oval(%3d,%3d)[tr]}\n",
+		"\\put(%3d,%3d){\\oval(%3d,%3d)[tr]}\n",
 		llx+radius,lly+radius,radius2,radius2,
 		llx+radius,ury-radius,radius2,radius2,
 		urx-radius,lly+radius,radius2,radius2,

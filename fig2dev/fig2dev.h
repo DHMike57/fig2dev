@@ -213,7 +213,7 @@ struct Cmap {
 #endif /* MAXPATHLEN */
 #endif /* PATH_MAX */
 
-#if ( !defined(__NetBSD__) && !defined(__DARWIN__))
+#if ( !defined(__NetBSD__) && !defined(__DARWIN__) && !defined(__FreeBSD) )
 extern int		sys_nerr, errno;
 #endif
 

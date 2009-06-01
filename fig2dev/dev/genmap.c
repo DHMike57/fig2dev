@@ -172,7 +172,7 @@ genmap_start(objects)
   fprintf(tfp, "<P>You can copy the following lines into your HTML document.\n");
   fprintf(tfp, "You may need to edit the name of the image file in the first line.</P>\n");
   fprintf(tfp, "\n");
-  fprintf(tfp, "<IMG SRC=\"%s.gif\" USEMAP=\"#%s\">\n", basename, basename);
+  fprintf(tfp, "<IMG SRC=\"%s.png\" USEMAP=\"#%s\">\n", basename, basename);
   fprintf(tfp, "<MAP NAME=\"%s\">\n", basename);
 
   ref = is_link(objects->comments);

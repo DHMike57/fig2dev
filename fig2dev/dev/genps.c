@@ -184,31 +184,6 @@ char	*fill_def[NUMPATTERNS] = {
 		FILL_PAT21,FILL_PAT22,
 	};
 
-int	patmat[NUMPATTERNS][2] = {
-	{16,  -8},
-	{16,  -8},
-	{16,  -8},
-	{16, -16},
-	{16, -16},
-	{16, -16},
-	{16,  16},
-	{16, -16},
-	{16,  -8},
-	{ 8, -16},
-	{16, -16},
-	{24, -24},
-	{24, -24},
-	{24, -24},
-	{24, -24},
-	{16,  -8},
-	{ 8,  -8},
-	{16, -16},
-	{30, -18},
-	{16, -16},
-	{16,  -8},
-	{ 8, -16},
-	};
-
 static double	scalex, scaley;
 static double	origx, origy;
 static double	userorigx, userorigy;
@@ -621,11 +596,11 @@ F_compound	*objects;
 	who = getpwuid(getuid());
 	if (gethostname(host, sizeof(host)) == -1)
 	    (void)strcpy(host, "unknown-host!?!?");
-	(void) time(&when);
 	fprintf(tfp, "%%%%Title: %s\n",
 		(name? name: ((from) ? from : "stdin")));
 	fprintf(tfp, "%%%%Creator: %s Version %s Patchlevel %s\n",
 		prog, VERSION, PATCHLEVEL);
+	(void) time(&when);
 	fprintf(tfp, "%%%%CreationDate: %s", ctime(&when));
 	if (who)
 	   fprintf(tfp, "%%%%For: %s@%s (%s)\n",
@@ -749,6 +724,7 @@ F_compound	*objects;
 	  }
 	}
 
+	fprintf(tfp,"%%%%BeginProlog\n");
 	if (pats_used)
 		fprintf(tfp,"/MyAppDict 100 dict dup begin def\n");
 	fprintf(tfp, "%s", BEGIN_PROLOG1);
@@ -757,13 +733,6 @@ F_compound	*objects;
 	/* define the user colors */
 	genps_usr_colors();
 	fprintf(tfp, "\nend\n");
-
-	/* must specify translation/rotation before definition of fill patterns */
-	fprintf(tfp, "save\n");
- 
-	/* now make the clipping path for the BoundingBox */
-	fprintf(tfp, "newpath %d %d moveto %d %d lineto %d %d lineto %d %d lineto closepath clip newpath\n",
-		cliplx,clipuy, cliplx,cliply, clipux,cliply, clipux,clipuy);
 
 	/* fill the Background now if specified */
  	if (bgspec) {
@@ -785,12 +754,6 @@ F_compound	*objects;
 
 	/* translate (in multi-page mode this is done at end of this proc) */
 	/* (rotation and y flipping is done in %%BeginPageSetup area */
-	if (!multi_page) {
-	    fprintf(tfp, "%.1f %.1f translate\n", origx, origy);
-	    if (epsflag)
-		/* increasing y goes down */
-		fprintf(tfp, "1 -1 scale\n");
-	}
 	if (pats_used) {
 	    int i;
 	    /* only define the patterns that are used */
@@ -838,25 +801,53 @@ F_compound	*objects;
 #endif /* I18N */
 	
 	fprintf(tfp, "%s\n", END_PROLOG);
+	
+	fprintf(tfp, "/pageheader {\n");
+
+	/* must specify translation/rotation before definition of fill patterns */
+	fprintf(tfp, "save\n");
+ 
+	/* now make the clipping path for the BoundingBox */
+	fprintf(tfp, "newpath %d %d moveto %d %d lineto %d %d lineto %d %d lineto closepath clip newpath\n",
+		cliplx,clipuy, cliplx,cliply, clipux,cliply, clipux,clipuy);
+	if (!multi_page) {
+	    fprintf(tfp, "%.1f %.1f translate\n", origx, origy);
+	    if (epsflag)
+		/* increasing y goes down */
+		fprintf(tfp, "1 -1 scale\n");
+	}
 
 	fprintf(tfp, "$F2psBegin\n");
 
 	fprintf(tfp, "10 setmiterlimit\n");	/* make like X server (11 degrees) */
 	fprintf(tfp, "0 slj 0 slc\n");		/* set initial join style to miter and cap to butt */
+	if( !multi_page) 
+	    fprintf(tfp, " %.5f %.5f sc\n", scalex, scaley );
+	fprintf(tfp,"} bind def\n");
+
+
+	fprintf(tfp,"/pagefooter {\n");
+	fprintf(tfp,"$F2psEnd\n");
+	fprintf(tfp,"restore\n");
+	fprintf(tfp,"} bind def\n");
+
 
  	if (multi_page) {
 	    /* reset the matrix for multipage mode */
 	    fprintf(tfp, "initmatrix\n");
 	} else {
-	    fprintf(tfp, " %.5f %.5f sc\n", scalex, scaley );
+	    fprintf(tfp,"%%%%EndProlog\n");
 	    if (!epsflag) {
 		fprintf(tfp,"%%%%Page: 1 1\n");
 		fprintf(tfp, "%%%%BeginPageSetup\n");
+		fprintf(tfp,"pageheader\n");
 		if (landscape)
 		    fprintf(tfp, " 90 rotate\n");
 		/* increasing y goes down */
 		fprintf(tfp, "1 -1 scale\n");
 		fprintf(tfp, "%%%%EndPageSetup\n");
+	    } else {
+		fprintf(tfp,"pageheader\n");
 	    }
 	}
 
@@ -908,6 +899,9 @@ genps_grid(major, minor)
 
 	fprintf(tfp,"%% Grid\n");
 	fprintf(tfp,"0.5 setgray\n");
+	/* adjust scale for difference in xfig/actual scale in metric mode */
+	if (metric)
+	    fprintf(tfp,"gs 450 472 div dup scale\n");
 	/* first the vertical lines */
 	fprintf(tfp,"%% Vertical\n");
 	for (x = lx; x <= ux; x += m) {
@@ -956,6 +950,9 @@ genps_grid(major, minor)
 	    }
 	    draw_gridline(lx, y, ux, y);
 	}
+	/* restore original scale */
+	if (metric)
+	    fprintf(tfp,"gr\n");
 }
 
 static void
@@ -978,6 +975,7 @@ genps_end()
 
     /* for multipage, translate and output objects for each page */
     if (multi_page) {
+	fprintf(tfp,"%%%%EndProlog\n");
 	page = 1;
 	if (overlap)
 	    mul = 0.9;
@@ -990,6 +988,7 @@ genps_end()
 	    for (dx=0; (dx < (furx-w*0.1)) || (page == 1); dx += w*mul) {
 		fprintf(tfp, "%%%%Page: %d %d\n",page,page);
 
+		fprintf(tfp, "pageheader\n");
 		/* do page rotation here */
 		fprintf(tfp, "%%%%BeginPageSetup\n");
 		    if (landscape) {
@@ -1011,6 +1010,7 @@ genps_end()
 		    fprintf(tfp, "\n");
 		}
 		fprintf(tfp, "gr\n");
+		fprintf(tfp, "pagefooter\n");
 		fprintf(tfp, "showpage\n");
 		page++;
 	    }
@@ -1019,14 +1019,11 @@ genps_end()
     /* Close the (last) figure */
     do_split(-10);
 
-    fprintf(tfp, "$F2psEnd\n");
-    fprintf(tfp, "rs\n");
-
-    if (pats_used)
-	fprintf(tfp, "end\n");		/* close off MyAppDict */
     /* add showpage if requested */
-    if (!multi_page)
+    if (!multi_page) {
+	fprintf(tfp, "pagefooter\n");
 	fprintf(tfp, "showpage\n");
+    }
 
     /* does the user want an ASCII or TIFF preview? */
     if (tiffpreview || asciipreview) {
@@ -1100,6 +1097,8 @@ genps_end()
     }
     /* put any cleanup between %%Trailer and %EOF */
     fprintf(tfp, "%%%%Trailer\n");
+    if (pats_used)
+	fprintf(tfp, "end\n");		/* close off MyAppDict */
     /* final DSC comment for eps output (EOF = end of document) */
     fprintf(tfp, "%%EOF\n");
 
@@ -1258,6 +1257,21 @@ double	w;
 	}
 }
 
+static int
+removestr(char *buf, char *str, int *len)
+{
+	int	slen = strlen(str)-1;
+	int	i, found=0;
+	char	*cp = buf;
+
+	while (cp=strstr(buf,str)) {
+		*len = *len - slen;
+	    	memmove(cp, cp+slen, *len-(cp-buf));
+		*(buf+*len) = '\0';
+		found = 1;
+	}
+	return found;
+}
 
 void
 genps_line(l)
@@ -1623,7 +1637,7 @@ F_line	*l;
 
 		/* EPS file */
 		} else if (l->pic->subtype == P_EPS) {
-		    int i;
+		    int len;
 		    fprintf(tfp, "%% EPS file follows:\n");
 		    if ((picf=open_picfile(l->pic->file, &filtype, True, realname)) == NULL) {
 			fprintf(stderr, "Unable to open EPS file '%s': error: %s\n",
@@ -1634,8 +1648,13 @@ F_line	*l;
 		    /* use read/write() calls in case of binary data! */
 		    /* but flush buffer first */
 		    fflush(tfp);
-		    while ((i = read(fileno(picf),buf,sizeof(buf))) > 0) {
-			write(fileno(tfp),buf,i);
+		    while ((len = read(fileno(picf),buf,sizeof(buf))) > 0) {
+		    	/* remove any %EOF or %%EOF in file */
+		    	while (removestr(buf,"\n%EOF\n",&len) != 0)
+			    ;
+		    	while (removestr(buf,"\n%%EOF\n",&len) != 0)
+			    ;
+			write(fileno(tfp),buf,len);
 		    }
 		    close_picfile(picf,filtype);
 		}

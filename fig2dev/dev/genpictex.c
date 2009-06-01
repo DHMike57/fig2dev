@@ -134,6 +134,7 @@ F_compound	*objects;
 
 	/* announce filename, version etc */
 
+	(void) time(&when);
 	fprintf(tfp, "%%Title: %s\n",
 		(name? name: ((from) ? from : "stdin")));
 	fprintf(tfp, "%%%%Created by: %s Version %s Patchlevel %s\n",
@@ -631,7 +632,7 @@ F_text	*t;
 	  baselineskip = (texsize * 1.2);
 
 #ifdef NFSS
- 	  fprintf(tfp, "\\put{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
+ 	  fprintf(tfp, "\\put{\\SetFigFontNFSS{%d}{%.1f}{%s}{%s}{%s}",
 				 texsize, baselineskip,
 				 TEXFAMILY(t->font),TEXSERIES(t->font),TEXSHAPE(t->font));
 #else
