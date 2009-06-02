@@ -79,6 +79,7 @@ Boolean		tiffcolor = False;	/* color or b/w TIFF preview */
 static char	tmpeps[PATH_MAX];	/* temp filename for eps when adding tiff preview */
 static char	tmpprev[PATH_MAX];	/* temp filename for ASCII or tiff preview */
 
+static Boolean	anonymous = False;
 int		pagewidth = -1;
 int		pageheight = -1;
 int		width, height;
@@ -286,6 +287,10 @@ char *optarg;
 	  case 's':			/* default font size */
 	  case 'Z':			/* max dimension */
 		break;
+
+	  case 'a':			/* anonymous (don't output user name) */
+	      anonymous = True;
+	      break;
 
 	  case 'A':			/* add ASCII preview */
 		asciipreview = True;
@@ -593,18 +598,20 @@ F_compound	*objects;
 	else
 	    fprintf(tfp, "%%!PS-Adobe-2.0\n");		/* PostScript magic strings */
 
-	who = getpwuid(getuid());
 	if (gethostname(host, sizeof(host)) == -1)
 	    (void)strcpy(host, "unknown-host!?!?");
 	fprintf(tfp, "%%%%Title: %s\n",
-		(name? name: ((from) ? from : "stdin")));
+	    (name? name: ((from) ? from : "stdin")));
 	fprintf(tfp, "%%%%Creator: %s Version %s Patchlevel %s\n",
 		prog, VERSION, PATCHLEVEL);
 	(void) time(&when);
 	fprintf(tfp, "%%%%CreationDate: %s", ctime(&when));
-	if (who)
-	   fprintf(tfp, "%%%%For: %s@%s (%s)\n",
+	if ( !anonymous) {
+	    who = getpwuid(getuid());
+	    if (who)
+		fprintf(tfp, "%%%%For: %s@%s (%s)\n",
 			who->pw_name, host, who->pw_gecos);
+	}
 
 	/* calc initial clipping area to size of the bounding box (this is needed
 		for later clipping by arrowheads */

@@ -51,6 +51,7 @@ static int		line_style = SOLID_LINE;
 static char 		*linethick = "1pt";
 static char		*plotsymbol = "\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}";
 static int		cur_thickness = -1;
+static Boolean		anonymous = False;
 
 static void
 genpictex_option(opt, optarg)
@@ -61,8 +62,8 @@ char opt, *optarg;
 	FontSizeOnly = False;
 	switch (opt) {
 
-		case 'a':
-		    fprintf(stderr, "warning: pictex option -a obsolete\n");
+		case 'a':			/* anonymous (don't output user name) */
+		    anonymous = True;
 		    break;
 
 		case 'f':			/* set default text font */
@@ -140,12 +141,14 @@ F_compound	*objects;
 	fprintf(tfp, "%%%%Created by: %s Version %s Patchlevel %s\n",
 		prog, VERSION, PATCHLEVEL);
 	fprintf(tfp, "%%%%CreationDate: %s", ctime(&when));
-	who = getpwuid(getuid());
 	if (gethostname(host, sizeof(host)) == -1)
 	    (void)strcpy(host, "unknown-host!?!?");
-	if (who)
-	   fprintf(tfp, "%%%%User: %s@%s (%s)\n",
+	if ( !anonymous) {
+	    who = getpwuid(getuid());
+	    if (who)
+		fprintf(tfp, "%%%%User: %s@%s (%s)\n",
 			who->pw_name, host, who->pw_gecos);
+	}
 
 	/* print any whole-figure comments prefixed with "% " */
 	if (objects->comments) {

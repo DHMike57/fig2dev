@@ -3,6 +3,12 @@ Changes to Transfig/fig2dev
 Version 3.2
 ===============================================================================
 
+Patchlevel 5b (Jun 2, 2009)
+
+NEW FEATURES:
+	o -a option added to PostScript and PICTeX languages to NOT include user's
+	  login name in output
+
 Patchlevel 5a (Jun 1, 2009)
 
 NEW FEATURES:

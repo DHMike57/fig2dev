@@ -564,10 +564,12 @@ help_msg()
     printf("  -p ext	enables certain PIC extensions (see man pages)\n");
 
     printf("PICTeX Options:\n");
+    printf("  -a		don't output user's login name (anonymous)\n");
     printf("  -E num	set encoding for text translation (0 no translation,\n");
     printf("		  1 ISO-8859-1, 2 ISO-8859-2)\n");
 
     printf("PostScript Options:\n");
+    printf("  -a		don't output user's login name (anonymous)\n");
     printf("  -A		add ASCII (EPSI) preview\n");
     printf("  -b width	specify width of blank border around figure (1/72 inch)\n");
     printf("  -C dummyarg	add color TIFF preview (for Microsoft apps)\n");
