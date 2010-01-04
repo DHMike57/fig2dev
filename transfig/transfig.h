@@ -29,7 +29,7 @@
 /* Warning - if this list is changed the lname[] array in transfig.c must be changed too */
 /* Also, be sure to change MAXLANG if the list extends beyond the current lang */
 
-enum language  {box, cgm, eepic, eepicemu, emf, epic, eps, gif,
+enum language  {box, cgm, eepic, eepicemu, emf, epic, eps, gbx, gif,
 	ibmgl, dxf, jpeg, latex, map, mf, mmp, mp, pcx, pdf, pdftex,
 	pic, pictex, png, ppm, ps, psfig, pstex, ptk, sld, svg,
 	textyl, tiff, tk, tpic, xbm, xpm};

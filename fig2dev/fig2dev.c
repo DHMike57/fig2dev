@@ -589,6 +589,7 @@ help_msg()
     printf("  -z papersize	set the papersize (see man pages for available sizes)\n");
 
     printf("PDF Options:\n");
+    printf("  -a		don't output user's login name (anonymous)\n");
     printf("  -b width	specify width of blank border around figure (1/72 inch)\n");
     printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
     printf("  -g color	background color\n");

@@ -40,7 +40,7 @@ makefile(mk, altfonts, arg_list)
 
   fprintf(mk, "\nall: ");
   for (a = arglist; a; a = a->next)
-    	fprintf(mk, "%s.tex ", a->name);
+    	fprintf(mk, "%s.%s ", a->name, lname[a->tolang]);
   fprintf(mk, "\n");
 
   for (a = arglist; a; a = a->next)
@@ -160,7 +160,7 @@ makefile(mk, altfonts, arg_list)
 
 	}
 
-	putclean(mk, i, "tex" );
+	putclean(mk, i, lname[a->tolang] );
 
 	/* conversion to postscript */
 	if (needps && a->type != i_ps) {

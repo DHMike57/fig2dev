@@ -3,12 +3,21 @@ Changes to Transfig/fig2dev
 Version 3.2
 ===============================================================================
 
+Patchlevel 5c (Jan 4, 2010)
+
+BUGS FIXED:
+	o transfig command was hardwired for "tex" for "make all" directive and
+	  removing files with "make clean" directive in creating Makefile
+
+-------------------------------------
 Patchlevel 5b (Jun 2, 2009)
 
 NEW FEATURES:
 	o -a option added to PostScript and PICTeX languages to NOT include user's
 	  login name in output
+	o Gerber (RS-247-X for CAD drawings for printed circuits) export language from Edward Grace
 
+-------------------------------------
 Patchlevel 5a (Jun 1, 2009)
 
 NEW FEATURES:

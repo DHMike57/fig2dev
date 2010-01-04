@@ -48,6 +48,7 @@ char *lname[] = {
                 "emf",
 		"epic",
 		"eps",
+		"gbx",
 		"gif",
 		"ibmgl",
 		"dxf",

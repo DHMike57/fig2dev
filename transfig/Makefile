@@ -75,8 +75,8 @@ TCLIBDIR =
           PATHSEP = /
             SHELL = /bin/sh -e
 
-              TOP = ..
-      CURRENT_DIR = transfig
+              TOP = .
+      CURRENT_DIR = .
 
             IMAKE = imake
            DEPEND = makedepend

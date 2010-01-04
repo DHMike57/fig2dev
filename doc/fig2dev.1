@@ -50,7 +50,7 @@ tk (as # comments), and pic (as .\\" comments).
 .B "\-L language"
 Set the output graphics language.
 Valid languages are
-\fBbox, cgm, epic, eepic, eepicemu, emf, eps, gif, ibmgl, jpeg,
+\fBbox, cgm, epic, eepic, eepicemu, emf, eps, gbx (Gerber beta driver), gif, ibmgl, jpeg,
 latex, map (HTML image map), mf (MetaFont),
 mp (MetaPost), mmp (Multi-MetaPost),
 pcx, pdf, pdftex, pdftex_t, pic, pictex, png, ppm, ps,
@@ -102,7 +102,7 @@ The default is Roman; the format of this option depends on the graphics
 in use.
 In TeX-based languages, the font is the base of the name given in lfonts.tex,
 for instance "cmr" for Roman, or "tt" for teletype.
-In PostScript, it is any font name known to the printer or interpreter.
+In PostScript, it is any font name known to the printer or interpreter. For Gerber it has no effect.
 
 .TP
 .B "\-G minor[:major][:unit]"
@@ -596,6 +596,42 @@ As a result, it is best to use PiCTeX to generate small pictures.
 .B \-E num
 Set encoding for latex text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)
 
+.SH GBX OPTIONS (Gerber, RS-247-X) 
+Typically you will wish to set the y scale to -1.  See
+.B -g
+for more information.
+.TP
+.B -d [mm|in]
+Output dimensions should be assumed to be millimeters (mm) or inches
+(in).  The default is millimeters.
+.TP
+.B -p [pos|neg]
+Select the image polarity.  For positive images lines drawn in the fig
+file will generate lines of material.  For negative images lines drawn
+in the fig file will result in removed material.  Consider etching a
+chrome on glass transmission mask.  Drawing lines in the fig file and
+choosing 'neg' will result in these lines being etched through the
+chrome, leaving transparent lines.
+.TP
+.B -g <x scale>x<y scale>+<x offset>+<y offset>
+This controls the geometry of the output, scaling the dimensions as
+shown and applying the given offset.  Typically you will wish to set
+the y scale to -1, mirroring about the x axis.  This is because Gerber
+assumes the origin to be bottom left, while xfig selects top left.
+.TP
+.B -f <n digits>.<n digits>
+This controls the number of digits of precision before and after the
+implied decimal point.  With -f 5.3 the following number 12345678
+corresponds to 12345.678.  Whereas with -f 3.5 it corresponds to
+123.45678.  The default is for 3 places before the decimal point and 5
+after.  This corresponds, to a range of 0 to 1m in 10 micron
+increments.
+.TP
+.B -i [on|off]
+Controls the output of comments describing the type of objects being
+output.  The text appears as comments starting with ## on each line in
+the output file.  By default this is on.
+
 .SH POSTSCRIPT, ENCAPSULATED POSTSCRIPT (EPS), and PDF OPTIONS
 With PostScript, xfig can be used to create multiple page figures 
 Specify the -M option to produce a multi-page output. 
@@ -965,3 +1001,7 @@ Philippe Bekaert (Philippe.Bekaert@cs.kuleuven.ac.be)
 The EMF driver (Enhanced Metafile) was written by
 .br
 Michael Schrick (m_schrick@hotmail.com)
+.sp
+The GBX (Gerber) driver was written by
+.br
+Edward Grace (ej.grace@imperial.ac.uk).

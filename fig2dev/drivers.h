@@ -42,6 +42,7 @@ extern struct driver dev_ge;
 extern struct driver dev_bitmaps;
 extern struct driver dev_map;
 extern struct driver dev_svg;
+extern struct driver dev_gbx;
 extern struct driver dev_shape;
 
 extern struct driver dev_dxf;
@@ -58,6 +59,7 @@ struct
                 {"emf",         &dev_emf}, 
 		{"epic",	&dev_epic},
 		{"eps",		&dev_eps},
+		{"gbx",         &dev_gbx},
 		{"ge",		&dev_ge},
 		{"gif",		&dev_bitmaps},
 		{"ibmgl",	&dev_ibmgl},
