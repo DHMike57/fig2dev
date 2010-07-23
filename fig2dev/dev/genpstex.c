@@ -167,6 +167,10 @@ struct driver dev_pstex = {
 	INCLUDE_TEXT
 };
 
+extern void     genpdf_option();
+extern void     genpdf_start();
+extern int      genpdf_end();
+
 struct driver dev_pdftex = {
   	genpdf_option,
 	genpdf_start,

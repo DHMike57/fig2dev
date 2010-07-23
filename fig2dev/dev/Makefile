@@ -75,8 +75,8 @@ TCLIBDIR =
           PATHSEP = /
             SHELL = /bin/sh -e
 
-              TOP = ../..
-      CURRENT_DIR = fig2dev/dev
+              TOP = ..
+      CURRENT_DIR = dev
 
             IMAKE = imake
            DEPEND = makedepend
@@ -989,9 +989,9 @@ READPNGO=readpng.o
 READXPMS=readxpm.c
 READXPMO=readxpm.o
 
-SRCS =  genbox.c gencgm.c gendxf.c genepic.c gengbx.o genibmgl.c genlatex.c genmap.c genmf.c genpic.c 	genpictex.c genps.c genpdf.c genpstex.c gentextyl.c gentk.c genptk.c gentpic.c 	genbitmaps.c genge.c genmp.c genemf.c gensvg.c genshape.c setfigfont.c psencode.c 	readpics.c readeps.c readgif.c readpcx.c readppm.c 	readxbm.c readtif.c readjpg.c asc85ec.c $(READPNGS) $(READXPMS)
+SRCS =  genbox.c gencgm.c gendxf.c genepic.c gengbx.o genibmgl.c genlatex.c genmap.c genmf.c genpic.c 	genpictex.c genps.c genpdf.c genpstex.c genpstricks.c gentextyl.c gentk.c genptk.c gentpic.c 	genbitmaps.c genge.c genmp.c genemf.c gensvg.c genshape.c setfigfont.c psencode.c 	readpics.c readeps.c readgif.c readpcx.c readppm.c readpng.c readxpm.c 	readxbm.c readtif.c readjpg.c asc85ec.c $(READPNGS) $(READXPMS)
 
-LIBOBJS = genbox.o gencgm.o gendxf.o genepic.o gengbx.o genibmgl.o genlatex.o genmap.o genmf.o genpic.o 	genpictex.o genps.o genpdf.o genpstex.o gentextyl.o gentk.o genptk.o gentpic.o 	genbitmaps.o genge.o genmp.o genemf.o gensvg.o genshape.o setfigfont.o psencode.o 	readpics.o readeps.o readgif.o readpcx.o readppm.o 	readxbm.o readtif.o readjpg.o asc85ec.o $(READPNGO) $(READXPMO)
+LIBOBJS = genbox.o gencgm.o gendxf.o genepic.o gengbx.o genibmgl.o genlatex.o genmap.o genmf.o genpic.o 	genpictex.o genps.o genpdf.o genpstex.o genpstricks.o gentextyl.o gentk.o genptk.o gentpic.o 	genbitmaps.o genge.o genmp.o genemf.o gensvg.o genshape.o setfigfont.o psencode.o 	readpics.o readeps.o readgif.o readpcx.o readppm.o readpng.o readxpm.o 	readxbm.o readtif.o readjpg.o asc85ec.o $(READPNGO) $(READXPMO)
 
 LIB = transfig
 

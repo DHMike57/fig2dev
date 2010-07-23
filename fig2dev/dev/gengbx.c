@@ -671,12 +671,12 @@ void gengbx_option(opt, optarg)
     break;
   case 'i':
     /* Include debug comments? */
-    if ( strcmp(optarg,"no") == 0 || strcmp(optarg,"n") == 0) 
+    if ( strcmp(optarg,"off") == 0) 
       gbx_debug_comments = 0;
-    else if ( strcmp(optarg,"yes") == 0  || strcmp(optarg,"y") == 0)
+    else if ( strcmp(optarg,"on") == 0)
       gbx_debug_comments = 1;
     else
-      fprintf(stderr,"Error: Do not understand supplied flag for debug comments, 'yes' or 'no'?\n");
+      fprintf(stderr,"Error: Debug comments option should be 'on' or 'off'\n");
     break;
   default:
     put_msg(Err_badarg, opt, "gbx");

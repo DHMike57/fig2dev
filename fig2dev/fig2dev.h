@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include "patchlevel.h"
 #include <math.h>
 #include <sys/file.h>
@@ -111,7 +112,7 @@ struct driver {
 };
 
 extern float	rgb2luminance();
-extern void	put_msg();
+extern void	put_msg(char *fmt, ...);
 extern void	unpsfont();
 extern void	print_comments();
 extern int	lookup_X_color();

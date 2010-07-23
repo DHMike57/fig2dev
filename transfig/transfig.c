@@ -25,6 +25,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "patchlevel.h"
 #include "transfig.h"
 

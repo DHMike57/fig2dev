@@ -32,6 +32,7 @@ extern struct driver dev_pdftex;
 extern struct driver dev_pdftex_t;
 extern struct driver dev_pstex;
 extern struct driver dev_pstex_t;
+extern struct driver dev_pstricks;
 extern struct driver dev_textyl;
 extern struct driver dev_tk;
 extern struct driver dev_ptk;
@@ -81,6 +82,7 @@ struct
 		{"ps",		&dev_ps},
 		{"pstex",	&dev_pstex},
 		{"pstex_t",	&dev_pstex_t},
+		{"pstricks",	&dev_pstricks},
 		{"ptk",		&dev_ptk},
 		{"shape",	&dev_shape},
 		{"sld",		&dev_bitmaps},

@@ -276,6 +276,8 @@ PSencode(Width, Height, Transparent, Ncol, R, G, B, data)
     sprintf(s,"%02x%02x%02x", R[k], G[k], B[k]);   put_string; 
     if (k % 10 == 9 || k == Ncol-1) { 
       sprintf(s,"\n");                             put_string;
+    } else {
+      sprintf(s, " "); 	                           put_string;
     }
   }
   if (Transparent != -1) {

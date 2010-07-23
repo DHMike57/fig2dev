@@ -146,7 +146,7 @@ typedef struct fp_struct FPoint;
 /* Local to the file only */
 static int	encoding;
 static double	Threshold;
-static Boolean	linew_spec;
+static Boolean	linew_spec = False;
 static int	CurWidth = 0;
 static int	LineStyle = SOLID_LINE;
 static int	LLX = 0, LLY = 0;

@@ -116,7 +116,6 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
   fprintf(PSfile, "%%%%EndComments\n");
   fprintf(PSfile, "%%%%BeginProlog\n");
   fprintf(PSfile, "%%%%EndProlog\n");
-  fprintf(PSfile, "%%%%Page: 1 1\n");
 
   fprintf(PSfile, "/languagelevel where {pop languagelevel 2 lt}");
   fprintf(PSfile, "{true} ifelse {\n");

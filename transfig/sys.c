@@ -15,6 +15,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "transfig.h"
 
 #define MAXSYS 10000

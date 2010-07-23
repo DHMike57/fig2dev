@@ -1099,7 +1099,7 @@ compute_arcarrow_angle(x1, y1, x2, y2, direction, arrow, x, y)
 
     /* radius too small for this method, use normal method */
     if (h > 2.0*r) {
-	arc_tangent(x1,y1,x2,y2,direction,x,y);
+	arc_tangent_int(x1,y1,x2,y2,direction,x,y);
 	return;
     }
 

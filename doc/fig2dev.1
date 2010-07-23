@@ -54,7 +54,7 @@ Valid languages are
 latex, map (HTML image map), mf (MetaFont),
 mp (MetaPost), mmp (Multi-MetaPost),
 pcx, pdf, pdftex, pdftex_t, pic, pictex, png, ppm, ps,
-pstex, pstex_t, ptk (Perl/tk),
+pstex, pstex_t, pstricks, ptk (Perl/tk),
 shape (LaTeX shaped paragraphs), sld (AutoCad slide format), 
 svg (beta driver), textyl,
 tiff, tk (tcl/tk), tpic, xbm and
@@ -879,6 +879,188 @@ document (like "\fB\\sfshape \\input picture.eepic\fR").
 .B -p file
 specifies the name of the PostScript file to be overlaid.
 If not set or its value is null then no PS file will be inserted.
+
+.SH PSTricks OPTIONS
+The 
+.B PSTricks 
+driver provides full
+.B LaTeX
+text and math formatting for XFig drawings without overlaying
+separate outputs as in the 
+.B PSTEX 
+methods.  The output matches the quality of output of the PostScript
+driver except for text, where the 
+.B Latex
+font selection mechanism is used as for other
+.I fig2dev
+LaTeX drivers. In addition, text is rendered black, although font color-changing
+.B LaTex
+code can be embedded in the drawing.  
+The generated PSTricks code is meant to be
+readable.  Each command stands alone, not relying on
+global option state variables.  Thus the user can easily use
+XFig to rough out a PSTricks drawing, then finish by hand editing.
+.PP
+To use the driver's output, give the command
+"\fB\\usepackage{pstricks}\fR"
+in your document preamble.  The
+.B graphicx
+and
+.B pstricks-add
+packages may also be required.  The former is used for bitmap graphics
+and the second for complex line styles and/or hollow PSTricks arrows
+(with the \-R 1 option).  The driver will tell
+you which packages are needed.  In the document body, include the
+figure with "\fB\\input{pstfile}\fR" where
+.B pstfile.tex
+is the output file.  Use the
+.B XFig special
+flag to have text passed as-is to LaTeX.  For non-special text, 
+the same mechanism as the LaTeX and epic driver mechanism is used
+to match font specs, but this is imprecise.
+
+.TP
+.B Known bugs and limitations.
+PSTricks support for join styles is version dependent. Raw postscript
+is inserted with "\fB\\pstVerb\fR" for old versions when other than
+angle joins are needed.  The
+.B \-t
+option controls this behavior. PSTricks does not support rotated
+ellipses directly, so a
+.B rput
+command is emitted that rotates and locates a horizontal ellipse.
+This makes a problem with hatch patterns, which are moved and
+rotated along with the ellipse.  Hatch rotation is fixed by a
+counter-rotation, but the origin is not adjusted, so
+registration with adjacent hatch patterns will be incorrect.  Flipped
+bitmap graphics use an undocumented feature of the
+.B graphicx
+package: a negative height flips the image vertically.  This
+appears to work reliably.  However, you may want to flip graphics
+with another program before including them in 
+.B Xfig
+drawings just to be sure.  With the
+.B \-p
+option, the driver attempts to convert non-EPS pictures to EPS
+with the TeX distribution's 
+.B bmeps
+program, but
+.B bmeps
+does not know about very many file formats including
+.B gif.
+
+.TP
+.B \-G dummy_arg
+Draws a standard PSTricks grid in light gray, ignoring the size
+parameters, numbered in PSTricks units.
+
+.TP
+.B \-l weight
+Sets a line weight factor that is multiplied by the actual Fig line
+width.  The default value 0.5 roughly matches the output of the PS
+driver.
+
+.TP
+.B \-n 0|1|2|3
+Sets environment type.  Default 0 creates a \fB\\picture\fR
+environment with bounding box exactly enclosing the picture (but see
+.B \-x
+and
+.B \-y
+).  A 1 emits bare PSTricks commands with no environment
+at all, which can be used with
+\fB\\input{commands}\fR inside an existing \fB\\pspicture\fR.
+A 2 emits a complete LaTeX document.  A 3 also emits a complete
+LaTeX document but attempts to set the PSTricks unit to fit
+a 7.5 by 10 inch (portrait aspect) box.
+
+.TP
+.B \-P 
+Shorthand for
+.B -n 3
+ .
+
+.TP
+.B \-p dir
+Attempts to run the
+.B bmeps
+program to translate picture files to EPS, which is required by
+PSTricks.  The translated files go in 
+.I dir
+, which must already exist (the driver will not create it). Moreover,
+(BIG CAVEAT HERE) the driver overwrites files with impunity in this
+directory!  Don't put your stuff here.  The
+.B includegraphics
+commands in the output file refer to this directory.  Even
+if the -p option is not used, 
+.B includegrpahics
+commands follow this convention with the default directory
+.I "\./eps".
+In this case, the user must do 
+the conversions independently.  The
+.B bmeps
+program is part of the standard TeX distribution. It converts
+the following formats to EPS:
+.B png jpg pnm tif.  
+You can see the bmeps command with the
+.B \-v
+option.
+
+.TP
+.B \-R 0|1|2
+Sets arrow style.  With the default style 0, Fig arrows are converted
+to lines and polygons.  With style 1, the Fig arrowhead dimensions are
+converted to PSTricks arrowhead dimensions and PSTricks arrowhead
+options are emitted.  Hollow arrows will require the additional
+package 
+.B pstricks-add 
+ . With style 2, PSTricks arrowhead options are emitted with no
+dimensions at all, and arrowhead size may be controlled globally with
+.B psset
+ .
+
+.TP
+.B \-S scale
+Scales the image according to the same convention as the EPIC driver,
+i.e., to size
+.I scale
+ /12.
+
+.TP
+.B \-t version
+Provides the driver with PSTricks version number so 
+output can match expected LaTeX input. 
+
+.TP
+.B \-v
+Print verbose warnings and extra comments in the output file.
+Information provided includes font substitution details, the
+.B bmeps
+commands used for picture conversion, if any, and one comment per Fig
+object in the output.
+
+.TP
+.B \-x marginsize
+Adds
+.I marginsize
+on the left and right of the
+.B PStricks
+bounding box.  By default, the box exactly encloses the image.
+
+.TP
+.B \-y marginsize
+Adds
+.I marginsize
+on the top and bottom of the
+.B PStricks
+bounding box.  By default, the box exactly encloses the image.
+
+.TP
+.B \-z 0|1|2
+Sets font handling option.  Default option 0 attempts to honor Fig
+font names and sizes, finding the best match with a standard LaTeX
+font.  Option 1 sets LaTeX font size only.  Option 2 issues no font
+commands at all.
 
 .SH TK and PTK OPTIONS (tcl/tk and Perl/tk)
 .TP

@@ -136,6 +136,7 @@
  *
  *  SVG Namespace:
  *      http://www.w3.org/2000/svg
+ *	xmlns:xlink="http://www.w3.org/1999/xlink"
  *  Public Identifier for SVG 1.1:
  *      PUBLIC "-//W3C//DTD SVG 1.1//EN"
  *  System Identifier for the SVG 1.1 Recommendation:
@@ -397,7 +398,7 @@ gensvg_start (objects)
     vw = (int) ((urx - llx) * mag);
     vh = (int) ((ury - lly) * mag);
     fprintf (tfp,
-	     "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%.1fin\" height=\"%.1fin\" viewBox=\"%d %d %d %d\">\n",
+	     "<svg\txmlns=\"http://www.w3.org/2000/svg\"\n\txmlns:xlink=\"http://www.w3.org/1999/xlink\"\n\twidth=\"%.1fin\" height=\"%.1fin\"\n\tviewBox=\"%d %d %d %d\">\n",
 	     vw / ppi, vh / ppi, vx, vy, vw, vh);
 
     if (objects->comments)
@@ -429,7 +430,7 @@ double hl;
     
     if (l->type ==5 ) {
 	fprintf (tfp,"<!-- Image -->\n");
-	fprintf (tfp,"<image xlink:href=\"%s\" preserveAspectRatio=\"none\"\n",l->pic->file);
+	fprintf (tfp,"<image xlink:href=\"file://%s\" preserveAspectRatio=\"none\"\n",l->pic->file);
 	p=l->points;
 	px=p->x;
 	py=p->y;
@@ -604,18 +605,22 @@ double hl;
     }
     
 
-    arrowx2+=l->thickness*cosa;
-    arrowy2+=l->thickness*sina;
-    svg_arrow(l, l->for_arrow, l->pen_color);
-    p = l->points;
-    if (!p) return; /*safeguard against old, buggy fig files*/
-    arrowx2=p->x - l->thickness*cosa1  ;
-    arrowy2=p->y - l->thickness*sina1 ;
-    p = p->next;
-    if (!p) return; /*safeguard against old, buggy fig files*/
-    arrowx1 = p->x;
-    arrowy1 = p->y;
-    svg_arrow(l, l->back_arrow, l->pen_color);
+    if (l->for_arrow != NULL) {
+	arrowx2+=l->thickness*cosa;
+	arrowy2+=l->thickness*sina;
+	svg_arrow(l, l->for_arrow, l->pen_color);
+    }
+    if (l->back_arrow != NULL) {
+	p = l->points;
+	if (!p) return; /*safeguard against old, buggy fig files*/
+	arrowx2=p->x - l->thickness*cosa1  ;
+	arrowy2=p->y - l->thickness*sina1 ;
+	p = p->next;
+	if (!p) return; /*safeguard against old, buggy fig files*/
+	arrowx1 = p->x;
+	arrowy1 = p->y;
+	svg_arrow(l, l->back_arrow, l->pen_color);
+    }
 }
 
 

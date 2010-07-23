@@ -161,12 +161,14 @@ struct paperdef paperdef[] =
     {NULL, 0, 0}
 };
 
-void
-put_msg(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
-char   *format, *arg1, *arg2, *arg3, *arg4, *arg5, *arg6, *arg7, *arg8;
+void 
+put_msg(char *fmt, ...)
 {
-	fprintf(stderr, format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-	fprintf(stderr, "\n");
+    va_list argptr;
+        va_start(argptr, fmt);
+        vfprintf(stderr, fmt, argptr);
+        va_end(argptr);
+        fprintf(stderr, "\n");
 }
 
 /* all option letters must be in this string */
@@ -489,7 +491,6 @@ help_msg()
     printf("  -b dummyarg	generate binary output (dummy argument required after \"-b\")\n");
     printf("  -r		position arrowheads for CGM viewers that display rounded arrowheads\n");
 
-
     printf("EPIC Options:\n");
     printf("  -A scale	scale arrowheads by dividing their size by scale\n");	
     printf("  -E num	set encoding for text translation (0 no translation,\n");
@@ -520,6 +521,26 @@ help_msg()
     printf("  -R \"Wx [Wy X0 Y0]\" force width, height and origin in relative coordinates\n");
     printf("			 (relative to lower-left of figure bounds)\n");
     printf("  -T		add monochrome TIFF preview (for Microsoft apps)\n");
+
+    printf("GBX (Gerber, RS-247-X)  Options:\n");
+    printf("  -d [mm|in]	Output dimensions assumed to be millimeters or inches.\n");
+    printf("  -p [pos|neg]	Image Polarity - positive results in lines being drawn.\n");
+    printf("		Negative results in lines erasing background\n");
+
+    printf("  -g <x scale>x<y scale>+<x offset>+<y offset>\n");
+    printf("		This controls the geometry of the output, scaling the dimensions as\n");
+    printf("		shown and applying the given offset.  Typically you will wish to set\n");
+    printf("		the y scale to -1, mirroring about the x axis.  This is because Gerber\n");
+    printf("		assumes the origin to be bottom left, while xfig selects top left.\n");
+    printf("  -f <n digits>.<n digits>\n");
+    printf("		This controls the number of digits of precision before and after the\n");
+    printf("		implied decimal point.  With -f 5.3 the following number 12345678\n");
+    printf("		corresponds to 12345.678.  Whereas with -f 3.5 it corresponds to\n");
+    printf("		123.45678.  The default is for 3 places before the decimal point and 5\n");
+    printf("		after.  This corresponds, to a range of 0 to 1m in 10 micron increments.\n");
+    printf("  -i [on|off]	Controls the output of comments describing the type of objects being\n");
+    printf("		output.  The text appears as comments starting with ## on each line in\n");
+    printf("		the output file.  By default this is on.\n");
 
     printf("IBM-GL Options:\n");
     printf("  -a		select ISO A4 paper size if default is ANSI A, or vice versa\n");
@@ -593,6 +614,20 @@ help_msg()
     printf("  -b width	specify width of blank border around figure (1/72 inch)\n");
     printf("  -F		use correct font sizes (points instead of 1/80inch)\n");
     printf("  -g color	background color\n");
+    printf("PSTricks Options:\n");
+    printf("  -f fontname       set default font\n");
+    printf("  -G dummyarg       draw pstricks standard grid (sizes ignored)\n");
+    printf("  -l weight         set line weight factor 0 to 2.0 (default 0.5 matches PS driver)\n");
+    printf("  -P                generate complete {document}; scale to fit one page\n");
+    printf("  -p dir            turn on auto picture conversion to EPS; dir is repository\n");
+    printf("  -R 0|1|2          arrow style (default 0-Fig, 1-PST w/Fig sizes, 2-PST default, ignore Fig sizes)\n");
+    printf("  -S scale          hard scale factor\n");
+    printf("  -t version        set PSTricks version\n");
+    printf("  -v                verbose warnings and comments in output file\n");
+    printf("  -x marginsize     add margin on left and right (default is tight bounding box)\n");
+    printf("  -y marginsize     add margin on over and under (default is tight bounding box)\n");
+    printf("  -z 0|1|2          font handling (default 0-full, 1-size only, 2-none,PST default)\n");
+
     printf("  -M		generate multiple pages for large figure\n");
     printf("  -N        	convert all colors to grayscale\n");
     printf("  -O        	overlap pages in multiple page mode (-M)\n");

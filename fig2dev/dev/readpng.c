@@ -127,7 +127,11 @@ read_png(file,filetype,pic,llx,lly)
 
 	if (png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette)) {
 	    png_get_hIST(png_ptr, info_ptr, &histogram);
+#if (PNG_LIBPNG_VER_MAJOR > 1 || (PNG_LIBPNG_VER_MAJOR == 1 && (PNG_LIBPNG_VER_MINOR > 4))) || defined(png_set_quantize)
+	    png_set_quantize(png_ptr, palette, num_palette, 256, histogram, 0);
+#else
 	    png_set_dither(png_ptr, palette, num_palette, 256, histogram, 0);
+#endif
 	}
     }
     if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {

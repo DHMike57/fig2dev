@@ -30,3 +30,19 @@ int	direction;
 	    }
 	}
 
+void
+arc_tangent_int(x1, y1, x2, y2, direction, x, y)
+double	x1, y1, x2, y2;
+int	*x, *y;
+int	direction;
+{
+	if (direction) { /* counter clockwise  */
+	    *x = x2 - (y2 - y1);
+	    *y = y2 + (x2 - x1);
+	    }
+	else {
+	    *x = x2 + (y2 - y1);
+	    *y = y2 - (x2 - x1);
+	    }
+	}
+

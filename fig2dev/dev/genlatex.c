@@ -65,6 +65,7 @@ static void put_quarter();
  *		lines if line width = \thinlines
  *  THIN_LDOT	...  if line width = \thicklines
  */
+
 #ifdef NFSS
 #define THICKDOT	"\\normalsize{\\rmdefault}{\\mddefault}{\\updefault}."
 #define THINDOT		"\\small{\\rmdefault}{\\mddefault}{\\updefault}."
@@ -76,13 +77,8 @@ double	THIN_XOFF =	(0.1/72.0);
 double	THIN_YOFF =	(0.7/72.0);
 double	THICK_XOFF =	(0.4/72.0);
 double	THICK_YOFF =	(0.6/72.0);
-#ifdef NFSS
-#define THICK_LDOT	"\\small{\\rmdefault}{\\mddefault}{\\updefault}."
-#define THIN_LDOT	"\\tiny{\\rmdefault}{\\mddefault}{\\updefault}."
-#else
-#define THICK_LDOT	"\\small{rm}."
-#define THIN_LDOT	"\\tiny{rm}."
-#endif
+#define THICK_LDOT	"\\small"
+#define THIN_LDOT	"\\tiny"
 double	THIN_LXOFF =	(0.1/72.0);
 double	THIN_LYOFF =	(0.7/72.0);
 double	THICK_LXOFF =	(0.4/72.0);
@@ -538,6 +534,8 @@ put_solidline (x, y, sx, sy, l, arrow, val)
 	    }
 	else {
 	    n = 2 * (l/cosine) / (ldot_diameter/unitlength);
+	    if (n==0)	/* missing */
+	    	return;
 	    fprintf(stderr, "Line too short; will do %d dots\n", n);
 	    dx = l / (double)n;
 	    if (sx < 0) dx = -dx;

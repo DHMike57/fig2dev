@@ -594,9 +594,9 @@ F_compound	*objects;
 	}
 
 	if (epsflag)
-	    fprintf(tfp, "%%!PS-Adobe-2.0 EPSF-2.0\n");	/* Encapsulated PostScript */
+	    fprintf(tfp, "%%!PS-Adobe-3.0 EPSF-3.0\n");	/* Encapsulated PostScript */
 	else
-	    fprintf(tfp, "%%!PS-Adobe-2.0\n");		/* PostScript magic strings */
+	    fprintf(tfp, "%%!PS-Adobe-3.0\n");			/* PostScript magic strings */
 
 	if (gethostname(host, sizeof(host)) == -1)
 	    (void)strcpy(host, "unknown-host!?!?");
@@ -674,6 +674,22 @@ F_compound	*objects;
 	    for (i=strlen(psize)-1; i>=0; i--)
 		psize[i] = tolower(psize[i]);
 	    fprintf(tfp, "%%%%DocumentPaperSizes: %s\n",psize);
+	} else if (pdfflag) {
+	    /* set the page size for PDF to the figure size */
+	    fprintf(tfp, "<< /PageSize [%d %d] >> setpagedevice\n",
+					clipux-cliplx,clipuy-cliply);
+	}
+
+	/* put in the magnification for information purposes */
+	fprintf(tfp, "%%Magnification: %.4f\n",metric? mag*76.2/80.0 : mag);
+	fprintf(tfp, "%%%%EndComments\n");
+
+	/* This %%BeginSetup .. %%EndSetup has to occur after
+	 * %%EndComments even though it includes comments, they are
+	 * not header comments. The header comment block must be
+	 * contiguous, with no non-comment lines in it.
+	 */
+	if (!epsflag && !pdfflag) {
 	    fprintf(tfp, "%%%%BeginSetup\n");
 	    fprintf(tfp, "[{\n");
 	    fprintf(tfp, "%%%%BeginFeature: *PageRegion %s\n", papersize);
@@ -684,16 +700,7 @@ F_compound	*objects;
 	    fprintf(tfp, "%%%%EndFeature\n");
 	    fprintf(tfp, "} stopped cleartomark\n");
 	    fprintf(tfp, "%%%%EndSetup\n");
-	} else if (pdfflag) {
-	    /* set the page size for PDF to the figure size */
-	    fprintf(tfp, "<< /PageSize [%d %d] >> setpagedevice\n",
-					clipux-cliplx,clipuy-cliply);
 	}
-
-
-	/* put in the magnification for information purposes */
-	fprintf(tfp, "%%Magnification: %.4f\n",metric? mag*76.2/80.0 : mag);
-	fprintf(tfp, "%%%%EndComments\n");
 
 	/* if the user wants an ASCII preview, route the rest of the eps to a temp file */
 	if (asciipreview) {

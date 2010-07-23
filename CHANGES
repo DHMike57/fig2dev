@@ -3,6 +3,32 @@ Changes to Transfig/fig2dev
 Version 3.2
 ===============================================================================
 
+Patchlevel 5d (July 23, 2010)
+
+BUGS FIXED:
+	o reduces some compilation warnings (fix from Debian)
+	o made PostScript output DSC 3.0 compliant to work with CUPS 
+	  patch from Ian Dall (see https://bugzilla.redhat.com/558380)
+	o Changed STOCK_LAST from 17 to 19 in fig2dev/dev/genemf.c
+	o Questionable copy of one data type to another in genemf.c
+	o Uninitialized linew_spec in genepic.c
+	o Changed definition of command for short slanted lines in genlatex.c
+	o Added check for existance of arrows in SVG line generator
+	o Removed %%Page: directive from included JPEG files in PostScript/EPS output
+	o bound.c was passing pointers to int instead of double to arc_tangent
+	o put_msg function uses proper varargs now
+	o Option for debug comments in GBX output is "yes" or "no", not "on" or "off"
+	o Added help (-h)  info for GBX output
+	o In version 1.4 of the PNG library dither was removed so fig2dev now uses
+	  quantize when importing PNG images with palettes
+	o put_msg was declared twice (fig2dev/dev/genemf.c)
+	o Added xlink namespace for images in SVG export
+	o SVG output for imported images didn't form href link properly
+
+NEW FEATURES:
+	o New PSTricks driver from Gene Ressler (see man fig2dev for info)
+
+-------------------------------------
 Patchlevel 5c (Jan 4, 2010)
 
 BUGS FIXED:

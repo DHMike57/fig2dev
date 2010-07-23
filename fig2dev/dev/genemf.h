@@ -300,7 +300,7 @@ typedef union {
 #define SYSTEM_FIXED_FONT	16
 #define DEFAULT_GUI_FONT	17
 
-#define STOCK_LAST		17
+#define STOCK_LAST		19
 
 #define CLR_INVALID	0xFFFFFFFF
 

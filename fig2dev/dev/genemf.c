@@ -690,7 +690,6 @@ static void textalign();
 static void moveto();
 #endif
 
-extern void put_msg();
 extern FILE *open_picfile();
 extern void close_picfile();
 #ifdef USE_PNG
@@ -1622,6 +1621,8 @@ static void arrow(P, a, l, dir)
     unsigned itype, itype16;
     int bbx_top, bbx_bottom, bbx_left, bbx_right;	/* Bounding box */
 
+    t.x = 0;
+    t.y = 0;
     p = *P;
     if (!rounded_arrows) {
 	/* Move the arrow backwards in order to let it end
@@ -2166,11 +2167,15 @@ static void rotated_ellipse(e)
      */
 
     /* copy common fields */
-    if (sizeof (F_line) < sizeof(F_ellipse)) {
-	l = *(F_line *) e;
-    } else {
-	*(F_ellipse *)(void *) &l = *e;
-    }
+
+    l.style = e->style;
+    l.thickness = e->thickness;
+    l.pen_color = e->pen_color;
+    l.fill_color = e->fill_color;
+    l.depth = e->depth;
+    l.pen = e->pen;
+    l.fill_style = e->fill_style;
+    l.style_val = e->style_val;
 
     /* setup other fields */
     l.points = pnt;
