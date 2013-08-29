@@ -3,6 +3,21 @@ Changes to Transfig/fig2dev
 Version 3.2
 ===============================================================================
 
+Patchlevel 5e (August 2013)
+
+BUGS FIXED:
+	o HTML map output was limited to 100 links.
+	  Fix by Jan van Dijk
+	o Updated for compatibility to PNG 1.5
+	  From Matthias Scheler
+	o Was adding "showpage" command when producing bitmap formats from intermediate EPS.
+	  This produced "illegal" PNG and JPEG files with extra, blank image.
+	o Maximum width of included image in PS/EPS output increased from 8192 to 16384
+	o Precision of some PIC objects increased from %.2f to %.3f
+	o Double close of output file when ghostscript fails. Original bug report from
+	  https://bugzilla.redhat.com/728825
+
+-------------------------------------
 Patchlevel 5d (July 23, 2010)
 
 BUGS FIXED:
@@ -24,6 +39,12 @@ BUGS FIXED:
 	o put_msg was declared twice (fig2dev/dev/genemf.c)
 	o Added xlink namespace for images in SVG export
 	o SVG output for imported images didn't form href link properly
+	o PIC floating point numbers were only 2 decimal places - now 3 (Debian bug #611948)
+	  Fix thanks to Roger Leigh (Debian Project)
+	o PIC output text had leading blanks (Debian bug #611977)
+	  Fix thanks to Roger Leigh (Debian Project)
+	o LaTeX commands for small and tiny dots missing "." (e.g. \small.)
+	  from Thomas Loimer
 
 NEW FEATURES:
 	o New PSTricks driver from Gene Ressler (see man fig2dev for info)

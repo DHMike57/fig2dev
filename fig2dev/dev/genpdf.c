@@ -67,18 +67,21 @@ F_compound	*objects;
 int
 genpdf_end()
 {
+	int	 status;
+
 	/* wrap up the postscript output */
 	if (genps_end() != 0)
 	    return -1;		/* error, return now */
 
-	if (pclose(tfp) != 0) {
+	status = pclose(tfp);
+	/* we've already closed the original output file */
+	tfp = 0;
+	if (status != 0) {
 	    fprintf(stderr,"Error in ghostcript command\n");
 	    fprintf(stderr,"command was: %s\n", gscom);
 	    return -1;
 	}
 	(void) signal(SIGPIPE, SIG_DFL);
-	/* we've already closed the original output file */
-	tfp = 0;
 
 	/* all ok so far */
 

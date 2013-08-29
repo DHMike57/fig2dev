@@ -23,7 +23,7 @@
  * Description:
  *   Generate HTML imagemap from Fig file.
  *   If an object has comment like ``HREF="url" ALT="string"'',
- *   the object will becomes link to the URL.
+ *   the object will become a link to the URL.
  *   Object with smaller depth will be listed before deeper ones.
  *   Figure comment will be used as the default link.
  */
@@ -37,15 +37,17 @@ static int      border_margin = 0;
 static char     url[TEXT_LENGTH], alt[TEXT_LENGTH];
 static char     buf[2000];
 
-#define MAX_LINKS 100
-
-static int      n_links = 0;
-
-static struct {
+struct hlink_item {
   char *url;
   char *alt;
   char *area;
-} links[MAX_LINKS];
+  struct hlink_item* prev;
+};
+typedef struct hlink_item hlink;
+
+/* The last link that was added. */
+static hlink* last_link = 0;
+
 
 #define fscale 15
 
@@ -129,17 +131,15 @@ is_link(comment)
 void
 add_link(char *area)
 {
-  if (n_links < MAX_LINKS) {
-    links[n_links].url = (char *)malloc(strlen(url) + 1);
-    strcpy(links[n_links].url, url);
-    links[n_links].alt = (char *)malloc(strlen(alt) + 1);
-    strcpy(links[n_links].alt, alt);
-    links[n_links].area = (char *)malloc(strlen(area) + 1);
-    strcpy(links[n_links].area, area);
-    n_links++;
-  } else {
-    fprintf(stderr, "fig2dev(map): more than %d links in a figure\n", MAX_LINKS);
-  }
+    hlink* hl = (hlink*)malloc(sizeof(hlink));
+    hl->url = (char *)malloc(strlen(url) + 1);
+    strcpy(hl->url, url);
+    hl->alt = (char *)malloc(strlen(alt) + 1);
+    strcpy(hl->alt, alt);
+    hl->area = (char *)malloc(strlen(area) + 1);
+    strcpy(hl->area, area);
+    hl->prev = last_link;
+    last_link=hl;
 }
 
 void
@@ -186,12 +186,12 @@ genmap_start(objects)
 int
 genmap_end()
 {
-  int i;
+  hlink* l;
   int len;
   char label[TEXT_LENGTH];
 
-  for (i = n_links - 1; 0 <= i; i--) {
-    fprintf(tfp, "%s", links[i].area);
+  for (l = last_link; l!= 0; l=l->prev) {
+    fprintf(tfp, "%s", l->area);
   }
   fprintf(tfp, "</MAP>\n");
 
@@ -207,11 +207,11 @@ genmap_end()
   fprintf(tfp, "\n");
   fprintf(tfp, "<P ALIGN=\"CENTER\">\n");
   len = 0;
-  for (i = n_links - 1; 0 <= i; i--) {
-    if (links[i].alt[0] != '\0') strcpy(label, links[i].alt);
-    else sprintf(label, "<TT>%s</TT>", links[i].url);
+  for (l = last_link; l!= 0; l=l->prev) {
+    if (l->alt[0] != '\0') strcpy(label, l->alt);
+    else sprintf(label, "<TT>%s</TT>", l->url);
     fprintf(tfp, "%s<A HREF=%s>%s</A>\n",
-	    (len == 0) ? "" : " | ", links[i].url, label);
+	    (len == 0) ? "" : " | ", l->url, label);
 	    
     len = len + strlen(label) + 3;
     if (50 < len) {

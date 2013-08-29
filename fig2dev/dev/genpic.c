@@ -229,9 +229,9 @@ F_line *l;
 
     /* Should have a #define somewhere for the # of fill patterns */
     if (l->fill_style != UNFILLED)
-      fprintf(tfp, " fill %.2f", ((double) l->fill_style ) / (double) BLACK_FILL);
+      fprintf(tfp, " fill %.3f", ((double) l->fill_style ) / (double) BLACK_FILL);
 
-    fprintf(tfp, " with .sw at (%.2f,%.2f) ",
+    fprintf(tfp, " with .sw at (%.3f,%.3f) ",
 	    minx / ppi, convy(maxy / ppi));
 
     width = (maxx - minx) / ppi;
@@ -239,10 +239,10 @@ F_line *l;
     height = convy(maxy / ppi) - convy(miny / ppi);
     if (height < 0.0) height = -height;
 
-    fprintf(tfp, "width %.2f height %.2f", width, height);
+    fprintf(tfp, "width %.3f height %.3f", width, height);
 
     if (OptArcBox && l->type == T_ARC_BOX)
-      fprintf(tfp, " rad %.2f", l->radius/ppi);
+      fprintf(tfp, " rad %.3f", l->radius/ppi);
 
     AddThickness();
 
@@ -411,7 +411,7 @@ F_ellipse	*e;
 		2 * e->radiuses.x/ppi, 2 * e->radiuses.y/ppi);
 
 	if ( OptEllipseFill && e->fill_style != UNFILLED)
-	  fprintf(tfp, " fill %.2f", (double)e->fill_style / (double) BLACK_FILL);
+	  fprintf(tfp, " fill %.3f", (double)e->fill_style / (double) BLACK_FILL);
 
 	AddThickness();
 
@@ -443,7 +443,7 @@ F_text	*t;
 	size = PICFONTMAG(t);
 	if (!OptNoUnps) {
 	  unpsfont(t);
-	  fprintf(tfp, "\"\\s%d\\f%s ", size, PICFONT(t->font));
+	  fprintf(tfp, "\"\\s%d\\f%s", size, PICFONT(t->font));
 	} else {
 	  fprintf(tfp, ".ps\n.ps %d\n", size );
 	  fprintf(tfp, ".ft\n.ft %s\n", PICPSFONT(t) );

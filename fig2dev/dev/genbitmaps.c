@@ -190,9 +190,6 @@ genbitmaps_end()
 	if (genps_end() != 0)
 	    return -1;		/* error, return now */
 
-	/* add a showpage so ghostscript will produce output */
-	fprintf(tfp, "showpage\n");
-
 	status = pclose(tfp);
 	/* we've already closed the original output file */
 	tfp = 0;

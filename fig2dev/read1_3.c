@@ -451,7 +451,7 @@ FILE	*fp;
 	t->pen = 0;
 	t->angle = 0.0;
 	t->next = NULL;
-	n = fscanf(fp," %d %lf %d %lf %lf %d %d %[^\n]", &t->font, 
+	n = fscanf(fp," %d %lf %d %lf %lf %d %d %127[^\n]", &t->font, 
 		&t->size, &t->flags, &t->height, &t->length, 
 		&t->base_x, &t->base_y, buf);
 	if (n != 8) {

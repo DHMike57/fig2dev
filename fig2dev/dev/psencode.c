@@ -18,7 +18,7 @@
 
 #include "fig2dev.h"
 
-#define MAXWIDTH       8192
+#define MAXWIDTH       16384
 
 #define put_string nc=strlen(s); for(i=0;i<nc;i++) (putc((s[i]),tfp)); Nbyte += nc
 
