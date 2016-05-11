@@ -9,17 +9,17 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-void free_arc();
-void free_compound();
-void free_ellipse();
-void free_line();
-void free_text();
-void free_spline();
-void free_splinestorage();
-void free_linestorage();
+void free_arc(F_arc **list);
+void free_compound(F_compound **list);
+void free_ellipse(F_ellipse **list);
+void free_line(F_line **list);
+void free_text(F_text **list);
+void free_spline(F_spline **list);
+void free_splinestorage(F_spline *s);
+void free_linestorage(F_line *l);

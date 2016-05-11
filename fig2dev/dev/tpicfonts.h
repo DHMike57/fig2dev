@@ -9,8 +9,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -20,7 +20,7 @@ static char		*texfontnames[] = {
 			"rm",			/* roman */
 			"bf",			/* bold */
 			"it",			/* italic */
-			"sf", 			/* sans serif */
+			"sf",			/* sans serif */
 			"tt",			/* typewriter */
 			/* Virtual fonts from here on */
 			"avant",
@@ -75,11 +75,11 @@ static char		*texfontnames[] = {
 
 static char		*texfontsizes[] = {
 			"ten",			/* default */
-			"fiv", "fiv", "fiv", "fiv", 	/* small fonts */
+			"fiv", "fiv", "fiv", "fiv",	/* small fonts */
 			"fiv",			/* five point font */
 			"six", "sev", "egt",	/* etc */
 			"nin", "ten", "elv",
-			"twl", "twl", "frtn",	
+			"twl", "twl", "frtn",
 			"frtn", "frtn", "svtn",
 			"svtn", "svtn", "twty",
 			"twty", "twty", "twty", "twty", "twfv"
@@ -87,11 +87,11 @@ static char		*texfontsizes[] = {
 
 static int		TeXfontsizes[] = {
 			10,		/* default */
-			5, 5, 5, 5, 	/* small fonts */
+			5, 5, 5, 5,	/* small fonts */
 			5,			/* five point font */
 			6, 7, 8,	/* etc */
 			9, 10, 11,
-			12, 12, 14,	
+			12, 12, 14,
 			14, 14, 17,
 			17, 17, 20,
 			20, 20, 20, 20, 25

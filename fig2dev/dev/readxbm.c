@@ -7,8 +7,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -49,10 +49,11 @@
 
 #include "fig2dev.h"
 #include "object.h"
-#include "readxbm.h"
 
 #define MAX_SIZE 255
 
+int ReadFromBitmapFile (FILE *file, unsigned int *width, unsigned int *height,
+		unsigned char **data_ret);
 /* attempt to read a bitmap file */
 
 /* return codes:  1 : success
@@ -60,11 +61,7 @@
 */
 
 int
-read_xbm(file,filetype,pic,llx,lly)
-    FILE	   *file;
-    int		    filetype;
-    F_pic	   *pic;
-    int		   *llx, *lly;
+read_xbm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 {
     int status;
     unsigned int x, y;
@@ -95,7 +92,7 @@ static int initialized = 0;		/* easier to fill in at run time */
  *	Table index for the hex values. Initialized once, first time.
  *	Used for translation value or delimiter significance lookup.
  */
-static void initHexTable()
+static void initHexTable(void)
 {
     /*
      * We build the table at run time for several reasons:
@@ -121,7 +118,7 @@ static void initHexTable()
     hexTable[' '] = -1;	hexTable[','] = -1;
     hexTable['}'] = -1;	hexTable['\n'] = -1;
     hexTable['\t'] = -1;
-	
+
     initialized = 1;
 }
 
@@ -130,8 +127,7 @@ static void initHexTable()
  */
 
 static int
-NextInt (file)
-    FILE *file;
+NextInt (FILE *file)
 {
     int	ch;
     int	value = 0;
@@ -180,10 +176,9 @@ NextInt (file)
 }
 
 int
-ReadFromBitmapFile (file, width, height, data_ret)
-    FILE	*file;			/* handle on file  */
-    unsigned int *width, *height;       /* RETURNED */
-    unsigned char **data_ret;           /* RETURNED */
+ReadFromBitmapFile (FILE *file,
+		unsigned int *width, unsigned int *height,	/* RETURNED */
+		unsigned char **data_ret)			/* RETURNED */
 {
     unsigned	char *data = NULL;	/* working variable */
     char	line[MAX_SIZE];		/* input line from file */

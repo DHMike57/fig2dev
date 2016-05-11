@@ -9,29 +9,29 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
 
-/* 
+/*
  *	genibmgl.c :	IBMGL driver for fig2dev
  *			IBM 6180 Color Plotter with
  *			IBM Graphics Enhancement Cartridge
- * 	Author E. Robert Tisdale, University of California, 1/92
+ *	Author E. Robert Tisdale, University of California, 1/92
  *	(edwin@cs.ucla.edu)
  *
  *		adapted from:
  *
  *	genpictex.c :	PiCTeX driver for fig2dev
  *
- * 	Author Micah Beck, Cornell University, 4/88
+ *	Author Micah Beck, Cornell University, 4/88
  *	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
  *	PCL job control option added Brian V. Smith 1/2001
- *      Page size handling, orientation, offset, centering
- *         added by Glenn Burkhardt, 11/2003.
+ *	Page size handling, orientation, offset, centering
+ *	   added by Glenn Burkhardt, 11/2003.
 */
 
 /* Notes on offsets and scaling:
@@ -50,31 +50,32 @@
 #include "fig2dev.h"
 #include "object.h"
 
-static set_style();
+static void set_style();
 
-#define		FONTS 			35
-#define		COLORS 			8
-#define		PATTERNS 		21
-#define		DPR	 	180.0/M_PI	/* degrees/radian	*/
-#define		DELTA	 	M_PI/36.0	/* radians		*/
+#define		FONTS			35
+#define		COLORS			8
+#define		PATTERNS		21
+#define		DPR		180.0/M_PI	/* degrees/radian	*/
+#define		DELTA		M_PI/36.0	/* radians		*/
 #define		UNITS_PER_INCH		 1016.0	/* plotter units/inch
 						   1 plotter unit = .025 mm
 						*/
 
 #define		ISO_A4_HEIGHT		842	/* 297 mm, in 1/72" points */
-#define         ISO_A4_WIDTH		595     /* 210 mm, in 1/72" points */
+#define		ISO_A4_WIDTH		595	/* 210 mm, in 1/72" points */
 #define		ANSI_A_HEIGHT		792	/* 11 in, in 1/72" points */
 #define		ANSI_A_WIDTH		612	/* 8.5 in, in 1/72" points */
 #define		SPEED_LIMIT		128.0	/* centimeters/second	*/
 
 #ifdef IBMGEC
-static	int	ibmgec		 = True;
+static	int	ibmgec		 = true;
 #else
-static	int	ibmgec		 = False;
+static	int	ibmgec		 = false;
 #endif
 
-static	Boolean	pcljcl		 = False;  /* flag to precede IBMGL (HP/GL) output with PCL job control */
-static	Boolean	reflected	 = False;
+static	bool	pcljcl		 = false;  /* flag to precede IBMGL (HP/GL) output with PCL job control */
+static	bool	reflected	 = false;
+static	bool	correct_font_size = false;
 static	int	fonts		 = FONTS;
 static	int	colors		 = COLORS;
 static	int	patterns	 = PATTERNS;
@@ -124,11 +125,11 @@ static	double	slant[]		 = { 0,10, 0,10, 0,10, 0,10, 0,10, 0,10, 0,10,
 
 /* Make font width/height close to Courier fixed.
  */
-static	double	wide[] 
+static	double	wide[]
 = {.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,
    .401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,
    .401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401,.401};
-static	double	high[] 
+static	double	high[]
 = {.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,
    .561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,
    .561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561,.561};
@@ -176,8 +177,8 @@ static struct {
     /* "ZapfDingbats",			34 */ { 45, 0, 0 },
 };
 
-static void genibmgl_option(opt, optarg)
-char opt, *optarg;
+static void
+genibmgl_option(char opt, char *optarg)
 {
 	FILE	*ffp;
 	int	 font;
@@ -187,7 +188,7 @@ char opt, *optarg;
 
 	    case 'a':				/* paper size		*/
 #ifdef A4
-	        pageheight	 = ANSI_A_HEIGHT;
+		pageheight	 = ANSI_A_HEIGHT;
 		pagewidth	 = ANSI_A_WIDTH;
 #else
 		pageheight	 = ISO_A4_HEIGHT;
@@ -219,7 +220,7 @@ char opt, *optarg;
 		break;
 
 	    case 'k':				/* precede output with PCL job control */
-		pcljcl = True;
+		pcljcl = true;
 		break;
 
 	    case 'l':				/* user's fill patterns	*/
@@ -236,10 +237,12 @@ char opt, *optarg;
 		fclose(ffp);
 		break;
 
-      	    case 'F':				/* use specified font,
-						   i.e., SD command
-						 */
-	    case 's':
+	    case 'F':				/* use specified font,
+						   i.e., SD command */
+		correct_font_size = true;
+		break;
+
+	    case 'G':
 	    case 'L':				/* language		*/
 		break;
 
@@ -264,8 +267,8 @@ char opt, *optarg;
 		break;
 
 	    case 'P':				/* portrait mode	*/
-		landscape	 = False;
-		orientspec	 = True;	/* user-specified	*/
+		landscape	 = false;
+		orientspec	 = true;	/* user-specified	*/
 		break;
 
 	    case 'S':				/* select pen velocity	*/
@@ -273,13 +276,13 @@ char opt, *optarg;
 		break;
 
 	    case 'v':
-		reflected	 = True;	/* mirror image		*/
+		reflected	 = true;	/* mirror image		*/
 		break;
 
 	    case 'z':			/* papersize */
-	        (void) strcpy (papersize, optarg);
-		paperspec = True;	/* user-specified */
-		break;	    
+		(void) strcpy (papersize, optarg);
+		paperspec = true;	/* user-specified */
+		break;
 
 	    default:
 		put_msg(Err_badarg, opt, "ibmgl");
@@ -287,13 +290,13 @@ char opt, *optarg;
 	}
 }
 
-static double		cpi;			/*       cent/inch	*/
-static double		cpp;			/*       cent/pixel	*/
+static double		cpi;			/*	 cent/inch	*/
+static double		cpp;			/*	 cent/pixel	*/
 static double		wcmpp;			/* centimeter/point	*/
 static double		hcmpp;			/* centimeter/point	*/
 
-void genibmgl_start(objects)
-F_compound	*objects;
+void
+genibmgl_start(F_compound *objects)
 {
 	int	 P1x, P1y, P2x, P2y;
 	int	 Xll, Yll, Xur, Yur;
@@ -318,11 +321,11 @@ F_compound	*objects;
 		    strcpy(papersize,pd->name);	/* use the "nice" form */
 		    break;
 		    }
-	
+
 	    if (pagewidth < 0 || pageheight < 0) {
 		fprintf (stderr, "Unknown paper size `%s'\n", papersize);
 		exit (1);
-	        }
+		}
 	    }
 
 	points_per_inch = 72;
@@ -388,7 +391,7 @@ F_compound	*objects;
 	    Yur	 = (pageheight - xl)*UNITS_PER_INCH;
 	    height	 = yu - yl;
 	    width	 = xu - xl;
-	    P1x	 	 = Xll;
+	    P1x		 = Xll;
 	    P2x		 = Xur;
 	    if (reflected)			/* upside-down text	*/
 		hcmpp	 = -hcmpp;
@@ -458,24 +461,23 @@ F_compound	*objects;
 	    fprintf(tfp, "VS%.2f;\n", pen_speed);
 }
 
-static arc_tangent(x1, y1, x2, y2, direction, x, y)
-double	x1, y1, x2, y2, *x, *y;
-int	direction;
+static void
+arc_tangent(double x1, double y1, double x2, double y2, int direction, double *x, double *y)
 {
 	if (direction) { /* counter clockwise  */
 	    *x = x2 - (y2 - y1);
 	    *y = y2 + (x2 - x1);
-	    }
-	else {
+	} else {
 	    *x = x2 + (y2 - y1);
 	    *y = y2 - (x2 - x1);
-	    }
 	}
+}
 
 /*	draw arrow heading from (x1, y1) to (x2, y2)	*/
 
-static draw_arrow_head(x1, y1, x2, y2, arrowht, arrowwid)
-double	x1, y1, x2, y2, arrowht, arrowwid;
+static void
+draw_arrow_head(double x1, double y1, double x2, double y2, double arrowht,
+		double arrowwid)
 {
 	double	x, y, xb, yb, dx, dy, l, sina, cosa;
 	double	xc, yc, xd, yd;
@@ -507,14 +509,13 @@ double	x1, y1, x2, y2, arrowht, arrowwid;
 
 	/* restore line style */
 	set_style(style, length);
-	}
+}
 
-/* 
+/*
  * set_style - issue line style commands as appropriate
  */
-static set_style(style, length)
-int	style;
-double	length;
+static void
+set_style(int style, double length)
 {
 	if (style == line_style)
 	    switch (line_style) {
@@ -563,12 +564,12 @@ double	length;
 	    }
 }
 
-/* 
+/*
  * set_width - issue line width commands as appropriate
  *		NOTE: HPGL/2 command used
  */
-static set_width(w)
-    int	w;
+static void
+set_width(int w)
 {
     static int current_width=-1;
 
@@ -582,19 +583,19 @@ static set_width(w)
     current_width = w;
 }
 
-/* 
+/*
  * set_color - issue line color commands as appropriate
  */
-static set_color(color)
-    int	color;
+static void
+set_color(int color)
 {
     static	int	number		 = 0;	/* 1 <= number <= 8		*/
     static	double	thickness	 = 0.3;	/* pen thickness in millimeters	*/
 	if (line_color != color) {
-	    line_color  = color;
+	    line_color	= color;
 	    color	= (colors + color)%colors;
 	    if (number != pen_number[color]) {
-		number  = pen_number[color];
+		number	= pen_number[color];
 		fprintf(tfp, "SP%d;\n", pen_number[color]);
 		}
 	    if (thickness != pen_thickness[color]) {
@@ -604,9 +605,8 @@ static set_color(color)
 	    }
 }
 
-static fill_polygon(pattern, color)
-    int	pattern;
-    int	color;
+static void
+fill_polygon(int pattern, int color)
 {
 	if (0 < pattern && pattern < patterns) {
 	    int		style;
@@ -619,7 +619,7 @@ static fill_polygon(pattern, color)
 			fill_space[pattern],
 			reflected ? -fill_angle[pattern]: fill_angle[pattern]);
 		}
-	    /*    save line style */
+	    /*	  save line style */
 	    style	 = line_style;
 	    length	 = dash_length;
 	    fprintf(tfp, "LT%d,%.4f;FP;\n",
@@ -630,9 +630,9 @@ static fill_polygon(pattern, color)
 	    set_style(style, length);
 	    }
 }
-	
-void arc(sx, sy, cx, cy, theta, delta)
-    double	sx, sy, cx, cy, theta, delta;
+
+void
+arc(double sx, double sy, double cx, double cy, double theta, double delta)
 {
 	if (ibmgec)
 	    if (delta == M_PI/36.0)		/* 5 degrees		*/
@@ -649,17 +649,17 @@ void arc(sx, sy, cx, cy, theta, delta)
 		delta = fabs(delta);
 	    for (alpha = delta; fabs(alpha) < fabs(theta); alpha += delta) {
 		fprintf(tfp, "PA%.4f,%.4f;\n",
-	    		cx + (sx - cx)*cos(alpha) - (sy - cy)*sin(alpha),
-	    		cy + (sy - cy)*cos(alpha) + (sx - cx)*sin(alpha));
+			cx + (sx - cx)*cos(alpha) - (sy - cy)*sin(alpha),
+			cy + (sy - cy)*cos(alpha) + (sx - cx)*sin(alpha));
 		}
 	    fprintf(tfp, "PA%.4f,%.4f;\n",
-	    	    cx + (sx - cx)*cos(theta) - (sy - cy)*sin(theta),
-	    	    cy + (sy - cy)*cos(theta) + (sx - cx)*sin(theta));
+		    cx + (sx - cx)*cos(theta) - (sy - cy)*sin(theta),
+		    cy + (sy - cy)*cos(theta) + (sx - cx)*sin(theta));
 	    }
 }
 
-void genibmgl_arc(a)
-    F_arc	*a;
+void
+genibmgl_arc(F_arc *a)
 {
 	if (a->thickness != 0 ||
 		ibmgec && 0 <= a->fill_style && a->fill_style < patterns) {
@@ -682,7 +682,7 @@ void genibmgl_arc(a)
 	    dy1		 = sy - cy;
 	    dx2		 = ex - cx;
 	    dy2		 = ey - cy;
-	    
+
 	    theta	 = atan2(dy2, dx2) - atan2(dy1, dx1);
 	    if (a->direction) {
 		if (theta > 0.0)
@@ -716,8 +716,8 @@ void genibmgl_arc(a)
 	    }
 }
 
-void genibmgl_ellipse(e)
-    F_ellipse	*e;
+void
+genibmgl_ellipse(F_ellipse *e)
 {
 	if (e->thickness != 0 ||
 		ibmgec && 0 <= e->fill_style && e->fill_style < patterns) {
@@ -743,12 +743,12 @@ void genibmgl_ellipse(e)
 	    x		 = x0 + cos(angle)*a;
 	    y		 = y0 + sin(angle)*a;
 	    fprintf(tfp, "PA%.4f,%.4f;PM;PD;\n", x, y);
-	    for (j = 1; j <= 72; j++) { 
+	    for (j = 1; j <= 72; j++) {
 		alpha	 = j*delta;
 		x	 = x0 + cos(angle)*a*cos(alpha)
-	    		 - sin(angle)*b*sin(alpha);
+			 - sin(angle)*b*sin(alpha);
 		y	 = y0 + sin(angle)*a*cos(alpha)
-	    		 + cos(angle)*b*sin(alpha);
+			 + cos(angle)*b*sin(alpha);
 		fprintf(tfp, "PA%.4f,%.4f;\n", x, y);
 	    }
 	    fprintf(tfp, "PU;PM2;\n");
@@ -761,8 +761,8 @@ void genibmgl_ellipse(e)
 	    }
 }
 
-void swap(i, j)
-    int	*i, *j;
+void
+swap(int *i, int *j)
 {
 	int	t;
 	t = *i;
@@ -770,8 +770,8 @@ void swap(i, j)
 	*j = t;
 }
 
-void genibmgl_line(l)
-    F_line	*l;
+void
+genibmgl_line(F_line *l)
 {
 	if (l->thickness != 0 ||
 		ibmgec && 0 <= l->fill_style && l->fill_style < patterns) {
@@ -794,7 +794,7 @@ void genibmgl_line(l)
 		    else {
 			if (l->thickness != 0 && l->back_arrow)
 			    draw_arrow_head(q->x/ppi, q->y/ppi,
-		    		    p->x/ppi, p->y/ppi,
+				    p->x/ppi, p->y/ppi,
 				    l->back_arrow->ht/ppi,
 				    l->back_arrow->wid/ppi);
 
@@ -813,7 +813,7 @@ void genibmgl_line(l)
 			    fprintf(tfp, "EP;\n");
 
 			if (l->thickness != 0 && l->for_arrow)
-		    	    draw_arrow_head(p->x/ppi, p->y/ppi,
+			    draw_arrow_head(p->x/ppi, p->y/ppi,
 				    q->x/ppi, q->y/ppi,
 				    l->for_arrow->ht/ppi,
 				    l->for_arrow->wid/ppi);
@@ -825,7 +825,7 @@ void genibmgl_line(l)
 
 		case	T_ARC_BOX: {
 		    int		llx, lly, urx, ury;
-		    double	 x0,  y0,  x1,  y1;
+		    double	 x0,  y0,  x1,	y1;
 		    double	dx, dy, angle;
 
 		    llx	 = urx	= p->x;
@@ -876,8 +876,8 @@ void genibmgl_line(l)
 
 #define		THRESHOLD	.05	/* inch */
 
-static bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
-    double	a0, b0, a1, b1, a2, b2, a3, b3;
+static void
+bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2, double a3, double b3)
 {
 	double	x0, y0, x3, y3;
 	double	sx1, sy1, sx2, sy2, tx, ty, tx1, ty1, tx2, ty2, xmid, ymid;
@@ -888,10 +888,10 @@ static bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
 	    fprintf(tfp, "PA%.4f,%.4f;\n", x3, y3);
 
 	else {
-	    tx   = (a1  + a2 )/2.0;	ty   = (b1  + b2 )/2.0;
-	    sx1  = (x0  + a1 )/2.0;	sy1  = (y0  + b1 )/2.0;
+	    tx	 = (a1	+ a2 )/2.0;	ty   = (b1  + b2 )/2.0;
+	    sx1  = (x0	+ a1 )/2.0;	sy1  = (y0  + b1 )/2.0;
 	    sx2  = (sx1 + tx )/2.0;	sy2  = (sy1 + ty )/2.0;
-	    tx2  = (a2  + x3 )/2.0;	ty2  = (b2  + y3 )/2.0;
+	    tx2  = (a2	+ x3 )/2.0;	ty2  = (b2  + y3 )/2.0;
 	    tx1  = (tx2 + tx )/2.0;	ty1  = (ty2 + ty )/2.0;
 	    xmid = (sx2 + tx1)/2.0;	ymid = (sy2 + ty1)/2.0;
 
@@ -900,8 +900,8 @@ static bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
 	    }
 }
 
-static void genibmgl_itp_spline(s)
-F_spline	*s;
+static void
+genibmgl_itp_spline(F_spline *s)
 {
 	F_point		*p1, *p2;
 	F_control	*cp1, *cp2;
@@ -932,8 +932,8 @@ F_spline	*s;
 		    s->for_arrow->ht/ppi, s->for_arrow->wid/ppi);
 	}
 
-static quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
-double	a1, b1, a2, b2, a3, b3, a4, b4;
+static void
+quadratic_spline(double a1, double b1, double a2, double b2, double a3, double b3, double a4, double b4)
 {
 	double	x1, y1, x4, y4;
 	double	xmid, ymid;
@@ -947,18 +947,18 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	else {
 	    quadratic_spline(x1, y1, ((x1+a2)/2.0), ((y1+b2)/2.0),
 		((3.0*a2+a3)/4.0), ((3.0*b2+b3)/4.0), xmid, ymid);
-	    }
+	}
 
 	if (fabs(xmid - x4) < THRESHOLD && fabs(ymid - y4) < THRESHOLD)
 	    fprintf(tfp, "PA%.4f,%.4f;\n", x4, y4);
 	else {
 	    quadratic_spline(xmid, ymid, ((a2+3.0*a3)/4.0), ((b2+3.0*b3)/4.0),
 			((a3+x4)/2.0), ((b3+y4)/2.0), x4, y4);
-	    }
 	}
+}
 
-static void genibmgl_ctl_spline(s)
-F_spline	*s;
+static void
+genibmgl_ctl_spline(F_spline *s)
 {
 	F_point	*p;
 	double	cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4;
@@ -1000,7 +1000,7 @@ F_spline	*s;
 	    cx2	 = (x1 + 3.0*x2)/4.0;
 	    cy2	 = (y1 + 3.0*y2)/4.0;
 	    }
-	x1	 = x2; 
+	x1	 = x2;
 	y1	 = y2;
 	p	 = s->points->next;
 	x2	 = p->x/ppi;
@@ -1016,13 +1016,13 @@ F_spline	*s;
 	else {
 	    fprintf(tfp, "PA%.4f,%.4f;PU;\n", x1, y1);
 	    if (s->thickness != 0 && s->for_arrow)
-	    	draw_arrow_head(cx1, cy1, x1, y1,
+		draw_arrow_head(cx1, cy1, x1, y1,
 			s->for_arrow->ht/ppi, s->for_arrow->wid/ppi);
 	    }
 	}
 
-void genibmgl_spline(s)
-F_spline	*s;
+void
+genibmgl_spline(F_spline *s)
 {
 	if (s->thickness != 0) {
 	    set_style(s->style, s->style_val);
@@ -1040,8 +1040,8 @@ F_spline	*s;
 }
 
 #define	FONT(T) ((-1 < (T) && (T) < FONTS) ? (T): fonts)
-void genibmgl_text(t)
-F_text	*t;
+void
+genibmgl_text(F_text *t)
 {
 static	int	font	 = DEFAULT;	/* font				*/
 static	int	size	 = DEFAULT;	/* font size	    in points	*/
@@ -1051,7 +1051,7 @@ static	double	theta	 = 0.0;		/* character slant  in degrees	*/
 static	double	angle	 = 0.0;		/* label direction  in radians	*/
 	double	width;			/* character width  in centimeters */
 	double	height;			/* character height in centimeters */
-	Boolean newfont=False, newsize=False;
+	bool newfont=false, newsize=false;
 
 	if (font != FONT(t->font)) {
 	    font  = FONT(t->font);
@@ -1060,14 +1060,14 @@ static	double	angle	 = 0.0;		/* label direction  in radians	*/
 		theta  = slant[font];
 		fprintf(tfp, "SL%.4f;", tan(theta*M_PI/180.0));
 	    }
-	    newfont = True;
+	    newfont = true;
 	}
-	
+
 	if (size != t->size) {
 	    size  = t->size;	/* in points */
-	    newsize = True;
+	    newsize = true;
 	    if (!correct_font_size) {
-		/* HP Stick Font only:  use the 'SI' command to set the 
+		/* HP Stick Font only:	use the 'SI' command to set the
 		   cap height and pitch.
 		*/
 		width	 = size*wcmpp*wide[font];
@@ -1105,13 +1105,13 @@ static	double	angle	 = 0.0;		/* label direction  in radians	*/
 	    default:
 		fprintf(stderr, "unknown text position type\n");
 		exit(1);
-	}    
+	}
 
 	fprintf(tfp, "LB%s\003\n", t->cstring);
 }
 
 int
-genibmgl_end()
+genibmgl_end(void)
 {
 	/* IBMGL ending */
 	fprintf(tfp, "PU;SP;IN;\n");
@@ -1124,9 +1124,9 @@ genibmgl_end()
 }
 
 struct driver dev_ibmgl = {
-     	genibmgl_option,
+	genibmgl_option,
 	genibmgl_start,
-	gendev_null,
+	gendev_nogrid,
 	genibmgl_arc,
 	genibmgl_ellipse,
 	genibmgl_line,

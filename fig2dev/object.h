@@ -9,15 +9,17 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-/* for the xpm package */
-#ifdef USE_XPM
-#include <xpm.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#ifdef HAVE_X11_XPM_H
+#include <X11/xpm.h>
+#endif
 #endif
 
 #define	BLACK_COLOR	0
@@ -67,9 +69,9 @@ typedef		struct f_ellipse {
 			double			style_val;
 			int			direction;
 			double			angle;
-#define		       			UNFILLED	-1
-#define		       			WHITE_FILL	0
-#define		       			BLACK_FILL	20
+#define					UNFILLED	-1
+#define					WHITE_FILL	0
+#define					BLACK_FILL	20
 			struct f_pos		center;
 			struct f_pos		radiuses;
 			struct f_pos		start;
@@ -94,7 +96,7 @@ typedef		struct f_arc {
 			struct f_arrow		*for_arrow;
 			struct f_arrow		*back_arrow;
 			int			cap_style;
-/* IMPORTANT: everything above this point must be in the same order 
+/* IMPORTANT: everything above this point must be in the same order
 	      for ARC, LINE and SPLINE (LINE has join_style following cap_style */
 			int			direction;
 			struct {double x, y;}	center;
@@ -110,7 +112,7 @@ typedef		struct f_line {
 #define					T_BOX		2
 #define					T_POLYGON	3
 #define	                                T_ARC_BOX       4
-#define	                                T_PIC_BOX       5 
+#define	                                T_PIC_BOX       5
 
 			int			style;
 			int			thickness;
@@ -118,17 +120,17 @@ typedef		struct f_line {
 			int			fill_color;
 			int			depth;
 			int			pen;
- 			int			fill_style;
+			int			fill_style;
 			double			style_val;
 			struct f_arrow		*for_arrow;
 			struct f_arrow		*back_arrow;
 			int			cap_style;
 			struct f_point		*points;
-/* IMPORTANT: everything above this point must be in the same order 
+/* IMPORTANT: everything above this point must be in the same order
 	      for ARC, LINE and SPLINE (LINE has join_style following cap_style */
- 			int			join_style;
+			int			join_style;
 			int			radius;	/* for T_ARC_BOX */
-		    	struct f_pic   		*pic;
+			struct f_pic		*pic;
 			struct f_comment	*comments;
 			struct f_line		*next;
 			}
@@ -154,9 +156,9 @@ typedef struct f_pic {
     char            file[256];
     int             flipped;
     unsigned char  *bitmap;
-#ifdef USE_XPM
+#ifdef HAVE_X11_XPM_H
     XpmImage	    xpmimage;		/* for Xpm images */
-#endif /* USE_XPM */
+#endif
     unsigned char   cmap[3][MAXCOLORMAPSIZE]; /* for color files */
     int		    numcols;		/* number of colors in cmap */
     int		    transp;		/* transparent color (-1 if none) for GIFs */
@@ -264,7 +266,7 @@ typedef		struct f_spline {
 			struct f_arrow		*back_arrow;
 			int			cap_style;
 			struct f_point		*points;
-/* IMPORTANT: everything above this point must be in the same order 
+/* IMPORTANT: everything above this point must be in the same order
 	      for ARC, LINE and SPLINE (LINE has join_style following cap_style */
 
 			struct f_control	*controls;

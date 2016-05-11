@@ -1,0 +1,19 @@
+m4_define([FIG_FILE_TOP], [#FIG 3.2
+Landscape
+Center
+Inches
+Letter
+100.00
+Single
+-2
+1200 2])
+
+AT_INIT
+AT_COLOR_TESTS
+AT_TESTED(fig2dev)
+
+m4_include(read_sanitize.at)
+dnl Test picture box - create one!
+dnl Check distortion logic
+m4_include(pict2e.at)
+m4_include(arrows_eps.at)

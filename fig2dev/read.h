@@ -15,8 +15,8 @@
  *
  */
 
-extern int	read_fig();
-extern int	readfp_fig();
-extern void	read_fail_message();
-extern int	read_1_3_objects();
-extern void	print_comments();
+extern int	read_fig(char *file_name, F_compound *obj);
+extern int	readfp_fig(FILE *fp, F_compound *obj);
+extern void	read_fail_message(char *file, int err);
+extern int	read_1_3_objects(FILE *fp, F_compound *obj);
+extern void	print_comments(char *string1,F_comment *comment,char *string2);

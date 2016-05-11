@@ -26,7 +26,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "patchlevel.h"
 #include "transfig.h"
 
 
@@ -63,6 +62,7 @@ char *lname[] = {
 		"pdf",
 		"pdftex",
 		"pic",
+		"pict2e",
 		"pictex",
 		"png",
 		"ppm",
@@ -74,6 +74,7 @@ char *lname[] = {
 		"svg",
 		"textyl",
 		"tiff",
+		"tikz",
 		"tk",
 		"tpic",
 		"xbm",
@@ -106,7 +107,7 @@ char *argv[];
 	}
 	if (cp[1] == 'V') {
 		fprintf(stderr, "TransFig Version %s Patchlevel %s\n",
-							VERSION, PATCHLEVEL);
+					FIG_FILEVERSION, FIG_PATCHLEVEL);
 		exit(0);
 	} else if (cp[1] == 'h') {
 		fprintf(stderr,"usage: transfig <option> ... [[<flag> ... ] [<figure>] ... ] ...\n");

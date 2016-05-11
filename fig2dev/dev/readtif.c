@@ -7,8 +7,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -16,18 +16,15 @@
 #include "fig2dev.h"
 #include "object.h"
 
-extern	int	_read_pcx();
+extern	int	_read_pcx(FILE *pcxfile, F_pic *pic);	/* readpcx.c */
 
 /* return codes:  1 : success
 		  0 : invalid file
 */
 
+/* FIXME: Repair (to FILE *file) with code from readppm.c */
 int
-read_tif(filename,filetype,pic,llx,lly)
-    char	   *filename;
-    int		    filetype;
-    F_pic	   *pic;
-    int		   *llx, *lly;
+read_tif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 {
 	char	 buf[2*PATH_MAX+40],pcxname[PATH_MAX];
 	FILE	*tiftopcx;
@@ -66,4 +63,3 @@ read_tif(filename,filetype,pic,llx,lly)
 
 	return stat;
 }
-

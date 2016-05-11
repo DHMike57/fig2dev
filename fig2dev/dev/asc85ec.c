@@ -1,7 +1,6 @@
 /*
- * TransFig: Facility for Translating Fig code
- *
- * (C) Thomas Merz 1994-2002
+ * asc85ex.c: ASCII85 and Hex encoding for PostScript Level 2 and PDF
+ * Copyright (c) 1994-2002 by Thomas Merz
  * Used with permission 19-03-2002
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
@@ -9,13 +8,11 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
-
-/* ASCII85 and Hex encoding for PostScript Level 2 and PDF */
 
 #include "fig2dev.h"
 #include "psimage.h"
@@ -27,7 +24,7 @@ static unsigned long power85[5] = { 1L, 85L, 85L*85, 85L*85*85, 85L*85*85*85};
 static int outbytes;		/* Number of characters in an output line */
 
 /* read 0-4 Bytes. result: number of bytes read */
-static int 
+static int
 ReadSomeBytes(FILE * in)
 {
   register int count, i;
@@ -50,7 +47,7 @@ ReadSomeBytes(FILE * in)
  * so it's only a cosmetic flaw and not a functional restriction.
  */
 
-static void 
+static void
 outbyte(byte c, FILE * out)
 {    /* output one byte */
 
@@ -77,7 +74,7 @@ ASCII85Encode(FILE * in, FILE * out)
   /* 4 bytes read ==> output 5 bytes */
   while ((count = ReadSomeBytes(in)) == 4) {
     word = ((unsigned long)(((unsigned int)buf[0] << 8) + buf[1]) << 16) +
-                   (((unsigned int)buf[2] << 8) + buf[3]);
+		   (((unsigned int)buf[2] << 8) + buf[3]);
     if (word == 0)
       outbyte('z', out);       /* shortcut for 0 */
     else
@@ -94,7 +91,7 @@ ASCII85Encode(FILE * in, FILE * out)
   if (count != 0) {   /* 1-3 bytes left */
     for (i = count-1; i >= 0; i--)   /* accumulate bytes */
       word += (unsigned long)buf[i] << 8 * (3-i);
-    
+
     /* encoding as above, but output only count+1 bytes */
     for (i = 4; i >= 4-count; i--) {
       v = word / power85[i];
@@ -108,7 +105,7 @@ ASCII85Encode(FILE * in, FILE * out)
   return 0;
 }
 
-void 
+void
 ASCIIHexEncode(FILE *in, FILE * out) {
   static char buffer[512];
   static char BinToHex[] = "0123456789ABCDEF";
@@ -121,14 +118,13 @@ ASCIIHexEncode(FILE *in, FILE * out) {
 
   while ((n = fread(buffer, 1, sizeof(buffer), in)) != 0)
     for (i = 0, p = (unsigned char *) buffer; i < n; i++, p++) {
-      fputc(BinToHex[*p>>4], out);           /* first nibble  */
-      fputc(BinToHex[*p & 0x0F], out);       /* second nibble */
+      fputc(BinToHex[*p>>4], out);	     /* first nibble  */
+      fputc(BinToHex[*p & 0x0F], out);	     /* second nibble */
       if ((CharsPerLine += 2) >= 64) {
-        fputc('\n', out);
-        CharsPerLine = 0;
+	fputc('\n', out);
+	CharsPerLine = 0;
       }
     }
 
-  fputc('>', out);         /* EOD marker for PostScript hex strings */
+  fputc('>', out);	   /* EOD marker for PostScript hex strings */
 }
-

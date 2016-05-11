@@ -9,8 +9,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -22,6 +22,8 @@ extern struct driver dev_cgm;
 extern struct driver dev_epic;
 extern struct driver dev_ibmgl;
 extern struct driver dev_latex;
+extern struct driver dev_tikz;
+extern struct driver dev_pict2e;
 extern struct driver dev_pic;
 extern struct driver dev_pictex;
 extern struct driver dev_ps;
@@ -50,48 +52,51 @@ extern struct driver dev_dxf;
 
 /* all the bitmap formats use the dev_bitmaps driver */
 
-struct 
-	{char *name; struct driver *dev;}
-	drivers[] = {
-		{"box",		&dev_box}, 
-		{"cgm",		&dev_cgm}, 
-		{"eepic",	&dev_epic},
-		{"eepicemu",	&dev_epic},
-                {"emf",         &dev_emf}, 
-		{"epic",	&dev_epic},
-		{"eps",		&dev_eps},
-		{"gbx",         &dev_gbx},
-		{"ge",		&dev_ge},
-		{"gif",		&dev_bitmaps},
-		{"ibmgl",	&dev_ibmgl},
-		{"dxf",		&dev_dxf},
-		{"jpeg",	&dev_bitmaps},
-		{"latex",	&dev_latex},
-		{"map",		&dev_map},
-		{"mf",		&dev_mf},
-                {"mmp",         &dev_mp},
-                {"mp",          &dev_mp},
-		{"pcx",		&dev_bitmaps},
-		{"pdf",		&dev_pdf},
-		{"pdftex",	&dev_pdftex},
-		{"pdftex_t",	&dev_pdftex_t},
-		{"pic",		&dev_pic},
-		{"pictex",	&dev_pictex},
-		{"png",		&dev_bitmaps},
-		{"ppm",		&dev_bitmaps},
-		{"ps",		&dev_ps},
-		{"pstex",	&dev_pstex},
-		{"pstex_t",	&dev_pstex_t},
-		{"pstricks",	&dev_pstricks},
-		{"ptk",		&dev_ptk},
-		{"shape",	&dev_shape},
-		{"sld",		&dev_bitmaps},
-		{"svg",		&dev_svg},
-		{"textyl",	&dev_textyl},
-		{"tiff",	&dev_bitmaps},
-		{"tk",		&dev_tk},
-		{"tpic",	&dev_tpic},
-		{"xbm",		&dev_bitmaps},
-		{"xpm",		&dev_bitmaps},
-		{"",		NULL}
-	};
+struct {
+	char		*name;
+	struct driver	*dev;
+} drivers[] = {
+	{"box",		&dev_box},
+	{"cgm",		&dev_cgm},
+	{"eepic",	&dev_epic},
+	{"eepicemu",	&dev_epic},
+	{"emf",         &dev_emf},
+	{"epic",	&dev_epic},
+	{"eps",		&dev_eps},
+	{"gbx",         &dev_gbx},
+	{"ge",		&dev_ge},
+	{"gif",		&dev_bitmaps},
+	{"ibmgl",	&dev_ibmgl},
+	{"dxf",		&dev_dxf},
+	{"jpeg",	&dev_bitmaps},
+	{"latex",	&dev_latex},
+	{"map",		&dev_map},
+	{"mf",		&dev_mf},
+	{"mmp",         &dev_mp},
+	{"mp",          &dev_mp},
+	{"pcx",		&dev_bitmaps},
+	{"pdf",		&dev_pdf},
+	{"pdftex",	&dev_pdftex},
+	{"pdftex_t",	&dev_pdftex_t},
+	{"pic",		&dev_pic},
+	{"pict2e",	&dev_pict2e},
+	{"pictex",	&dev_pictex},
+	{"png",		&dev_bitmaps},
+	{"ppm",		&dev_bitmaps},
+	{"ps",		&dev_ps},
+	{"pstex",	&dev_pstex},
+	{"pstex_t",	&dev_pstex_t},
+	{"pstricks",	&dev_pstricks},
+	{"ptk",		&dev_ptk},
+	{"shape",	&dev_shape},
+	{"sld",		&dev_bitmaps},
+	{"svg",		&dev_svg},
+	{"textyl",	&dev_textyl},
+	{"tiff",	&dev_bitmaps},
+	{"tikz",	&dev_tikz},
+	{"tk",		&dev_tk},
+	{"tpic",	&dev_tpic},
+	{"xbm",		&dev_bitmaps},
+	{"xpm",		&dev_bitmaps},
+	{"",		NULL}
+};

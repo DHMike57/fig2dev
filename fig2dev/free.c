@@ -9,8 +9,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -20,8 +20,7 @@
 #include "free.h"
 
 void
-free_arc(list)
-F_arc	**list;
+free_arc(F_arc **list)
 {
 	F_arc	*a, *arc;
 
@@ -31,13 +30,12 @@ F_arc	**list;
 	    if (arc->for_arrow) free((char*)arc->for_arrow);
 	    if (arc->back_arrow) free((char*)arc->back_arrow);
 	    free((char*)arc);
-	    } 
-	*list = NULL;
 	}
+	*list = NULL;
+}
 
 void
-free_compound(list)
-F_compound	**list;
+free_compound(F_compound **list)
 {
 	F_compound	*c, *compound;
 
@@ -51,13 +49,12 @@ F_compound	**list;
 	    free_spline(&compound->splines);
 	    free_text(&compound->texts);
 	    free((char*)compound);
-	    } 
-	*list = NULL;
 	}
+	*list = NULL;
+}
 
 void
-free_ellipse(list)
-F_ellipse	**list;
+free_ellipse(F_ellipse **list)
 {
 	F_ellipse	*e, *ellipse;
 
@@ -65,13 +62,12 @@ F_ellipse	**list;
 	    ellipse = e;
 	    e = e->next;
 	    free((char*)ellipse);
-	    } 
-	*list = NULL;
 	}
+	*list = NULL;
+}
 
 void
-free_line(list)
-F_line	**list;
+free_line(F_line **list)
 {
 	F_line	*l, *line;
 
@@ -79,13 +75,12 @@ F_line	**list;
 	    line = l;
 	    l = l->next;
 	    free_linestorage(line);
-	    } 
-	*list = NULL;
 	}
+	*list = NULL;
+}
 
 void
-free_text(list)
-F_text	**list;
+free_text(F_text **list)
 {
 	F_text	*t, *text;
 
@@ -94,13 +89,12 @@ F_text	**list;
 	    t = t->next;
 	    free(text->cstring);
 	    free((char*)text);
-	    } 
-	*list = NULL;
 	}
+	*list = NULL;
+}
 
 void
-free_spline(list)
-F_spline	**list;
+free_spline(F_spline **list)
 {
 	F_spline	*s, *spline;
 
@@ -108,33 +102,31 @@ F_spline	**list;
 	    spline = s;
 	    s = s->next;
 	    free_splinestorage(spline);
-	    }
-	*list = NULL;
 	}
+	*list = NULL;
+}
 
 void
-free_splinestorage(s)
-F_spline      *s;
+free_splinestorage(F_spline *s)
 {
-        F_point		*p, *q;
-        F_control	*a, *b;
+	F_point		*p, *q;
+	F_control	*a, *b;
 
-        for (p = s->points; p != NULL; p = q) {
-            q = p->next;
-            free((char*)p);
-            }
-        for (a = s->controls; a != NULL; a = b) {
-            b = a->next;
-            free((char*)a);
-            }
+	for (p = s->points; p != NULL; p = q) {
+	    q = p->next;
+	    free((char*)p);
+	}
+	for (a = s->controls; a != NULL; a = b) {
+	    b = a->next;
+	    free((char*)a);
+	}
 	if (s->for_arrow) free((char*)s->for_arrow);
 	if (s->back_arrow) free((char*)s->back_arrow);
-        free((char*)s);
-        }
+	free((char*)s);
+}
 
 void
-free_linestorage(l)
-F_line	*l;
+free_linestorage(F_line *l)
 {
 	F_point	*p, *q;
 
@@ -145,4 +137,4 @@ F_line	*l;
 	if (l->for_arrow) free((char*)l->for_arrow);
 	if (l->back_arrow) free((char*)l->back_arrow);
 	free((char*)l);
-	}
+}

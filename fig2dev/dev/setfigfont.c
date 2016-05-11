@@ -7,8 +7,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -24,18 +24,17 @@
  *    #5   font shape
  */
 
-#include <fig2dev.h>
+#include "fig2dev.h"
 
-Boolean FontSizeOnly = False;
+bool FontSizeOnly = false;
 
 void
-define_setfigfont(tfp)
-     FILE *tfp;
+define_setfigfont(FILE *tfp)
 {
 #ifdef NFSS
 
     if ( FontSizeOnly )
-    	fprintf(tfp, "%%\n\
+	fprintf(tfp, "%%\n\
 \\begingroup\\makeatletter\\ifx\\SetFigFont\\undefined%%\n\
 \\gdef\\SetFigFont#1#2{%%\n\
   \\fontsize{#1}{#2pt}%%\n\

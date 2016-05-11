@@ -7,8 +7,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -22,11 +22,7 @@
 */
 
 int
-read_png(file,filetype,pic,llx,lly)
-    FILE	   *file;
-    int		    filetype;
-    F_pic	   *pic;
-    int		   *llx, *lly;
+read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 {
     register int    i, j;
     png_structp	    png_ptr;
@@ -50,7 +46,7 @@ read_png(file,filetype,pic,llx,lly)
 		(png_voidp) NULL, NULL, NULL);
     if (!png_ptr)
 	return 0;
-		
+
     info_ptr = png_create_info_struct(png_ptr);
     if (!info_ptr) {
 	png_destroy_read_struct(&png_ptr, (png_infopp) NULL, (png_infopp) NULL);
@@ -69,7 +65,7 @@ read_png(file,filetype,pic,llx,lly)
 	png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 	return 0;
     }
-	
+
     /* set up the input code */
     png_init_io(png_ptr, file);
 
@@ -151,9 +147,9 @@ read_png(file,filetype,pic,llx,lly)
 	    pic->cmap[BLUE][i]  = palette[i].blue;
 	    /* if user wants grayscale (-N) then map to gray */
 	    if (grayonly)
-		pic->cmap[RED][i] = pic->cmap[GREEN][i] = pic->cmap[BLUE][i] = 
-		    (int) (rgb2luminance(pic->cmap[RED][i]/255.0, 
-					pic->cmap[GREEN][i]/255.0, 
+		pic->cmap[RED][i] = pic->cmap[GREEN][i] = pic->cmap[BLUE][i] =
+		    (int) (rgb2luminance(pic->cmap[RED][i]/255.0,
+					pic->cmap[GREEN][i]/255.0,
 					pic->cmap[BLUE][i]/255.0)*255.0);
 	}
     }

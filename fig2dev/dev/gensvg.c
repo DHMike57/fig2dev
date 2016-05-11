@@ -10,8 +10,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -23,11 +23,11 @@
  *  from fig2svg -- convert FIG 3.2 to SVG
  *
  *  Original author:  Anthony Starks (ajstarks@home.com)
- *  Created: 17 May 2000 
+ *  Created: 17 May 2000
  *  Converted to gensvg by Brian Smith
- *  Further modified by Martin Kroeker (martin@ruby.chemie.uni-freiburg.de) 
+ *  Further modified by Martin Kroeker (martin@ruby.chemie.uni-freiburg.de)
  *  incorporating changes by Philipp Hahn and Justus Piater
- *  
+ *
  *  PH: Philipp Hahn
  *  JP: Justus Piater
  *  MK: Martin Kroeker
@@ -40,7 +40,7 @@
  *  MK 08-Dec-02: rotated text; shades and tints of fill colors; filled circles
  *  MK 11-Dec-02: scaling;proper font/slant/weight support; changed arc code
  *  12-Dec-02: fixes by Brian Smith: scale factor, orientation, ellipse fills
- *  MK 14-Dec-02: arc code rewrite, simplified line style handling, 
+ *  MK 14-Dec-02: arc code rewrite, simplified line style handling,
  *  arrowheads on arcs and lines (FIXME: not clipped), stroke->color command
  *  is simply 'stroke'
  *  MK 15-Dec-02: catch pattern fill flags, convert to tinted fills for now
@@ -48,137 +48,130 @@
  *  circle by diameter
  *  PH 03-Feb-03: Fix CIRCLE_BY_DIA, color/fill styles, update SVG DTD
  *  MK 10-Feb-03: do not encode space characters when in symbol font;
- *                always encode characters '&', '<' and '>'. Leave non-
- *		  alphabetic characters in the lower half of the symbol 
+ *		  always encode characters '&', '<' and '>'. Leave non-
+ *		  alphabetic characters in the lower half of the symbol
  *		  font unchanged.
  *  MK 12-Feb-03: Added complete character conversion tables for the symbol
- *		  and dingbat fonts (based on the information in Unicode 
+ *		  and dingbat fonts (based on the information in Unicode
  *		  Inc.'s symbol.txt and zdingbat.txt tables, version 0.2)
  *  MK 18-Feb-03: Added cap and join style fields for line and arc
- *  MK 24-Feb-03: Symbol and Dingbat fonts are no longer translated to 
+ *  MK 24-Feb-03: Symbol and Dingbat fonts are no longer translated to
  *		  font-family="Times" with both bold and italic flags set.
  *  MK 17-Jun-03: Fix for rotation angle bug. Correct rendering of 'tinted'
  *		  colors using code from www.cs.rit.edu. Added forgotten
  *		  pattern fill option for ellipses (circles).
  *  JP 21-Jan-04: Calculate proper bounding box instead of current paper
- *                dimensions. Added missing semicolons in some property
- *                strings, and proper linebreak characters in multi-line
- *                format strings.
+ *		  dimensions. Added missing semicolons in some property
+ *		  strings, and proper linebreak characters in multi-line
+ *		  format strings.
  *  MK 23-Jan-04: Pattern-filled objects are now drawn twice - painting the
- *                pattern over the fill color (if any). This solves the problem
- *                of missing color support in pattern fills (as reported by JP)
- *                Corrected filling of ellipses, which was still B/W only.
- *                Fixed bad tiling of diagonal patterns 1 - 3 (the old formula
- *                favoured exact angles over seamless tiling). Updated DTD.
+ *		  pattern over the fill color (if any). This solves the problem
+ *		  of missing color support in pattern fills (as reported by JP)
+ *		  Corrected filling of ellipses, which was still B/W only.
+ *		  Fixed bad tiling of diagonal patterns 1 - 3 (the old formula
+ *		  favoured exact angles over seamless tiling). Updated DTD.
  *  MK 25-Jan-04: Endpoints of polylines are now truncated when arrowheads
  *		  are drawn. Corrected rendering of type 0 (stick) arrowheads.
  *  MK 28-Jan-04: Fix for arc arrowhead orientation.
  *  MK 31-Jan-04: Corrected arc angle calculation (this time for good ?)
  *  MK 22-Feb-04: Picture support
- *  JP  1-Mar-04: Closed arrowheads should use polygons instead of polylines 
- *  JP  3-Mar-04: Corrected font family selection
+ *  JP	1-Mar-04: Closed arrowheads should use polygons instead of polylines
+ *  JP	3-Mar-04: Corrected font family selection
  *  JP 26-Mar-04: Corrected (and simplified) calculation of white-tinted
- *                fill colors (and removed the HSV/RGB conversion code)
+ *		  fill colors (and removed the HSV/RGB conversion code)
  *  MK 29-Mar-04: Added code for rounded boxes (polyline subtype 4)
  *  MK 30-Mar-04: Added code for boxes, explicit support for polygons
- *  MK 10-Apr-04: Added xml-space:preserve qualifier on texts to preserve 
- *                whitespace. Rewrote fill pattern handling to generate 
- *                patterns as needed - adding support for penwidth and color.
- *                Corrected tiling of all shingle patterns and reversal
- *                of horizontal shingles.
- *  RE  6-May-04: Changed degrees() to double for more precision
- *                Added linewidth() to transform all line widths in the
- *                 same way as genps.c : thin lines get thinner
- *                Changed circle radius to use F_ellipse::radiuses.x instead
- *                 of start and end (which seemed not to work correctly)
- *                 Query: Is this broken for byradius or bydiameter??
- *                Added rotation to ellipses
- *                Changed back to mapping Symbol to Times, greeks look a bit
- *                 better. Ultimately embedding PS fonts would be better.
- *                Removed newlines inside <text> printf, otherwise they get 
- *                 rendered as spaces due to xml:space="preserve"
- *                Removed extraneous comma between two halves of format
- *                 string in gensvg_arc, fixes Seg fault.
- *  MK  3-Aug-04  Split the multi-line format string in gensvg_arc in two to
- *                get rid of (compiler version-dependant) segfaults for good.
+ *  MK 10-Apr-04: Added xml-space:preserve qualifier on texts to preserve
+ *		  whitespace. Rewrote fill pattern handling to generate
+ *		  patterns as needed - adding support for penwidth and color.
+ *		  Corrected tiling of all shingle patterns and reversal
+ *		  of horizontal shingles.
+ *  RE	6-May-04: Changed degrees() to double for more precision
+ *		  Added linewidth() to transform all line widths in the
+ *		   same way as genps.c : thin lines get thinner
+ *		  Changed circle radius to use F_ellipse::radiuses.x instead
+ *		   of start and end (which seemed not to work correctly)
+ *		   Query: Is this broken for byradius or bydiameter??
+ *		  Added rotation to ellipses
+ *		  Changed back to mapping Symbol to Times, greeks look a bit
+ *		   better. Ultimately embedding PS fonts would be better.
+ *		  Removed newlines inside <text> printf, otherwise they get
+ *		   rendered as spaces due to xml:space="preserve"
+ *		  Removed extraneous comma between two halves of format
+ *		   string in gensvg_arc, fixes Seg fault.
+ *  MK	3-Aug-04  Split the multi-line format string in gensvg_arc in two to
+ *		  get rid of (compiler version-dependant) segfaults for good.
  *  MK 11-Sep-05: Added explicit stroke color to text to prevent black outline
- *                on colored text.
- *                Added support for latex-special formatted text, converting
- *                sub- and superscripts to either baseline-shift=sub/super 
- *                (the intended way of doing this in SVG) or "dy" offsets 
- *                (less elegant, but more likely to be supported by browsers
- *                and editors) depending on the NOSUPER define below.
- *                Tested with Batik-1.6, konqueror-3.4, firefox-1.5b1, 
- *                inkscape-0.41
+ *		  on colored text.
+ *		  Added support for latex-special formatted text, converting
+ *		  sub- and superscripts to either baseline-shift=sub/super
+ *		  (the intended way of doing this in SVG) or "dy" offsets
+ *		  (less elegant, but more likely to be supported by browsers
+ *		  and editors) depending on the NOSUPER define below.
+ *		  Tested with Batik-1.6, konqueror-3.4, firefox-1.5b1,
+ *		  inkscape-0.41
  *  MK 15-Sep-05: Use a font-family list of "Times,Symbol" for symbol
  *		  characters - the Times fontface does not contain all
  *		  elements of the Symbol font on all platforms.
- *  MK  4-Nov-05: Corrected length and appearance of stick-type arrows.
- *  MK  2-Jan-06: Added support for filled arcs.
+ *  MK	4-Nov-05: Corrected length and appearance of stick-type arrows.
+ *  MK	2-Jan-06: Added support for filled arcs.
  *  MK 26-Feb-06: Added support for dashed circles, ellipses and arcs.
- *		  Dash/gap lengths are now drawn according to style_val. 
+ *		  Dash/gap lengths are now drawn according to style_val.
  *		  Fixed several glitches uncovered by splint.
- *  MK 22-Apr-06: Corrected blue component of shaded colors (was always 
+ *  MK 22-Apr-06: Corrected blue component of shaded colors (was always
  *		  zero due to missing parentheses around typecast). Corrected
  *		  arrowheads of large arrows by adding an increased miterlimit.
- * 		  Corrected position of backward arrowheads on polylines with
+ *		  Corrected position of backward arrowheads on polylines with
  *		  both forward and backward arrows.
- *  MK  2-Jul-06: Patterns do not inherit their line width from the parent object
- *                (which may be zero if no visible boundary is desired), so always 
- *                use linewidth:1 
- *  MK 22-Oct-06: Changed unicode variant of lowercase phi to match its X11 Symbol 
- *                counterpart.
+ *  MK	2-Jul-06: Patterns do not inherit their line width from the parent object
+ *		  (which may be zero if no visible boundary is desired), so always
+ *		  use linewidth:1
+ *  MK 22-Oct-06: Changed unicode variant of lowercase phi to match its X11 Symbol
+ *		  counterpart.
  *  *********************************************************************************
- *  W3 recommendations for 
+ *  W3 recommendations for
  *  1.3 SVG Namespace, Public Identifier and System Identifier
  *
  *  The following are the SVG 1.1 namespace, public identifier and system identifier:
  *
  *  SVG Namespace:
- *      http://www.w3.org/2000/svg
+ *	http://www.w3.org/2000/svg
  *	xmlns:xlink="http://www.w3.org/1999/xlink"
  *  Public Identifier for SVG 1.1:
- *      PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ *	PUBLIC "-//W3C//DTD SVG 1.1//EN"
  *  System Identifier for the SVG 1.1 Recommendation:
- *      http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd
+ *	http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd
  *
  *  The following is an example document type declaration for an SVG document:
  *
- *  <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
- *           "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+ *  <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ *	     "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
  *
  *  Note that DTD listed in the System Identifier is a modularized DTD (ie. its
  *  contents are spread over multiple files), which means that a validator may have
  *  to fetch the multiple modules in order to validate. For that reason, there is
  *  a single flattened DTD available that corresponds to the SVG 1.1 modularized DTD.
- *  It can be found at http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-flat.dtd. 
+ *  It can be found at http://www.w3.org/Graphics/SVG/1.1/DTD/svg11-flat.dtd.
  *  *********************************************************************************
  */
 
-/* 
- * use a workaround for sub-/superscripting as long as most browsers do not
- * support the baseline-shift=sub/super attribute    
- */
-#define NOSUPER 1
- 
 #include "fig2dev.h"
 #include "object.h"
 #include "bound.h"
-#include "../../patchlevel.h"
 
-static void svg_arrow();
-static void generate_tile(int);
-static void svg_dash(int,double);
-          
+static void svg_arrow(F_line *obj, F_arrow *arrow, int pen_color);
+static void generate_tile(int number);
+static void svg_dash(int, double);
+
 #define PREAMBLE "<?xml version=\"1.0\" standalone=\"no\"?>\n"\
 "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n"\
 "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">"
 const char   *joinstyle[] = { "miter","round","bevel"};
 const char   *capstyle[] = { "butt","round", "square"};
 static unsigned int symbolchar[256]=
-{0,0,0,0,0,0,0,0,0,0, 
-0,0,0,0,0,0,0,0,0,0, 
-0,0,0,0,0,0,0,0,0,0, 
+{0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,
 0,0,0x0020,0x0021,0x2200,0x0023,0x2203,0x0025,
 0x0026,0x220B,0x0028,0x0029,0x2217,0x002B,0x002C,0x2212,0x002E,0x002F,0x0030,
 0x0031,0x0032,0x0033,0x0034,0x0035,0x0036,0x0037,0x0038,0x0039,0x003A,0x003B,
@@ -188,8 +181,8 @@ static unsigned int symbolchar[256]=
 0x005B,0x2234,0x005D,0x22A5,0x005F,0xF8E5,0x03B1,0x03B2,0x03C7,0x03B4,0x03B5,
 0x03D5 /*0x03C6*/,0x03B3,0x03B7,0x03B9,0x03D5,0x03BA,0x03BB,0x03BC,0x03BD,0x03BF,
 0x03C0,0x03B8,0x03C1,0x03C3,0x03C4,0x03C5,0x03D6,0x03C9,0x03BE,0x03C8,0x03B6,
-0x007B,0x007C,0x007D,0x223C,0,0,0,0,0,0,0,0,0, 
-0,0,0,0,0,0,0,0,0,0, 
+0x007B,0x007C,0x007D,0x223C,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0, 0,0,
 0,0,0x20AC,0x03D2,0x2032,0x2264,0x2044,0x221E,
 0x0192,0x2663,0x2666,0x2665,0x2660,0x2194,0x2190,0x2191,0x2192,0x2193,0x00B0,
@@ -200,10 +193,10 @@ static unsigned int symbolchar[256]=
 0x21D1,0x21D2,0x21D3,0x25CA,0x2329,0xF8E8,0xF8E9,0xF8EA,0x2211,0xF8EB,0xF8EC,
 0xF8ED,0xF8EE,0xF8EF,0xF8F0,0xF8F1,0xF8F2,0xF8F3,0xF8F4,0,0x232A,0x222B,0x2320,
 0xF8F5,0x2321,0xF8F6,0xF8F7,0xF8F8,0xF8F9,0xF8FA,0xF8FB,0xF8FC,0xF8FD,0xF8FE,0
-};     
-      
+};
+
 static unsigned int dingbatchar[256]=
-{0,0,0,0,0,0,0,0,0,0, 
+{0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0x0020,
 0x2701,0x2702,0x2703,0x2704,0x260E,0x2706,0x2707,0x2708,0x2709,0x261B,
 0x261E,0x270C,0x270D,0x270E,0x270F,0x2710,0x2711,0x2712,0x2713,0x2714,
@@ -230,100 +223,100 @@ static unsigned int dingbatchar[256]=
 };
 
 /* arrowhead arrays */
-Point   points[50], fillpoints[50], clippoints[50];
-int     npoints, nfillpoints, nclippoints;
-int     arrowx1, arrowy1;	/* first point of object */
-int     arrowx2, arrowy2;	/* second point of object */
+F_pos	points[50], fillpoints[50], clippoints[50];
+int	npoints, nfillpoints, nclippoints;
+int	arrowx1, arrowy1;	/* first point of object */
+int	arrowx2, arrowy2;	/* second point of object */
 
-static int tileno=0; /* number of current tile */ 
+static int tileno=0; /* number of current tile */
 
 static F_point *p;
 
 static unsigned int
-rgbColorVal (int colorIndex)
-{     				/* taken from genptk.c */
+rgbColorVal(int colorIndex)
+{				/* taken from genptk.c */
     unsigned int rgb;
     static unsigned int rgbColors[NUM_STD_COLS] = {
-      	0x000000, 0x0000ff, 0x00ff00, 0x00ffff, 0xff0000, 0xff00ff,
-      	0xffff00, 0xffffff, 0x00008f, 0x0000b0, 0x0000d1, 0x87cfff,
-      	0x008f00, 0x00b000, 0x00d100, 0x008f8f, 0x00b0b0, 0x00d1d1,
-      	0x8f0000, 0xb00000, 0xd10000, 0x8f008f, 0xb000b0, 0xd100d1,
-      	0x803000, 0xa14000, 0xb46100, 0xff8080, 0xffa1a1, 0xffbfbf,
-      	0xffe0e0, 0xffd600
+	0x000000, 0x0000ff, 0x00ff00, 0x00ffff, 0xff0000, 0xff00ff,
+	0xffff00, 0xffffff, 0x00008f, 0x0000b0, 0x0000d1, 0x87cfff,
+	0x008f00, 0x00b000, 0x00d100, 0x008f8f, 0x00b0b0, 0x00d1d1,
+	0x8f0000, 0xb00000, 0xd10000, 0x8f008f, 0xb000b0, 0xd100d1,
+	0x803000, 0xa14000, 0xb46100, 0xff8080, 0xffa1a1, 0xffbfbf,
+	0xffe0e0, 0xffd600
     };
 
     if (colorIndex == DEFAULT)
-      	rgb = rgbColors[0];
+	rgb = rgbColors[0];
     else if (colorIndex < NUM_STD_COLS)
-      	rgb = rgbColors[colorIndex];
+	rgb = rgbColors[colorIndex];
     else
-      	rgb = ((user_colors[colorIndex - NUM_STD_COLS].r & 0xff) << 16)
-      	    | ((user_colors[colorIndex - NUM_STD_COLS].g & 0xff) << 8)
-      	    | (user_colors[colorIndex - NUM_STD_COLS].b & 0xff);
+	rgb = ((user_colors[colorIndex - NUM_STD_COLS].r & 0xff) << 16)
+	    | ((user_colors[colorIndex - NUM_STD_COLS].g & 0xff) << 8)
+	    | (user_colors[colorIndex - NUM_STD_COLS].b & 0xff);
     return rgb;
 }
 
 static unsigned int
-rgbFillVal (int colorIndex, int area_fill)
+rgbFillVal(int colorIndex, int area_fill)
 {
     unsigned int rgb, r, g, b;
     float t;
     short   tintflag = 0;
     static unsigned int rgbColors[NUM_STD_COLS] = {
-      	0x000000, 0x0000ff, 0x00ff00, 0x00ffff, 0xff0000, 0xff00ff,
-      	0xffff00, 0xffffff, 0x00008f, 0x0000b0, 0x0000d1, 0x87cfff,
-      	0x008f00, 0x00b000, 0x00d100, 0x008f8f, 0x00b0b0, 0x00d1d1,
-      	0x8f0000, 0xb00000, 0xd10000, 0x8f008f, 0xb000b0, 0xd100d1,
-      	0x803000, 0xa14000, 0xb46100, 0xff8080, 0xffa1a1, 0xffbfbf,
-      	0xffe0e0, 0xffd600
+	0x000000, 0x0000ff, 0x00ff00, 0x00ffff, 0xff0000, 0xff00ff,
+	0xffff00, 0xffffff, 0x00008f, 0x0000b0, 0x0000d1, 0x87cfff,
+	0x008f00, 0x00b000, 0x00d100, 0x008f8f, 0x00b0b0, 0x00d1d1,
+	0x8f0000, 0xb00000, 0xd10000, 0x8f008f, 0xb000b0, 0xd100d1,
+	0x803000, 0xa14000, 0xb46100, 0xff8080, 0xffa1a1, 0xffbfbf,
+	0xffe0e0, 0xffd600
     };
 
 
     if (colorIndex == DEFAULT)
-          	rgb = rgbColors[0];
+	rgb = rgbColors[0];
     else if (colorIndex < NUM_STD_COLS)
-      	rgb = rgbColors[colorIndex];
+	rgb = rgbColors[colorIndex];
     else
-      	rgb = ((user_colors[colorIndex - NUM_STD_COLS].r & 0xff) << 16)
-      	    | ((user_colors[colorIndex - NUM_STD_COLS].g & 0xff) << 8)
-      	    | (user_colors[colorIndex - NUM_STD_COLS].b & 0xff);
+	rgb = ((user_colors[colorIndex - NUM_STD_COLS].r & 0xff) << 16)
+	    | ((user_colors[colorIndex - NUM_STD_COLS].g & 0xff) << 8)
+	    | (user_colors[colorIndex - NUM_STD_COLS].b & 0xff);
 
     tintflag = 0;
     if (area_fill > 20) {
-      	tintflag = 1;
-      	area_fill -= 20;
+	tintflag = 1;
+	area_fill -= 20;
     }
     if (colorIndex > 0 && colorIndex != 7) {
-      	if (tintflag) {
-      	    r = ((rgb & ~0xFFFF) >> 16);
-      	    g = ((rgb & 0xFF00) >> 8); 
-      	    b = (rgb & ~0xFFFF00) ;
+	if (tintflag) {
+	    r = ((rgb & ~0xFFFF) >> 16);
+	    g = ((rgb & 0xFF00) >> 8);
+	    b = (rgb & ~0xFFFF00) ;
 
 	    t= area_fill / 20.;
 	    r += t * (0xFF-r);
 	    g += t * (0xff-g);
-	    b += t * (0xff-b);	
+	    b += t * (0xff-b);
 
       rgb = ((r &0xff) << 16) + ((g&0xff) << 8) + (b&0xff);
-      	}
-      	else 
-      	    rgb = (((int) ((area_fill / 20.) * ((rgb & ~0xFFFF) >> 16)) << 16) +
-      		   ((int) ((area_fill / 20.) * ((rgb & 0xFF00) >> 8)) << 8)
-      		   + ((int) ((area_fill / 20.) * (rgb & ~0xFFFF00))) );
+	}
+	else
+	    rgb = (((int) ((area_fill / 20.) * ((rgb & ~0xFFFF) >> 16)) << 16) +
+		   ((int) ((area_fill / 20.) * ((rgb & 0xFF00) >> 8)) << 8)
+		   + ((int) ((area_fill / 20.) * (rgb & ~0xFFFF00))) );
     }
     else {
-      	if (colorIndex == 0 || colorIndex == DEFAULT)
-      	    area_fill = 20 - area_fill;
-      	rgb =
-      	    ((area_fill * 255 / 20) << 16) + ((area_fill * 255 / 20) << 8) +
-      	    area_fill * 255 / 20;
+	if (colorIndex == 0 || colorIndex == DEFAULT)
+	    area_fill = 20 - area_fill;
+	rgb =
+	    ((area_fill * 255 / 20) << 16) + ((area_fill * 255 / 20) << 8) +
+	    area_fill * 255 / 20;
     }
 
     return rgb;
 }
 
 static double
-degrees (double angle)
+degrees(double angle)
 {
    return -angle / M_PI * 180.0;
 }
@@ -335,29 +328,25 @@ linewidth_adj(int linewidth)
    return (double)linewidth <= THICK_SCALE ? linewidth/2 : linewidth-THICK_SCALE;
 }
 
-
 void
-gensvg_option (opt, optarg)
-     char    opt;
-     char   *optarg;
+gensvg_option(char opt, char *optarg)
 {
     switch (opt) {
-      	case 'L':		/* ignore language and magnif. */
-      	case 'm':
-      	    break;
-      	case 'z':
-      	    (void) strcpy (papersize, optarg);
-      	    paperspec = True;
-      	    break;
-      	default:
-      	    put_msg (Err_badarg, opt, "svg");
-      	    exit (1);
+	case 'G':		/* ignore language and grid */
+	case 'L':
+	    break;
+	case 'z':
+	    (void) strcpy (papersize, optarg);
+	    paperspec = true;
+	    break;
+	default:
+	    put_msg (Err_badarg, opt, "svg");
+	    exit (1);
     }
 }
 
 void
-gensvg_start (objects)
-     F_compound *objects;
+gensvg_start(F_compound *objects)
 {
     struct paperdef *pd;
     int     pagewidth = -1, pageheight = -1;
@@ -365,28 +354,28 @@ gensvg_start (objects)
     time_t  when;
     char    stime[80];
 
-    fprintf (tfp, "%s\n", PREAMBLE);
-    fprintf (tfp, "<!-- Creator: %s Version %s Patchlevel %s -->\n",
-      	     prog, VERSION, PATCHLEVEL);
+    fprintf(tfp, "%s\n", PREAMBLE);
+    fprintf(tfp, "<!-- Creator: %s Version %s Patchlevel %s -->\n",
+		  prog, FIG_FILEVERSION, FIG_PATCHLEVEL);
 
     (void) time (&when);
-    strcpy (stime, ctime (&when));
+    strcpy(stime, ctime(&when));
     /* remove trailing newline from date/time */
-    stime[strlen (stime) - 1] = '\0';
-    fprintf (tfp, "<!-- CreationDate: %s -->\n", stime);
-    fprintf (tfp, "<!-- Magnification: %.3f -->\n", mag);
+    stime[strlen(stime) - 1] = '\0';
+    fprintf(tfp, "<!-- CreationDate: %s -->\n", stime);
+    fprintf(tfp, "<!-- Magnification: %.3f -->\n", mag);
 
     /* convert paper size from ppi to inches */
     for (pd = paperdef; pd->name != NULL; pd++)
-      	if (strcasecmp (papersize, pd->name) == 0) {
-      	    pagewidth = pd->width;
+	if (strcasecmp(papersize, pd->name) == 0) {
+	    pagewidth = pd->width;
 	    pageheight = pd->height;
-	    strcpy (papersize, pd->name);	/* use the "nice" form */
+	    strcpy(papersize, pd->name);	/* use the "nice" form */
 	    break;
 	}
     if (pagewidth < 0 || pageheight < 0) {
-	(void) fprintf (stderr, "Unknown paper size `%s'\n", papersize);
-	exit (1);
+	(void) fprintf(stderr, "Unknown paper size `%s'\n", papersize);
+	exit(1);
     }
     if (landscape) {
 	vw = pagewidth;
@@ -402,23 +391,22 @@ gensvg_start (objects)
 	     vw / ppi, vh / ppi, vx, vy, vw, vh);
 
     if (objects->comments)
-	print_comments ("<desc>", objects->comments, "</desc>");
-    fprintf (tfp, "<g style=\"stroke-width:.025in; fill:none\">\n");
+	print_comments("<desc>", objects->comments, "</desc>");
+    fprintf(tfp, "<g style=\"stroke-width:.025in; fill:none\">\n");
     /* only define the patterns if one is used */
 
 
 }
 
 int
-gensvg_end ()
+gensvg_end(void)
 {
-    fprintf (tfp, "</g>\n</svg>\n");
+    fprintf(tfp, "</g>\n</svg>\n");
     return 0;
 }
 
 void
-gensvg_line (l)
-     F_line *l;
+gensvg_line(F_line *l)
 {
 int px,py,firstpoint;
 int px2,py2,width,height,rotation;
@@ -427,10 +415,10 @@ double hl;
 
 
     if (!l->points) return; /*safeguard against old, buggy fig files*/
-    
+
     if (l->type ==5 ) {
-	fprintf (tfp,"<!-- Image -->\n");
-	fprintf (tfp,"<image xlink:href=\"file://%s\" preserveAspectRatio=\"none\"\n",l->pic->file);
+	fprintf(tfp,"<!-- Image -->\n");
+	fprintf(tfp,"<image xlink:href=\"file://%s\" preserveAspectRatio=\"none\"\n",l->pic->file);
 	p=l->points;
 	px=p->x;
 	py=p->y;
@@ -439,35 +427,35 @@ double hl;
 	width=px2-px;
 	height=py2-py;
 	rotation=0;
-	if (width<0 && height <0) 
+	if (width<0 && height <0)
 		rotation=180;
 	else if (width <0 && height >=0)
 		rotation=90;
 	else if (width >=0 && height <0)
 		rotation=270;
 	if (l->pic->flipped) rotation-=90;
-	height=abs(height);		
-	width=abs(width);	
+	height=abs(height);
+	width=abs(width);
 	px=(px<px2)?px:px2;
 	py=(py<py2)?py:py2;
 	px2=px+width/2;
 	py2=py+height/2;
 	if (l->pic->flipped) {
-	fprintf (tfp,"transform=\"rotate(%d %d %d) scale(-1,1) translate(%d,%d)\"\n",
+	fprintf(tfp,"transform=\"rotate(%d %d %d) scale(-1,1) translate(%d,%d)\"\n",
 	rotation,px2,py2,-2*px2,0);
 	} else if (rotation !=0) {
-	fprintf (tfp,"transform=\"rotate(%d %d %d)\"\n",rotation,px2,py2);
+	fprintf(tfp,"transform=\"rotate(%d %d %d)\"\n",rotation,px2,py2);
 	}
-	
-	fprintf (tfp,"x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" />\n",
-	(int)(px*mag), (int)(py*mag), (int)(width*mag), (int)(height*mag)); 
+
+	fprintf(tfp,"x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" />\n",
+	(int)(px*mag), (int)(py*mag), (int)(width*mag), (int)(height*mag));
     return;
     }
-    
+
     if (l->type == 2 || l->type == 4) /* box or arc box */
     {
-    fprintf (tfp, "<!-- Line: box -->\n");
-    print_comments ("<!-- ", l->comments, " -->");
+    fprintf(tfp, "<!-- Line: box -->\n");
+    print_comments("<!-- ", l->comments, " -->");
 	px=l->points->x;
 	py=l->points->y;
 	px2=l->points->next->next->x;
@@ -477,51 +465,51 @@ double hl;
 	px=(px<px2)?px:px2;
 	py=(py<py2)?py:py2;
 
-    fprintf (tfp, "<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" rx=\"%d\" \n",
-    	(int)(px*mag),(int)(py*mag),(int)(width*mag),(int)(height*mag), 
-        (l->type == 2 ? 0 : (int)(l->radius*mag)));     
-    fprintf (tfp, "style=\"stroke:#%6.6x;stroke-width:%d;\n",
-	     rgbColorVal (l->pen_color), (int) ceil (linewidth_adj(l->thickness) * mag));
+    fprintf(tfp, "<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" rx=\"%d\" \n",
+	(int)(px*mag),(int)(py*mag),(int)(width*mag),(int)(height*mag),
+	(l->type == 2 ? 0 : (int)(l->radius*mag)));
+    fprintf(tfp, "style=\"stroke:#%6.6x;stroke-width:%d;\n",
+	     rgbColorVal(l->pen_color), (int) ceil(linewidth_adj(l->thickness) * mag));
 
-	fprintf (tfp, "stroke-linejoin:%s; stroke-linecap:%s;\n",
+	fprintf(tfp, "stroke-linejoin:%s; stroke-linecap:%s;\n",
 			joinstyle[l->join_style],capstyle[l->cap_style]);
 
-        if (l->style > 0) 
+	if (l->style > 0)
 	    svg_dash(l->style,l->style_val);
 
     if (l->fill_style != -1 )
-	fprintf (tfp, "fill:#%6.6x;\n", rgbFillVal (l->fill_color, 
+	fprintf(tfp, "fill:#%6.6x;\n", rgbFillVal(l->fill_color,
 	(l->fill_style>40 ? 20 : l->fill_style)));
-    fprintf (tfp, "\"/>\n");
+    fprintf(tfp, "\"/>\n");
 
     if (l->fill_style > 40) { /*repeat object to paint pattern over fill */
-	
-	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
+
+	fprintf(tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
 	rgbColorVal(l->pen_color));
 	generate_tile(l->fill_style - 40);
-	fprintf (tfp, "</g>\n");	
-	
-    fprintf (tfp, "<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" rx=\"%d\" \n",
-	(int)(px*mag),(int)(py*mag),(int)(width*mag),(int)(height*mag),
-        (l->type == 2 ? 0 : (int)(l->radius*mag)));     
-    fprintf (tfp, "style=\"stroke:#%6.6x;stroke-width:%d;\n",
-	     rgbColorVal (l->pen_color), (int) ceil (linewidth_adj(l->thickness) * mag));
+	fprintf(tfp, "</g>\n");
 
-	fprintf (tfp, "stroke-linejoin:%s; stroke-linecap:%s;\n",
+    fprintf(tfp, "<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" rx=\"%d\" \n",
+	(int)(px*mag),(int)(py*mag),(int)(width*mag),(int)(height*mag),
+	(l->type == 2 ? 0 : (int)(l->radius*mag)));
+    fprintf(tfp, "style=\"stroke:#%6.6x;stroke-width:%d;\n",
+	     rgbColorVal(l->pen_color), (int) ceil (linewidth_adj(l->thickness) * mag));
+
+	fprintf(tfp, "stroke-linejoin:%s; stroke-linecap:%s;\n",
 			joinstyle[l->join_style],capstyle[l->cap_style]);
 
-        if (l->style > 0) 
+	if (l->style > 0)
 	    svg_dash(l->style,l->style_val);
 
-	fprintf (tfp, "fill:url(#tile%d);\n", tileno);
-    fprintf (tfp, "\"/>\n");
+	fprintf(tfp, "fill:url(#tile%d);\n", tileno);
+    fprintf(tfp, "\"/>\n");
     }
     return;
     }
-        
-    fprintf (tfp, "<!-- Line -->\n");
-    print_comments ("<!-- ", l->comments, " -->");
-    fprintf (tfp, "<%s points=\"", (l->type == 1 ? "polyline" : "polygon"));
+
+    fprintf(tfp, "<!-- Line -->\n");
+    print_comments("<!-- ", l->comments, " -->");
+    fprintf(tfp, "<%s points=\"", (l->type == 1 ? "polyline" : "polygon"));
 	px=py=-100000;
 	firstpoint=0;
     for (p = l->points; p; p = p->next) {
@@ -535,10 +523,10 @@ double hl;
 		if (l->back_arrow->type != 0 )
 		hl= l->back_arrow->ht;
 		else
-                  hl = 1.1 * l->thickness;
+		  hl = 1.1 * l->thickness;
 		px += (int)(hl * cosa1 +0.5);
 		py += (int)(hl * sina1 +0.5);
-		firstpoint=0;	
+		firstpoint=0;
 		}
 	fprintf(tfp, "%d,%d\n", (int) (px*mag), (int) (py*mag));
 	}
@@ -550,9 +538,9 @@ double hl;
 	px=p->x;
 	py=p->y;
     }
-	if (!l->for_arrow) 
+	if (!l->for_arrow)
 	   fprintf(tfp, "%d,%d\n", (int) (px*mag), (int) (py*mag));
-	else { 
+	else {
 	dx=(double)(arrowx2-arrowx1);
 	dy=(double)(arrowy2-arrowy1);
 	len=sqrt(dx*dx+dy*dy);
@@ -561,49 +549,49 @@ double hl;
 		if (l->for_arrow->type != 0)
 		hl= l->for_arrow->ht;
 		else
-                hl = 1.1*l->thickness;
+		hl = 1.1*l->thickness;
 	px = arrowx2 - (int)(hl * cosa +0.5);
 	py = arrowy2 - (int)(hl * sina +0.5);
 	   fprintf(tfp, "%d,%d\n", (int) (px*mag), (int) (py*mag));
-	}	
-    fprintf (tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;\n",
-	     rgbColorVal (l->pen_color), (int) ceil (linewidth_adj(l->thickness) * mag));
+	}
+    fprintf(tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;\n",
+	     rgbColorVal(l->pen_color), (int) ceil(linewidth_adj(l->thickness) * mag));
 
-	fprintf (tfp, "stroke-linejoin:%s; stroke-linecap:%s;\n",
+	fprintf(tfp, "stroke-linejoin:%s; stroke-linecap:%s;\n",
 			joinstyle[l->join_style],capstyle[l->cap_style]);
 
-        if (l->style > 0) 
+	if (l->style > 0)
 	    svg_dash(l->style,l->style_val);
 
     if (l->fill_style != -1 )
-	fprintf (tfp, "fill:#%6.6x;\n", rgbFillVal (l->fill_color, (l->fill_style>40 ? 20 : l->fill_style)));
-    fprintf (tfp, "\"/>\n");
+	fprintf(tfp, "fill:#%6.6x;\n", rgbFillVal(l->fill_color, (l->fill_style>40 ? 20 : l->fill_style)));
+    fprintf(tfp, "\"/>\n");
 
     if (l->fill_style > 40) { /*repeat object to paint pattern over fill */
 
-	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
+	fprintf(tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
 	rgbColorVal(l->pen_color) );
 	generate_tile(l->fill_style - 40);
-	fprintf (tfp, "</g>\n");	
+	fprintf(tfp, "</g>\n");
 
-    fprintf (tfp, "<%s points=\"", (l->type == 1 ? "polyline" : "polygon"));
+    fprintf(tfp, "<%s points=\"", (l->type == 1 ? "polyline" : "polygon"));
     for (p = l->points; p; p = p->next) {
-	fprintf (tfp, "%d,%d\n", (int) (p->x * mag), (int) (p->y * mag));
+	fprintf(tfp, "%d,%d\n", (int) (p->x * mag), (int) (p->y * mag));
     }
 
-    fprintf (tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;\n",
-	     rgbColorVal (l->pen_color), (int) ceil (linewidth_adj(l->thickness) * mag));
+    fprintf(tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;\n",
+	     rgbColorVal(l->pen_color), (int) ceil (linewidth_adj(l->thickness) * mag));
 
-	fprintf (tfp, "stroke-linejoin:%s; stroke-linecap:%s;\n",
+	fprintf(tfp, "stroke-linejoin:%s; stroke-linecap:%s;\n",
 			joinstyle[l->join_style],capstyle[l->cap_style]);
 
-        if (l->style > 0) 
+	if (l->style > 0)
 	    svg_dash(l->style,l->style_val);
 
-	fprintf (tfp, "fill:url(#tile%d);\n", tileno);
-    fprintf (tfp, "\"/>\n");
+	fprintf(tfp, "fill:url(#tile%d);\n", tileno);
+    fprintf(tfp, "\"/>\n");
     }
-    
+
 
     if (l->for_arrow != NULL) {
 	arrowx2+=l->thickness*cosa;
@@ -623,179 +611,175 @@ double hl;
     }
 }
 
-
 void
-gensvg_spline (s) /* not used by fig2dev */
-     F_spline *s;
+gensvg_spline( /* not used by fig2dev */
+	F_spline *s)
 {
-    fprintf (tfp, "<!-- Spline -->\n");
-    print_comments ("<!-- ", s->comments, " -->");
+    fprintf(tfp, "<!-- Spline -->\n");
+    print_comments("<!-- ", s->comments, " -->");
 
-    fprintf (tfp, "<path style=\"stroke:#%6.6x;stroke-width:%d\" d=\"",
-	     rgbColorVal (s->pen_color), (int) ceil (linewidth_adj(s->thickness) * mag));
-    fprintf (tfp, "M %d,%d \n C", (int) (s->points->x * mag), (int) (s->points->y * mag));
+    fprintf(tfp, "<path style=\"stroke:#%6.6x;stroke-width:%d\" d=\"",
+	     rgbColorVal(s->pen_color), (int) ceil (linewidth_adj(s->thickness) * mag));
+    fprintf(tfp, "M %d,%d \n C", (int) (s->points->x * mag), (int) (s->points->y * mag));
     for (p = s->points++; p; p = p->next) {
-	fprintf (tfp, "%d,%d\n", (int) (p->x * mag), (int) (p->y * mag));
+	fprintf(tfp, "%d,%d\n", (int) (p->x * mag), (int) (p->y * mag));
     }
-    fprintf (tfp, "\"/>\n");
+    fprintf(tfp, "\"/>\n");
 }
 
 void
-gensvg_arc (a)
-     F_arc  *a;
+gensvg_arc(F_arc *a)
 {
     double     radius;
     double  x, y, angle, dx, dy;
 
-    fprintf (tfp, "<!-- Arc -->\n");
-    print_comments ("<!-- ", a->comments, " -->");
+    fprintf(tfp, "<!-- Arc -->\n");
+    print_comments("<!-- ", a->comments, " -->");
 
     dx = a->point[0].x - a->center.x;
     dy = a->point[0].y - a->center.y;
-    radius = sqrt (dx * dx + dy * dy);
-    
+    radius = sqrt(dx * dx + dy * dy);
+
 
 	x= (a->point[0].x-a->center.x) * (a->point[2].x-a->center.x)
 	   +(a->point[0].y-a->center.y) * (a->point[2].y-a->center.y);
 	y= (a->point[0].x-a->center.x) * (a->point[2].y-a->center.y)
 	   -(a->point[0].y-a->center.y) * (a->point[2].x-a->center.x);
 
-	if (x == 0.0 && y == 0.0) 
+	if (x == 0.0 && y == 0.0)
 		angle=0.0;
 	else
 	angle = atan2(y,x);
-	
+
 	if (angle <0.0) angle += 2.*M_PI;
-	
-	angle *= 180./M_PI;	   	   
+
+	angle *= 180./M_PI;	
 
 	if (a->direction==1) angle = 360.-angle;
 
-    fprintf (tfp, "<path style=\"stroke:#%6.6x;stroke-width:%d;stroke-linecap:%s;",
-    	     rgbColorVal (a->pen_color), (int) ceil (linewidth_adj(a->thickness) * mag),
+    fprintf(tfp, "<path style=\"stroke:#%6.6x;stroke-width:%d;stroke-linecap:%s;",
+	     rgbColorVal(a->pen_color), (int) ceil (linewidth_adj(a->thickness) * mag),
 	     capstyle[a->cap_style]);
 
-        if (a->style > 0) 
+	if (a->style > 0)
 	    svg_dash(a->style,a->style_val);
 
     if (a->fill_style != -1)
-	    fprintf (tfp, "fill:#%6.6x\"\n", rgbFillVal (a->fill_color, (a->fill_style > 40 ? 20 : a->fill_style)));
-    else 
-            fprintf (tfp,"\"\n");
+	    fprintf(tfp, "fill:#%6.6x\"\n", rgbFillVal(a->fill_color, (a->fill_style > 40 ? 20 : a->fill_style)));
+    else
+	    fprintf(tfp,"\"\n");
 
-    fprintf (tfp, "d=\"M %d,%d A %d %d % d % d % d % d % d \" />\n",
-             (int) (a->point[0].x * mag), 
+    fprintf(tfp, "d=\"M %d,%d A %d %d % d % d % d % d % d \" />\n",
+	     (int) (a->point[0].x * mag),
 	     (int) (a->point[0].y * mag),
 	     (int) (radius * mag), (int) (radius * mag),
 	     0,
-	     (fabs(angle) >180. ) ? 1 : 0, 
-	     (fabs(angle) >0. && a->direction==0) ? 1 : 0, 
+	     (fabs(angle) >180. ) ? 1 : 0,
+	     (fabs(angle) >0. && a->direction==0) ? 1 : 0,
 	     (int) (a->point[2].x * mag), (int) (a->point[2].y * mag));
 
 	if (a->fill_style > 40) {
 
-	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
+	fprintf(tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
 	rgbColorVal(a->pen_color) );
 	generate_tile(a->fill_style - 40);
-	fprintf (tfp, "</g>\n");	
-	
-    fprintf (tfp, "<path style=\"stroke:#%6.6x;stroke-width:%d;stroke-linecap:%s;fill:url(#tile%d);\"\n",
-	     rgbColorVal (a->pen_color), (int) ceil (linewidth_adj(a->thickness) * mag),
+	fprintf(tfp, "</g>\n");
+
+    fprintf(tfp, "<path style=\"stroke:#%6.6x;stroke-width:%d;stroke-linecap:%s;fill:url(#tile%d);\"\n",
+	     rgbColorVal(a->pen_color), (int) ceil (linewidth_adj(a->thickness) * mag),
 	     capstyle[a->cap_style],tileno);
-    fprintf (tfp, "d=\"M %d,%d A %d %d % d % d % d % d % d \" />\n",
-             (int) (a->point[0].x * mag), 
+    fprintf(tfp, "d=\"M %d,%d A %d %d % d % d % d % d % d \" />\n",
+	     (int) (a->point[0].x * mag),
 	     (int) (a->point[0].y * mag),
 	     (int) (radius * mag), (int) (radius * mag),
 	     0,
-	     (fabs(angle) >180. ) ? 1 : 0, 
-	     (fabs(angle) >0. && a->direction==0) ? 1 : 0, 
+	     (fabs(angle) >180. ) ? 1 : 0,
+	     (fabs(angle) >0. && a->direction==0) ? 1 : 0,
 	     (int) (a->point[2].x * mag), (int) (a->point[2].y * mag));
 	}
 
     if (a->for_arrow) {
 	arrowx2 = a->point[2].x;
 	arrowy2 = a->point[2].y;
-	compute_arcarrow_angle (a->center.x, a->center.y,
+	compute_arcarrow_angle(a->center.x, a->center.y,
 				(double) arrowx2, (double) arrowy2,
 				a->direction, a->for_arrow, &arrowx1, &arrowy1);
-	svg_arrow(a, a->for_arrow, a->pen_color);
+	svg_arrow((F_line *) a, a->for_arrow, a->pen_color);
     }
 
     if (a->back_arrow) {
 	arrowx2 = a->point[0].x;
 	arrowy2 = a->point[0].y;
-	compute_arcarrow_angle (a->center.x, a->center.y,
+	compute_arcarrow_angle(a->center.x, a->center.y,
 				(double) arrowx2, (double) arrowy2,
 				a->direction ^ 1, a->back_arrow, &arrowx1, &arrowy1);
-	svg_arrow(a, a->back_arrow, a->pen_color);
+	svg_arrow((F_line *)a, a->back_arrow, a->pen_color);
     }
 }
 
 void
-gensvg_ellipse (e)
-     F_ellipse *e;
+gensvg_ellipse(F_ellipse *e)
 {
     int cx = (int) (e->center.x * mag);
     int cy = (int) (e->center.y * mag);
     if (e->type == T_CIRCLE_BY_RAD || e->type == T_CIRCLE_BY_DIA) {
-        int r = (int) (e->radiuses.x * mag);
-	fprintf (tfp, "<!-- Circle -->\n");
-	print_comments ("<!-- ", e->comments, " -->");
-	fprintf (tfp, "<circle cx=\"%d\" cy=\"%d\" r=\"%d\"\n style=\"", cx, cy, r);
+	int r = (int) (e->radiuses.x * mag);
+	fprintf(tfp, "<!-- Circle -->\n");
+	print_comments("<!-- ", e->comments, " -->");
+	fprintf(tfp, "<circle cx=\"%d\" cy=\"%d\" r=\"%d\"\n style=\"", cx, cy, r);
 	if (e->fill_style != -1)
-	    fprintf (tfp, "fill:#%6.6x;", rgbFillVal (e->fill_color, (e->fill_style > 40 ? 20 : e->fill_style)));
-        if (e->style > 0) {
+	    fprintf(tfp, "fill:#%6.6x;", rgbFillVal(e->fill_color, (e->fill_style > 40 ? 20 : e->fill_style)));
+	if (e->style > 0) {
 	    svg_dash(e->style,e->style_val);
 	}
-        fprintf (tfp, "stroke:#%6.6x;stroke-width:%d;\"/>\n",
-	     rgbColorVal (e->pen_color), (int) ceil (linewidth_adj(e->thickness) * mag));
+	fprintf(tfp, "stroke:#%6.6x;stroke-width:%d;\"/>\n",
+	     rgbColorVal(e->pen_color), (int) ceil (linewidth_adj(e->thickness) * mag));
 
 	if (e->fill_style > 40) {
 
-	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
+	fprintf(tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
 	rgbColorVal(e->pen_color) );
 	generate_tile(e->fill_style - 40);
-	fprintf (tfp, "</g>\n");	
-	
-	fprintf (tfp, "<circle cx=\"%d\" cy=\"%d\" r=\"%d\"\n style=\"", cx, cy, r);
-        fprintf (tfp, "fill:url(#tile%d);\n", tileno);
-        fprintf (tfp, "stroke:#%6.6x;stroke-width:%d;\"/>\n",
-	     rgbColorVal (e->pen_color), (int) ceil (linewidth_adj(e->thickness) * mag));
+	fprintf(tfp, "</g>\n");
+
+	fprintf(tfp, "<circle cx=\"%d\" cy=\"%d\" r=\"%d\"\n style=\"", cx, cy, r);
+	fprintf(tfp, "fill:url(#tile%d);\n", tileno);
+	fprintf(tfp, "stroke:#%6.6x;stroke-width:%d;\"/>\n",
+	     rgbColorVal(e->pen_color), (int) ceil(linewidth_adj(e->thickness) * mag));
 	}
     }
     else {
 	int rx = (int) (e->radiuses.x * mag);
 	int ry = (int) (e->radiuses.y * mag);
-	fprintf (tfp, "<!-- Ellipse -->\n");
-	print_comments ("<!-- ", e->comments, " -->");
-	fprintf (tfp, "<ellipse transform=\"translate(%d,%d) rotate(%.8lf)\" rx=\"%d\" ry=\"%d\"\n style=\"",
+	fprintf(tfp, "<!-- Ellipse -->\n");
+	print_comments("<!-- ", e->comments, " -->");
+	fprintf(tfp, "<ellipse transform=\"translate(%d,%d) rotate(%.8lf)\" rx=\"%d\" ry=\"%d\"\n style=\"",
 		 cx, cy, degrees(e->angle), rx, ry);
 	if (e->fill_style != -1)
-	    fprintf (tfp, "fill:#%6.6x;", rgbFillVal (e->fill_color, (e->fill_style > 40 ? 20 : e->fill_style)));
-        if (e->style > 0) 
+	    fprintf(tfp, "fill:#%6.6x;", rgbFillVal(e->fill_color, (e->fill_style > 40 ? 20 : e->fill_style)));
+	if (e->style > 0)
 	    svg_dash(e->style,e->style_val);
 
-        fprintf (tfp, "stroke:#%6.6x;stroke-width:%d;\"/>\n",
-        	 rgbColorVal (e->pen_color), (int) ceil (linewidth_adj(e->thickness) * mag));
+	fprintf(tfp, "stroke:#%6.6x;stroke-width:%d;\"/>\n",
+	  rgbColorVal(e->pen_color), (int) ceil(linewidth_adj(e->thickness) * mag));
 
 	if (e->fill_style > 40) {
 
-	fprintf (tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
+	fprintf(tfp, "<g style=\"stroke:#%6.6x; stroke-width:1\" >\n",
 	rgbColorVal(e->pen_color) );
 	generate_tile(e->fill_style - 40);
-	fprintf (tfp, "</g>\n");	
-	fprintf (tfp, "<ellipse transform=\"translate(%d,%d) rotate(%.8lf)\" rx=\"%d\" ry=\"%d\"\n style=\"",
+	fprintf(tfp, "</g>\n");
+	fprintf(tfp, "<ellipse transform=\"translate(%d,%d) rotate(%.8lf)\" rx=\"%d\" ry=\"%d\"\n style=\"",
 		 cx, cy, degrees(e->angle), rx, ry);
-        fprintf (tfp, "fill:url(#tile%d);\n", tileno);
-        fprintf (tfp, "stroke:#%6.6x;stroke-width:%d;\"/>\n",
-	         rgbColorVal (e->pen_color), (int) ceil (linewidth_adj(e->thickness) * mag));
+	fprintf(tfp, "fill:url(#tile%d);\n", tileno);
+	fprintf(tfp, "stroke:#%6.6x;stroke-width:%d;\"/>\n",
+		 rgbColorVal(e->pen_color), (int) ceil(linewidth_adj(e->thickness) * mag));
 	}
-    }	
+    }
 }
 
 void
-gensvg_text (t)
-     F_text *t;
+gensvg_text(F_text *t)
 {
     unsigned char *cp;
     int ch;
@@ -808,31 +792,31 @@ gensvg_text (t)
     int y = (int) (t->base_y * mag);
     int dy = 0;
 
-    fprintf (tfp, "<!-- Text -->\n");
-    print_comments ("<!-- ", t->comments, " -->");
+    fprintf(tfp, "<!-- Text -->\n");
+    print_comments("<!-- ", t->comments, " -->");
 
     if (t->angle != 0) {
-	fprintf (tfp, "<g transform=\"translate(%d,%d) rotate(%.8lf)\" >\n",
-		 x, y, degrees (t->angle));
+	fprintf(tfp, "<g transform=\"translate(%d,%d) rotate(%.8lf)\" >\n",
+		 x, y, degrees(t->angle));
 	x = y = 0;
     }
-    fprintf (tfp, "<text xml:space=\"preserve\" x=\"%d\" y=\"%d\" fill=\"#%6.6x\"  font-family=\"%s\" "\
+    fprintf(tfp, "<text xml:space=\"preserve\" x=\"%d\" y=\"%d\" fill=\"#%6.6x\"  font-family=\"%s\" "\
 	     "font-style=\"%s\" font-weight=\"%s\" font-size=\"%d\" text-anchor=\"%s\">",
-	     x, y, rgbColorVal (t->color), family[t->font / 4],
+	     x, y, rgbColorVal(t->color), family[t->font / 4],
 	     ( (t->font % 2 == 0 || t->font >31) ? "normal" : "italic"),
-	     ( (t->font % 4 < 2 || t->font >31) ? "normal" : "bold"), (int) (ceil (t->size * 12 * mag)),
+	     ( (t->font % 4 < 2 || t->font >31) ? "normal" : "bold"), (int) (ceil(t->size * 12 * mag)),
 	     anchor[t->type]);
 
     if (t->font == 32) {
 	for (cp = (unsigned char *) t->cstring; *cp; cp++) {
 		ch=*cp;
-	    fprintf (tfp, "&#%d;", symbolchar[ch]);
+	    fprintf(tfp, "&#%d;", symbolchar[ch]);
 	}
     }
     else if (t->font == 34) {
 	for (cp = (unsigned char *) t->cstring; *cp; cp++) {
 		ch=*cp;
-	    fprintf (tfp, "&#%d;", dingbatchar[ch]);
+	    fprintf(tfp, "&#%d;", dingbatchar[ch]);
 	}
     }
     else if (special_text(t)) {
@@ -842,63 +826,63 @@ gensvg_text (t)
 	for (cp = (unsigned char *) t->cstring; *cp; cp++) {
 	    ch = *cp;
 	    if (( supsub == 2 &&ch == '}' ) || supsub==1) {
-#ifdef NOSUPER	        
-	        fprintf(tfp,"</tspan><tspan dy=\"%d\">",-dy);
-                old_dy=-dy;
-#else
-	        fprintf(tfp,"</tspan>");
-#endif
-	        supsub=0;
-	        if (ch == '}') {
-                  cp++;
-                  ch=*cp;
-                }
-            } 
-           if (ch == '_' || ch == '^') {
-                supsub=1;
 #ifdef NOSUPER
-                if (dy != 0) fprintf(tfp,"</tspan>");
-                if (ch == '_') dy=(int)(35.*mag); 
-                if (ch == '^') dy=(int)(-50.*mag);
-                fprintf(tfp,"<tspan font-size=\"%d\" dy=\"%d\">",(int) (ceil (t->size * 8 * mag)),dy+old_dy);
-                old_dy=0;
+		fprintf(tfp,"</tspan><tspan dy=\"%d\">",-dy);
+		old_dy=-dy;
 #else
-                fprintf(tfp,"<tspan font-size=\"%d\" baseline-shift=\"",(int) (ceil (t->size * 8 * mag)));
-                if (ch == '_') fprintf(tfp,"sub\">");
-                if (ch == '^') fprintf(tfp,"super\">");
+		fprintf(tfp,"</tspan>");
 #endif
-                cp++;
-                ch=*cp;
-                if (ch == '{' ) { 
-                  supsub=2;
-                  cp++;
-                  ch=*cp;
-                }
-            } 
+		supsub=0;
+		if (ch == '}') {
+		  cp++;
+		  ch=*cp;
+		}
+	    }
+	   if (ch == '_' || ch == '^') {
+		supsub=1;
 #ifdef NOSUPER
-                else old_dy=0;
+		if (dy != 0) fprintf(tfp,"</tspan>");
+		if (ch == '_') dy=(int)(35.*mag);
+		if (ch == '^') dy=(int)(-50.*mag);
+		fprintf(tfp,"<tspan font-size=\"%d\" dy=\"%d\">",(int) (ceil(t->size * 8 * mag)),dy+old_dy);
+		old_dy=0;
+#else
+		fprintf(tfp,"<tspan font-size=\"%d\" baseline-shift=\"",(int) (ceil(t->size * 8 * mag)));
+		if (ch == '_') fprintf(tfp,"sub\">");
+		if (ch == '^') fprintf(tfp,"super\">");
 #endif
-	    if (ch < 128 && ch != 38 && ch != 60 && ch != 62 
+		cp++;
+		ch=*cp;
+		if (ch == '{' ) {
+		  supsub=2;
+		  cp++;
+		  ch=*cp;
+		}
+	    }
+#ifdef NOSUPER
+		else old_dy=0;
+#endif
+	    if (ch < 128 && ch != 38 && ch != 60 && ch != 62
 	    && ch != '$')
-		(void)fputc (ch, tfp);
+		(void)fputc(ch, tfp);
 	    else if (ch != '$')
-		fprintf (tfp, "&#%d;", ch);
-    } 
+		fprintf(tfp, "&#%d;", ch);
+    }
     } else {
 	for (cp = (unsigned char *) t->cstring; *cp; cp++) {
 	    ch = *cp;
 	    if (ch < 128 && ch != 38 && ch != 60 && ch != 62)
-		(void)fputc (ch, tfp);
+		(void)fputc(ch, tfp);
 	    else
-		fprintf (tfp, "&#%d;", ch);
+		fprintf(tfp, "&#%d;", ch);
 	}
     }
-#ifdef NOSUPER    
+#ifdef NOSUPER
     if (dy != 0) fprintf(tfp,"</tspan>");
-#endif    
-    fprintf (tfp, "</text>\n");
+#endif
+    fprintf(tfp, "</text>\n");
     if (t->angle != 0)
-	fprintf (tfp, "</g>");
+	fprintf(tfp, "</g>");
 }
 
 static void
@@ -907,275 +891,278 @@ svg_arrow(F_line *obj, F_arrow *arrow, int pen_color)
     int     i;
     if (arrow) {
 	calc_arrow(arrowx1, arrowy1, arrowx2, arrowy2,
-		    obj->thickness, arrow, 
+		    obj->thickness, arrow,
 		    points, &npoints, fillpoints, &nfillpoints, clippoints, &nclippoints);
 
-      fprintf (tfp, "<!-- Arrowhead on XXXpoint %d %d - %d %d-->\n",(int)(arrowx1*mag),(int)(arrowy1*mag),(int)(arrowx2*mag),(int)(arrowy2*mag));
-      fprintf (tfp, "<%s points=\"", (arrow->type == 0 ? "polyline" : "polygon"));
+      fprintf(tfp, "<!-- Arrowhead on XXXpoint %d %d - %d %d-->\n",(int)(arrowx1*mag),(int)(arrowy1*mag),(int)(arrowx2*mag),(int)(arrowy2*mag));
+      fprintf(tfp, "<%s points=\"", (arrow->type == 0 ? "polyline" : "polygon"));
       for (i = 0; i < npoints; i++) {
-          fprintf (tfp, "%d %d\n", (int) (points[i].x * mag),
-      	     (int) (points[i].y * mag));
+	  fprintf(tfp, "%d %d\n", (int) (points[i].x * mag),
+	     (int) (points[i].y * mag));
       }
       if (arrow->type > 0)
-          fprintf (tfp, "\n");
-      fprintf (tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;stroke-miterlimit:8;\n",
-      	 rgbColorVal (pen_color), (int) ceil (linewidth_adj((int)arrow->thickness) * mag));
+	  fprintf(tfp, "\n");
+      fprintf(tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;stroke-miterlimit:8;\n",
+	 rgbColorVal(pen_color), (int) ceil(linewidth_adj((int)arrow->thickness) * mag));
       if (arrow->type > 0) {
 	    if (arrow->style == 0 && nfillpoints == 0)
-		fprintf (tfp, "fill:white;\"/>\n");
+		fprintf(tfp, "fill:white;\"/>\n");
 	    else {
 		if (nfillpoints == 0)
-		    fprintf (tfp, "fill:#%6.6x;\"/>\n", rgbColorVal (pen_color));
+		    fprintf(tfp, "fill:#%6.6x;\"/>\n", rgbColorVal(pen_color));
 		else {
 		    /* first fill with white */
-		    fprintf (tfp, "fill:white;\"/>\n");
-		    fprintf (tfp, "<!-- Just filled with white now fill special area -->\n");
+		    fprintf(tfp, "fill:white;\"/>\n");
+		    fprintf(tfp, "<!-- Just filled with white now fill special area -->\n");
 		    /* now fill the special area */
-		    fprintf (tfp, "<path d=\"M ");
+		    fprintf(tfp, "<path d=\"M ");
 		    for (i = 0; i < nfillpoints; i++) {
-			fprintf (tfp, "%d %d\n", (int) (fillpoints[i].x * mag),
+			fprintf(tfp, "%d %d\n", (int) (fillpoints[i].x * mag),
 			     (int) (fillpoints[i].y * mag));
 		    }
-		    fprintf (tfp, "Z\n");
-		    fprintf (tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;stroke-miterlimit:8;\n",
-			 rgbColorVal (pen_color), (int) ceil (linewidth_adj((int)arrow->thickness) * mag));
-		    fprintf (tfp, "fill:#%6.6x;\"/>\n", rgbColorVal (pen_color));
+		    fprintf(tfp, "Z\n");
+		    fprintf(tfp, "\" style=\"stroke:#%6.6x;stroke-width:%d;stroke-miterlimit:8;\n",
+			 rgbColorVal(pen_color), (int) ceil(linewidth_adj((int)arrow->thickness) * mag));
+		    fprintf(tfp, "fill:#%6.6x;\"/>\n", rgbColorVal(pen_color));
 		}
 	    }
       } else
-          fprintf (tfp, "\"/>\n");
+	  fprintf(tfp, "\"/>\n");
     }
 }
 
-void generate_tile(int number) {
+static void
+generate_tile(int number)
+{
 
 	tileno++;
-	fprintf (tfp, "<defs>\n");
-	fprintf (tfp, "<pattern id=\"tile%d\" x=\"0\" y=\"0\" width=\"200\" height=\"200\"\n",
+	fprintf(tfp, "<defs>\n");
+	fprintf(tfp, "<pattern id=\"tile%d\" x=\"0\" y=\"0\" width=\"200\" height=\"200\"\n",
 		tileno);
-	fprintf (tfp, "         patternUnits=\"userSpaceOnUse\">\n");
-	
+	fprintf(tfp, "	       patternUnits=\"userSpaceOnUse\">\n");
+
 	switch(number) {
-	case 1:	
-	    fprintf (tfp, "<path d=\"M 0 -100 200 20\" />\n");
-	    fprintf (tfp, "<path d=\"M 0  -60 200 60\" />\n");
-	    fprintf (tfp, "<path d=\"M 0  -20 200 100\" />\n");
-	    fprintf (tfp, "<path d=\"M 0   20 200 140\" />\n");
-	    fprintf (tfp, "<path d=\"M 0   60 200 180\" />\n");
-	    fprintf (tfp, "<path d=\"M 0  100 200 220\" />\n");
-	    fprintf (tfp, "<path d=\"M 0  140 200 260\" />\n");
-	    fprintf (tfp, "<path d=\"M 0  180 200 300\" />\n");
-	break;
-	
-	case 2:
-	    fprintf (tfp, "<path d=\"M 200 -100 0  20\" />\n");
-	    fprintf (tfp, "<path d=\"M 200  -60 0  60\" />\n");
-	    fprintf (tfp, "<path d=\"M 200  -20 0 100\" />\n");
-	    fprintf (tfp, "<path d=\"M 200   20 0 140\" />\n");
-	    fprintf (tfp, "<path d=\"M 200   60 0 180\" />\n");
-	    fprintf (tfp, "<path d=\"M 200  100 0 220\" />\n");
-	    fprintf (tfp, "<path d=\"M 200  140 0 260\" />\n");
-	    fprintf (tfp, "<path d=\"M 200  180 0 300\" />\n");
-	break;
-		
-	case 3:
-        fprintf (tfp, "<path d=\"M 0 -100 200 20\" />\n");
-        fprintf (tfp, "<path d=\"M 200 -100 0 20\" />\n");
-        fprintf (tfp, "<path d=\"M 0 -60 200 60\" />\n");
-        fprintf (tfp, "<path d=\"M 200 -60 0 60\" />\n");
-        fprintf (tfp, "<path d=\"M 0 -20 200 100\" />\n");
-        fprintf (tfp, "<path d=\"M 200 -20 0 100\" />\n");
-        fprintf (tfp, "<path d=\"M 0 20 200 140\" />\n");
-        fprintf (tfp, "<path d=\"M 200 20 0 140\" />\n");
-        fprintf (tfp, "<path d=\"M 0 60 200 180\" />\n");
-        fprintf (tfp, "<path d=\"M 200 60 0 180\" />\n");
-        fprintf (tfp, "<path d=\"M 0 100 200 220\" />\n");
-        fprintf (tfp, "<path d=\"M 200 100 0 220\" />\n");
-        fprintf (tfp, "<path d=\"M 0 140 200 260\" />\n");
-        fprintf (tfp, "<path d=\"M 200 140 0 260\" />\n");
-        fprintf (tfp, "<path d=\"M 0 180 200 300\" />\n");
-        fprintf (tfp, "<path d=\"M 200 180 0 300\" />\n");
+	case 1:
+	    fprintf(tfp, "<path d=\"M 0 -100 200 20\" />\n");
+	    fprintf(tfp, "<path d=\"M 0  -60 200 60\" />\n");
+	    fprintf(tfp, "<path d=\"M 0  -20 200 100\" />\n");
+	    fprintf(tfp, "<path d=\"M 0   20 200 140\" />\n");
+	    fprintf(tfp, "<path d=\"M 0   60 200 180\" />\n");
+	    fprintf(tfp, "<path d=\"M 0  100 200 220\" />\n");
+	    fprintf(tfp, "<path d=\"M 0  140 200 260\" />\n");
+	    fprintf(tfp, "<path d=\"M 0  180 200 300\" />\n");
 	break;
 
-	case 4:	
-	fprintf (tfp, "<path d=\"M 100 0 200 100\" />\n");
-	fprintf (tfp, "<path d=\"M 0 0 200 200\" />\n");
-	fprintf (tfp, "<path d=\"M 0 100 100 200\" />\n");
+	case 2:
+	    fprintf(tfp, "<path d=\"M 200 -100 0  20\" />\n");
+	    fprintf(tfp, "<path d=\"M 200  -60 0  60\" />\n");
+	    fprintf(tfp, "<path d=\"M 200  -20 0 100\" />\n");
+	    fprintf(tfp, "<path d=\"M 200   20 0 140\" />\n");
+	    fprintf(tfp, "<path d=\"M 200   60 0 180\" />\n");
+	    fprintf(tfp, "<path d=\"M 200  100 0 220\" />\n");
+	    fprintf(tfp, "<path d=\"M 200  140 0 260\" />\n");
+	    fprintf(tfp, "<path d=\"M 200  180 0 300\" />\n");
 	break;
-		
+
+	case 3:
+	fprintf(tfp, "<path d=\"M 0 -100 200 20\" />\n");
+	fprintf(tfp, "<path d=\"M 200 -100 0 20\" />\n");
+	fprintf(tfp, "<path d=\"M 0 -60 200 60\" />\n");
+	fprintf(tfp, "<path d=\"M 200 -60 0 60\" />\n");
+	fprintf(tfp, "<path d=\"M 0 -20 200 100\" />\n");
+	fprintf(tfp, "<path d=\"M 200 -20 0 100\" />\n");
+	fprintf(tfp, "<path d=\"M 0 20 200 140\" />\n");
+	fprintf(tfp, "<path d=\"M 200 20 0 140\" />\n");
+	fprintf(tfp, "<path d=\"M 0 60 200 180\" />\n");
+	fprintf(tfp, "<path d=\"M 200 60 0 180\" />\n");
+	fprintf(tfp, "<path d=\"M 0 100 200 220\" />\n");
+	fprintf(tfp, "<path d=\"M 200 100 0 220\" />\n");
+	fprintf(tfp, "<path d=\"M 0 140 200 260\" />\n");
+	fprintf(tfp, "<path d=\"M 200 140 0 260\" />\n");
+	fprintf(tfp, "<path d=\"M 0 180 200 300\" />\n");
+	fprintf(tfp, "<path d=\"M 200 180 0 300\" />\n");
+	break;
+
+	case 4:
+	fprintf(tfp, "<path d=\"M 100 0 200 100\" />\n");
+	fprintf(tfp, "<path d=\"M 0 0 200 200\" />\n");
+	fprintf(tfp, "<path d=\"M 0 100 100 200\" />\n");
+	break;
+
 	case 5:
-	fprintf (tfp, "<path d=\"M 100 0 0 100\" />\n");
-	fprintf (tfp, "<path d=\"M 200 0 0 200\" />\n");
-	fprintf (tfp, "<path d=\"M 200 100 100 200\" />\n");
-	break;	
+	fprintf(tfp, "<path d=\"M 100 0 0 100\" />\n");
+	fprintf(tfp, "<path d=\"M 200 0 0 200\" />\n");
+	fprintf(tfp, "<path d=\"M 200 100 100 200\" />\n");
+	break;
 
 	case 6:
-	fprintf (tfp, "<path d=\"M 100 0 200 100\" />\n");
-	fprintf (tfp, "<path d=\"M 0 0 200 200\" />\n");
-	fprintf (tfp, "<path d=\"M 0 100 100 200\" />\n");
-	fprintf (tfp, "<path d=\"M 100 0 0 100\" />\n");
-	fprintf (tfp, "<path d=\"M 200 0 0 200\" />\n");
-	fprintf (tfp, "<path d=\"M 200 100 100 200\" />\n");
-	break;
-		
-	case 7:
-	fprintf (tfp, "<path d=\"M 0 0 0 50\" />\n");
-	fprintf (tfp, "<path d=\"M 0 50 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 100 50 100 150\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 200 150\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 0 200\" />\n");
-	break;
-	
-	case 8:	
-	fprintf (tfp, "<path d=\"M 0 0 50 0\" />\n");
-	fprintf (tfp, "<path d=\"M 50 0 50 200\" />\n");
-	fprintf (tfp, "<path d=\"M 50 100 150 100\" />\n");
-	fprintf (tfp, "<path d=\"M 150 0 150 200\" />\n");
-	fprintf (tfp, "<path d=\"M 150 0 200 0\" />\n");
-	break;
-	
-	case 9:
-	fprintf (tfp, "<path d=\"M 0 50 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 200 150\" />\n");
-	break;
-		
-	case 10:
-	fprintf (tfp, "<path d=\"M 50 0 50 200\" />\n");
-	fprintf (tfp, "<path d=\"M 150 0 150 200\" />\n");
-	break;
-		
-	case 11:
-	fprintf (tfp, "<path d=\"M 0 50 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 200 150\" />\n");
-	fprintf (tfp, "<path d=\"M 50 0 50 200\" />\n");
-	fprintf (tfp, "<path d=\"M 150 0 150 200\" />\n");
+	fprintf(tfp, "<path d=\"M 100 0 200 100\" />\n");
+	fprintf(tfp, "<path d=\"M 0 0 200 200\" />\n");
+	fprintf(tfp, "<path d=\"M 0 100 100 200\" />\n");
+	fprintf(tfp, "<path d=\"M 100 0 0 100\" />\n");
+	fprintf(tfp, "<path d=\"M 200 0 0 200\" />\n");
+	fprintf(tfp, "<path d=\"M 200 100 100 200\" />\n");
 	break;
 
-	case 12: 
-	fprintf (tfp, "<path d=\"M 175 0 150 50\" />\n");
-	fprintf (tfp, "<path d=\"M 0 50 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 100 50 50 150\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 200 150\" />\n");
-	fprintf (tfp, "<path d=\"M 200 150 175 200\" />\n");
+	case 7:
+	fprintf(tfp, "<path d=\"M 0 0 0 50\" />\n");
+	fprintf(tfp, "<path d=\"M 0 50 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 100 50 100 150\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 200 150\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 0 200\" />\n");
 	break;
-		
+
+	case 8:
+	fprintf(tfp, "<path d=\"M 0 0 50 0\" />\n");
+	fprintf(tfp, "<path d=\"M 50 0 50 200\" />\n");
+	fprintf(tfp, "<path d=\"M 50 100 150 100\" />\n");
+	fprintf(tfp, "<path d=\"M 150 0 150 200\" />\n");
+	fprintf(tfp, "<path d=\"M 150 0 200 0\" />\n");
+	break;
+
+	case 9:
+	fprintf(tfp, "<path d=\"M 0 50 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 200 150\" />\n");
+	break;
+
+	case 10:
+	fprintf(tfp, "<path d=\"M 50 0 50 200\" />\n");
+	fprintf(tfp, "<path d=\"M 150 0 150 200\" />\n");
+	break;
+
+	case 11:
+	fprintf(tfp, "<path d=\"M 0 50 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 200 150\" />\n");
+	fprintf(tfp, "<path d=\"M 50 0 50 200\" />\n");
+	fprintf(tfp, "<path d=\"M 150 0 150 200\" />\n");
+	break;
+
+	case 12:
+	fprintf(tfp, "<path d=\"M 175 0 150 50\" />\n");
+	fprintf(tfp, "<path d=\"M 0 50 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 100 50 50 150\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 200 150\" />\n");
+	fprintf(tfp, "<path d=\"M 200 150 175 200\" />\n");
+	break;
+
 	case 13:
-	fprintf (tfp, "<path d=\"M 13 0 25 50\" />\n");
-	fprintf (tfp, "<path d=\"M 0 50 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 100 50 125 150\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 200 150\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 13 200\" />\n");
+	fprintf(tfp, "<path d=\"M 13 0 25 50\" />\n");
+	fprintf(tfp, "<path d=\"M 0 50 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 100 50 125 150\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 200 150\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 13 200\" />\n");
 	break;
-		
-		
+
+
 	case 14:
-	fprintf (tfp, "<path d=\"M 0 13 50 25\" />\n");
-	fprintf (tfp, "<path d=\"M 50 0 50 200\" />\n");
-	fprintf (tfp, "<path d=\"M 50 100 150 125\" />\n");
-	fprintf (tfp, "<path d=\"M 150 0 150 200\" />\n");
-	fprintf (tfp, "<path d=\"M 150 0 200 13\" />\n");
+	fprintf(tfp, "<path d=\"M 0 13 50 25\" />\n");
+	fprintf(tfp, "<path d=\"M 50 0 50 200\" />\n");
+	fprintf(tfp, "<path d=\"M 50 100 150 125\" />\n");
+	fprintf(tfp, "<path d=\"M 150 0 150 200\" />\n");
+	fprintf(tfp, "<path d=\"M 150 0 200 13\" />\n");
 	break;
-		
+
 	case 15:
-	fprintf (tfp, "<path d=\"M 0 13 50 0\" />\n");
-	fprintf (tfp, "<path d=\"M 50 0 50 200\" />\n");
-	fprintf (tfp, "<path d=\"M 50 125 150 100\" />\n");
-	fprintf (tfp, "<path d=\"M 150 0 150 200\" />\n");
-	fprintf (tfp, "<path d=\"M 150 25 200 13\" />\n");
+	fprintf(tfp, "<path d=\"M 0 13 50 0\" />\n");
+	fprintf(tfp, "<path d=\"M 50 0 50 200\" />\n");
+	fprintf(tfp, "<path d=\"M 50 125 150 100\" />\n");
+	fprintf(tfp, "<path d=\"M 150 0 150 200\" />\n");
+	fprintf(tfp, "<path d=\"M 150 25 200 13\" />\n");
 	break;
-	
-	case 16:	
-	fprintf (tfp, "<path d=\"M 0 50 A 50 50 0 1 0 100 50\" />\n");
-	fprintf (tfp, "<path d=\"M 100 50 A 50 50 0 1 0 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 50 100 A 50 50 0 1 0 150 100\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 A 50 50 0 0 0 50 100\" />\n");
-	fprintf (tfp, "<path d=\"M 150 100 A 50 50 0 1 0 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 50 0 A 50 50 0 1 0 150 0\" />\n");
-	fprintf (tfp, "<path d=\"M 150 0 A 50 50 0 0 0 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 0 50 A 50 50 0 0 0 50 0\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 A 50 50 0 1 0 100 150\" />\n");
-	fprintf (tfp, "<path d=\"M 100 150 A 50 50 0 1 0 200 150\" />\n");
+
+	case 16:
+	fprintf(tfp, "<path d=\"M 0 50 A 50 50 0 1 0 100 50\" />\n");
+	fprintf(tfp, "<path d=\"M 100 50 A 50 50 0 1 0 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 50 100 A 50 50 0 1 0 150 100\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 A 50 50 0 0 0 50 100\" />\n");
+	fprintf(tfp, "<path d=\"M 150 100 A 50 50 0 1 0 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 50 0 A 50 50 0 1 0 150 0\" />\n");
+	fprintf(tfp, "<path d=\"M 150 0 A 50 50 0 0 0 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 0 50 A 50 50 0 0 0 50 0\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 A 50 50 0 1 0 100 150\" />\n");
+	fprintf(tfp, "<path d=\"M 100 150 A 50 50 0 1 0 200 150\" />\n");
 	break;
-		
+
 	case 17:
-	fprintf (tfp, "<g transform=\"scale(0.5)\" >\n");
-	fprintf (tfp, "<path d=\"M 0 50 A 50 50 0 1 0 100 50\" />\n");
-	fprintf (tfp, "<path d=\"M 100 50 A 50 50 0 1 0 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 50 100 A 50 50 0 1 0 150 100\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 A 50 50 0 0 0 50 100\" />\n");
-	fprintf (tfp, "<path d=\"M 150 100 A 50 50 0 1 0 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 50 0 A 50 50 0 1 0 150 0\" />\n");
-	fprintf (tfp, "<path d=\"M 150 0 A 50 50 0 0 0 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 0 50 A 50 50 0 0 0 50 0\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 A 50 50 0 1 0 100 150\" />\n");
-	fprintf (tfp, "<path d=\"M 100 150 A 50 50 0 1 0 200 150\" />\n");
-	fprintf (tfp, "</g>\n");
+	fprintf(tfp, "<g transform=\"scale(0.5)\" >\n");
+	fprintf(tfp, "<path d=\"M 0 50 A 50 50 0 1 0 100 50\" />\n");
+	fprintf(tfp, "<path d=\"M 100 50 A 50 50 0 1 0 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 50 100 A 50 50 0 1 0 150 100\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 A 50 50 0 0 0 50 100\" />\n");
+	fprintf(tfp, "<path d=\"M 150 100 A 50 50 0 1 0 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 50 0 A 50 50 0 1 0 150 0\" />\n");
+	fprintf(tfp, "<path d=\"M 150 0 A 50 50 0 0 0 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 0 50 A 50 50 0 0 0 50 0\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 A 50 50 0 1 0 100 150\" />\n");
+	fprintf(tfp, "<path d=\"M 100 150 A 50 50 0 1 0 200 150\" />\n");
+	fprintf(tfp, "</g>\n");
 	break;
-		
+
 	case 18:
-	fprintf (tfp, "<circle cx=\"100\" cy=\"100\" r=\"100\" />\n");
+	fprintf(tfp, "<circle cx=\"100\" cy=\"100\" r=\"100\" />\n");
 	break;
-		
+
 	case 19:
-	fprintf (tfp, "<path d=\"M 0 50 45 0 105 0 140 50 200 50 \" />\n");
-	fprintf (tfp, "<path d=\"M 0 50 45 100 105 100 140 50 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 45 100 105 100 140 150 200 150\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 45 200 105 200 140 150 200 150\" />\n");
+	fprintf(tfp, "<path d=\"M 0 50 45 0 105 0 140 50 200 50 \" />\n");
+	fprintf(tfp, "<path d=\"M 0 50 45 100 105 100 140 50 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 45 100 105 100 140 150 200 150\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 45 200 105 200 140 150 200 150\" />\n");
 	break;
-		
+
 	case 20:
-	fprintf (tfp, "<path d=\"M 0 70 65 0 140 0 200 70 \" />\n");
-	fprintf (tfp, "<path d=\"M 0 70 0 130 65 200 140 200 200 130 200 70\" />\n");
+	fprintf(tfp, "<path d=\"M 0 70 65 0 140 0 200 70 \" />\n");
+	fprintf(tfp, "<path d=\"M 0 70 0 130 65 200 140 200 200 130 200 70\" />\n");
 	break;
-		
+
 	case 21:
-	fprintf (tfp, "<path d=\"M 50 0 75 25 100 0 M 150 0 175 25 200 0\" />\n");
-	fprintf (tfp, "<path d=\"M 0 50 25 25 75 75 125 25 175 75 200 50\" />\n");
-	fprintf (tfp, "<path d=\"M 0 100 25 75 75 125 125 75 175 125 200 100\" />\n");
-	fprintf (tfp, "<path d=\"M 0 150 25 125 75 175 125 125 175 175 200 150\" />\n");
-	fprintf (tfp, "<path d=\"M 0 200 25 175 75 225 125 175 175 225 200 200\" />\n");
+	fprintf(tfp, "<path d=\"M 50 0 75 25 100 0 M 150 0 175 25 200 0\" />\n");
+	fprintf(tfp, "<path d=\"M 0 50 25 25 75 75 125 25 175 75 200 50\" />\n");
+	fprintf(tfp, "<path d=\"M 0 100 25 75 75 125 125 75 175 125 200 100\" />\n");
+	fprintf(tfp, "<path d=\"M 0 150 25 125 75 175 125 125 175 175 200 150\" />\n");
+	fprintf(tfp, "<path d=\"M 0 200 25 175 75 225 125 175 175 225 200 200\" />\n");
 	break;
-	
+
 	case 22:
-	fprintf (tfp, "<path d=\"M 0 50 25 75 0 100 M 0 150 25 175 0 200\" />\n");
-	fprintf (tfp, "<path d=\"M 50 0 25 25 75 75 25 125 75 175 50 200\" />\n");
-	fprintf (tfp, "<path d=\"M 100 0 75 25 125 75 75 125 125 175 100 200\" />\n");
-	fprintf (tfp, "<path d=\"M 150 0 125 25 175 75 125 125 175 175 150 200\" />\n");
-	fprintf (tfp, "<path d=\"M 200 0 175 25 225 75 175 125 225 175 200 200\" />\n");
+	fprintf(tfp, "<path d=\"M 0 50 25 75 0 100 M 0 150 25 175 0 200\" />\n");
+	fprintf(tfp, "<path d=\"M 50 0 25 25 75 75 25 125 75 175 50 200\" />\n");
+	fprintf(tfp, "<path d=\"M 100 0 75 25 125 75 75 125 125 175 100 200\" />\n");
+	fprintf(tfp, "<path d=\"M 150 0 125 25 175 75 125 125 175 175 150 200\" />\n");
+	fprintf(tfp, "<path d=\"M 200 0 175 25 225 75 175 125 225 175 200 200\" />\n");
 	break;
-	
+
 	}
-	fprintf (tfp, "</pattern>\n");
-	fprintf (tfp, "</defs>\n");
-	
+	fprintf(tfp, "</pattern>\n");
+	fprintf(tfp, "</defs>\n");
+
 	return;
 
 } /* generate_tile */
 
-void svg_dash(int style, double val)
+static void
+svg_dash(int style, double val)
 {
-	    fprintf (tfp, "stroke-dasharray:");
-	    switch (style) {
+	    fprintf(tfp, "stroke-dasharray:");
+	    switch(style) {
 	      case 1:
 	      default:
-	          fprintf(tfp,"%d %d;",(int)(val*10*mag),(int)(val*10*mag));
-	          break;
-             case 2:
-                  fprintf(tfp,"10 %d;",(int)(val*10*mag));
-                  break;
-             case 3:
-                  fprintf(tfp,"%d %d 10 %d;",(int)(val*10*mag),
-                  (int)(val*5*mag),(int)(val*5*mag));
-                  break;
-             case 4:      
-                  fprintf(tfp,"%d %d 10 %d 10 %d;",(int)(val*10*mag),
-                  (int)(val*3*mag),(int)(val*3*mag),(int)(val*3*mag));
-                  break;
-             case 5:
-                  fprintf(tfp,"%d %d 10 %d 10 %d 10 %d;",(int)(val*10*mag),
-                  (int)(val*3*mag),(int)(val*3*mag),(int)(val*3*mag),(int)(val*3*mag));
-                  break;
-             }     
+		  fprintf(tfp,"%d %d;",(int)(val*10*mag),(int)(val*10*mag));
+		  break;
+	     case 2:
+		  fprintf(tfp,"10 %d;",(int)(val*10*mag));
+		  break;
+	     case 3:
+		  fprintf(tfp,"%d %d 10 %d;",(int)(val*10*mag),
+		  (int)(val*5*mag),(int)(val*5*mag));
+		  break;
+	     case 4:
+		  fprintf(tfp,"%d %d 10 %d 10 %d;",(int)(val*10*mag),
+		  (int)(val*3*mag),(int)(val*3*mag),(int)(val*3*mag));
+		  break;
+	     case 5:
+		  fprintf(tfp,"%d %d 10 %d 10 %d 10 %d;",(int)(val*10*mag),
+		  (int)(val*3*mag),(int)(val*3*mag),(int)(val*3*mag),(int)(val*3*mag));
+		  break;
+	     }
 }
 
 /* driver defs */
@@ -1183,7 +1170,7 @@ void svg_dash(int style, double val)
 struct driver dev_svg = {
     gensvg_option,
     gensvg_start,
-    gendev_null,
+    gendev_nogrid,
     gensvg_arc,
     gensvg_ellipse,
     gensvg_line,

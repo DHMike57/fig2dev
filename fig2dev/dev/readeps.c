@@ -7,8 +7,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -21,18 +21,15 @@
 		    0 : failure
 */
 
-static int	read_eps_pdf();
+static int	read_eps_pdf(FILE *file, int filetype, F_pic *pic,
+				int *llx, int* lly, bool pdf_flag);
 
 /* read a PDF file */
 
 int
-read_pdf(file, filetype, pic, llx, lly)
-    FILE	   *file;
-    int		    filetype;
-    F_pic	   *pic;
-    int		   *llx, *lly;
+read_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 {
-    return read_eps_pdf(file,filetype,pic,llx,lly,True);
+    return read_eps_pdf(file,filetype,pic,llx,lly,true);
 }
 
 /* read an EPS file */
@@ -42,22 +39,14 @@ read_pdf(file, filetype, pic, llx, lly)
 */
 
 int
-read_eps(file, filetype, pic, llx, lly)
-    FILE	   *file;
-    int		    filetype;
-    F_pic	   *pic;
-    int		   *llx, *lly;
+read_eps(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 {
-    return read_eps_pdf(file,filetype,pic,llx,lly,False);
+    return read_eps_pdf(file,filetype,pic,llx,lly,false);
 }
 
 static int
-read_eps_pdf(file, filetype, pic, llx, lly, pdf_flag)
-    FILE	   *file;
-    int		    filetype;
-    F_pic	   *pic;
-    int		   *llx, *lly;
-    Boolean	    pdf_flag;
+read_eps_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int* lly,
+		bool pdf_flag)
 {
 	char	    buf[512];
 	double	    fllx, flly, furx, fury;
@@ -83,7 +72,7 @@ read_eps_pdf(file, filetype, pic, llx, lly, pdf_flag)
 			*llx = *lly = 0;
 			urx = paperdef[0].width*72;
 			ury = paperdef[0].height*72;
-			put_msg("Bad MediaBox in imported PDF file %s, assuming %s size", 
+			put_msg("Bad MediaBox in imported PDF file %s, assuming %s size",
 				pic->file, metric? "A4" : "Letter" );
 		    }
 		}
@@ -91,7 +80,7 @@ read_eps_pdf(file, filetype, pic, llx, lly, pdf_flag)
 	    } else if (!nested && !strncmp(buf, "%%BoundingBox:", 14)) {
 		c=buf+14;
 		/* skip past white space */
-		while (*c == ' ' || *c == '\t') 
+		while (*c == ' ' || *c == '\t')
 		    c++;
 		if (strncmp(c,"(atend)",7)) {	/* make sure not an (atend) */
 		    if (sscanf(c, "%lf %lf %lf %lf",
@@ -111,7 +100,7 @@ read_eps_pdf(file, filetype, pic, llx, lly, pdf_flag)
 		--nested;
 	    }
 	}
-	fprintf(tfp, "%% Begin Imported %s File: %s\n", 
+	fprintf(tfp, "%% Begin Imported %s File: %s\n",
 				pdf_flag? "PDF" : "EPS", pic->file);
 	fprintf(tfp, "%%%%BeginDocument: %s\n", pic->file);
 	fprintf(tfp, "%%\n");

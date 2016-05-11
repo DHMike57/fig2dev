@@ -10,8 +10,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -28,7 +28,7 @@ static	char		**str;
 /* output PSencode header */
 
 void
-PSencode_header()
+PSencode_header(void)
 {
   static char *PSencodeheader[] = {
     "%***********************************************************************",
@@ -99,13 +99,13 @@ PSencode_header()
     fprintf(tfp,"%s\n",*str);
   }
   /* set flag saying we've emitted the header */
-  psencode_header_done = True;
+  psencode_header_done = true;
 }
 
 /* output transparentimage header */
 
 void
-PStransp_header()
+PStransp_header(void)
 {
   static char *Transpheader[] = {
     "%*************************************",
@@ -210,7 +210,7 @@ PStransp_header()
 	fprintf(tfp,"%s\n",*str);
     }
     /* set flag saying we've emitted the header */
-    transp_header_done = True;
+    transp_header_done = true;
 }
 
 /***********************************************************************
@@ -232,10 +232,8 @@ PStransp_header()
  *                                                                     *
  ***********************************************************************/
 long
-PSencode(Width, Height, Transparent, Ncol, R, G, B, data)
-    int		Width, Height, Transparent, Ncol;
-    byte	R[], G[], B[];
-    unsigned char *data;
+PSencode(int Width, int Height, int Transparent, int Ncol,
+		byte R[], byte G[], byte B[], unsigned char *data)
 {
 
   long    Nbyte;
@@ -246,7 +244,7 @@ PSencode(Width, Height, Transparent, Ncol, R, G, B, data)
   static char h[] = "0123456789abcdef";
 
   /*   CHECK PARAMETERS   */
-  
+
   if (Width <= 0 || Width > MAXWIDTH || Height <= 0 || Height > MAXWIDTH) {
     fprintf(stderr, "\nIncorrect image size: %d x %d\n", Width, Height);
     return 0;
@@ -273,11 +271,11 @@ PSencode(Width, Height, Transparent, Ncol, R, G, B, data)
 
   /* colormap */
   for (k=0; k<Ncol; k++) {
-    sprintf(s,"%02x%02x%02x", R[k], G[k], B[k]);   put_string; 
-    if (k % 10 == 9 || k == Ncol-1) { 
-      sprintf(s,"\n");                             put_string;
+    sprintf(s,"%02x%02x%02x", R[k], G[k], B[k]);	put_string;
+    if (k % 10 == 9 || k == Ncol-1) {
+      sprintf(s,"\n");					put_string;
     } else {
-      sprintf(s, " "); 	                           put_string;
+      sprintf(s, " ");					put_string;
     }
   }
   if (Transparent != -1) {
@@ -298,12 +296,12 @@ PSencode(Width, Height, Transparent, Ncol, R, G, B, data)
     while (ptr < end) {
       current = *ptr++;
       if (current == previous && run < 255) {
-        run++;
-        continue;
+	run++;
+	continue;
       }
       if (nc == 72) {
-        put_string; 
-        nc = 0;
+	put_string;
+	nc = 0;
       }
       s[nc++] = h[run / 16];
       s[nc++] = h[run % 16];
@@ -315,7 +313,7 @@ PSencode(Width, Height, Transparent, Ncol, R, G, B, data)
   }
 
   if (nc == 72) {
-    put_string; 
+    put_string;
     nc = 0;
   }
   s[nc++] = h[run / 16];
@@ -324,7 +322,7 @@ PSencode(Width, Height, Transparent, Ncol, R, G, B, data)
   s[nc++] = h[previous % 16];
   s[nc++] = '\n';
   s[nc]   = '\0';
-  put_string; 
+  put_string;
   return Nbyte;
 }
 
@@ -332,10 +330,7 @@ PSencode(Width, Height, Transparent, Ncol, R, G, B, data)
 /* write 24-bit bitmap as PostScript image (no colortable) */
 
 void
-PSrgbimage(file, width, height, data)
-	 FILE		*file;
-         int		 width, height;
-	 unsigned char	*data;
+PSrgbimage(FILE *file, int width, int height, unsigned char *data)
 {
     int		 c, h, w, left;
     unsigned char *p;
@@ -349,7 +344,7 @@ PSrgbimage(file, width, height, data)
     c = 0;
     p = data;
     for (h=0; h<height; h++) {
-    	for (w=0; w<width; w++) {
+	for (w=0; w<width; w++) {
 	    fprintf(file,"%02x%02x%02x", *(p+2), *(p+1), *p);
 	    p += 3;
 	    c++;

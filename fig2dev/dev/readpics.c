@@ -8,8 +8,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -18,9 +18,9 @@
 #include <sys/stat.h>
 #include "fig2dev.h"
 
-char * xf_basename();
+static char *xf_basename(char *filename);
 
-/* 
+/*
    Open the file 'name' and return its type (real file=0, pipe=1) in 'type'.
    Return the full name in 'retname'.  This will have a .gz or .Z if the file is
    zipped/compressed.
@@ -28,11 +28,7 @@ char * xf_basename();
 */
 
 FILE *
-open_picfile(name, type, pipeok, retname)
-    char	*name;
-    int		*type;
-    Boolean	 pipeok;
-    char	*retname;
+open_picfile(char *name, int *type, bool pipeok, char *retname)
 {
     char	 unc[PATH_MAX+20];	/* temp buffer for gunzip command */
     FILE	*fstream;		/* handle on file  */
@@ -133,9 +129,7 @@ open_picfile(name, type, pipeok, retname)
 }
 
 void
-close_picfile(file,type)
-    FILE	*file;
-    int		type;
+close_picfile(FILE *file, int type)
 {
     if (type == 0)
 	fclose(file);
@@ -146,9 +140,8 @@ close_picfile(file,type)
 /* for systems without basename() (e.g. SunOS 4.1.3) */
 /* strip any path from filename */
 
-char *
-xf_basename(filename)
-    char	   *filename;
+static char *
+xf_basename(char *filename)
 {
     char	   *p;
     if (filename == NULL || *filename == '\0')

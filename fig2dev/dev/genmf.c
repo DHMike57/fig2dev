@@ -7,8 +7,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -18,8 +18,8 @@
  *
  *  Copyright (c) 1993 Anthony Starks (ajs@merck.com)
  *
- *  Version 0.00 -- 	Incorporate Tobin's small suggestions
- *  Version 0.01 -- 	Change scaling to inches,
+ *  Version 0.00 --	Incorporate Tobin's small suggestions
+ *  Version 0.01 --	Change scaling to inches,
  *			default [x-y]scale is 1/8 inch
  *			slight format changes in cinit()
  *  Version 0.02 --	Fixed pen switching bug
@@ -27,11 +27,11 @@
  *  Version 0.04 --	Token support for text
  *  Version 0.05 --	Integrated into fig2dev - B.V.Smith 11/28/94
  *  Version 0.06 --	Fixed a number of bugs.
- 			Converted to mfpic 0.2.10.8 alfa
+			Converted to mfpic 0.2.10.8 alfa
 				/M.Bengtsson July 1, 1998
  */
 
-/* TODO: 
+/* TODO:
  *  - Dashed and dotted lines
  *  - Arrow heads
  *  - Filled polylines and open splines
@@ -62,12 +62,11 @@ static double yl = 0.0;
 static double yu = 8.0;
 static double maxy = INFTY;
 
-void
-setpen(thickness)
-int thickness;
+static void
+setpen(int thickness)
 {
   if (thickness != oldpen) {
-    fprintf(tfp, "penwd := %.2fpt;\n", 
+    fprintf(tfp, "penwd := %.2fpt;\n",
 	    thickness/THICK_SCALE*penscale*yscale*mag);
     fprintf(tfp, "drawpen := pencircle scaled penwd yscaled aspect_ratio;\n");
     oldpen = thickness;
@@ -75,18 +74,17 @@ int thickness;
 }
 
 void
-genmf_start(objects)
-F_compound	*objects;
+genmf_start(F_compound *objects)
 {
 	int	curchar;
 
-	if (maxy == INFTY) 
+	if (maxy == INFTY)
 		maxy = yu;
-	
+
 	curchar = (int)code;
 
 	fprintf(tfp,"%%\n%% fig2dev -L mf (Version %s Patchlevel %s)\n",
-			VERSION, PATCHLEVEL);
+			FIG_FILEVERSION, FIG_PATCHLEVEL);
 	fprintf(tfp,"%%\n");
 
 	/* print any whole-figure comments prefixed with "%" */
@@ -109,9 +107,8 @@ F_compound	*objects;
 	setpen(1);
 }
 
-
 int
-genmf_end()
+genmf_end(void)
 {
 	fprintf(tfp,"endmfpic;\nend.\n");
 
@@ -120,9 +117,7 @@ genmf_end()
 }
 
 void
-genmf_option(opt, optarg)
-char opt;
-char *optarg;
+genmf_option(char opt, char *optarg)
 {
     switch (opt) {
 	case 'C':
@@ -149,9 +144,7 @@ char *optarg;
 	case 'Y':
 	    yu = atof(optarg);
 	    break;
-	case 'f':		/* ignore magnification, font sizes and lang here */
-	case 'm':
-	case 's':
+	case 'G':
 	case 'L':
 	    break;
 	default:
@@ -161,20 +154,19 @@ char *optarg;
 }
 
 void
-genmf_line(l)
-F_line *l;
+genmf_line(F_line *l)
 {
-	F_point	*p;
+	F_point *p;
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ",l->comments, "");
 
 	setpen(l->thickness);
-	fprintf(tfp, "  store (curpath)\n");
+	fprintf(tfp, "	store (curpath)\n");
 	if ((l->type==1) && (l->fill_style<0)) /* Open polyline */
 		fprintf(tfp,"  drawn polyline(false)\n");
-	else {	
-  /* Closed and/or filled polygon, cover underlying figures 
+	else {
+  /* Closed and/or filled polygon, cover underlying figures
    * first with white if this polygon is shaded */
 		if (l->fill_style == BLACK_FILL)
 			fprintf(tfp,"  filled ");
@@ -182,32 +174,30 @@ F_line *l;
 			fprintf(tfp,"  shade(%fpt) unfilled", dofill(l));
 		else if (l->fill_style == 0)
 			fprintf(tfp,"  drawn unfilled ");
-		else 
+		else
 			fprintf(tfp,"  drawn ");
 		fprintf(tfp,"polyline(true)\n");
 	}
 	p = l->points;
-	fprintf(tfp,"      ((%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
+	fprintf(tfp,"	   ((%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
 	p = p->next;
 	for ( ; p != NULL; p=p->next) {
-	    fprintf(tfp,",\n       (%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
+	    fprintf(tfp,",\n	   (%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
 	}
 	fprintf(tfp, ");\n");
 	return;
 }
 
-
 void
-genmf_spline(s)
-F_spline *s;
+genmf_spline(F_spline *s)
 {
-	F_point	*p;
+	F_point *p;
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ",s->comments, "");
 
 	setpen(s->thickness);
-	fprintf(tfp, "  store (curpath)\n");
+	fprintf(tfp, "	store (curpath)\n");
 	if ((s->type == 0) || (s->type == 2) && (s->fill_style < 0)) /* Open spline */
 		fprintf(tfp,"  drawn curve(false)\n");
 	else { /* Closed and/or filled spline, see comment above */
@@ -222,25 +212,23 @@ F_spline *s;
 		fprintf(tfp,"curve(true)\n");
 	}
 	p = s->points;
-	fprintf(tfp,"      ((%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
+	fprintf(tfp,"	   ((%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
 	p = p->next;
 	for ( ; p != NULL; p=p->next) {
-	    fprintf(tfp,",\n       (%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
+	    fprintf(tfp,",\n	   (%f, %f)", (float) p->x/ppi, maxy-((float) p->y/ppi));
 	}
 	fprintf(tfp, ");\n");
 	return;
 }
 
-
 void
-genmf_ellipse(e)
-F_ellipse *e;
+genmf_ellipse(F_ellipse *e)
 {
 	/* print any comments prefixed with "%" */
 	print_comments("% ",e->comments, "");
 
-        setpen(e->thickness);
-	fprintf(tfp, "  store (curpath)\n");
+	setpen(e->thickness);
+	fprintf(tfp, "	store (curpath)\n");
 	if (e->fill_style == BLACK_FILL)
 		fprintf(tfp,"  filled ");
 	else if (e->fill_style < BLACK_FILL && e->fill_style > 0)
@@ -256,20 +244,19 @@ F_ellipse *e;
 	else if (e->type == 1 || e->type == 2)
 	{
 		fprintf(tfp,"ellipse((%f,%f),%f,%f,0);\n",
-			(float) e->center.x/ppi, maxy-((float) e->center.y/ppi), 
+			(float) e->center.x/ppi, maxy-((float) e->center.y/ppi),
 			(float) e->radiuses.x/ppi, (float) e->radiuses.y/ppi);
 	}
 }
 
 void
-genmf_arc(a)
-F_arc *a;
+genmf_arc(F_arc *a)
 {
 	/* print any comments prefixed with "%" */
 	print_comments("% ",a->comments, "");
 
 	setpen(a->thickness);
-	fprintf(tfp, "  store (curpath)\n");
+	fprintf(tfp, "	store (curpath)\n");
 	fprintf(tfp,"  drawn arcppp((%f,%f), (%f,%f), (%f,%f));\n",
 		(float) a->point[0].x/ppi, maxy-((float) a->point[0].y/ppi),
 		(float) a->point[1].x/ppi, maxy-((float) a->point[1].y/ppi),
@@ -279,8 +266,7 @@ F_arc *a;
 }
 
 void
-genmf_text(t)
-F_text *t;
+genmf_text(F_text *t)
 {
 	fprintf(stderr, "warning: text ignored in MF output: `%s'\n",
 		t->cstring);
@@ -289,9 +275,9 @@ F_text *t;
 
 
 struct driver dev_mf = {
-     	genmf_option,
+	genmf_option,
 	genmf_start,
-	gendev_null,
+	gendev_nogrid,
 	genmf_arc,
 	genmf_ellipse,
 	genmf_line,

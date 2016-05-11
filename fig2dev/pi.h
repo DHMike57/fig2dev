@@ -9,16 +9,17 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-#undef M_PI
-#undef M_PI_2
-#undef M_2PI
-
+#if !HAVE_DECL_M_PI
 #define M_PI	3.14159265358979323846
-#define M_PI_2	(M_PI/2.0)
-#define M_2PI	(3.14159265358979323846*2.0)
+#endif
+
+/* In addition,
+ * M_2PI is used in bound.c,
+ * M_PI_2 is used in bound.c and genpict2e.c,
+ * M_PI_4 is used in genpict2e.c */

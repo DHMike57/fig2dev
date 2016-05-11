@@ -1,0 +1,72 @@
+
+	Installation
+	------------
+
+To compile and install fig2dev, issue the commands
+
+  ./configure; make -j; make install
+
+or, e.g.,
+
+  ./configure CFLAGS='-O2 -Wno-parentheses'; make -j install-strip
+
+The latter will strip the debugging symbols from the executables.  The
+-j option causes make to try a parallel build with multiple threads.
+Optionally,
+  ./configure; make; make check; make install; make installcheck
+will run tests (make check) with the freshly built executable still at
+its location in the build tree, and (make installcheck) with the final,
+installed executable.
+
+Both commands will compile fig2dev and copy the executables fig2dev,
+fig2ps2tex and pic2tpic to /usr/local/bin.  Three man-pages for these
+binaries are put into /usr/local/man/man1.  Furthermore, files which may
+be needed at runtime are put under /usr/local/share/fig2dev.
+The runtime files are (i) bitmap files, which are stored in
+/usr/local/share/fig2dev/bitmaps, (ii) internationalization files, put
+into /usr/local/share/fig2dev/i18n, and the X-color definition file
+/usr/local/share/fig2dev/rgb.txt.  The bitmap-files are used by the tk
+(tcl/tk) and ptk (perl/tk) output language.  The internationalization
+files may be used by the PostScript and all bitmap output languages.
+
+
+	Options
+	-------
+
+The configure script and also the make-command can be customized in
+many ways, either by giving options, e.g., ./configure --prefix=/usr,
+or by setting variables, e.g., make CC=clang or ./configure CFLAGS=-O2.
+
+Options relevant for fig2dev are, here given with their default
+settings,
+  --prefix=/usr/local
+  --bindir=${prefix}/bin
+  --datarootdir=${prefix}/share
+  --mandir=${prefix}/man
+Compilation flags are typically
+  CC=gcc CFLAGS='-g -O2' LIBS='-lXpm -lpng -lz -lm'
+
+Try
+  ./configure --prefix=/tmp/fig2dev; make install
+to see which files will be installed at what locations.
+
+To get a list of possible features to enable or disable, type
+  ./configure --help
+and see the "Optional Features" and "Optional Packages" sections.
+
+
+	Requirements
+	------------
+
+On debian, to build transfig, you will need the header files contained
+in
+  libc6-dev and linux-libc-dev.
+Optionally, to read and embed png and jpeg-images, header files
+contained in the packages
+  libpng12-dev, zlib1g-dev, libjpeg-dev,
+are needed. To read xpm images, in addition you will need
+  libxpm-dev, libxt-dev, libX11-dev.
+
+At runtime, the packages
+  ghostscript and netpbm
+are needed to produce various bitmap output formats.

@@ -9,8 +9,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  */
 
@@ -31,7 +31,7 @@ static int		backward_arrow_style = 0;
 static double		backward_arrow_thickness = 1;
 
 F_arrow *
-forward_arrow()
+forward_arrow(void)
 {
 	F_arrow		*a;
 
@@ -45,10 +45,10 @@ forward_arrow()
 	a->wid = forward_arrow_wid;
 	a->ht = forward_arrow_ht;
 	return(a);
-	}
+}
 
 F_arrow *
-backward_arrow()
+backward_arrow(void)
 {
 	F_arrow		*a;
 
@@ -62,12 +62,10 @@ backward_arrow()
 	a->wid = backward_arrow_wid;
 	a->ht = backward_arrow_ht;
 	return(a);
-	}
+}
 
 F_arrow *
-make_arrow(type, style, thickness, wid, ht)
-int	type, style;
-double	thickness, wid, ht;
+make_arrow(int type, int style, double thickness, double wid, double ht)
 {
 	F_arrow		*a;
 
@@ -81,4 +79,4 @@ double	thickness, wid, ht;
 	a->wid = wid;
 	a->ht = ht;
 	return(a);
-	}
+}

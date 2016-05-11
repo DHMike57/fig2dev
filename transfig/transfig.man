@@ -1,1 +1,0 @@
-../doc/transfig.1

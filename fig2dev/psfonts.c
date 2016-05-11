@@ -9,21 +9,22 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-/* 
- *	psfont.c : PostScript font mappings
+/*
+ *	psfont.c: PostScript font mappings
  *
-*/
+ */
 #include "fig2dev.h"
+#include "stdio.h"
 #include "object.h"
 
 char		*PSfontnames[] = {
-		"Times-Roman",			/* default */ 
+		"Times-Roman",			/* default */
 		"Times-Roman",
 		"Times-Italic",			/* italic */
 		"Times-Bold",			/* bold */
@@ -100,92 +101,92 @@ static int	PSfontmap[] = {
 		};
 
 static int	PSmapwarn[] = {
-		False, False,		/* Times-Roman */
-		False,			/* Times-Italic */
-		False,			/* Times-Bold */
-		False,			/* Times-BoldItalic */
-		True,			/* AvantGarde */
-		True,			/* AvantGarde-BookOblique */
-		True,			/* AvantGarde-Demi */
-		True,			/* AvantGarde-DemiOblique */
-		True,			/* Bookman-Light */
-		True,			/* Bookman-LightItalic */
-		True,			/* Bookman-Demi */
-		True,			/* Bookman-DemiItalic */
-		False,			/* Courier */
-		True,			/* Courier-Oblique */
-		True,			/* Courier-Bold */
-		True,			/* Courier-BoldItalic */
-		False,			/* Helvetica */
-		True,			/* Helvetica-Oblique */
-		True,			/* Helvetica-Bold */
-		True,			/* Helvetica-BoldOblique */
-		True,			/* Helvetica-Narrow */
-		True,			/* Helvetica-Narrow-Oblique */
-		True,			/* Helvetica-Narrow-Bold */
-		True,			/* Helvetica-Narrow-BoldOblique */
-		True,			/* NewCenturySchlbk-Roman */
-		True,			/* NewCenturySchlbk-Italic */
-		True,			/* NewCenturySchlbk-Bold */
-		True,			/* NewCenturySchlbk-BoldItalic */
-		True,			/* Palatino-Roman */
-		True,			/* Palatino-Italic */
-		True,			/* Palatino-Bold */
-		True,			/* Palatino-BoldItalic */
-		True,			/* Symbol */
-		True,			/* ZapfChancery-MediumItalic */
-		True			/* ZapfDingbats */
+		false, false,		/* Times-Roman */
+		false,			/* Times-Italic */
+		false,			/* Times-Bold */
+		false,			/* Times-BoldItalic */
+		true,			/* AvantGarde */
+		true,			/* AvantGarde-BookOblique */
+		true,			/* AvantGarde-Demi */
+		true,			/* AvantGarde-DemiOblique */
+		true,			/* Bookman-Light */
+		true,			/* Bookman-LightItalic */
+		true,			/* Bookman-Demi */
+		true,			/* Bookman-DemiItalic */
+		false,			/* Courier */
+		true,			/* Courier-Oblique */
+		true,			/* Courier-Bold */
+		true,			/* Courier-BoldItalic */
+		false,			/* Helvetica */
+		true,			/* Helvetica-Oblique */
+		true,			/* Helvetica-Bold */
+		true,			/* Helvetica-BoldOblique */
+		true,			/* Helvetica-Narrow */
+		true,			/* Helvetica-Narrow-Oblique */
+		true,			/* Helvetica-Narrow-Bold */
+		true,			/* Helvetica-Narrow-BoldOblique */
+		true,			/* NewCenturySchlbk-Roman */
+		true,			/* NewCenturySchlbk-Italic */
+		true,			/* NewCenturySchlbk-Bold */
+		true,			/* NewCenturySchlbk-BoldItalic */
+		true,			/* Palatino-Roman */
+		true,			/* Palatino-Italic */
+		true,			/* Palatino-Bold */
+		true,			/* Palatino-BoldItalic */
+		true,			/* Symbol */
+		true,			/* ZapfChancery-MediumItalic */
+		true			/* ZapfDingbats */
 		};
 
 int	        PSisomap[] = {
-		False, False,		/* Times-Roman */
-		False,			/* Times-Italic */
-		False,			/* Times-Bold */
-		False,			/* Times-BoldItalic */
-		False,			/* AvantGarde */
-		False,			/* AvantGarde-BookOblique */
-		False,			/* AvantGarde-Demi */
-		False,			/* AvantGarde-DemiOblique */
-		False,			/* Bookman-Light */
-		False,			/* Bookman-LightItalic */
-		False,			/* Bookman-Demi */
-		False,			/* Bookman-DemiItalic */
-		False,			/* Courier */
-		False,			/* Courier-Oblique */
-		False,			/* Courier-Bold */
-		False,			/* Courier-BoldItalic */
-		False,			/* Helvetica */
-		False,			/* Helvetica-Oblique */
-		False,			/* Helvetica-Bold */
-		False,			/* Helvetica-BoldOblique */
-		False,			/* Helvetica-Narrow */
-		False,			/* Helvetica-Narrow-Oblique */
-		False,			/* Helvetica-Narrow-Bold */
-		False,			/* Helvetica-Narrow-BoldOblique */
-		False,			/* NewCenturySchlbk-Roman */
-		False,			/* NewCenturySchlbk-Italic */
-		False,			/* NewCenturySchlbk-Bold */
-		False,			/* NewCenturySchlbk-BoldItalic */
-		False,			/* Palatino-Roman */
-		False,			/* Palatino-Italic */
-		False,			/* Palatino-Bold */
-		False,			/* Palatino-BoldItalic */
+		false, false,		/* Times-Roman */
+		false,			/* Times-Italic */
+		false,			/* Times-Bold */
+		false,			/* Times-BoldItalic */
+		false,			/* AvantGarde */
+		false,			/* AvantGarde-BookOblique */
+		false,			/* AvantGarde-Demi */
+		false,			/* AvantGarde-DemiOblique */
+		false,			/* Bookman-Light */
+		false,			/* Bookman-LightItalic */
+		false,			/* Bookman-Demi */
+		false,			/* Bookman-DemiItalic */
+		false,			/* Courier */
+		false,			/* Courier-Oblique */
+		false,			/* Courier-Bold */
+		false,			/* Courier-BoldItalic */
+		false,			/* Helvetica */
+		false,			/* Helvetica-Oblique */
+		false,			/* Helvetica-Bold */
+		false,			/* Helvetica-BoldOblique */
+		false,			/* Helvetica-Narrow */
+		false,			/* Helvetica-Narrow-Oblique */
+		false,			/* Helvetica-Narrow-Bold */
+		false,			/* Helvetica-Narrow-BoldOblique */
+		false,			/* NewCenturySchlbk-Roman */
+		false,			/* NewCenturySchlbk-Italic */
+		false,			/* NewCenturySchlbk-Bold */
+		false,			/* NewCenturySchlbk-BoldItalic */
+		false,			/* Palatino-Roman */
+		false,			/* Palatino-Italic */
+		false,			/* Palatino-Bold */
+		false,			/* Palatino-BoldItalic */
+#define NO 2
 		NO,			/* Symbol */
-		False,			/* ZapfChancery-MediumItalic */
+		false,			/* ZapfChancery-MediumItalic */
 		NO			/* ZapfDingbats */
 		};
 
 static char *figfontnames[] = {
 		"Roman", "Roman",
-		"Roman", 
+		"Roman",
 		"Bold",
 		"Italic",
 		"Modern",
 		"Typewriter"
 		};
 
-void unpsfont(t)
-F_text	*t;
+void unpsfont(F_text *t)
 {
 	if (!psfont_text(t))
 	    return;
@@ -197,4 +198,3 @@ F_text	*t;
 	else
 	  t->font = PSfontmap[t->font+1];
 }
-

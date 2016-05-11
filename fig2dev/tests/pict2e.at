@@ -1,0 +1,46 @@
+AT_BANNER([Test pict2e output language.])
+AT_SETUP([include color.sty, but only if necessary])
+AT_KEYWORDS(pict2e)
+
+FIG_WCOLOR='usepackage{pict2e,graphics,color}'
+FIG_NCOLOR='usepackage{pict2e,graphics}'
+
+AT_DATA(black.fig, [FIG_FILE_TOP
+2 1 0 2 0 7 50 -1 -1 0.000 0 0 -1 0 0 2
+	 0 10200 1200 10200
+])
+
+AT_DATA(default.fig, [FIG_FILE_TOP
+2 1 0 2 -1 7 50 -1 -1 0.000 0 0 -1 0 0 2
+	 0 10200 1200 10200
+])
+
+AT_DATA(black+red.fig, [FIG_FILE_TOP
+2 1 0 2 0 7 50 -1 -1 0.000 0 0 -1 0 0 2
+	 0 10200 1200 10200
+2 1 0 2 4 7 50 -1 -1 0.000 0 0 -1 0 0 2
+	 0 9900 600 9900
+])
+
+AT_CHECK([fig2dev -L pict2e -P -C -1 black.fig | $FGREP $FIG_WCOLOR && \
+	fig2dev -L pict2e -P -C 0 black.fig | $FGREP $FIG_NCOLOR && \
+	fig2dev -L pict2e -P black.fig | $FGREP $FIG_NCOLOR
+],0,ignore)
+
+AT_CHECK([fig2dev -L pict2e -P -C -1 default.fig | $FGREP $FIG_NCOLOR
+],0,ignore)
+
+AT_CHECK([fig2dev -L pict2e -P black+red.fig | $FGREP $FIG_WCOLOR
+],0,ignore)
+
+AT_CLEANUP
+
+AT_SETUP([ignore -G option])
+AT_KEYWORDS(pict2e options)
+AT_DATA(default.fig, [FIG_FILE_TOP
+2 1 0 2 -1 7 50 -1 -1 0.000 0 0 -1 0 0 2
+	 0 10200 1200 10200
+])
+AT_CHECK([fig2dev -L pict2e -G 1cm:2mm default.fig /dev/null
+], 0)
+AT_CLEANUP

@@ -9,31 +9,35 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-/* 
+/*
  *	genpictex.C : PiCTeX driver for fig2dev
  *
- * 	Author Micah Beck, Cornell University, 4/88
+ *	Author Micah Beck, Cornell University, 4/88
  *    Color, rotated text and ISO-chars added by Herbert Bauer 11/91
 */
 
 #include "fig2dev.h"
+#ifdef HAVE_GETPWUID
+#include <pwd.h>
+#endif
 #include "object.h"
 #include "genlatex.h"
 #include "setfigfont.h"
 #include "texfonts.h"
+#include "localmath.h"
 
-#define UNIT "cm"       /* dip */
-#define CONVUNIT 2.54   /* dip */
+#define UNIT "cm"	/* dip */
+#define CONVUNIT 2.54	/* dip */
 
 extern char	*ISO1toTeX[];
 extern char	*ISO2toTeX[];
-extern Boolean	 FontSizeOnly;	/* defined in setfigfont.c */
+extern bool	 FontSizeOnly;	/* defined in setfigfont.c */
 
 static void	genpictex_ctl_spline(), genpictex_itp_spline();
 static void	bezier_spline();
@@ -44,26 +48,25 @@ static void	rtop();
 static void	draw_arrow_head();
 static void	set_linewidth();
 
-#define rint(a) floor((a)+0.5)     /* close enough? */
-static int		encoding = 1;
-static double		dash_length = -1;
-static int		line_style = SOLID_LINE;
-static char 		*linethick = "1pt";
-static char		*plotsymbol = "\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}";
-static int		cur_thickness = -1;
-static Boolean		anonymous = False;
+static int	encoding = 1;
+static double	dash_length = -1;
+static int	line_style = SOLID_LINE;
+static char	*linethick = "1pt";
+static char	*plotsymbol = "\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}";
+static int	cur_thickness = -1;
+static bool	anonymous = false;
+static bool	rotate = true;
 
 static void
-genpictex_option(opt, optarg)
-char opt, *optarg;
+genpictex_option(char opt, char *optarg)
 {
-        int i;
+	int i;
 
-	FontSizeOnly = False;
+	FontSizeOnly = false;
 	switch (opt) {
 
 		case 'a':			/* anonymous (don't output user name) */
-		    anonymous = True;
+		    anonymous = true;
 		    break;
 
 		case 'f':			/* set default text font */
@@ -94,14 +97,17 @@ char opt, *optarg;
 		    plotsymbol = optarg;
 		    break;
 
+		case 'r':			/* do not use dvips */
+		    rotate = false;
+		    break;
+
 		case 'E':
 		    encoding = atoi(optarg);
 		    if (encoding < 0 || encoding > 2)
 		      encoding = 1;
 		    break;
 
-		case 's':
-		case 'm':
+		case 'G':
 		case 'L':
 		    break;
 
@@ -111,24 +117,22 @@ char opt, *optarg;
 	}
 }
 
-#define			TOP	10.5	/* top of page is 10.5 inch */
+#define		TOP	10.5	/* top of page is 10.5 inch */
 
 static double
-convy(a)
-double	a;
+convy(double a)
 {
 	return((double) TOP-a);
 }
 
 void
-genpictex_start(objects)
-F_compound	*objects;
+genpictex_start(F_compound *objects)
 {
 	char		host[256];
 	time_t		when;
 	struct passwd	*who;
 
-	texfontsizes[0] = texfontsizes[1] = 
+	texfontsizes[0] = texfontsizes[1] =
 		TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
 
 	/* PiCTeX start */
@@ -139,16 +143,20 @@ F_compound	*objects;
 	fprintf(tfp, "%%Title: %s\n",
 		(name? name: ((from) ? from : "stdin")));
 	fprintf(tfp, "%%%%Created by: %s Version %s Patchlevel %s\n",
-		prog, VERSION, PATCHLEVEL);
+		prog, FIG_FILEVERSION, FIG_PATCHLEVEL);
 	fprintf(tfp, "%%%%CreationDate: %s", ctime(&when));
+#ifdef HAVE_GETHOSTNAME
 	if (gethostname(host, sizeof(host)) == -1)
+#endif
 	    (void)strcpy(host, "unknown-host!?!?");
+#ifdef HAVE_GETPWUID
 	if ( !anonymous) {
 	    who = getpwuid(getuid());
 	    if (who)
 		fprintf(tfp, "%%%%User: %s@%s (%s)\n",
 			who->pw_name, host, who->pw_gecos);
 	}
+#endif
 
 	/* print any whole-figure comments prefixed with "% " */
 	if (objects->comments) {
@@ -169,11 +177,11 @@ F_compound	*objects;
 }
 
 int
-genpictex_end()
+genpictex_end(void)
 {
 	/* PiCTeX ending */
 	fprintf(tfp, "\\linethickness=0pt\n");
-        fprintf(tfp, "\\putrectangle corners at %6.3f %6.3f and %6.3f %6.3f\n",
+	fprintf(tfp, "\\putrectangle corners at %6.3f %6.3f and %6.3f %6.3f\n",
 		(llx/ppi)*CONVUNIT, (convy(lly/ppi))*CONVUNIT,
 		(urx/ppi)*CONVUNIT, (convy(ury/ppi))*CONVUNIT);
 	fprintf(tfp, "\\endpicture}\n");
@@ -183,8 +191,7 @@ genpictex_end()
 }
 
 static void
-set_linewidth(w)
-int	w;
+set_linewidth(int w)
 {
 
 	    if (!w) {
@@ -210,7 +217,7 @@ int	w;
 		    fprintf(tfp, "\\setplotsymbol ({%s})\n", "\\thinlinefont .");
 		    break;
 		case 2:
-		    fprintf(tfp, "\\setplotsymbol ({%s})\n", 
+		    fprintf(tfp, "\\setplotsymbol ({%s})\n",
 				"\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}");
 		    break;
 		case 3:
@@ -277,8 +284,7 @@ int	w;
 }
 
 void
-genpictex_line(l)
-F_line	*l;
+genpictex_line(F_line *l)
 {
 	F_point		*p, *q;
 	int		x, y, llx, lly, urx, ury;
@@ -322,7 +328,7 @@ F_line	*l;
 		q = q->next;
 	    }
 	    put_box (llx, lly, urx, ury, l);
-	    return; 
+	    return;
 	}
 
 	if (l->back_arrow)
@@ -355,9 +361,7 @@ F_line	*l;
  * draw box
  */
 static void
-put_box (llx, lly, urx, ury, l)
-int	llx, lly, urx, ury;
-F_line	*l;
+put_box(int llx, int lly, int urx, int ury, F_line *l)
 {
 	int radius;
 
@@ -366,14 +370,14 @@ F_line	*l;
 	{
 	   if (l->fill_style == BLACK_FILL)
 	   {
-	       fprintf(tfp,"\\linethickness=%6.3f%s\n", 
-	   	    ((convy(lly/ppi))-(convy(ury/ppi)))*CONVUNIT*mag, UNIT);
-	       fprintf(tfp,"{\\setsolid"); 
+	       fprintf(tfp,"\\linethickness=%6.3f%s\n",
+		    ((convy(lly/ppi))-(convy(ury/ppi)))*CONVUNIT*mag, UNIT);
+	       fprintf(tfp,"{\\setsolid");
 	       fprintf(tfp,"\\putrule from %6.3f %6.3f to %6.3f %6.3f }%%\n",
-	   	    (llx/ppi)*CONVUNIT,
-	   	    ((convy(lly/ppi)+convy(ury/ppi))/2)*CONVUNIT,
-	   	    (urx/ppi)*CONVUNIT,
-	   	    ((convy(lly/ppi)+convy(ury/ppi))/2)*CONVUNIT);
+		    (llx/ppi)*CONVUNIT,
+		    ((convy(lly/ppi)+convy(ury/ppi))/2)*CONVUNIT,
+		    (urx/ppi)*CONVUNIT,
+		    ((convy(lly/ppi)+convy(ury/ppi))/2)*CONVUNIT);
 	       fprintf(tfp,"\\linethickness=%dpt\n", l->thickness);
 	   }
 	   else if (l->fill_style != UNFILLED && l->fill_style > (int)(BLACK_FILL*3/4))
@@ -397,8 +401,8 @@ F_line	*l;
 	   }
 
 	   fprintf(tfp,"\\putrectangle corners at %6.3f %6.3f and %6.3f %6.3f\n",
-	   	(llx/ppi)*CONVUNIT, (convy(lly/ppi))*CONVUNIT,
-	   	(urx/ppi)*CONVUNIT, (convy(ury/ppi))*CONVUNIT);
+		(llx/ppi)*CONVUNIT, (convy(lly/ppi))*CONVUNIT,
+		(urx/ppi)*CONVUNIT, (convy(ury/ppi))*CONVUNIT);
 
 	   if (l->fill_style != UNFILLED
 		&& l->fill_style != WHITE_FILL && l->fill_style != BLACK_FILL)
@@ -445,13 +449,11 @@ F_line	*l;
 }
 
 
-/* 
+/*
  * set_style - issue style commands as appropriate
  */
 static void
-set_style(style, dash_len)
-int style;
-double dash_len;
+set_style(int style, double dash_len)
 {
     switch (style) {
 	 case SOLID_LINE:
@@ -480,11 +482,9 @@ double dash_len;
  * putline - use rules if possible
  */
 static void
-putline (start_x, start_y, end_x, end_y, next_x, next_y,
-                first_start_x, first_start_y, first_end_x, first_end_y)
-int	start_x, start_y, next_x, next_y;
-int	first_start_x, first_start_y, first_end_x, first_end_y;
-double	end_x, end_y;
+putline(int start_x, int start_y, double end_x, double end_y,
+		int next_x, int next_y, int first_start_x, int first_start_y,
+		int first_end_x, int first_end_y)
 {
     if (line_style == SOLID_LINE &&
 	    ((start_x == end_x) || (start_y == end_y))) {
@@ -530,8 +530,7 @@ double	end_x, end_y;
 
 
 void
-genpictex_spline(s)
-F_spline	*s;
+genpictex_spline(F_spline *s)
 {
 	/* print any comments */
 	print_comments("% ",s->comments, "");
@@ -555,8 +554,7 @@ F_spline	*s;
 #define MAXBLACKDIAM 15 /* pt */
 
 void
-genpictex_ellipse(e)
-F_ellipse	*e;
+genpictex_ellipse(F_ellipse *e)
 {
 	/* print any comments */
 	print_comments("% ",e->comments, "");
@@ -570,7 +568,7 @@ F_ellipse	*e;
 	if ((e->fill_style == BLACK_FILL) && (e->radiuses.x == e->radiuses.y)) {
 		if (mag*e->radiuses.x > 0.5*ppi/72*MAXBLACKDIAM)
 			fprintf(stderr, "Too big black filled circle substituted by a diameter of %dpt\n", MAXBLACKDIAM);
- 		fprintf(tfp, "\\put{\\makebox(0,0)[l]{\\circle*{%6.3f}}} at %6.3f %6.3f\n",
+		fprintf(tfp, "\\put{\\makebox(0,0)[l]{\\circle*{%6.3f}}} at %6.3f %6.3f\n",
 		    (2*e->radiuses.x/ppi)*CONVUNIT,
 		    ((e->center.x)/ppi)*CONVUNIT, (convy(e->center.y/ppi))*CONVUNIT);
 
@@ -592,8 +590,7 @@ F_ellipse	*e;
 #define			HT_OFFSET	(0.2 / 72.0)
 
 void
-genpictex_text(t)
-F_text	*t;
+genpictex_text(F_text *t)
 {
 	double	x, y;
 	char *tpos;
@@ -602,7 +599,7 @@ F_text	*t;
 	/* print any comments */
 	print_comments("% ",t->comments, "");
 
-        fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
+	fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
 	x = t->base_x/ppi;
 	y = convy(t->base_y/ppi);
@@ -611,15 +608,15 @@ F_text	*t;
 
 	    case T_LEFT_JUSTIFIED:
 	    case DEFAULT:
-	    	tpos = "[lB]";
+		tpos = "[lB]";
 		break;
 
 	    case T_CENTER_JUSTIFIED:
-	    	tpos = "[B]";
+		tpos = "[B]";
 		break;
 
 	    case T_RIGHT_JUSTIFIED:
-	    	tpos = "[rB]";
+		tpos = "[rB]";
 		break;
 
 	    default:
@@ -628,26 +625,26 @@ F_text	*t;
 	    }
 
 	unpsfont(t);
-        { int texsize;
-          double baselineskip;
+	{ int texsize;
+	  double baselineskip;
 
 	  texsize = TEXFONTMAG(t);
 	  baselineskip = (texsize * 1.2);
 
 #ifdef NFSS
- 	  fprintf(tfp, "\\put{\\SetFigFontNFSS{%d}{%.1f}{%s}{%s}{%s}",
+	  fprintf(tfp, "\\put{\\SetFigFontNFSS{%d}{%.1f}{%s}{%s}{%s}",
 				 texsize, baselineskip,
 				 TEXFAMILY(t->font),TEXSERIES(t->font),TEXSHAPE(t->font));
 #else
- 	  fprintf(tfp, "\\put{\\SetFigFont{%d}{%.1f}{%s}",
+	  fprintf(tfp, "\\put{\\SetFigFont{%d}{%.1f}{%s}",
 		texsize, baselineskip, TEXFONT(t->font));
 #endif
 	}
 
-#ifdef DVIPS
-	if(t->angle && t->type == T_LEFT_JUSTIFIED)
-	  fprintf(tfp, "\\special{ps:gsave currentpoint currentpoint translate\n-%.1f rotate neg exch neg exch translate}", t->angle*180/M_PI);
-#endif
+	if(rotate && t->angle && t->type == T_LEFT_JUSTIFIED)
+	    fprintf(tfp,
+		"\\special{ps:gsave currentpoint currentpoint translate\n-%.1f rotate neg exch neg exch translate}",
+		t->angle*180/M_PI);
 
 	set_color(t->color);
 
@@ -656,55 +653,52 @@ F_text	*t;
 		/* this loop escapes characters "$&%#_{}" */
 		/* and deleted characters "~^\" */
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
-	      	    if (strchr("$&%#_{}", *cp)) (void)fputc('\\', tfp);
-	      	    if (strchr("~^\\", *cp))
+		    if (strchr("$&%#_{}", *cp)) (void)fputc('\\', tfp);
+		    if (strchr("~^\\", *cp))
 			fprintf(stderr,
 				"Bad character in text object '%c'\n" ,*cp);
 		    else
 			(void)fputc(*cp, tfp);
-	      	}
-	else 
+		}
+	else
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
 #ifdef I18N
-		    extern Boolean support_i18n;
+		    extern bool support_i18n;
 		    if (support_i18n && (t->font <= 2))
-		            fputc(*cp, tfp);
+			    fputc(*cp, tfp);
 		    else
 #endif
 		    if (*cp >= 0xa0) {
-	                switch (encoding) {
-	                    case 0: /* no escaping */
-			        fputc(*cp, tfp);
-	                        break;
-	                    case 1: /* iso-8859-1 */
-	    	    	        fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
-	                        break;
-	                    case 2: /* iso-8859-2 */
-	    		        fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
-	                        break;
-	                }
-	            } else
+			switch (encoding) {
+			    case 0: /* no escaping */
+				fputc(*cp, tfp);
+				break;
+			    case 1: /* iso-8859-1 */
+				fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
+				break;
+			    case 2: /* iso-8859-2 */
+				fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
+				break;
+			}
+		    } else
 			fputc(*cp, tfp);
 		}
 
 	reset_color(t->color);
 
-#ifdef DVIPS
-	if(t->angle)
-	{
-	  if (t->type == T_LEFT_JUSTIFIED)
-	       fprintf(tfp, "\\special{ps:currentpoint grestore moveto}");
-	  else
-	     fprintf(stderr, "Rotated Text only for left justified text\n");
-	}
-#endif
- 	fprintf(tfp, "} %s at %6.3f %6.3f\n",
-	    tpos, (x)*CONVUNIT, (y)*CONVUNIT);
+	if(rotate && t->angle) {
+	    if (t->type == T_LEFT_JUSTIFIED)
+		fprintf(tfp, "\\special{ps:currentpoint grestore moveto}");
+	    else
+		fprintf(stderr, "Rotated Text only for left justified text\n");
 	}
 
+	fprintf(tfp, "} %s at %6.3f %6.3f\n",
+	    tpos, (x)*CONVUNIT, (y)*CONVUNIT);
+}
+
 void
-genpictex_arc(a)
-F_arc	*a;
+genpictex_arc(F_arc *a)
 {
 	double		x, y;
 	double		cx, cy, sx, sy, ex, ey;
@@ -713,7 +707,7 @@ F_arc	*a;
 	/* print any comments */
 	print_comments("% ",a->comments, "");
 
-        fprintf(tfp, "%%\n%% Fig CIRCULAR ARC object\n%%\n");
+	fprintf(tfp, "%%\n%% Fig CIRCULAR ARC object\n%%\n");
 
 	set_linewidth(a->thickness);
 	set_style(a->style, a->style_val);
@@ -740,7 +734,7 @@ F_arc	*a;
 	dy1 = sy - cy;
 	dx2 = ex - cx;
 	dy2 = ey - cy;
-	    
+
 	rtop(dx1, dy1, &r1, &th1);
 	rtop(dx2, dy2, &r2, &th2);
 	theta = th2 - th1;
@@ -768,8 +762,7 @@ F_arc	*a;
  * rtop - rectangular to polar conversion
  */
 static void
-rtop(x, y, r, th)
-double x, y, *r, *th;
+rtop(double x, double y, double *r, double *th)
 {
 	*r = sqrt(x*x+y*y);
 	*th = acos(x/(*r));
@@ -780,8 +773,8 @@ double x, y, *r, *th;
 /*	draw arrow heading from (x1, y1) to (x2, y2)	*/
 
 static void
-draw_arrow_head(x1, y1, x2, y2, arrowht, arrowwid)
-double	x1, y1, x2, y2, arrowht, arrowwid;
+draw_arrow_head(double x1, double y1, double x2, double y2,
+		double arrowht, double arrowwid)
 {
 	double	x, y, xb, yb, dx, dy, l, sina, cosa;
 	double	xc, yc, xd, yd;
@@ -815,7 +808,7 @@ double	x1, y1, x2, y2, arrowht, arrowwid;
 	dash = dash_length;
 	set_style(SOLID_LINE, 0.0);
 
-        fprintf(tfp, "%%\n%% arrow head\n%%\n");
+	fprintf(tfp, "%%\n%% arrow head\n%%\n");
 
 	fprintf(tfp, "\\plot %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f /\n%%\n",
 			(xc)*CONVUNIT, (yc)*CONVUNIT,
@@ -829,8 +822,8 @@ double	x1, y1, x2, y2, arrowht, arrowwid;
 #define		THRESHOLD	.05	/* inch */
 
 static void
-quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
-double	a1, b1, a2, b2, a3, b3, a4, b4;
+quadratic_spline(double a1, double b1, double a2, double b2,
+		double a3, double b3, double a4, double b4)
 {
 	double	x1, y1, x4, y4;
 	double	xmid, ymid;
@@ -857,20 +850,19 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	}
 
 static void
-genpictex_ctl_spline(s)
-F_spline	*s;
+genpictex_ctl_spline(F_spline *s)
 {
 	F_point	*p;
 	double	cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4;
 	double	x1, y1, x2, y2;
 
-    	fprintf(tfp, "%%\n%% Fig CONTROL PT SPLINE\n%%\n");
+	fprintf(tfp, "%%\n%% Fig CONTROL PT SPLINE\n%%\n");
 
 	p = s->points;
-	x1 = p->x/ppi;  y1 = convy(p->y/ppi);
+	x1 = p->x/ppi;	y1 = convy(p->y/ppi);
 	p = p->next;
-	x2 = p->x/ppi;  y2 = convy(p->y/ppi);
-	cx1 = (x1 + x2) / 2;      cy1 = (y1 + y2) / 2;
+	x2 = p->x/ppi;	y2 = convy(p->y/ppi);
+	cx1 = (x1 + x2) / 2;	  cy1 = (y1 + y2) / 2;
 	cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
 
 	if (closed_spline(s)) {
@@ -880,7 +872,7 @@ F_spline	*s;
 	else {
 	    fprintf(tfp, "%% open spline\n%%\n");
 	    if (s->back_arrow)
-	        draw_arrow_head(cx1, cy1, x1, y1,
+		draw_arrow_head(cx1, cy1, x1, y1,
 			s->back_arrow->ht/ppi, s->back_arrow->wid/ppi);
 	    fprintf(tfp, "\\plot\t%6.3f %6.3f %6.3f %6.3f\n ",
 		(x1)*CONVUNIT, (y1)*CONVUNIT, (cx1)*CONVUNIT, (cy1)*CONVUNIT);
@@ -892,14 +884,14 @@ F_spline	*s;
 	    cx3 = (3 * x1 + x2) / 4;  cy3 = (3 * y1 + y2) / 4;
 	    cx4 = (x1 + x2) / 2;      cy4 = (y1 + y2) / 2;
 	    quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
-	    cx1 = cx4;  cy1 = cy4;
+	    cx1 = cx4;	cy1 = cy4;
 	    cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
 	    }
 	x1 = x2;  y1 = y2;
 	p = s->points->next;
-	x2 = p->x/ppi;  y2 = convy(p->y/ppi);
+	x2 = p->x/ppi;	y2 = convy(p->y/ppi);
 	cx3 = (3 * x1 + x2) / 4;  cy3 = (3 * y1 + y2) / 4;
-	cx4 = (x1 + x2) / 2;      cy4 = (y1 + y2) / 2;
+	cx4 = (x1 + x2) / 2;	  cy4 = (y1 + y2) / 2;
 	if (closed_spline(s)) {
 	    quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
 	    fprintf(tfp, "\t/\n");
@@ -908,21 +900,20 @@ F_spline	*s;
 	    fprintf(tfp, "\t /\n\\plot %6.3f %6.3f %6.3f %6.3f /\n",
 		(cx1)*CONVUNIT, (cy1)*CONVUNIT, (x1)*CONVUNIT, (y1)*CONVUNIT);
 	    if (s->for_arrow)
-	    	draw_arrow_head(cx1, cy1, x1, y1,
+		draw_arrow_head(cx1, cy1, x1, y1,
 			s->for_arrow->ht/ppi, s->for_arrow->wid/ppi);
 	    }
 
 	}
 
 static void
-genpictex_itp_spline(s)
-F_spline	*s;
+genpictex_itp_spline(F_spline *s)
 {
 	F_point		*p1, *p2;
 	F_control	*cp1, *cp2;
 	double		x1, x2, y1, y2;
 
-    	fprintf(tfp, "%%\n%% Fig INTERPOLATED PT SPLINE\n%%\n");
+	fprintf(tfp, "%%\n%% Fig INTERPOLATED PT SPLINE\n%%\n");
 
 	p1 = s->points;
 	cp1 = s->controls;
@@ -948,8 +939,8 @@ F_spline	*s;
 	}
 
 static void
-bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
-double	a0, b0, a1, b1, a2, b2, a3, b3;
+bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2,
+		double a3, double b3)
 {
 	double	x0, y0, x3, y3;
 	double	sx1, sy1, sx2, sy2, tx, ty, tx1, ty1, tx2, ty2, xmid, ymid;
@@ -973,9 +964,9 @@ double	a0, b0, a1, b1, a2, b2, a3, b3;
 	}
 
 struct driver dev_pictex = {
-     	genpictex_option,
+	genpictex_option,
 	genpictex_start,
-	gendev_null,
+	gendev_nogrid,
 	genpictex_arc,
 	genpictex_ellipse,
 	genpictex_line,

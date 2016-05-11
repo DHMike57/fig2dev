@@ -19,7 +19,7 @@
  *
  * Written by Michael Schrick (2001-03-04)
  *
- * Revision History:
+ * Changes:
  *
  *   2004/02/10 - Added support for locale text (if iconv() is available),
  *		  arc box, open arc, rotated ellipse, picture,
@@ -57,16 +57,14 @@
  * - an EMF file may look quite different when viewed with different
  *   EMF capable drawing programs. This is especially so for text:
  *   the text font e.g. needs to be recognized and supported by the
- *   viewer.  Same is True for special characters in text strings, etc.
+ *   viewer.  Same is true for special characters in text strings, etc.
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#if defined(I18N) && defined(USE_ICONV)
+#include "fig2dev.h"
+#if defined(I18N) && defined(HAVE_ICONV_H)
 #include <iconv.h>
 #endif
-#include "fig2dev.h"
 #include "object.h"
 #include "genemf.h"
 
@@ -100,7 +98,7 @@ struct emfhandle {
     struct emfhandle *next;	/* This field must be first */
     struct emfhandle **prev;
     enum emfhandletype type;
-    Boolean	is_current;	/* True: currently selected */
+    bool	is_current;	/* true: currently selected */
     unsigned	handle;
     union {
 	struct pen {
@@ -122,7 +120,7 @@ static struct emfhandle *handles;
 static struct emfhandle *latesthandle;
 
 
-static int rounded_arrows;	/* If rounded_arrows is False, the position
+static int rounded_arrows;	/* If rounded_arrows is false, the position
 				 * of arrows will be corrected for
 				 * compensating line width effects. This
 				 * correction is not needed if arrows appear
@@ -453,41 +451,41 @@ static int	lfWeight[] = {
 		};
 
 static uchar	lfItalic[] = {
-		False,			/* Times-Roman */
-		True,			/* Times-Italic */
-		False,			/* Times-Bold */
-		True,			/* Times-BoldItalic */
-		False,			/* AvantGarde */
-		True,			/* AvantGarde-BookOblique */
-		False,			/* AvantGarde-Demi */
-		True,			/* AvantGarde-DemiOblique */
-		False,			/* Bookman-Light */
-		True,			/* Bookman-LightItalic */
-		False,			/* Bookman-Demi */
-		True,			/* Bookman-DemiItalic */
-		False,			/* Courier */
-		True,			/* Courier-Oblique */
-		False,			/* Courier-Bold */
-		True,			/* Courier-BoldItalic */
-		False,			/* Helvetica */
-		True,			/* Helvetica-Oblique */
-		False,			/* Helvetica-Bold */
-		True,			/* Helvetica-BoldOblique */
-		False,			/* Helvetica-Narrow */
-		True,			/* Helvetica-Narrow-Oblique */
-		False,			/* Helvetica-Narrow-Bold */
-		True,			/* Helvetica-Narrow-BoldOblique */
-		False,			/* NewCenturySchlbk-Roman */
-		True,			/* NewCenturySchlbk-Italic */
-		False,			/* NewCenturySchlbk-Bold */
-		True,			/* NewCenturySchlbk-BoldItalic */
-		False,			/* Palatino-Roman */
-		True,			/* Palatino-Italic */
-		False,			/* Palatino-Bold */
-		True,			/* Palatino-BoldItalic */
-		False,			/* Symbol */
-		False,			/* ZapfChancery-MediumItalic */
-		False			/* ZapfDingbats */
+		false,			/* Times-Roman */
+		true,			/* Times-Italic */
+		false,			/* Times-Bold */
+		true,			/* Times-BoldItalic */
+		false,			/* AvantGarde */
+		true,			/* AvantGarde-BookOblique */
+		false,			/* AvantGarde-Demi */
+		true,			/* AvantGarde-DemiOblique */
+		false,			/* Bookman-Light */
+		true,			/* Bookman-LightItalic */
+		false,			/* Bookman-Demi */
+		true,			/* Bookman-DemiItalic */
+		false,			/* Courier */
+		true,			/* Courier-Oblique */
+		false,			/* Courier-Bold */
+		true,			/* Courier-BoldItalic */
+		false,			/* Helvetica */
+		true,			/* Helvetica-Oblique */
+		false,			/* Helvetica-Bold */
+		true,			/* Helvetica-BoldOblique */
+		false,			/* Helvetica-Narrow */
+		true,			/* Helvetica-Narrow-Oblique */
+		false,			/* Helvetica-Narrow-Bold */
+		true,			/* Helvetica-Narrow-BoldOblique */
+		false,			/* NewCenturySchlbk-Roman */
+		true,			/* NewCenturySchlbk-Italic */
+		false,			/* NewCenturySchlbk-Bold */
+		true,			/* NewCenturySchlbk-BoldItalic */
+		false,			/* Palatino-Roman */
+		true,			/* Palatino-Italic */
+		false,			/* Palatino-Bold */
+		true,			/* Palatino-BoldItalic */
+		false,			/* Symbol */
+		false,			/* ZapfChancery-MediumItalic */
+		false			/* ZapfDingbats */
 		};
 
 static uchar	lfCharSet[] = {
@@ -566,8 +564,8 @@ static uchar	lfPitchAndFamily[] = {
 	VARIABLE_PITCH | FF_ROMAN,	/* ZapfDingbats */
 		};
 
-#if defined(I18N) && defined(USE_ICONV)
-extern Boolean support_i18n;  /* enable i18n support? */
+#if defined(I18N) && defined(HAVE_ICONV_H)
+extern bool support_i18n;  /* enable i18n support? */
 
 #define FONT_TIMES_ROMAN	0
 #define FONT_TIMES_BOLD		2
@@ -607,27 +605,27 @@ static const struct localefnt {
 	int Weight;
 	uchar Italic, Charset, PitchAndFamily;
 } localeFonts[2][5] = { {
-    { "Times", FW_NORMAL, False, DEFAULT_CHARSET, FIXED_PITCH|FF_DONTCARE },
+    { "Times", FW_NORMAL, false, DEFAULT_CHARSET, FIXED_PITCH|FF_DONTCARE },
     { "SimSun",
-      FW_NORMAL, False, GB2312_CHARSET, FIXED_PITCH|FF_DONTCARE },
+      FW_NORMAL, false, GB2312_CHARSET, FIXED_PITCH|FF_DONTCARE },
     { "MingLiU",
-      FW_NORMAL, False, CHINESEBIG5_CHARSET, FIXED_PITCH|FF_DONTCARE },
+      FW_NORMAL, false, CHINESEBIG5_CHARSET, FIXED_PITCH|FF_DONTCARE },
     { "\243\315\243\323 \314\300\304\253",	/* MS Mincho */
-      FW_NORMAL, False, SHIFTJIS_CHARSET, FIXED_PITCH|FF_DONTCARE },
+      FW_NORMAL, false, SHIFTJIS_CHARSET, FIXED_PITCH|FF_DONTCARE },
     { "Batang",
-      FW_NORMAL, False, HANGUL_CHARSET, FIXED_PITCH|FF_DONTCARE }
+      FW_NORMAL, false, HANGUL_CHARSET, FIXED_PITCH|FF_DONTCARE }
 }, {
-    { "Times", FW_BOLD, False, DEFAULT_CHARSET, FIXED_PITCH|FF_DONTCARE },
+    { "Times", FW_BOLD, false, DEFAULT_CHARSET, FIXED_PITCH|FF_DONTCARE },
     { "SimHei",
-      FW_MEDIUM, False, GB2312_CHARSET, FIXED_PITCH|FF_DONTCARE },
+      FW_MEDIUM, false, GB2312_CHARSET, FIXED_PITCH|FF_DONTCARE },
     { "MingLiU",
-      FW_BOLD,   False, CHINESEBIG5_CHARSET, FIXED_PITCH|FF_DONTCARE },
+      FW_BOLD,   false, CHINESEBIG5_CHARSET, FIXED_PITCH|FF_DONTCARE },
     { "\243\315\243\323 \245\264\245\267\245\303\245\257", /* MS Gothic */
-      FW_MEDIUM, False, SHIFTJIS_CHARSET, FIXED_PITCH|FF_DONTCARE },
+      FW_MEDIUM, false, SHIFTJIS_CHARSET, FIXED_PITCH|FF_DONTCARE },
     { "Gungsuh",
-      FW_MEDIUM, False, HANGUL_CHARSET, FIXED_PITCH|FF_DONTCARE }
+      FW_MEDIUM, false, HANGUL_CHARSET, FIXED_PITCH|FF_DONTCARE }
 } };
-#endif	/* defined(I18N) && defined(USE_ICONV) */
+#endif	/* defined(I18N) && defined(HAVE_ICONV_H) */
 
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -686,13 +684,13 @@ static void textunicode();
 static void text();
 static void textcolr();
 static void textalign();
-#if defined(I18N) && defined(USE_ICONV)
+#if defined(I18N) && defined(HAVE_ICONV_H)
 static void moveto();
 #endif
 
-extern FILE *open_picfile();
-extern void close_picfile();
-#ifdef USE_PNG
+extern FILE *open_picfile(char *name, int *type, bool pipeok, char *retname);
+extern void close_picfile(FILE *file, int type);
+#ifdef HAVE_PNG_H
 extern	int read_png();
 #endif
 
@@ -705,8 +703,8 @@ extern	int read_png();
 
 
 /* Delete an object by handle structure. */
-static void delete_handle(h)
-    struct emfhandle *h;
+static void
+delete_handle(struct emfhandle *h)
 {
     EMRSELECTOBJECT em_so;	/* EMRDELETEOBJECT */
 
@@ -737,7 +735,7 @@ static void delete_handle(h)
 # endif
 
 	emh_write(&em_so, sizeof(EMRSELECTOBJECT), (size_t) 1, EMH_RECORD);
-	h->is_current = False;
+	h->is_current = false;
     }
 
     em_so.emr.iType = htofl(EMR_DELETEOBJECT);
@@ -754,22 +752,22 @@ static void delete_handle(h)
 
 
 /* Clear current mark from objects of the specified type. */
-static void clear_current_handle(type)
-    enum emfhandletype type;
+static void
+clear_current_handle(enum emfhandletype type)
 {
     struct emfhandle *h;
 
     for (h = handles; h; h = h->next)
 	if (h->is_current && h->type == type) {
-	    h->is_current = False;
+	    h->is_current = false;
 	    break;
 	}
 }
 
 
 /* Select object by handle number. */
-static void select_object(handle)
-    unsigned handle;
+static void
+select_object(unsigned handle)
 {
     EMRSELECTOBJECT em_so;
 
@@ -786,8 +784,8 @@ static void select_object(handle)
 
 
 /* Add a handle structure to the newest position of handle list. */
-static void use_handle(h)
-    struct emfhandle *h;
+static void
+use_handle(struct emfhandle *h)
 {
 
     if (h != latesthandle) {
@@ -813,8 +811,8 @@ static void use_handle(h)
  * Allocate handle structure.  If the number of currently allocated handle
  * exceeds maximum limit, reuse the least recently used handle.
  */
-static struct emfhandle *get_handle(type)
-    enum emfhandletype type;
+static struct emfhandle *
+get_handle(enum emfhandletype type)
 {
     struct emfhandle *h;
 
@@ -843,7 +841,7 @@ static struct emfhandle *get_handle(type)
     h->handle = emh_nHandles;
     h->prev = NULL;
     h->next = NULL;
-    h->is_current = False;
+    h->is_current = false;
 use:
     h->type = type;
 
@@ -853,8 +851,8 @@ use:
 
 /* Given an index into either the standard color list or into the
  * user defined color list, return the hex RGB value of the color. */
-static int conv_color(colorIndex)
-    int colorIndex;
+static int
+conv_color(int colorIndex)
 {
     int   rgb;
     static const int rgbColors[NUM_STD_COLS] = {
@@ -889,9 +887,8 @@ static int conv_color(colorIndex)
 
 /* Converts fill pattern color.  The style contains the fill intensity.
  * 0 - 20 - 40 is equivalent to -1.0 - 0.0 - +1.0. */
-static int conv_fill_color(style, color)
-    int style;
-    int color;
+static int
+conv_fill_color(int style, int color)
 {
     int   rgb, b, g, r;
     float f;
@@ -939,9 +936,8 @@ static int conv_fill_color(style, color)
 
 /* Converts Fig font index to index into font table in the pre-amble,
  * taking into account the flags. */
-static int conv_fontindex(font, flags)
-    int font;
-    int flags;
+static int
+conv_fontindex(int font, int flags)
 {
 
     if (flags&4) {			/* PostScript fonts */
@@ -965,8 +961,8 @@ static int conv_fontindex(font, flags)
 
 
 /* Convert fig cap style to EMF line style. */
-static int conv_capstyle(cap)
-    int	cap;
+static int
+conv_capstyle(int cap)
 {
 
     switch (cap) {
@@ -989,8 +985,8 @@ static int conv_capstyle(cap)
 
 
 /* Convert fig join style to EMF join style. */
-static int conv_joinstyle(join)
-    int	join;
+static int
+conv_joinstyle(int join)
 {
 
     switch (join) {
@@ -1015,8 +1011,8 @@ static int conv_joinstyle(join)
 /* Convert fig line style to EMF line style.  EMF knows 5 styles with
  * fortunately correspond to the first 5 fig line styles.  The triple
  * dotted fig line style is handled as a solid line here. */
-static int conv_linetype(type)
-    int	type;
+static int
+conv_linetype(int type)
 {
 
     if (type < 0)
@@ -1029,12 +1025,14 @@ static int conv_linetype(type)
 
 /* This procedure sets the pen line attributes and selects the pen into
  * the device context. */
-static void edgeattr(vis, type, width, color, join, cap)
-    int vis;		/* visible */
-    int type;		/* line type */
-    int width, color;
-    int join;		/* join style */
-    int cap;		/* cap style */
+static void
+edgeattr(
+	int vis,		/* visible */
+	int type,		/* line type */
+	int width,
+	int color,
+	int join,		/* join style */
+	int cap)		/* cap style */
 {
     unsigned handle;
     int rgb;
@@ -1042,7 +1040,7 @@ static void edgeattr(vis, type, width, color, join, cap)
     struct emfhandle *h = NULL;
     int style;
     unsigned styleEntry[8];	/* "- . . . " */
-    int user_style = False;
+    int user_style = false;
 
     if (width == 0)
 	vis = 0;
@@ -1081,7 +1079,7 @@ static void edgeattr(vis, type, width, color, join, cap)
     case EMF_LEVEL_WINNT:
 	if (type == 5) {
 	    style |= PS_USERSTYLE;
-	    user_style = True;
+	    user_style = true;
 	} else
 	    style |= conv_linetype(type);
 	break;
@@ -1155,7 +1153,7 @@ selectpen:
     chkcache(handle, lasthandle[EMFH_PEN]);
     clear_current_handle(EMFH_PEN);
     if (h)
-	h->is_current = True;
+	h->is_current = true;
 # ifdef __EMF_DEBUG__
     fprintf(stderr, "Pen:   ");
 # endif
@@ -1164,16 +1162,16 @@ selectpen:
 
 
 /* This procedure turns off the edge visibility. */
-static void edgevis(onoff)
-    int onoff;
+static void
+edgevis(int onoff)
 {
 
     edgeattr(onoff, 0, 0, 0, 0, 0);
 }/* end edgevis */
 
 
-static void bkmode(mode)
-    int mode;
+static void
+bkmode(int mode)
 {
     static int oldbkmode = 0;
     EMRSETBKMODE em_bm;
@@ -1192,8 +1190,8 @@ static void bkmode(mode)
 }
 
 
-static void bkcolor(rgb)
-    int rgb;
+static void
+bkcolor(int rgb)
 {
     static int oldbkcolor = UNDEFVALUE;
     EMRSETBKCOLOR em_bc;
@@ -1212,9 +1210,8 @@ static void bkcolor(rgb)
 }
 
 
-static void create_brush_pattern(bits, pattern)
-    unsigned char *bits;
-    int pattern;
+static void
+create_brush_pattern(unsigned char *bits, int pattern)
 {
     const struct emf_bmpat *pat = &emf_bm_pattern[pattern];
     unsigned char *b = pat->bits;
@@ -1246,8 +1243,8 @@ static void create_brush_pattern(bits, pattern)
 
 
 /* Computes and sets fill color for solid filled shapes (fill style 0 to 40). */
-static void fillstyle(fill_color, fill_style, pen_color)
-    int fill_color, fill_style, pen_color;
+static void
+fillstyle(int fill_color, int fill_style, int pen_color)
 {
     unsigned handle;
     int pattern, hatch;
@@ -1446,7 +1443,7 @@ selectbrush:
     chkcache(handle, lasthandle[EMFH_BRUSH]);
     clear_current_handle(EMFH_BRUSH);
     if (h)
-	h->is_current = True;
+	h->is_current = true;
 # ifdef __EMF_DEBUG__
     fprintf(stderr, "Brush: ");
 # endif
@@ -1454,10 +1451,11 @@ selectbrush:
 }/* end fillstyle */
 
 
-static void textfont(font, size, angle)
-    int     font;
-    double  size;
-    int     angle;	/* tenths degree */
+static void
+textfont(
+	int font,
+	double size,
+	int angle)	/* tenths degree */
 {
     EMREXTCREATEFONTINDIRECTW em_fn;
     short *utext;
@@ -1498,7 +1496,7 @@ static void textfont(font, size, angle)
     utext = (short *) em_fn.elfw.elfLogFont.lfFaceName;
     n_unicode = sizeof (em_fn.elfw.elfLogFont.lfFaceName);
     textunicode(
-#if defined(I18N) && defined(USE_ICONV)
+#if defined(I18N) && defined(HAVE_ICONV_H)
       (font < 0 /* locale font */)? localeFonts[-1-font][figLanguage].FaceName :
 #endif
 	    lfFaceName[font],
@@ -1507,7 +1505,7 @@ static void textfont(font, size, angle)
     em_fn.elfw.elfLogFont.lfHeight = htofl(fontsz);
     em_fn.elfw.elfLogFont.lfEscapement = em_fn.elfw.elfLogFont.lfOrientation
 	= htofl(angle);
-#if defined(I18N) && defined(USE_ICONV)
+#if defined(I18N) && defined(HAVE_ICONV_H)
     if (font < 0 /* locale font */) {
 	const struct localefnt *lf = &localeFonts[-1-font][figLanguage];
 
@@ -1532,7 +1530,7 @@ static void textfont(font, size, angle)
     fprintf(stderr,
 	"Textfont (%d): %s  Size: %d  Weight: %d  Italic: %d  Angle: %d\n",
 	handle,
-#  if defined(I18N) && defined(USE_ICONV)
+#  if defined(I18N) && defined(HAVE_ICONV_H)
       (font < 0 /* locale font */)? localeFonts[-1-font][figLanguage].FaceName :
 #  endif
 	lfFaceName[font], -ftohl(em_fn.elfw.elfLogFont.lfHeight),
@@ -1543,7 +1541,7 @@ selectfont:
     chkcache(handle, lasthandle[EMFH_FONT]);
     clear_current_handle(EMFH_FONT);
     if (h)
-	h->is_current = True;
+	h->is_current = true;
 # ifdef __EMF_DEBUG__
     fprintf(stderr, "Font:  ");
 # endif
@@ -1551,7 +1549,8 @@ selectfont:
 }/* end textfont */
 
 
-static void warn_32bit_pos()
+static void
+warn_32bit_pos(void)
 {
     static int wgiv;
 
@@ -1576,8 +1575,8 @@ static void pos2point(P, p)
 
 /* Returns length of the arrow. used to shorten lines/arcs at
  * an end where an arrow needs to be drawn. */
-static double arrow_length(a)
-    F_arrow *a;
+static double
+arrow_length(F_arrow *a)
 {
     double len;
 
@@ -1859,7 +1858,7 @@ static void arc_arrow_adjust(p, arwpos, arc, r, arw, adir)
      */
 
     /* direction from arow root to arrow top */
-    if (direction(&origpos, arwpos, &dir, &dirlen) == False)
+    if (direction(&origpos, arwpos, &dir, &dirlen) == false)
 	goto fix_cap;	/* no way to fix */
 
     /* Calculate the center of the line of arrow top. */
@@ -1891,7 +1890,7 @@ static void arc_arrow_adjust(p, arwpos, arc, r, arw, adir)
 	goto fix_cap;
 
     /* direction from p1 to p2 */
-    if (direction(&p2, &p1, &dir, &dirlen) == False)
+    if (direction(&p2, &p1, &dir, &dirlen) == false)
 	goto fix_cap;
 
     /*
@@ -1951,8 +1950,8 @@ fix_cap:
 }
 
 
-static double arc_radius(a)
-    F_arc *a;
+static double
+arc_radius(F_arc *a)
 {
 
     return (distance((double)a->point[0].x, (double)a->point[0].y,
@@ -1964,8 +1963,8 @@ static double arc_radius(a)
 }
 
 
-static void translate(x, y, tx, ty)
-    double *x, *y, tx, ty;
+static void
+translate(double *x, double *y, double tx, double ty)
 {
 
     *x += tx; *y += ty;
@@ -1973,8 +1972,8 @@ static void translate(x, y, tx, ty)
 
 
 /* Rotates counter clockwise around origin */
-static void rotate(x, y, angle)
-    double *x, *y, angle;
+static void
+rotate(double *x, double *y, double angle)
 {
     double s = sin(angle), c = cos(angle), xt = *x, yt = *y;
 
@@ -1997,8 +1996,8 @@ static void arc_rotate(p, cx, cy, angle)
 }
 
 
-static void arcoutline(a)
-    F_arc *a;
+static void
+arcoutline(F_arc *a)
 {
     EMRARC em_ar;
     double r = arc_radius(a);
@@ -2053,8 +2052,8 @@ draw_arrows:
 }
 
 
-static void arcinterior(a)
-    F_arc *a;
+static void
+arcinterior(F_arc *a)
 {
     EMRCHORD em_ch;
     double r = arc_radius(a);
@@ -2081,8 +2080,8 @@ static void arcinterior(a)
 
 
 /* Reverses arc direction by swapping endpoints and arrows */
-static void arc_reverse(arc)
-    F_arc *arc;
+static void
+arc_reverse(F_arc *arc)
 {
     F_arrow *arw;
     F_pos pp;
@@ -2094,8 +2093,8 @@ static void arc_reverse(arc)
 }
 
 
-static void circle(e)
-    F_ellipse *e;
+static void
+circle(F_ellipse *e)
 {
     EMRELLIPSE em_el;
 
@@ -2117,8 +2116,8 @@ static void circle(e)
 
 
 /* non-rotated ellipses */
-static void ellipse(e)
-    F_ellipse *e;
+static void
+ellipse(F_ellipse *e)
 {
     EMRELLIPSE em_el;
 
@@ -2141,8 +2140,8 @@ static void ellipse(e)
 
 /* draw rotated ellipse as a polygon */
 #define ELLIPSE_NPOINT	72
-static void rotated_ellipse(e)
-    F_ellipse *e;
+static void
+rotated_ellipse(F_ellipse *e)
 {
     F_line l;
     F_point pnt[ELLIPSE_NPOINT];
@@ -2195,17 +2194,17 @@ static void rotated_ellipse(e)
 
 
 /* Integer cross product */
-static int icprod(x1, y1, x2, y2)
-    int x1, y1, x2, y2;
+static int
+icprod(int x1, int y1, int x2, int y2)
 {
 
     return x1 * y2 - y1 * x2;
 }/* end icprod */
 
 
-/* Returns True if the arc is a clockwise arc. */
-static int cwarc(a)
-    F_arc *a;
+/* Returns true if the arc is a clockwise arc. */
+static int
+cwarc(F_arc *a)
 {
     int x1 = a->point[1].x - a->point[0].x,
 	y1 = a->point[1].y - a->point[0].y,
@@ -2217,7 +2216,7 @@ static int cwarc(a)
 
 
 /* Computes distance and normalized direction vector from q to p.
- * returns True if the points do not coincide and False if they do. */
+ * returns true if the points do not coincide and false if they do. */
 static int direction(p, q, dir, dist)
     F_point	*p;
     F_point	*q;
@@ -2229,15 +2228,15 @@ static int direction(p, q, dir, dist)
     dir->y = p->y - q->y;
     *dist = sqrt((dir->x) * (dir->x) + (dir->y) * (dir->y));
     if (*dist < EPSILON)
-	return False;
+	return false;
     dir->x /= *dist;
     dir->y /= *dist;
-    return True;
+    return true;
 }/* end direction */
 
 
-static double distance(x1, y1, x2, y2)
-    double x1, y1, x2, y2;
+static double
+distance(double x1, double y1, double x2, double y2)
 {
     double dx = x2-x1, dy=y2-y1;
 
@@ -2260,17 +2259,16 @@ static size_t emh_write(ptr, size, nmemb, flag)
 }/* end emh_write */
 
 
-static int is_flip(rot, flip)
-    int rot, flip;
+static int
+is_flip(int rot, int flip)
 {
 
     return (rot == 90 || rot == 270) ? !flip : flip;
 }
 
 
-static void encode_bitmap(pic, bpp, rot)
-    F_pic *pic;
-    int bpp, rot;
+static void
+encode_bitmap(F_pic *pic, int bpp, int rot)
 {
     int img_w = pic->bit_size.x;
     int img_h = pic->bit_size.y;
@@ -2374,8 +2372,8 @@ static void encode_bitmap(pic, bpp, rot)
 }
 
 
-static void picbox(l)
-    F_line *l;
+static void
+picbox(F_line *l)
 {
     EMRSTRETCHDIBITS em_sd;
     BITMAPINFO bmi;
@@ -2405,7 +2403,7 @@ static void picbox(l)
     else if (dy < 0 && dx >= 0)
        rotation = 90;
 
-    if ((picf = open_picfile(l->pic->file, &filtype, True, realname)) == NULL) {
+    if ((picf = open_picfile(l->pic->file, &filtype, true, realname)) == NULL) {
 	fprintf(stderr, "fig2dev: %s: No such picture file\n", l->pic->file);
 	return;
     }
@@ -2422,10 +2420,10 @@ static void picbox(l)
     memset(&bmi, 0, sizeof(BITMAPINFO));
     bmi.bmiHeader.biSize = htofl(sizeof(BITMAPINFOHEADER));
 
-#ifdef USE_PNG
+#ifdef HAVE_PNG_H
     if (strncmp(buf, "\211\120\116\107\015\012\032\012", (size_t) 8) == 0) {
 	/* png file */
-	if ((picf = open_picfile(l->pic->file, &filtype, True, realname)) == NULL) {
+	if ((picf = open_picfile(l->pic->file, &filtype, true, realname)) == NULL) {
 	    perror(l->pic->file);
 	    return;
 	}
@@ -2553,8 +2551,8 @@ static void picbox(l)
 
 
 /* Draws polygon boundary */
-static void polygon(l)
-    F_line *l;
+static void
+polygon(F_line *l)
 {
     F_point *p;
     int count;
@@ -2659,13 +2657,13 @@ static int polyline_adjust(p, q, l)
 	return (l < d);
     }
     fprintf(stderr, "Warning: Arrow at zero-length line segment omitted.\n");
-    return True;
+    return true;
 }/* end polyline_arrow_adjust */
 
 
 /* Draws polyline boundary (with arrows if needed) */
-static void polyline(l)
-    F_line *l;
+static void
+polyline(F_line *l)
 {
     F_point *p, *q, p0, pn;
     Dir dir;
@@ -2836,8 +2834,8 @@ draw_arrows:
 }/* end polyline */
 
 
-static void rect(l)
-    F_line *l;
+static void
+rect(F_line *l)
 {
     EMRRECTANGLE em_rt;
 
@@ -2863,8 +2861,8 @@ static void rect(l)
 }/* end rect */
 
 
-static void roundrect(l)
-    F_line *l;
+static void
+roundrect(F_line *l)
 {
     EMRROUNDRECT em_rr;
 
@@ -2894,11 +2892,12 @@ static void roundrect(l)
 /* Draws interior and outline of a simple closed shape.  Cannot be
  * used for polylines and arcs (open shapes) or for arcboxes
  * (closed but not a simple emf primitive). */
-static void shape(l, join, cap, drawshape)
-    F_line *l;
-    int join;		/* join style */
-    int cap;		/* cap style */
-    void (*drawshape)(F_line *);
+static void
+shape(
+	F_line *l,
+	int join,		/* join style */
+	int cap,		/* cap style */
+	void (*drawshape)(F_line *))
 {
 
     edgeattr(1, l->style, l->thickness, l->pen_color, join, cap);
@@ -2910,9 +2909,8 @@ static void shape(l, join, cap, drawshape)
 /* Draws interior of a closed shape, taking into account fill color
  * and pattern.  Boundary must be drawn separately.  Used for
  * polylines, arcboxes and arcs. */
-static void shape_interior(l, drawshape)
-    F_line *l;
-    void (*drawshape)(F_line *);
+static void
+shape_interior(F_line *l, void (*drawshape)(F_line *))
 {
 
     if (l->fill_style >= 0) {
@@ -2926,15 +2924,16 @@ static void shape_interior(l, drawshape)
 /* Converts regular strings to unicode strings.  If the utext pointer is
  * null, memory is allocated.  Note, that carriage returns are converted
  * to nulls. */
-static void textunicode(str, n_chars, utext, n_unicode)
-    char   *str;
-    int    *n_chars;
-    short  **utext;		/* If *utext is null, memory is allocated */
-    int    *n_unicode;
+static void
+textunicode(
+	char *str,
+	int *n_chars,
+	short **utext,		/* If *utext is null, memory is allocated */
+	int *n_unicode)
 {
-#if defined(I18N) && defined(USE_ICONV)
+#if defined(I18N) && defined(HAVE_ICONV_H)
     iconv_t icd = (iconv_t) -1;
-    const char *src;
+    char *src;
     char *dst, *p;
     size_t srcleft, srccnt, dstleft, dstcnt;
     int i;
@@ -2985,7 +2984,7 @@ static void textunicode(str, n_chars, utext, n_unicode)
 		(*utext)[i] = htofs(str[i]);
 	}
     }
-#else	/* !(defined(I18N) && defined(USE_ICONV)) */
+#else	/* !(defined(I18N) && defined(HAVE_ICONV_H)) */
     int    i;
 
     *n_chars = strlen(str);
@@ -3005,10 +3004,12 @@ static void textunicode(str, n_chars, utext, n_unicode)
 }/* end textunicode */
 
 
-static void text(x, y, bbx, str)
-    int     x, y;		/* reference point */
-    RECTL  *bbx;		/* bounding box */
-    char   *str;
+static void
+text(
+	int x,
+	int y,		/* reference point */
+	RECTL *bbx,	/* bounding box */
+	char *str)
 {
     int    n_chars, n_unicode;
     short	 *utext = NULL;
@@ -3048,8 +3049,8 @@ static void text(x, y, bbx, str)
 }/* end text */
 
 
-static void textcolr(color)
-    int color;
+static void
+textcolr(int color)
 {
     static int oldcolor = UNDEFVALUE;
     EMRSETTEXTCOLOR em_tc;
@@ -3070,8 +3071,8 @@ static void textcolr(color)
 }/* end textcolr */
 
 
-static void textalign(align)
-    int align;
+static void
+textalign(int align)
 {
     static int oldalign = TA_LEFT|TA_TOP|TA_NOUPDATECP;	/* startup default */
     EMRSETTEXTALIGN em_ta;
@@ -3089,9 +3090,9 @@ static void textalign(align)
 }
 
 
-#if defined(I18N) && defined(USE_ICONV)
-static void moveto(x, y)
-    int x, y;
+#if defined(I18N) && defined(HAVE_ICONV_H)
+static void
+moveto(int x, int y)
 {
     EMRMOVETOEX em_mv;
 
@@ -3106,19 +3107,18 @@ static void moveto(x, y)
 
     emh_write(&em_mv, sizeof(EMRMOVETOEX), (size_t) 1, EMH_RECORD);
 }
-#endif	/* defined(I18N) && defined(USE_ICONV) */
+#endif	/* defined(I18N) && defined(HAVE_ICONV_H) */
 
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-void genemf_option(opt, optarg)
-    char	 opt;
-    char	*optarg;
+void
+genemf_option(char opt, char *optarg)
 {
 
-    rounded_arrows = False;
+    rounded_arrows = false;
     switch (opt) {
     case 'r':
-	rounded_arrows = True;
+	rounded_arrows = true;
 	break;
 
     case 'l':
@@ -3132,9 +3132,7 @@ void genemf_option(opt, optarg)
 	    fprintf(stderr, "warning: unknown level %s ignored\n", optarg);
 	break;
 
-    case 'f':	/* Ignore magnification, font sizes and lang here */
-    case 'm':
-    case 's':
+    case 'G':
     case 'L':
 	break;
 
@@ -3146,8 +3144,8 @@ void genemf_option(opt, optarg)
 
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-void genemf_start(objects)
-     F_compound	*objects;
+void
+genemf_start(F_compound *objects)
 {
     EMRSETMAPMODE em_sm;
     short *uni_description = NULL;	/* Unitext description. */
@@ -3157,7 +3155,7 @@ void genemf_start(objects)
     short *ud;
     char *figname;
 
-#if defined(I18N) && defined(USE_ICONV)
+#if defined(I18N) && defined(HAVE_ICONV_H)
     if (support_i18n) {
 	char *locale;
 
@@ -3197,13 +3195,13 @@ void genemf_start(objects)
 
     comm.next = objects->comments;
     if ((comm.comment = malloc(strlen(figname) +
-		80 + sizeof VERSION + sizeof PATCHLEVEL)) == NULL) {
+		80 + sizeof FIG_FILEVERSION + sizeof FIG_PATCHLEVEL)) == NULL) {
 	perror("fig2dev: malloc");
 	exit(1);
     }
     sprintf(comm.comment,
 	"Converted from %s using fig2dev %s.%s for %s",
-       figname, VERSION, PATCHLEVEL, emflevelname[emflevel]);
+       figname, FIG_FILEVERSION, FIG_PATCHLEVEL, emflevelname[emflevel]);
 
     /* prescan comment strings and (over)estimate the total length */
     commlen = 0;
@@ -3295,8 +3293,8 @@ void genemf_start(objects)
 
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-void genemf_arc(_a)
-    F_arc *_a;
+void
+genemf_arc(F_arc *_a)
 {
     F_arc a = *_a;
 
@@ -3323,8 +3321,8 @@ void genemf_arc(_a)
 
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-void genemf_ellipse(e)
-    F_ellipse *e;
+void
+genemf_ellipse(F_ellipse *e)
 {
 
     switch (e->type) {
@@ -3346,8 +3344,8 @@ void genemf_ellipse(e)
 
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-void genemf_line(l)
-    F_line *l;
+void
+genemf_line(F_line *l)
 {
 
     switch (l->type) {
@@ -3387,8 +3385,8 @@ void genemf_line(l)
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 /*ARGSUSED*/
-void genemf_spline(s)
-    F_spline *s;
+void
+genemf_spline(F_spline *s)
 {
     static int wgiv = 0;
 
@@ -3403,15 +3401,15 @@ or higher and saving again.\n");
 
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-void genemf_text(t)
-    F_text *t;
+void
+genemf_text(F_text *t)
 {
     int font;
     RECTL rclBounds;
     int x, y;
     double sin_theta, cos_theta;
-#if defined(I18N) && defined(USE_ICONV)
-    unsigned char *s, *s1, bak;
+#if defined(I18N) && defined(HAVE_ICONV_H)
+    char *s, *s1, bak;
     int nascii, neuc;
 #endif
 
@@ -3445,7 +3443,7 @@ void genemf_text(t)
     HTOFL(rclBounds.right,  round(x + t->length * cos_theta));
     HTOFL(rclBounds.bottom, round(y + t->length * sin_theta));
 
-#if defined(I18N) && defined(USE_ICONV)
+#if defined(I18N) && defined(HAVE_ICONV_H)
     if (figLanguage != LANG_DEFAULT && IS_LOCALE_FONT(font)) {
 	/* prescan text to decide if font switching is needed */
 	nascii = neuc = 0;
@@ -3500,7 +3498,7 @@ void genemf_text(t)
 	    return;
 	}
     }
-#endif	/* defined(I18N) && defined(USE_ICONV) */
+#endif	/* defined(I18N) && defined(HAVE_ICONV_H) */
 
     /*
      * Use alignment of EMF, which shall be better than that of home grown.
@@ -3524,7 +3522,8 @@ void genemf_text(t)
 
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-int genemf_end()
+int
+genemf_end(void)
 {
     EMREOF em_eof;
     struct emfhandle *h, *h1;
@@ -3576,7 +3575,7 @@ fig2dev: error: fseek() failed.  EMF language requires the output is seekable.\
 struct driver dev_emf = {
 	genemf_option,
 	genemf_start,
-	gendev_null,		/* TODO - Create genemf_grid for 3.2.4 */
+	gendev_nogrid,		/* TODO - Create genemf_grid for 3.2.4 */
 	genemf_arc,
 	genemf_ellipse,
 	genemf_line,

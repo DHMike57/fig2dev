@@ -7,8 +7,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -32,15 +32,15 @@
 
 static float	scale;
 
-static void	set_color();
-static void	set_linewidth();
-static void	set_stip();
-static void	set_fill();
-static void	set_style();
-static void	for_arrow();
-static void	back_arrow();
-static void	genge_itp_spline();
-static void	genge_ctl_spline();
+static void	set_color(int col);
+static void	set_linewidth(int w);
+static void	set_stip(int stip);
+static void	set_fill(int style, int color);
+static void	set_style(int s, double v);
+static void	for_arrow(F_line *l);
+static void	back_arrow(F_line *l);
+static void	genge_itp_spline(F_spline *s);
+static void	genge_ctl_spline(F_spline *s);
 
 				    /* color mapping		*/
 				    /* xfig	ge		*/
@@ -80,16 +80,13 @@ static int	GE_COLORS[] = {	 1, /* black	black		*/
 		};
 
 void
-genge_option(opt, optarg)
-char opt;
-char *optarg;
+genge_option(char opt, char *optarg)
 {
     switch (opt) {
-	case 'f':		/* ignore magnification, font sizes and lang here */
-	case 'm':
-	case 's':
+	case 'G':
 	case 'L':
 	    break;
+
 	default:
 	    put_msg(Err_badarg, opt, "ge");
 	    exit(1);
@@ -97,8 +94,7 @@ char *optarg;
 }
 
 void
-genge_start(objects)
-F_compound	*objects;
+genge_start(F_compound *objects)
 {
 	/* convert dpi to 0.1mm per point */
 	scale = 254.0 / ppi;
@@ -108,21 +104,20 @@ F_compound	*objects;
 }
 
 int
-genge_end()
+genge_end(void)
 {
     /* all ok */
     return 0;
 }
 
 void
-genge_line(l)
-F_line	*l;
+genge_line(F_line *l)
 {
 	F_point		*p, *q;
 	int		i;
 	
 	/* ge has no picture object yet */
-	if (l->type == T_PIC_BOX) {  
+	if (l->type == T_PIC_BOX) {
 		fprintf(stderr,"Warning: Pictures not supported in GE language\n");
 		return;
 	}
@@ -185,9 +180,8 @@ F_line	*l;
 	fprintf(tfp, "(%d,%d);\n", SCALE(q->x), SCALE(q->y));
 }
 
-void 
-genge_spline(s)
-F_spline	*s;
+void
+genge_spline(F_spline *s)
 {
 	/* print any comments prefixed with "#" */
 	print_comments("# ",s->comments, "");
@@ -201,7 +195,7 @@ F_spline	*s;
 
 	/* backward arrowhead, if any */
 	if (s->back_arrow && s->thickness > 0)
-	    back_arrow(s);
+	    back_arrow((F_line *)s);
 
 	if (int_spline(s))
 	    genge_itp_spline(s);
@@ -210,12 +204,11 @@ F_spline	*s;
 
 	/* forward arrowhead, if any */
 	if (s->for_arrow && s->thickness > 0)
-	    for_arrow(s);
+	    for_arrow((F_line *)s);
 }
 
 static void
-genge_itp_spline(s)
-F_spline	*s;
+genge_itp_spline(F_spline *s)
 {
 	F_point		*p, *q;
 	F_control	*a, *b;
@@ -247,8 +240,7 @@ F_spline	*s;
 }
 
 static void
-genge_ctl_spline(s)
-F_spline	*s;
+genge_ctl_spline(F_spline *s)
 {
 	double		a, b, c, d, x1, y1, x2, y2, x3, y3;
 	F_point		*p, *q;
@@ -329,8 +321,7 @@ F_spline	*s;
 }
 
 void
-genge_arc(a)
-F_arc	*a;
+genge_arc(F_arc *a)
 {
 	int		i;
 
@@ -348,20 +339,19 @@ F_arc	*a;
 
 	/* backward arrowhead, if any */
 	if (a->type == T_OPEN_ARC && a->back_arrow && a->thickness > 0)
-	    back_arrow(a);
+	    back_arrow((F_line *)a);
 
 	for (i=0; i<=2; i++)
 	    fprintf(tfp,"(%d,%d) ",SCALE(a->point[i].x), SCALE(a->point[i].y));
 
 	/* forward arrowhead, if any */
 	if (a->type == T_OPEN_ARC && a->for_arrow && a->thickness > 0)
-	    for_arrow(a);
+	    for_arrow((F_line *)a);
 	fprintf(tfp," ;\n");
 }
 
 void
-genge_ellipse(e)
-F_ellipse	*e;
+genge_ellipse(F_ellipse *e)
 {
 	/* print any comments prefixed with "#" */
 	print_comments("# ",e->comments, "");
@@ -382,8 +372,7 @@ F_ellipse	*e;
 
 
 void
-genge_text(t)
-F_text	*t;
+genge_text(F_text *t)
 {
 	int x, y, style;
 
@@ -420,15 +409,13 @@ F_text	*t;
 }
 
 static void
-for_arrow(l)
-    F_line	*l;
+for_arrow(F_line *l)
 {
     fprintf(tfp,"w%01d%01d ",(int)(l->for_arrow->wid/15),(int)(l->for_arrow->ht/15));
 }
 
 static void
-back_arrow(l)
-    F_line	*l;
+back_arrow(F_line *l)
 {
     fprintf(tfp,"v%01d%01d ",(int)(l->back_arrow->wid/15),(int)(l->back_arrow->ht/15));
 }
@@ -436,8 +423,7 @@ back_arrow(l)
 /* set the color attribute */
 
 static void
-set_color(col)
-    int col;
+set_color(int col)
 {
 	fprintf(tfp,"c%02d ",GE_COLORS[col]);
 }
@@ -445,16 +431,14 @@ set_color(col)
 /* set fill if there is a fill style */
 
 static void
-set_fill(style, color)
-    int style,color;
+set_fill(int style, int color)
 {
 	if (style != UNFILLED)
 	    fprintf(tfp,"C%02d ",GE_COLORS[color]);
 }
 	
 static void
-set_stip(stip)
-    int stip;
+set_stip(int stip)
 {
 	return;
 }
@@ -462,9 +446,7 @@ set_stip(stip)
 /* the dash length, v, is not used in GE */
 
 static void
-set_style(s, v)
-int	s;
-double	v;
+set_style(int s, double v)
 {
 	if (s == DASH_LINE) {
 		fprintf(tfp,"y02 ");
@@ -482,8 +464,7 @@ double	v;
 }
 
 static void
-set_linewidth(w)
-int	w;
+set_linewidth(int w)
 {
 	fprintf(tfp, "s%02d ", w);
 }
@@ -492,7 +473,7 @@ struct
 driver dev_ge = {
      	genge_option,
 	genge_start,
-	gendev_null,
+	gendev_nogrid,
 	genge_arc,
 	genge_ellipse,
 	genge_line,

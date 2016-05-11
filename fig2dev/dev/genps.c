@@ -9,8 +9,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -26,60 +26,62 @@
  *	Modified by Herve Soulard to allow non-iso coding on special fonts
  *	Herve.Soulard@inria.fr (8 Apr 1993)
  *
- *      Development for new extensions at TU Darmstadt, Germany starting 2002
- *      Allow to "build" pictures incrementally.
- *      To achieve this we split the complete figure into
- *      layers in separate ps-figures. The complete figure
- *      will be seen when overlapping all layers.
- *      A layer is combined from adjacent depths in xfig.
- *      This makes it possible to overlap items also when
- *      splitting into layers.
+ *	Development for new extensions at TU Darmstadt, Germany starting 2002
+ *	Allow to "build" pictures incrementally.
+ *	To achieve this we split the complete figure into
+ *	layers in separate ps-figures. The complete figure
+ *	will be seen when overlapping all layers.
+ *	A layer is combined from adjacent depths in xfig.
+ *	This makes it possible to overlap items also when
+ *	splitting into layers.
 */
 
-#include <sys/stat.h>
 #include "fig2dev.h"
+#include <sys/stat.h>
 #include "object.h"
 #include "bound.h"
 #include "psencode.h"
 #include "psfonts.h"
+#ifdef HAVE_GETPWUID
+#include <pwd.h>
+#endif
 
 /* for the xpm package */
-#ifdef USE_XPM
-#include <xpm.h>
-int	XpmReadFileToXpmImage();
-#endif /* USE_XPM */
-
-#ifdef I18N
-extern Boolean support_i18n;  /* enable i18n support? */
-static Boolean enable_composite_font = False;
-#endif /* I18N */
-
-/* for the version nubmer */
-#include "../../patchlevel.h"
+#ifdef HAVE_X11_XPM_H
+#include <X11/xpm.h>
+#endif /* HAVE_X11_XPM_H */
 
 /* include the PostScript preamble, patterns etc */
-#include "genps.h"
+#include "psprolog.h"
+
+#ifdef I18N
+extern bool support_i18n;  /* enable i18n support? */
+static bool enable_composite_font = false;
+#endif /* I18N */
 
 #define		POINT_PER_INCH		72
 #define		ULIMIT_FONT_SIZE	300
 
 /* In order that gridlines have maximum depth */
-#define         MAXDEPTH                999
+#define		MAXDEPTH		999
 #define		min(a, b)		(((a) < (b)) ? (a) : (b))
 
-void		gen_ps_eps_option();
-void		putword(), append(), appendhex();
+void		gen_ps_eps_option(char opt, char *optarg);
+static void	putword(int word, FILE *file);
+static void	append(char *infilename, FILE *outfile);
+static void	appendhex(char *infilename,FILE *outfile,int width,int height);
 
 static	FILE	*saveofile;
-Boolean		epsflag = False;	/* to distinguish PS and EPS */
-Boolean		pdfflag = False;	/* to distinguish PDF and PS/EPS */
-Boolean		asciipreview = False;	/* add ASCII preview? */
-Boolean		tiffpreview = False;	/* add a TIFF preview? */
-Boolean		tiffcolor = False;	/* color or b/w TIFF preview */
+bool		epsflag = false;	/* to distinguish PS and EPS */
+bool		pdfflag = false;	/* to distinguish PDF and PS/EPS */
+bool		asciipreview = false;	/* add ASCII preview? */
+bool		tiffpreview = false;	/* add a TIFF preview? */
+bool		tiffcolor = false;	/* color or b/w TIFF preview */
 static char	tmpeps[PATH_MAX];	/* temp filename for eps when adding tiff preview */
 static char	tmpprev[PATH_MAX];	/* temp filename for ASCII or tiff preview */
 
-static Boolean	anonymous = False;
+static bool	anonymous = false;
+static bool	correct_font_size = false;
 int		pagewidth = -1;
 int		pageheight = -1;
 int		width, height;
@@ -94,34 +96,33 @@ static int	border_margin = 0;
 static float	fllx, flly, furx, fury;
 
 /* arrowhead arrays */
-Point		bpoints[50], fpoints[50];
+F_pos		bpoints[50], fpoints[50];
 int		nbpoints, nfpoints;
-Point		bfillpoints[50], ffillpoints[50], clippoints[50];
+F_pos		bfillpoints[50], ffillpoints[50], clippoints[50];
 int		nbfillpoints, nffillpoints, nclippoints;
 int		fpntx1, fpnty1;	/* first point of object */
 int		fpntx2, fpnty2;	/* second point of object */
 int		lpntx1, lpnty1;	/* last point of object */
 int		lpntx2, lpnty2;	/* second-to-last point of object */
 
-static void	fill_area();
-static void	clip_arrows();
-static void	draw_arrow();
-static void	encode_all_fonts();
-static void	set_linewidth();
-static void	genps_std_colors();
-static void	genps_usr_colors();
-static Boolean	iso_text_exist();
-static Boolean	ellipse_exist();
-static Boolean	approx_spline_exist();
-static void	draw_gridline();
-static void	set_style();
-static void	reset_style();
-static void	set_linejoin();
-static void	set_linecap();
-static void	convert_xpm_colors();
-static void	genps_itp_spline();
-static void	genps_ctl_spline();
+static void fill_area(int fill, int pen_color, int fill_color, int ulx,int uly);
+static void clip_arrows(F_line *obj, int objtype);
+static void draw_arrow(F_line *obj, F_arrow *arrow, F_pos *points, int npoints,
+		F_pos *fillpoints, int nfillpoints, int col);
+static void encode_all_fonts(F_compound *ob);
+static void set_linewidth(double w);
+static void genps_std_colors(void);
+static void genps_usr_colors(void);
+static bool iso_text_exist(F_compound *ob);
+static bool ellipse_exist(F_compound *ob);
+static bool approx_spline_exist(F_compound *ob);
+static void draw_gridline(float x1, float y1, float x2, float y2);
+static void convert_xpm_colors(unsigned char cmap[3][MAXCOLORMAPSIZE],
+		XpmColor *coltabl, int ncols);
+static void genps_itp_spline(F_spline *s);
+static void genps_ctl_spline(F_spline *s);
 
+static int removestr(char *buf, char *str, int *len);
 #define SHADEVAL(F)	1.0*(F)/(NUMSHADES-1)
 #define TINTVAL(F)	1.0*(F-NUMSHADES+1)/NUMTINTS
 
@@ -129,7 +130,7 @@ static void	genps_ctl_spline();
  *  Static variables for variant meps:
  *   fig_number has the "current" figure number which has been created.
  *   last_depth remembers the last level number processed
- *         (we need a sufficiently large initial value)
+ *	   (we need a sufficiently large initial value)
 */
 static int fig_number=0;
 static int last_depth=MAXDEPTH+4;
@@ -189,27 +190,28 @@ static double	scalex, scaley;
 static double	origx, origy;
 static double	userorigx, userorigy;
 static double	userwidthx, userwidthy;
-static Boolean	useabsolutecoo = False;
+static bool	useabsolutecoo = false;
 
-FILE	*open_picfile();
-void	close_picfile();
+extern FILE	*open_picfile(char *name, int *type, bool pipeok,char *retname);
+extern void	close_picfile(FILE *file, int type);
 static void	do_split(); /* new procedure to split different depths' objects */
-                            /* but only as comment */
+			    /* but only as comment */
 int	filtype;
-extern	int	read_gif();
-extern	int	read_pcx();
-extern	int	read_eps();
-extern	int	read_pdf();
-extern	int	read_ppm();
-extern	int	read_tif();
-extern	int	read_xbm();
-#ifdef USE_PNG
-extern	int	read_png();
+extern int  read_gif(char *filename, int filetype,F_pic *pic,int *llx,int *lly);
+extern int  read_pcx(FILE *file,int filetype,F_pic *pic,int *llx,int *lly);
+extern int  read_eps(FILE *file,int filetype,F_pic *pic,int *llx,int *lly);
+extern int  read_pdf(FILE *file,int filetype,F_pic *pic,int *llx,int *lly);
+extern int  read_ppm(FILE *file,int filetype,F_pic *pic,int *llx,int *lly);
+extern int  read_tif(char *filename ,int filetype,F_pic *pic,int *llx,int *lly);
+extern int  read_xbm(FILE *file,int filetype,F_pic *pic,int *llx,int *lly);
+#ifdef HAVE_PNG_H
+extern int  read_png(FILE *file,int filetype,F_pic *pic,int *llx,int *lly);
 #endif
-extern	int	read_jpg();	/* this actually only reads the header info */
-extern	void	JPEGtoPS();
-#ifdef USE_XPM
-extern	int	read_xpm();
+			/* this actually only reads the header info */
+extern int  read_jpg(FILE *file,int filetype,F_pic *pic,int *llx,int *lly);
+extern void JPEGtoPS(char *jpegfile, FILE *PSfile);
+#ifdef HAVE_X11_XPM_H
+extern int  read_xpm(char *filename, int filetype,F_pic *pic,int *llx,int *lly);
 #endif
 
 /* headers for various image files */
@@ -219,27 +221,27 @@ static	 struct hdr {
 	    char	*bytes;
 	    int		 nbytes;
 	    int		(*readfunc)();
-	    Boolean	pipeok;
+	    bool	pipeok;
 	}
-	headers[]= {    {"GIF", "GIF",		    3, read_gif,	False},
+	headers[]= {	{"GIF", "GIF",		    3, read_gif,	false},
 #ifdef V4_0
-			{"FIG", "#FIG",		    4, read_figure,	True},
+			{"FIG", "#FIG",		    4, read_figure,	true},
 #endif /* V4_0 */
-			{"PCX", "\012\005\001",	    3, read_pcx,	True},
-			{"EPS", "%!",		    2, read_eps,	True},
-			{"PDF", "%PDF",		    4, read_pdf,	True},
-			{"PPM", "P3",		    2, read_ppm,	True},
-			{"PPM", "P6",		    2, read_ppm,	True},
-			{"TIFF", "II*\000",	    4, read_tif,	False},
-			{"TIFF", "MM\000*",	    4, read_tif,	False},
-			{"XBM", "#define",	    7, read_xbm,	True},
-#ifdef USE_PNG
-			{"PNG", "\211\120\116\107\015\012\032\012", 8, read_png, True},
+			{"PCX", "\012\005\001",	    3, read_pcx,	true},
+			{"EPS", "%!",		    2, read_eps,	true},
+			{"PDF", "%PDF",		    4, read_pdf,	true},
+			{"PPM", "P3",		    2, read_ppm,	true},
+			{"PPM", "P6",		    2, read_ppm,	true},
+			{"TIFF", "II*\000",	    4, read_tif,	false},
+			{"TIFF", "MM\000*",	    4, read_tif,	false},
+			{"XBM", "#define",	    7, read_xbm,	true},
+#ifdef HAVE_PNG_H
+			{"PNG", "\211\120\116\107\015\012\032\012", 8, read_png, true},
 #endif
-			{"JPEG", "\377\330\377\340", 4, read_jpg,	True},
-			{"JPEG", "\377\330\377\341", 4, read_jpg,	True},
-#ifdef USE_XPM
-			{"XPM", "/* XPM */",	    9, read_xpm,	False},
+			{"JPEG", "\377\330\377\340", 4, read_jpg,	true},
+			{"JPEG", "\377\330\377\341", 4, read_jpg,	true},
+#ifdef HAVE_X11_XPM_H
+			{"XPM", "/* XPM */",	    9, read_xpm,	false},
 #endif
 			};
 
@@ -250,29 +252,23 @@ static	 struct hdr {
 /******************************/
 
 void
-geneps_option(opt, optarg)
-char opt;
-char *optarg;
+geneps_option(char opt, char *optarg)
 {
-	epsflag = True;
-	pdfflag = False;
+	epsflag = true;
+	pdfflag = false;
 	gen_ps_eps_option(opt, optarg);
 }
 
 void
-genps_option(opt, optarg)
-char opt;
-char *optarg;
+genps_option(char opt, char *optarg)
 {
-	epsflag = False;
-	pdfflag = False;
+	epsflag = false;
+	pdfflag = false;
 	gen_ps_eps_option(opt, optarg);
 }
 
 void
-gen_ps_eps_option(opt, optarg)
-char opt;
-char *optarg;
+gen_ps_eps_option(char opt, char *optarg)
 {
 	int i;
 
@@ -280,20 +276,16 @@ char *optarg;
 
 	  /* don't do anything for the following args (already parsed in main) */
 
-      	  case 'F':			/* fontsize */
-      	  case 'G':			/* grid */
-      	  case 'L':			/* language */
-      	  case 'm':			/* magnification (already parsed in main) */
-	  case 's':			/* default font size */
-	  case 'Z':			/* max dimension */
+	  case 'G':			/* grid */
+	  case 'L':			/* language */
 		break;
 
 	  case 'a':			/* anonymous (don't output user name) */
-	      anonymous = True;
+	      anonymous = true;
 	      break;
 
 	  case 'A':			/* add ASCII preview */
-		asciipreview = True;
+		asciipreview = true;
 		break;
 
 	  case 'b':			/* border margin around figure */
@@ -303,28 +295,31 @@ char *optarg;
 	  case 'B':			/* boundingbox in absolute coordinates */
 		if (epsflag) {
 		    (void) strcpy (boundingbox, optarg);
-		    boundingboxspec = True;	/* user-specified */
-		    useabsolutecoo = True;
+		    boundingboxspec = true;	/* user-specified */
+		    useabsolutecoo = true;
 		}
 		break;
 
 	  case 'C':			/* add color TIFF preview (for MicroSloth) */
-		tiffpreview = True;
-		tiffcolor = True;
+		tiffpreview = true;
+		tiffcolor = true;
 		break;
 
 	  case 'c':			/* center figure */
 		if (!epsflag) {
-		    center = True;
-		    centerspec = True;	/* user-specified */
+		    center = true;
+		    centerspec = true;	/* user-specified */
 		}
 		break;
 
 	  case 'e':			/* don't center ('e' means edge) figure */
 		if (!epsflag) {
-		    center = False;
-		    centerspec = True;	/* user-specified */
+		    center = false;
+		    centerspec = true;	/* user-specified */
 		}
+		break;
+	  case 'F':			/* fontsize */
+		correct_font_size = true;
 		break;
 
 	  case 'f':			/* default font name */
@@ -334,30 +329,30 @@ char *optarg;
 		if ( i > MAX_PSFONT )
 			fprintf(stderr, "warning: non-standard font name %s\n", optarg);
 
-	    	psfontnames[0] = psfontnames[1] = optarg;
-	    	PSfontnames[0] = PSfontnames[1] = optarg;
-	    	break;
+		psfontnames[0] = psfontnames[1] = optarg;
+		PSfontnames[0] = PSfontnames[1] = optarg;
+		break;
 
 	  case 'g':			/* background color */
 		if (lookup_X_color(optarg,&background) >= 0) {
-		    bgspec = True;
+		    bgspec = true;
 		} else {
 		    fprintf(stderr,"Can't parse color '%s', ignoring background option\n",
 				optarg);
 		}
 		break;
 
-      	  case 'l':			/* landscape mode */
+	  case 'l':			/* landscape mode */
 		if (!epsflag) {
-		    landscape = True;	/* override the figure file setting */
-		    orientspec = True;	/* user-specified */
+		    landscape = true;	/* override the figure file setting */
+		    orientspec = true;	/* user-specified */
 		}
 		break;
 
 	  case 'M':			/* multi-page option */
 		if (!epsflag) {
-		    multi_page = True;
-		    multispec = True;	/* user has overridden anything in file */
+		    multi_page = true;
+		    multispec = true;	/* user has overridden anything in file */
 		}
 		break;
 
@@ -366,37 +361,37 @@ char *optarg;
 		break;
 
 	  case 'N':			/* convert colors to grayscale */
-		grayonly = True;
+		grayonly = true;
 		break;
 
 	  case 'O':			/* overlap multipage output */
-		overlap = True;
+		overlap = true;
 		break;
 
-      	  case 'p':			/* portrait mode */
+	  case 'p':			/* portrait mode */
 		if (!epsflag) {
-		    landscape = False;	/* override the figure file setting */
-		    orientspec = True;	/* user-specified */
+		    landscape = false;	/* override the figure file setting */
+		    orientspec = true;	/* user-specified */
 		}
 		break;
 
 	  case 'R':			/* boundingbox in relative coordinates */
 		if (epsflag) {
 		    (void) strcpy (boundingbox, optarg);
-		    boundingboxspec = True;	/* user-specified */
+		    boundingboxspec = true;	/* user-specified */
 		}
 		break;
 
 	  case 'S':			/* turn off multi-page option */
 		if (!epsflag) {
-		    multi_page = False;
-		    multispec = True;	/* user has overridden anything in file */
+		    multi_page = false;
+		    multispec = true;	/* user has overridden anything in file */
 		}
 		break;
 
 	  case 'T':			/* add monochrome TIFF preview (for MicroSloth) */
-		tiffpreview = True;
-		tiffcolor = False;
+		tiffpreview = true;
+		tiffcolor = false;
 		break;
 
 	  case 'x':			/* x offset on page */
@@ -414,7 +409,7 @@ char *optarg;
 	  case 'z':			/* papersize */
 		if (!epsflag) {
 		    (void) strcpy (papersize, optarg);
-		    paperspec = True;	/* user-specified */
+		    paperspec = true;	/* user-specified */
 		}
 		break;
 
@@ -425,14 +420,13 @@ char *optarg;
 }
 
 void
-genps_start(objects)
-F_compound	*objects;
+genps_start(F_compound *objects)
 {
 	char		 host[256];
 	struct passwd	*who;
 	time_t		 when;
 	int		 itmp, jtmp;
-	int 		 i;
+	int		 i;
 	int		 cliplx, cliply, clipux, clipuy;
 	int		 userllx, userlly, userurx, userury;
 	struct paperdef	*pd;
@@ -461,7 +455,7 @@ F_compound	*objects;
 
 	/* now that the file has been read, turn off multipage mode if eps output */
 	if (epsflag)
-	    multi_page = False;
+	    multi_page = false;
 
 	scalex = scaley = mag * POINT_PER_INCH / ppi;
 
@@ -485,14 +479,14 @@ F_compound	*objects;
 	/* convert ledger (deprecated) to tabloid */
 	if (strcasecmp(papersize, "ledger") == 0)
 		strcpy(papersize, "tabloid");
-        for (pd = paperdef; pd->name != NULL; pd++)
+	for (pd = paperdef; pd->name != NULL; pd++)
 	    if (strcasecmp (papersize, pd->name) == 0) {
 		pagewidth = pd->width;
 		pageheight = pd->height;
 		strcpy(papersize,pd->name);	/* use the "nice" form */
 		break;
 	    }
-	
+
 	if (pagewidth < 0 || pageheight < 0) {
 	    (void) fprintf (stderr, "Unknown paper size `%s'\n", papersize);
 	    exit (1);
@@ -504,17 +498,17 @@ F_compound	*objects;
 	    origy =  fury;
 	    if (epsflag && boundingboxspec) {
 		    jtmp=sscanf(boundingbox,"%lf %lf %lf %lf",
-					&userwidthx,&userwidthy,&userorigx,&userorigy); 
+					&userwidthx,&userwidthy,&userorigx,&userorigy);
 		    switch (jtmp) {
 			    case 0:
-				    userwidthx=(furx-fllx)/POINT_PER_INCH; 
+				    userwidthx=(furx-fllx)/POINT_PER_INCH;
 				    if (metric)
-					userwidthx *= 2.54; 
+					userwidthx *= 2.54;
 				    /* now fall through and set the other user... vars */
-			    case 1: 
-				    userwidthy=(fury-flly)/POINT_PER_INCH; 
+			    case 1:
+				    userwidthy=(fury-flly)/POINT_PER_INCH;
 				    if (metric)
-					userwidthy *= 2.54; 
+					userwidthy *= 2.54;
 				    /* now fall through and set the other user... vars */
 			    case 2:
 				    /* now fall through and set the last user... var */
@@ -523,16 +517,16 @@ F_compound	*objects;
 				    userorigy=0;
 		    }
 		    if (userwidthx <= 0) {
-			    userwidthx=(furx-fllx)/POINT_PER_INCH; 
+			    userwidthx=(furx-fllx)/POINT_PER_INCH;
 			    if (metric)
-				userwidthx *= 2.54; 
+				userwidthx *= 2.54;
 		    }
 		    if (userwidthy <= 0) {
-			    userwidthy=(fury-flly)/POINT_PER_INCH; 
+			    userwidthy=(fury-flly)/POINT_PER_INCH;
 			    if (metric)
-				userwidthy *= 2.54; 
-		    } 
-		    
+				userwidthy *= 2.54;
+		    }
+
 		    userorigx  *= POINT_PER_INCH;
 		    userorigy  *= POINT_PER_INCH;
 		    userwidthx *= POINT_PER_INCH;
@@ -549,7 +543,7 @@ F_compound	*objects;
 		    userlly = (int) floor(userorigy);
 		    userurx = (int) ceil(userorigx+userwidthx);
 		    userury = (int) ceil(userorigy+userwidthy);
-		    
+
 		    /* adjust for any border margin */
 		    userllx -= border_margin;
 		    userlly -= border_margin;
@@ -598,20 +592,24 @@ F_compound	*objects;
 	else
 	    fprintf(tfp, "%%!PS-Adobe-3.0\n");			/* PostScript magic strings */
 
+#ifdef HAVE_GETHOSTNAME
 	if (gethostname(host, sizeof(host)) == -1)
+#endif
 	    (void)strcpy(host, "unknown-host!?!?");
 	fprintf(tfp, "%%%%Title: %s\n",
 	    (name? name: ((from) ? from : "stdin")));
 	fprintf(tfp, "%%%%Creator: %s Version %s Patchlevel %s\n",
-		prog, VERSION, PATCHLEVEL);
+		prog, FIG_FILEVERSION, FIG_PATCHLEVEL);
 	(void) time(&when);
 	fprintf(tfp, "%%%%CreationDate: %s", ctime(&when));
+#ifdef HAVE_GETPWUID
 	if ( !anonymous) {
 	    who = getpwuid(getuid());
 	    if (who)
 		fprintf(tfp, "%%%%For: %s@%s (%s)\n",
 			who->pw_name, host, who->pw_gecos);
 	}
+#endif
 
 	/* calc initial clipping area to size of the bounding box (this is needed
 		for later clipping by arrowheads */
@@ -722,13 +720,13 @@ F_compound	*objects;
 
 	/* insert PostScript codes to select paper size, if exist */
 	libdir = getenv("FIG2DEV_LIBDIR");
-#ifdef FIG2DEV_LIBDIR_STR
+#ifdef I18N_DATADIR
 	if (libdir == NULL)
-	    libdir = FIG2DEV_LIBDIR_STR;
+	    libdir = I18N_DATADIR;
 #endif
 	if (libdir != NULL) {
 	  sprintf(filename, "%s/%s.ps", libdir, papersize);
-	  /* get filename like "/usr/local/lib/fig2dev/A3.ps" and 
+	  /* get filename like "/usr/local/lib/fig2dev/A3.ps" and
 	     prepend it to the postscript code */
 	  fp = fopen(filename, "rb");
 	  if (fp != NULL) {
@@ -749,22 +747,22 @@ F_compound	*objects;
 	fprintf(tfp, "\nend\n");
 
 	/* fill the Background now if specified */
- 	if (bgspec) {
- 	    fprintf(tfp, "%% Fill background color\n");
- 	    fprintf(tfp, "%d %d moveto %d %d lineto ",
+	if (bgspec) {
+	    fprintf(tfp, "%% Fill background color\n");
+	    fprintf(tfp, "%d %d moveto %d %d lineto ",
 					cliplx, cliply, clipux, cliply);
- 	    fprintf(tfp, "%d %d lineto %d %d lineto\n",
+	    fprintf(tfp, "%d %d lineto %d %d lineto\n",
 					clipux, clipuy, cliplx, clipuy);
 	    if (grayonly)
 		fprintf(tfp, "closepath %.2f setgray fill\n\n",
- 		    rgb2luminance(background.red/65535.0, background.green/65535.0,
+		    rgb2luminance(background.red/65535.0, background.green/65535.0,
 				    background.blue/65535.0));
 	    else
 		fprintf(tfp, "closepath %.2f %.2f %.2f setrgbcolor fill\n\n",
- 		    background.red/65535.0,
- 		    background.green/65535.0,
- 		    background.blue/65535.0);
- 	}
+		    background.red/65535.0,
+		    background.green/65535.0,
+		    background.blue/65535.0);
+	}
 
 	/* translate (in multi-page mode this is done at end of this proc) */
 	/* (rotation and y flipping is done in %%BeginPageSetup area */
@@ -790,9 +788,9 @@ F_compound	*objects;
 	    char localefile[512], str[512];
 	    FILE *fp;
 	    libdir = getenv("FIG2DEV_LIBDIR");
-#ifdef FIG2DEV_LIBDIR_STR
+#ifdef I18N_DATADIR
 	    if (libdir == NULL)
-		libdir = FIG2DEV_LIBDIR_STR;
+		libdir = I18N_DATADIR;
 #endif
 	    locale = getenv("LANG");
 	    if (locale == NULL) {
@@ -806,21 +804,21 @@ F_compound	*objects;
 		fprintf(stderr, "fig2dev: can't open file: %s\n", localefile);
 	    } else {
 		while (fgets(str, sizeof(str), fp)) {
-		    if (strstr(str, "CompositeRoman")) enable_composite_font = True;
+		    if (strstr(str, "CompositeRoman")) enable_composite_font = true;
 		    fputs(str, tfp);
 		}
-	        fclose(fp);
+		fclose(fp);
 	    }
 	}
 #endif /* I18N */
-	
+
 	fprintf(tfp, "%s\n", END_PROLOG);
-	
+
 	fprintf(tfp, "/pageheader {\n");
 
 	/* must specify translation/rotation before definition of fill patterns */
 	fprintf(tfp, "save\n");
- 
+
 	/* now make the clipping path for the BoundingBox */
 	fprintf(tfp, "newpath %d %d moveto %d %d lineto %d %d lineto %d %d lineto closepath clip newpath\n",
 		cliplx,clipuy, cliplx,cliply, clipux,cliply, clipux,clipuy);
@@ -835,7 +833,7 @@ F_compound	*objects;
 
 	fprintf(tfp, "10 setmiterlimit\n");	/* make like X server (11 degrees) */
 	fprintf(tfp, "0 slj 0 slc\n");		/* set initial join style to miter and cap to butt */
-	if( !multi_page) 
+	if( !multi_page)
 	    fprintf(tfp, " %.5f %.5f sc\n", scalex, scaley );
 	fprintf(tfp,"} bind def\n");
 
@@ -846,7 +844,7 @@ F_compound	*objects;
 	fprintf(tfp,"} bind def\n");
 
 
- 	if (multi_page) {
+	if (multi_page) {
 	    /* reset the matrix for multipage mode */
 	    fprintf(tfp, "initmatrix\n");
 	} else {
@@ -873,8 +871,7 @@ F_compound	*objects;
 /* Draw a grid on the figure */
 
 void
-genps_grid(major, minor)
-    float	major, minor;
+genps_grid(float major, float minor)
 {
 	float	lx, ly, ux, uy;
 	float	x, y;
@@ -885,7 +882,7 @@ genps_grid(major, minor)
 	/* see if grid specified */
 	if (minor == 0.0 && major == 0.0)
 		return;
-	
+
 	/* In case of multi postscript gridlines should be the
 	   figure with maximum depth */
 	do_split(MAXDEPTH+2);
@@ -970,15 +967,14 @@ genps_grid(major, minor)
 }
 
 static void
-draw_gridline(x1, y1, x2, y2)
-    float	x1, y1, x2, y2;
+draw_gridline(float x1, float y1, float x2, float y2)
 {
 	fprintf(tfp,"n %.1f %.1f m %.1f %.1f l s\n",x1, y1, x2, y2);
 }
 
 
 int
-genps_end()
+genps_end(void)
 {
     double	dx, dy, mul;
     int		i, page;
@@ -993,7 +989,7 @@ genps_end()
 	page = 1;
 	if (overlap)
 	    mul = 0.9;
-	else 
+	else
 	    mul = 1.0;
 
 	h = (landscape? pagewidth: pageheight);
@@ -1020,7 +1016,7 @@ genps_end()
 		fprintf(tfp, " %.3f %.3f sc\n", scalex, scaley);
 		for (i=0; i<no_obj; i++) {
 		fprintf(tfp, "o%d ", i);
-		if (!(i%20)) 
+		if (!(i%20))
 		    fprintf(tfp, "\n");
 		}
 		fprintf(tfp, "gr\n");
@@ -1029,7 +1025,7 @@ genps_end()
 		page++;
 	    }
 	}
-    } 
+    }
     /* Close the (last) figure */
     do_split(-10);
 
@@ -1051,8 +1047,8 @@ genps_end()
 	/* make name for temp output file */
 	sprintf(tmpprev, "%s/xfig%06d.tmpprev", TMPDIR, getpid());
 	/* make the ghostscript command to generate the ASCII or TIFF file from the temp eps file */
-	sprintf(gscom, 
- 	    "gs -q -dBATCH -dSAFER -sDEVICE=%s -r72 -g%dx%d -sOutputFile=%s %s > /dev/null < /dev/null",
+	sprintf(gscom,
+	    "gs -q -dBATCH -dSAFER -sDEVICE=%s -r72 -g%dx%d -sOutputFile=%s %s > /dev/null < /dev/null",
 		   asciipreview? "bit" : (tiffcolor? "tiff24nc": "tifflzw"),
 		   width, height, tmpprev, tmpeps);
 	if ((status=system(gscom)) != 0) {
@@ -1061,7 +1057,7 @@ genps_end()
 	    /* append the eps */
 	    append(tmpeps, tfp);
 	    /* and cancel the preview */
-	    asciipreview = tiffpreview = False;
+	    asciipreview = tiffpreview = false;
 	}
 	if (asciipreview) {
 	    width--;
@@ -1072,9 +1068,9 @@ genps_end()
 	    fprintf(tfp, "%%%%EndPreview\n");
 	    append(tmpeps, tfp);
 	} else if (tiffpreview) {
-	    /* now make the binary header in the final output file and 
+	    /* now make the binary header in the final output file and
 		append the eps and tiff files */
-	
+
 	    stat(tmpeps, &fstat);
 	    epslen = fstat.st_size;	/* size of eps file */
 
@@ -1122,10 +1118,8 @@ genps_end()
 
 /* write a 32-bit value LSB first to file */
 
-void
-putword(word, file)
-int	 word;
-FILE	*file;
+static void
+putword(int word, FILE *file)
 {
     register int i;
 
@@ -1139,10 +1133,8 @@ FILE	*file;
 
 #define BUFLEN 4096
 
-void
-append(infilename, outfile)
-char	*infilename;
-FILE	*outfile;
+static void
+append(char *infilename, FILE *outfile)
 {
     FILE  *infile;
     char   buf[BUFLEN+1];
@@ -1164,11 +1156,8 @@ FILE	*outfile;
    width is the number of hex values per line that should be written
    and height is the number of lines total. */
 
-void
-appendhex(infilename, outfile, width, height)
-char	*infilename;
-FILE	*outfile;
-int	 width, height;
+static void
+appendhex(char *infilename, FILE *outfile, int width, int height)
 {
     FILE  *infile;
     unsigned char   byte;
@@ -1193,28 +1182,26 @@ int	 width, height;
 
 
 static void
-set_style(s, v)
-int	s;
-double	v;
+set_style(int s, double v)
 {
 	v /= 80.0 / ppi;
 	if (s == DASH_LINE) {
 	    if (v > 0.0) fprintf(tfp, " [%d] 0 sd\n", round(v));
 	} else if (s == DOTTED_LINE) {
-	    if (v > 0.0) fprintf(tfp, " [%d %d] %d sd\n", 
+	    if (v > 0.0) fprintf(tfp, " [%d %d] %d sd\n",
 		round(ppi/80.0), round(v), round(v));
 	} else if (s == DASH_DOT_LINE) {
-	    if (v > 0.0) fprintf(tfp, " [%d %d %d %d] 0 sd\n", 
+	    if (v > 0.0) fprintf(tfp, " [%d %d %d %d] 0 sd\n",
 		round(v), round(v*0.5),
 		round(ppi/80.0), round(v*0.5));
 	} else if (s == DASH_2_DOTS_LINE) {
-	    if (v > 0.0) fprintf(tfp, " [%d %d %d %d %d %d] 0 sd\n", 
+	    if (v > 0.0) fprintf(tfp, " [%d %d %d %d %d %d] 0 sd\n",
 		round(v), round(v*0.45),
 		round(ppi/80.0), round(v*0.333),
 		round(ppi/80.0), round(v*0.45));
 	} else if (s == DASH_3_DOTS_LINE) {
-	    if (v > 0.0) fprintf(tfp, 
-                " [%d %d %d %d %d %d %d %d ] 0 sd\n", 
+	    if (v > 0.0) fprintf(tfp,
+		" [%d %d %d %d %d %d %d %d ] 0 sd\n",
 		round(v), round(v*0.4),
 		round(ppi/80.0), round(v*0.3),
 		round(ppi/80.0), round(v*0.3),
@@ -1223,24 +1210,21 @@ double	v;
 }
 
 static void
-reset_style(s, v)
-int	s;
-double	v;
+reset_style(int s, double v)
 {
 	if (s == DASH_LINE) {
 	    if (v > 0.0) fprintf(tfp, " [] 0 sd");
 	} else if (s == DOTTED_LINE) {
 	    if (v > 0.0) fprintf(tfp, " [] 0 sd");
 	} else if (s == DASH_DOT_LINE || s == DASH_2_DOTS_LINE ||
-                 s == DASH_3_DOTS_LINE) {
+		 s == DASH_3_DOTS_LINE) {
 	    if (v > 0.0) fprintf(tfp, " [] 0 sd");
 	}
 	fprintf(tfp, "\n");
 }
 
 static void
-set_linejoin(j)
-int	j;
+set_linejoin(int j)
 {
 	if (j != cur_joinstyle) {
 	    cur_joinstyle = j;
@@ -1249,8 +1233,7 @@ int	j;
 }
 
 static void
-set_linecap(j)
-int	j;
+set_linecap(int j)
 {
 	if (j != cur_capstyle) {
 	    cur_capstyle = j;
@@ -1259,13 +1242,12 @@ int	j;
 }
 
 static void
-set_linewidth(w)
-double	w;
+set_linewidth(double w)
 {
 	if (w != cur_thickness) {
 	    cur_thickness = w;
 	    fprintf(tfp, "%.3f slw\n",
-		    cur_thickness <= THICK_SCALE ? 	/* make lines a little thinner */
+		    cur_thickness <= THICK_SCALE ?	/* make lines a little thinner */
 				0.5* cur_thickness :
 				cur_thickness - THICK_SCALE);
 	}
@@ -1280,7 +1262,7 @@ removestr(char *buf, char *str, int *len)
 
 	while (cp=strstr(buf,str)) {
 		*len = *len - slen;
-	    	memmove(cp, cp+slen, *len-(cp-buf));
+		memmove(cp, cp+slen, *len-(cp-buf));
 		*(buf+*len) = '\0';
 		found = 1;
 	}
@@ -1288,8 +1270,7 @@ removestr(char *buf, char *str, int *len)
 }
 
 void
-genps_line(l)
-F_line	*l;
+genps_line(F_line *l)
 {
 	F_point		*p, *q;
 	int		 radius;
@@ -1299,7 +1280,7 @@ F_line	*l;
 	int		 xmin,xmax,ymin,ymax;
 	int		 pic_w, pic_h, img_w, img_h;
 	float		 hf_wid;
-	
+
 	do_split(l->depth);
 
 	if (multi_page)
@@ -1352,9 +1333,9 @@ F_line	*l;
 	    radius = l->radius;		/* radius of the corner */
 	    /* limit the radius to the smaller of the two sides or postscript crashes */
 	    /* from T.Sato */
-	    if ((xmax - xmin) / 2 < radius) 
+	    if ((xmax - xmin) / 2 < radius)
 		radius = (xmax - xmin) / 2;
-	    if ((ymax - ymin) / 2 < radius) 
+	    if ((ymax - ymin) / 2 < radius)
 		radius = (ymax - ymin) / 2;
 	    fprintf(tfp, "n %d %d m",xmin+radius, ymin);
 	    fprintf(tfp, " %d %d %d %d %d arcto 4 {pop} repeat\n",
@@ -1367,10 +1348,10 @@ F_line	*l;
 				xmax, ymin, xmin+radius, ymin, radius);
 	} else if (l->type == T_PIC_BOX) {  /* imported picture */
 	  /* PICTURE OBJECT */
-		int             dx, dy, rotation;
+		int		dx, dy, rotation;
 		int		pllx, plly, purx, pury;
 		int		i, j;
-		Boolean		found;
+		bool		found;
 		int		c;
 
 		dx = l->points->next->next->x - l->points->x;
@@ -1385,14 +1366,14 @@ F_line	*l;
 
 		fprintf(tfp, "%%\n");
 
-	        fprintf(tfp, "%% pen to black in case this eps object doesn't set color first\n");
+		fprintf(tfp, "%% pen to black in case this eps object doesn't set color first\n");
 		if (grayonly)
-	            fprintf(tfp, "0 setgray\n");
+		    fprintf(tfp, "0 setgray\n");
 		else
-	            fprintf(tfp, "0 0 0 setrgbcolor\n");
+		    fprintf(tfp, "0 0 0 setrgbcolor\n");
 
 		/* open the file and read a few bytes of the header to see what it is */
-		if ((picf=open_picfile(l->pic->file, &filtype, True, realname)) == NULL) {
+		if ((picf=open_picfile(l->pic->file, &filtype, true, realname)) == NULL) {
 			fprintf(stderr,"No such picture file: %s\n",l->pic->file);
 			return;
 		}
@@ -1406,10 +1387,10 @@ F_line	*l;
 
 		/* now find which header it is */
 		for (i=0; i<NUMHEADERS; i++) {
-		    found = True;
+		    found = true;
 		    for (j=headers[i].nbytes-1; j>=0; j--)
 		    if (buf[j] != headers[i].bytes[j]) {
-			found = False;
+			found = false;
 			break;
 		    }
 		    if (found)
@@ -1442,7 +1423,7 @@ F_line	*l;
 		}
 
 		/* if we have any of the following pic types, we need the ps encoder */
-		if ((l->pic->subtype == P_XPM || l->pic->subtype == P_PCX || 
+		if ((l->pic->subtype == P_XPM || l->pic->subtype == P_PCX ||
 		    l->pic->subtype == P_PNG) && !psencode_header_done)
 			    PSencode_header();
 
@@ -1478,9 +1459,9 @@ F_line	*l;
 
 		/* scale the pic stuff to fit into the bounding box */
 		/* Note: the origin for fig is in the upper-right corner;
-		 *       for postscript its in the lower right hand corner.
-		 *       To fix it, we use a "negative"-y scale factor, then
-		 *       translate the image up on the page */
+		 *	 for postscript its in the lower right hand corner.
+		 *	 To fix it, we use a "negative"-y scale factor, then
+		 *	 translate the image up on the page */
 
 		fprintf(tfp, "%f %f sc\n",
 			fabs((double)(xmax-xmin)/pic_w), -1.0*(double)(ymax-ymin)/pic_h);
@@ -1541,7 +1522,7 @@ F_line	*l;
 			pllx,plly, purx,plly, purx,pury, pllx,pury);
 		    fprintf(tfp, "countdictstack\n");
 		    fprintf(tfp, "mark\n");
-		    /* if user wants grayscale (-N) then redefine setrgbcolor to 
+		    /* if user wants grayscale (-N) then redefine setrgbcolor to
 		       setgray in imported figure */
 		    if (grayonly)
 			fprintf(tfp,"/setrgbcolor { 0.11 mul exch 0.59 mul add exch 0.3 mul add setgray} def\n");
@@ -1582,7 +1563,7 @@ F_line	*l;
 			    fprintf(tfp,"\n");
 			}
 
-#ifdef USE_XPM
+#ifdef HAVE_X11_XPM_H
 		/* XPM file */
 		} else if (l->pic->subtype == P_XPM) {
 			XpmColor *coltabl;
@@ -1609,18 +1590,18 @@ F_line	*l;
 			cp = cdata;
 			for (i=0; i<img_w*img_h; i++)
 			    *cp++ = (unsigned char) *dp++;
-				
+
 			/* now write out the image data in a compressed form */
 			(void) PSencode(img_w, img_h, -1, l->pic->xpmimage.ncolors,
-				l->pic->cmap[RED], l->pic->cmap[GREEN], l->pic->cmap[BLUE], 
+				l->pic->cmap[RED], l->pic->cmap[GREEN], l->pic->cmap[BLUE],
 				cdata);
 			/* and free up the space */
 			free(cdata);
 			XpmFreeXpmImage(&l->pic->xpmimage);
-#endif /* USE_XPM */
+#endif /* HAVE_X11_XPM_H */
 
 		/* GIF, PCX, PNG, or JPEG file */
-		} else if (l->pic->subtype == P_GIF || l->pic->subtype == P_PCX || 
+		} else if (l->pic->subtype == P_GIF || l->pic->subtype == P_PCX ||
 		     l->pic->subtype == P_JPEG || l->pic->subtype == P_PNG) {
 
 			if (l->pic->subtype == P_GIF)
@@ -1644,7 +1625,7 @@ F_line	*l;
 			    } else {
 				/* now write out the image data in a compressed form */
 				(void) PSencode(img_w, img_h, l->pic->transp, l->pic->numcols,
-				    l->pic->cmap[RED], l->pic->cmap[GREEN], l->pic->cmap[BLUE], 
+				    l->pic->cmap[RED], l->pic->cmap[GREEN], l->pic->cmap[BLUE],
 				    l->pic->bitmap);
 			    }
 			}
@@ -1653,9 +1634,14 @@ F_line	*l;
 		} else if (l->pic->subtype == P_EPS) {
 		    int len;
 		    fprintf(tfp, "%% EPS file follows:\n");
-		    if ((picf=open_picfile(l->pic->file, &filtype, True, realname)) == NULL) {
+		    if ((picf=open_picfile(l->pic->file, &filtype, true, realname)) == NULL) {
+#ifdef	HAVE_STRERROR
 			fprintf(stderr, "Unable to open EPS file '%s': error: %s\n",
 				l->pic->file, strerror(errno));
+#else
+			fprintf(stderr, "Unable to open EPS file '%s'.\n",
+				l->pic->file);
+#endif
 			fprintf(tfp, "gr\n");
 			return;
 		    }
@@ -1663,10 +1649,10 @@ F_line	*l;
 		    /* but flush buffer first */
 		    fflush(tfp);
 		    while ((len = read(fileno(picf),buf,sizeof(buf))) > 0) {
-		    	/* remove any %EOF or %%EOF in file */
-		    	while (removestr(buf,"\n%EOF\n",&len) != 0)
+			/* remove any %EOF or %%EOF in file */
+			while (removestr(buf,"\n%EOF\n",&len) != 0)
 			    ;
-		    	while (removestr(buf,"\n%%EOF\n",&len) != 0)
+			while (removestr(buf,"\n%%EOF\n",&len) != 0)
 			    ;
 			write(fileno(tfp),buf,len);
 		    }
@@ -1724,7 +1710,7 @@ F_line	*l;
 		    p = q;
 		    q = q->next;
 		    fprintf(tfp, " %d %d l", p->x, p->y);
- 	    	    if (i%5 == 0)
+		    if (i%5 == 0)
 			fprintf(tfp, "\n");
 		    i++;
 		}
@@ -1736,7 +1722,7 @@ F_line	*l;
 		if (l->type == T_POLYLINE) {
 		    fprintf(tfp, " %d %d l ", q->x, q->y);
 		    if (fpntx1==lpntx1 && fpnty1==lpnty1)
-			fprintf(tfp, " cp ");	/* endpoints are coincident, close path 
+			fprintf(tfp, " cp ");	/* endpoints are coincident, close path
 							so that line join is used */
 		} else {
 		    fprintf(tfp, " cp ");	/* polygon, close path */
@@ -1762,11 +1748,10 @@ F_line	*l;
 	   fprintf(tfp, "} bind def\n");
 }
 
-void 
-genps_spline(s)
-F_spline	*s;
+void
+genps_spline(F_spline *s)
 {
-        do_split(s->depth);
+	do_split(s->depth);
 
 	if (multi_page)
 	   fprintf(tfp, "/o%d {", no_obj++);
@@ -1791,15 +1776,13 @@ F_spline	*s;
 }
 
 static void
-genps_itp_spline(s)
-F_spline	*s;
+genps_itp_spline(F_spline *s)
 {
 	F_point		*p, *q;
 	F_control	*a, *b;
 	int		 xmin, ymin;
 
 	fprintf(tfp, "%% Interp Spline\n");
-	a = s->controls;
 
 	a = s->controls;
 	p = s->points;
@@ -1823,7 +1806,7 @@ F_spline	*s;
 	/* set clipping for any arrowheads */
 	fprintf(tfp, "gs ");
 	if (s->for_arrow || s->back_arrow)
-	    clip_arrows(s, O_SPLINE);
+	    clip_arrows((F_line *)s, O_SPLINE);
 
 	a = s->controls;
 	p = s->points;
@@ -1850,15 +1833,16 @@ F_spline	*s;
 
 	/* draw arrowheads after spline for open arrow */
 	if (s->back_arrow && s->thickness > 0)
-	    draw_arrow(s, s->back_arrow, bpoints, nbpoints, bfillpoints, nbfillpoints, s->pen_color);
+	    draw_arrow((F_line *)s, s->back_arrow, bpoints, nbpoints,
+			bfillpoints, nbfillpoints, s->pen_color);
 
 	if (s->for_arrow && s->thickness > 0)
-	    draw_arrow(s, s->for_arrow, fpoints, nfpoints, ffillpoints, nffillpoints, s->pen_color);
+	    draw_arrow((F_line *)s, s->for_arrow, fpoints, nfpoints,
+			ffillpoints, nffillpoints, s->pen_color);
 }
 
 static void
-genps_ctl_spline(s)
-F_spline	*s;
+genps_ctl_spline(F_spline *s)
 {
 	double		a, b, c, d, x1, y1, x2, y2, x3, y3;
 	F_point		*p, *q;
@@ -1907,7 +1891,7 @@ F_spline	*s;
 	/* set clipping for any arrowheads */
 	fprintf(tfp, "gs ");
 	if (s->for_arrow || s->back_arrow)
-	    clip_arrows(s, O_SPLINE);
+	    clip_arrows((F_line *)s, O_SPLINE);
 
 	/* now output the points */
 	set_style(s->style, s->style_val);
@@ -1928,7 +1912,7 @@ F_spline	*s;
 	    fprintf(tfp, "n %.1f %.1f m\n", a, b);
 	else
 	    fprintf(tfp, "n %.1f %.1f m %.1f %.1f l\n", x1, y1, x3, y3);
-	
+
 	for (q = p->next; q != NULL; p = q, q = q->next) {
 	    xmin = min(xmin, p->x);
 	    ymin = min(ymin, p->y);
@@ -1963,14 +1947,15 @@ F_spline	*s;
 
 	/* draw arrowheads after spline */
 	if (s->back_arrow && s->thickness > 0)
-	    draw_arrow(s, s->back_arrow, bpoints, nbpoints, bfillpoints, nbfillpoints, s->pen_color);
+	    draw_arrow((F_line *)s, s->back_arrow, bpoints, nbpoints,
+			bfillpoints, nbfillpoints, s->pen_color);
 	if (s->for_arrow && s->thickness > 0)
-	    draw_arrow(s, s->for_arrow, fpoints, nfpoints, ffillpoints, nffillpoints, s->pen_color);
+	    draw_arrow((F_line *)s, s->for_arrow, fpoints, nfpoints,
+			ffillpoints, nffillpoints, s->pen_color);
 }
 
 void
-genps_arc(a)
-F_arc	*a;
+genps_arc(F_arc *a)
 {
 	double		angle1, angle2, dx, dy, radius;
 	double		cx, cy, sx, sy, ex, ey;
@@ -2013,7 +1998,7 @@ F_arc	*a;
 	    /* set clipping for any arrowheads */
 	    fprintf(tfp, "gs ");
 	    if (a->for_arrow || a->back_arrow)
-		clip_arrows(a, O_ARC);
+		clip_arrows((F_line *)a, O_ARC);
 	}
 
 	set_style(a->style, a->style_val);
@@ -2044,19 +2029,20 @@ F_arc	*a;
 	/* now draw the arrowheads, if any */
 	if (a->type == T_OPEN_ARC) {
 	    if (a->back_arrow && a->thickness > 0)
-		draw_arrow(a, a->back_arrow, bpoints, nbpoints, bfillpoints, nbfillpoints, a->pen_color);
+		draw_arrow((F_line *)a, a->back_arrow, bpoints, nbpoints,
+			    bfillpoints, nbfillpoints, a->pen_color);
 	    if (a->for_arrow && a->thickness > 0)
-		draw_arrow(a, a->for_arrow, fpoints, nfpoints, ffillpoints, nffillpoints, a->pen_color);
+		draw_arrow((F_line *)a, a->for_arrow, fpoints, nfpoints,
+			    ffillpoints, nffillpoints, a->pen_color);
 	}
 	if (multi_page)
 	   fprintf(tfp, "} bind def\n");
 }
 
 void
-genps_ellipse(e)
-F_ellipse	*e;
+genps_ellipse(F_ellipse *e)
 {
-        do_split(e->depth);
+	do_split(e->depth);
 
 	fprintf(tfp, "%% Ellipse\n");
 
@@ -2099,20 +2085,19 @@ F_ellipse	*e;
 /%s%s ff %.2f scf sf\n\
 "
 void
-genps_text(t)
-F_text	*t;
+genps_text(F_text *t)
 {
 	unsigned char		*cp;
 #ifdef I18N
 #define LINE_LENGTH_LIMIT 200
-	Boolean composite = False;
-	Boolean state_gr = False;
+	bool composite = false;
+	bool state_gr = false;
 	int chars = 0;
-        int gr_chars = 0;
+	int gr_chars = 0;
 	unsigned char ch;
 #endif /* I18N */
 
-        do_split(t->depth);
+	do_split(t->depth);
 
 	/* ignore hidden text (new for xfig3.2.3/fig2dev3.2.3) */
 	if (hidden_text(t))
@@ -2128,14 +2113,14 @@ F_text	*t;
 	if (enable_composite_font
 	    && ((t->flags & PSFONT_TEXT) ? (t->font <= 0 || t->font == 2)
 		 : (t->font <= 2))) {
-	  composite = True;
+	  composite = true;
 	  if (t->font <= 0)
 	    fprintf(tfp, TEXT_PS, "CompositeRoman", "", PSFONTMAG(t));
 	  else
 	    fprintf(tfp, TEXT_PS, "CompositeBold", "", PSFONTMAG(t));
 	} else
 #endif /* I18N */
-	if (PSisomap[t->font+1] == True)
+	if (PSisomap[t->font+1] == true)
 	   fprintf(tfp, TEXT_PS, PSFONT(t), "-iso", PSFONTMAG(t));
 	else
 	   fprintf(tfp, TEXT_PS, PSFONT(t), "", PSFONTMAG(t));
@@ -2155,15 +2140,15 @@ F_text	*t;
 	    }
 	    ch = *cp;
 	    if (enable_composite_font && composite) {
-	      if (ch & 0x80) {  /* GR */
+	      if (ch & 0x80) {	/* GR */
 		if (!state_gr) {
 		  fprintf(tfp, "\\377\\001");
 		  chars += 8;
-		  state_gr = True;
+		  state_gr = true;
 		  gr_chars = 0;
 		}
 		gr_chars++;
-	      } else {  /* GL */
+	      } else {	/* GL */
 		if (state_gr) {
 		  if (gr_chars % 2) {
 		    fprintf(stderr, "warning: incomplete multi-byte text: %s\n",
@@ -2172,10 +2157,10 @@ F_text	*t;
 		  }
 		  fprintf(tfp, "\\377\\000");
 		  chars += 8;
-		  state_gr = False;
+		  state_gr = false;
 		}
 	      }
-            }
+	    }
 	    if (strchr("()\\", ch)) {
 	      fputc('\\', tfp);
 	      chars += 1;
@@ -2209,7 +2194,7 @@ F_text	*t;
 
 	if ((t->type == T_CENTER_JUSTIFIED) || (t->type == T_RIGHT_JUSTIFIED)){
 
-	  	fprintf(tfp, " dup sw pop ");
+		fprintf(tfp, " dup sw pop ");
 		if (t->type == T_CENTER_JUSTIFIED) fprintf(tfp, "2 div ");
 		fprintf(tfp, "neg 0 rm ");
 		}
@@ -2226,12 +2211,8 @@ F_text	*t;
 /* draw arrow from the points array */
 
 static void
-draw_arrow(obj, arrow, points, npoints, fillpoints, nfillpoints, col)
-F_line	*obj;
-F_arrow	*arrow;
-Point	*points, *fillpoints;
-int	npoints, nfillpoints;
-int	col;
+draw_arrow(F_line *obj, F_arrow *arrow, F_pos *points, int npoints,
+		F_pos *fillpoints, int nfillpoints, int col)
 {
 	int i, type;
 
@@ -2251,7 +2232,7 @@ int	col;
 	}
 
 	type = arrow->type;
-	if (type != 0 && type != 6 && type < 13)  			/* old heads, close the path */
+	if (type != 0 && type != 6 && type < 13)			/* old heads, close the path */
 	    fprintf(tfp, " cp ");
 	if (type == 0) {
 	    /* stroke */
@@ -2295,7 +2276,7 @@ int	col;
 
 /****************************************************************
 
- clip_arrows - calculate a clipping region which is the current 
+ clip_arrows - calculate a clipping region which is the current
 	clipping area minus the polygons at the arrowheads.
 
  This will prevent the object (line, spline etc.) from protruding
@@ -2308,9 +2289,7 @@ int	col;
 ****************************************************************/
 
 static void
-clip_arrows(obj, objtype)
-    F_line	   *obj;
-    int		    objtype;
+clip_arrows(F_line *obj, int objtype)
 {
     int		    i;
 
@@ -2323,12 +2302,12 @@ clip_arrows(obj, objtype)
 	    /* last point */
 	    lpntx1 = a->point[2].x;
 	    lpnty1 = a->point[2].y;
-	    compute_arcarrow_angle(a->center.x, a->center.y, 
-	    			(double) lpntx1, (double) lpnty1,
+	    compute_arcarrow_angle(a->center.x, a->center.y,
+				(double) lpntx1, (double) lpnty1,
 				a->direction, a->for_arrow, &lpntx2, &lpnty2);
 	}
-	calc_arrow(lpntx2, lpnty2, lpntx1, lpnty1, 
-		   obj->thickness, obj->for_arrow, 
+	calc_arrow(lpntx2, lpnty2, lpntx1, lpnty1, obj->thickness <= THICK_SCALE ?
+		   (obj->thickness+2)/2 : obj->thickness+1-(int)THICK_SCALE, obj->for_arrow,
 		   fpoints, &nfpoints, ffillpoints, &nffillpoints, clippoints, &nclippoints);
 	/* set the clipping area */
 	for (i=nclippoints-1; i>=0; i--) {
@@ -2336,7 +2315,7 @@ clip_arrows(obj, objtype)
 	}
 	fprintf(tfp, "cp\n");
     }
-	
+
     /* get points for any backward arrowhead */
     if (obj->back_arrow) {
 	if (objtype == O_ARC) {
@@ -2348,9 +2327,9 @@ clip_arrows(obj, objtype)
 				(double) fpntx1, (double) fpnty1,
 				a->direction ^ 1, a->back_arrow, &fpntx2, &fpnty2);
 	}
-	calc_arrow(fpntx2, fpnty2, fpntx1, fpnty1, 
-		    obj->thickness, obj->back_arrow, 
-		    bpoints, &nbpoints, bfillpoints, &nbfillpoints, clippoints, &nclippoints);
+	calc_arrow(fpntx2, fpnty2, fpntx1, fpnty1, obj->thickness <= THICK_SCALE ?
+		   (obj->thickness+2)/2 : obj->thickness+1-(int)THICK_SCALE, obj->back_arrow,
+		   bpoints, &nbpoints, bfillpoints, &nbfillpoints, clippoints, &nclippoints);
 	/* set the clipping area */
 	for (i=nclippoints-1; i>=0; i--) {
 	    fprintf(tfp,"%d %d %c ",clippoints[i].x,clippoints[i].y, i==nclippoints-1? 'm': 'l');
@@ -2367,8 +2346,7 @@ clip_arrows(obj, objtype)
 /* ulx and uly define the upper-left corner of the object for pattern alignment */
 
 static void
-fill_area(fill, pen_color, fill_color, ulx, uly)
-int fill, pen_color, fill_color, ulx, uly;
+fill_area(int fill, int pen_color, int fill_color, int ulx, int uly)
 {
     float pen_r, pen_g, pen_b, fill_r, fill_g, fill_b;
 
@@ -2408,7 +2386,7 @@ int fill, pen_color, fill_color, ulx, uly;
 	/* one of the patterns */
 	int patnum = fill-NUMSHADES-NUMTINTS+1;
 	char colorspace[13], pencolor[25], fillcolor[25];
-	
+
 	if (grayonly) {
 	    float grayfill, graypen;
 	    grayfill = rgb2luminance(fill_r, fill_g, fill_b);
@@ -2421,10 +2399,10 @@ int fill, pen_color, fill_color, ulx, uly;
 	    sprintf(fillcolor, "%.2f %.2f %.2f", fill_r, fill_g, fill_b);
 	    sprintf(pencolor, "%.2f %.2f %.2f", pen_r, pen_g, pen_b);
 	}
-	
+
 	fprintf(tfp, "\n%% Fill with pattern background color\n");
 	fprintf(tfp, "gs %s setcolorspace %s setcolor fill gr\n",
-	       		colorspace, fillcolor);
+			colorspace, fillcolor);
 	fprintf(tfp, "\n%% Fill with pattern pen color\n");
 	fprintf(tfp, "gs %s setcolorspace %s P%d setpattern fill gr\n\n",
 			colorspace, pencolor, patnum);
@@ -2433,22 +2411,25 @@ int fill, pen_color, fill_color, ulx, uly;
 
 /* define standard colors as "col##" where ## is the number */
 static void
-genps_std_colors()
+genps_std_colors(void)
 {
     int i;
     for (i=0; i<NUM_STD_COLS; i++) {
-	if (grayonly)
-	    fprintf(tfp, "/col%d {%.3f setgray} bind def\n", i, 
-			rgb2luminance(rgbcols[i].r, rgbcols[i].g, rgbcols[i].b));
-	else
-	    fprintf(tfp, "/col%d {%.3f %.3f %.3f srgb} bind def\n", i,
-			rgbcols[i].r, rgbcols[i].g, rgbcols[i].b);
+	/* hollow arrows are filled with white */
+	if (i == WHITE_COLOR || std_color_used[i]) {
+	    if (grayonly)
+		fprintf(tfp, "/col%d {%.3f setgray} bind def\n", i,
+			    rgb2luminance(rgbcols[i].r, rgbcols[i].g, rgbcols[i].b));
+	    else
+		fprintf(tfp, "/col%d {%.3f %.3f %.3f srgb} bind def\n", i,
+			    rgbcols[i].r, rgbcols[i].g, rgbcols[i].b);
+	}
     }
 }
-	
+
 /* define user colors as "col##" where ## is the number */
 static void
-genps_usr_colors()
+genps_usr_colors(void)
 {
     int i;
     for (i=0; i<num_usr_cols; i++) {
@@ -2462,13 +2443,12 @@ genps_usr_colors()
 			user_colors[i].r/255.0, user_colors[i].g/255.0, user_colors[i].b/255.0);
     }
 }
-	
-static Boolean
-iso_text_exist(ob)
-F_compound      *ob;
+
+static bool
+iso_text_exist(F_compound *ob)
 {
     F_compound	*c;
-    F_text          *t;
+    F_text	    *t;
     unsigned char   *s;
 
     if (ob->texts != NULL) {
@@ -2479,30 +2459,29 @@ F_compound      *ob;
 	    for (s = (unsigned char*)t->cstring; *s != '\0'; s++) {
 		/* look for characters >= 128 or ASCII '-' */
 		if ((*s>127) || (*s=='-'))
-		    return True;
+		    return true;
 	    }
 	}
     }
 
     for (c = ob->compounds; c != NULL; c = c->next) {
 	if (iso_text_exist(c))
-	    return True;
+	    return true;
     }
-    return False;
+    return false;
 }
 
 static void
-encode_all_fonts(ob)
-F_compound	*ob;
+encode_all_fonts(F_compound *ob)
 {
     F_compound *c;
     F_text     *t;
 
     if (ob->texts != NULL) {
 	for (t = ob->texts; t != NULL; t = t->next)
-	    if (PSisomap[t->font+1] == False) {
+	    if (PSisomap[t->font+1] == false) {
 		fprintf(tfp, "/%s /%s-iso isovec ReEncode\n", PSFONT(t), PSFONT(t));
-		PSisomap[t->font+1] = True;
+		PSisomap[t->font+1] = true;
 	    }
     }
 
@@ -2511,44 +2490,42 @@ F_compound	*ob;
     }
 }
 
-static Boolean
-ellipse_exist(ob)
-F_compound	*ob;
+static bool
+ellipse_exist(F_compound *ob)
 {
 	F_compound	*c;
 
-	if (NULL != ob->ellipses) 
-		return True;
+	if (NULL != ob->ellipses)
+		return true;
 
 	for (c = ob->compounds; c != NULL; c = c->next) {
 	    if (ellipse_exist(c))
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 	}
 
-static Boolean
-approx_spline_exist(ob)
-F_compound	*ob;
+static bool
+approx_spline_exist(F_compound *ob)
 {
 	F_spline	*s;
 	F_compound	*c;
 
 	for (s = ob->splines; s != NULL; s = s->next) {
 	    if (approx_spline(s))
-		return True;
+		return true;
 	}
 
 	for (c = ob->compounds; c != NULL; c = c->next) {
 	    if (approx_spline_exist(c))
-		return True;
+		return true;
 	}
 
-	return False;
+	return false;
 	}
 
-#ifdef USE_XPM
+#ifdef HAVE_X11_XPM_H
 
 /* lookup the named colors referenced in the colortable passed */
 /* total colors in the table are "ncols" */
@@ -2558,10 +2535,7 @@ F_compound	*ob;
    RGB database file (e.g. /usr/lib/X11/rgb.XXX) */
 
 static void
-convert_xpm_colors(cmap, coltabl, ncols)
-	unsigned char cmap[3][MAXCOLORMAPSIZE];
-	XpmColor *coltabl;
-	int	  ncols;
+convert_xpm_colors(unsigned char cmap[3][MAXCOLORMAPSIZE], XpmColor *coltabl, int ncols)
 {
 	int	i;
 	char	*name;
@@ -2578,23 +2552,22 @@ convert_xpm_colors(cmap, coltabl, ncols)
 	    cmap[BLUE][i] = (unsigned char) (rgb.blue>>8);
 	    /* if user wants grayscale (-N) then pass through ppmtopgm too */
 	    if (grayonly)
-		cmap[RED][i] = cmap[GREEN][i] = cmap[BLUE][i] = 
-		    (int) (rgb2luminance(cmap[RED][i]/255.0, 
-					cmap[GREEN][i]/255.0, 
+		cmap[RED][i] = cmap[GREEN][i] = cmap[BLUE][i] =
+		    (int) (rgb2luminance(cmap[RED][i]/255.0,
+					cmap[GREEN][i]/255.0,
 					cmap[BLUE][i]/255.0)*255.0);
 	}
 }
 
-#endif /* USE_XPM */
+#endif /* HAVE_X11_XPM_H */
 
 /*
  * We must start new figure if the current
  * depth and the last_depth differ by more than one.
  * Depths will be seen with decreasing values.
  * Only comments will be output */
-void
-do_split(actual_depth)
-    int	actual_depth;
+static void
+do_split(int actual_depth)
 {
     if (actual_depth+1 < last_depth) {
 	/* depths differ by more than one */
@@ -2623,7 +2596,7 @@ do_split(actual_depth)
 
 struct
 driver dev_ps = {
-     	genps_option,
+	genps_option,
 	genps_start,
 	genps_grid,
 	genps_arc,
@@ -2639,7 +2612,7 @@ driver dev_ps = {
 
 struct
 driver dev_eps = {
-     	geneps_option,
+	geneps_option,
 	genps_start,
 	genps_grid,
 	genps_arc,

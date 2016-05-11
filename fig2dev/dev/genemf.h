@@ -8,8 +8,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -50,16 +50,12 @@ typedef union {
 # define BIG_ENDIAN	4321
 # define LITTLE_ENDIAN	1234
 
-# if defined(__BIG_ENDIAN__) || defined(m68k) || defined(__m68k__) || defined(sparc) || defined(__sparc) || defined(__sparc__) || defined(hppa) || defined(__hppa) || defined(MIPSEB) || defined(__ARMEB__)
+# ifdef WORDS_BIGENDIAN
 #  define BYTE_ORDER	BIG_ENDIAN
-
 # else
-
-#  if defined(__LITTLE_ENDIAN__) || defined(vax) || defined(__vax__) || defined(__alpha) || defined(__alpha__) || defined(MIPSEL) || defined(ns32k) || defined(__ARMEL__) || defined(i386) || defined(__i386__)
-#   define BYTE_ORDER	LITTLE_ENDIAN
-#  endif
-
+#  define BYTE_ORDER	LITTLE_ENDIAN
 # endif
+
 #endif
 
 #if defined(BYTE_ORDER) && (BYTE_ORDER == LITTLE_ENDIAN)
@@ -209,22 +205,22 @@ typedef union {
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /* Binary raster ops */
-#define R2_BLACK	1	/*  0       */
+#define R2_BLACK	1	/*  0	    */
 #define R2_NOTMERGEPEN	2	/* DPon     */
 #define R2_MASKNOTPEN	3	/* DPna     */
-#define R2_NOTCOPYPEN	4	/* PN       */
+#define R2_NOTCOPYPEN	4	/* PN	    */
 #define R2_MASKPENNOT	5	/* PDna     */
-#define R2_NOT		6	/* Dn       */
-#define R2_XORPEN	7	/* DPx      */
+#define R2_NOT		6	/* Dn	    */
+#define R2_XORPEN	7	/* DPx	    */
 #define R2_NOTMASKPEN	8	/* DPan     */
-#define R2_MASKPEN	9	/* DPa      */
+#define R2_MASKPEN	9	/* DPa	    */
 #define R2_NOTXORPEN	10	/* DPxn     */
-#define R2_NOP		11	/* D        */
+#define R2_NOP		11	/* D	    */
 #define R2_MERGENOTPEN	12	/* DPno     */
-#define R2_COPYPEN	13	/* P        */
+#define R2_COPYPEN	13	/* P	    */
 #define R2_MERGEPENNOT	14	/* PDno     */
-#define R2_MERGEPEN	15	/* DPo      */
-#define R2_WHITE	16	/*  1       */
+#define R2_MERGEPEN	15	/* DPo	    */
+#define R2_WHITE	16	/*  1	    */
 #define R2_LAST		16
 
 
@@ -517,7 +513,7 @@ typedef struct tagEXTLOGFONTW {
     EMFulong	elfMatch;
     EMFulong	elfReserved;
     uchar	elfVendorId[ELF_VENDOR_SIZE];
-    EMFulong	elfCulture;	/* 0 for Latin             */
+    EMFulong	elfCulture;	/* 0 for Latin		   */
     PANOSE	elfPanose;
 } EXTLOGFONTW;
 

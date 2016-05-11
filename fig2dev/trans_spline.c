@@ -1,5 +1,5 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * trans_spline.c
  * Copyright (c) 1995 C. Blanc and C. Schlick
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
@@ -7,8 +7,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -18,15 +18,6 @@
 #include "object.h"
 #include "free.h"
 #include "trans_spline.h"
-
-
-struct zXPoint
-{
-  int x,y;
-}; 
-
-typedef struct zXPoint zXPoint;
-
 
 
 /* declarations for splines */
@@ -55,43 +46,52 @@ typedef struct zXPoint zXPoint;
       spline_segment_computing(step, K, P0, P1, P2, P3, S1, S2)
 
 
-
-static void          spline_segment_computing();
-static float         step_computing();
-static INLINE void   point_adding();
-static INLINE void   point_computing();
-static INLINE void   negative_s1_influence();
-static INLINE void   negative_s2_influence();
-static INLINE void   positive_s1_influence();
-static INLINE void   positive_s2_influence();
-static INLINE double f_blend();
-static INLINE double g_blend();
-static INLINE double h_blend();
-static void          free_point_array();
-static int           num_points();
-static void          too_many_points();
-static F_line	     *create_line();
-static F_point	     *create_point();
-static F_control     *create_cpoint();
+static void		spline_segment_computing(float step, int k, F_point *p0,
+				F_point *p1, F_point *p2, F_point *p3,
+				double s1, double s2);
+static float		step_computing(int k, F_point *p0, F_point *p1,
+				F_point *p2, F_point *p3, double s1, double s2,
+				float precision);
+static inline void	point_adding(double *A_blend, F_point *p0, F_point *p1,
+				F_point *p2,F_point *p3);
+static inline void	point_computing(double *A_blend, F_point *p0,
+				F_point *p1, F_point *p2, F_point *p3, int *x,
+				int *y);
+static inline void	negative_s1_influence(double t, double s1, double *A0,
+				double *A2);
+static inline void	negative_s2_influence(double t, double s2, double *A1,
+				double *A3);
+static inline void	positive_s1_influence(int k, double t, double s1,
+				double *A0, double *A2);
+static inline void	positive_s2_influence(int k, double t, double s2,
+				double *A1, double *A3);
+/* static inline double	f_blend(double numerator, double denominator);
+ * static inline double	g_blend(double u, double q);
+ * static inline double	h_blend(double u, double q);
+ * static void		free_point_array();
+ * static int		num_points(F_point *points);
+ * static void		too_many_points();
+ */
+static F_line		*create_line(void);
+static F_point		*create_point(void);
+static F_control	*create_cpoint(void);
 
 /************** CURVE DRAWING FACILITIES ****************/
 
 static int	npoints;
-static zXPoint *points;
+static F_pos	*points;
 static int	max_points;
 static int	allocstep;
 
 
 static void
-free_point_array(pts)
-     zXPoint *pts;
+free_point_array(F_pos *pts)
 {
   free(pts);
 }
 
 
-
-static		Boolean
+static bool
 init_point_array(init_size, step_size)
     int		    init_size, step_size;
 {
@@ -101,17 +101,16 @@ init_point_array(init_size, step_size)
     if (max_points > MAXNUMPTS) {
 	max_points = MAXNUMPTS;
     }
-    if ((points = (zXPoint *) malloc(max_points * sizeof(zXPoint))) == 0) {
+    if ((points = (F_pos *) malloc(max_points * sizeof(F_pos))) == 0) {
 	fprintf(stderr, "xfig: insufficient memory to allocate point array\n");
-	return False;
+	return false;
     }
-    return True;
+    return true;
 }
 
 
-
 static void
-too_many_points()
+too_many_points(void)
 {
   fprintf(stderr,
 	  "Too many points, recompile with MAXNUMPTS > %d in trans_spline.h\n",
@@ -119,40 +118,37 @@ too_many_points()
 }
 
 
-static		Boolean
-add_point(x, y)
-    int		    x, y;
+static bool
+add_point(int x, int y)
 {
     if (npoints >= max_points) {
-	zXPoint	       *tmp_p;
+	F_pos	       *tmp_p;
 
 	if (max_points >= MAXNUMPTS) {
 	    max_points = MAXNUMPTS;
-	    return False;		/* stop; it is not closing */
+	    return false;		/* stop; it is not closing */
 	}
 	max_points += allocstep;
 	if (max_points >= MAXNUMPTS)
 	    max_points = MAXNUMPTS;
 
-	if ((tmp_p = (zXPoint *) realloc(points,
-					max_points * sizeof(zXPoint))) == 0) {
+	if ((tmp_p = (F_pos *) realloc(points,
+					max_points * sizeof(F_pos))) == 0) {
 	    fprintf(stderr,
 		    "xfig: insufficient memory to reallocate point array\n");
-	    return False;
+	    return false;
 	}
 	points = tmp_p;
     }
     /* ignore identical points */
     if (npoints > 0 &&
 	points[npoints-1].x == x && points[npoints-1].y == y)
-		return True;
+		return true;
     points[npoints].x = x;
     points[npoints].y = y;
     npoints++;
-    return True;
+    return true;
 }
-
-
 
 
 /********************* CURVES FOR SPLINES *****************************
@@ -166,10 +162,8 @@ add_point(x, y)
 ***********************************************************************/
 
 
-zXPoint *
-compute_open_spline(spline, precision)
-     F_spline	   *spline;
-     float         precision;
+F_pos *
+compute_open_spline(F_spline *spline, float precision)
 {
   int       k;
   float     step;
@@ -213,18 +207,16 @@ compute_open_spline(spline, precision)
   COPY_CONTROL_POINT(p1, s1, p2, s2);
   COPY_CONTROL_POINT(p2, s2, p3, s3);
   SPLINE_SEGMENT_LOOP(k, p0, p1, p2, p3, s1->s, s2->s, precision);
-  
+
   if (!add_point(p3->x, p3->y))
     too_many_points();
-  
+
   return points;
 }
 
 
-zXPoint *
-compute_closed_spline(spline, precision)
-     F_spline	   *spline;
-     float         precision;
+F_pos *
+compute_closed_spline(F_spline *spline, float precision)
 {
   int k, i;
   float     step;
@@ -235,7 +227,7 @@ compute_closed_spline(spline, precision)
       return NULL;
 
   INIT_CONTROL_POINTS(spline, p0, s0, p1, s1, p2, s2, p3, s3);
-  COPY_CONTROL_POINT(first, s_first, p0, s0); 
+  COPY_CONTROL_POINT(first, s_first, p0, s0);
 
   for (k = 0 ; p3 != NULL ; k++) {
       SPLINE_SEGMENT_LOOP(k, p0, p1, p2, p3, s1->s, s2->s, precision);
@@ -258,14 +250,12 @@ compute_closed_spline(spline, precision)
 }
 
 
-
 #define Q(s)  (-(s))
 #define EQN_NUMERATOR(dim) \
   (A_blend[0]*p0->dim+A_blend[1]*p1->dim+A_blend[2]*p2->dim+A_blend[3]*p3->dim)
 
-static INLINE double
-f_blend(numerator, denominator)
-     double numerator, denominator;
+static inline double
+f_blend(double numerator, double denominator)
 {
   double p = 2 * denominator * denominator;
   double u = numerator / denominator;
@@ -274,69 +264,59 @@ f_blend(numerator, denominator)
   return (u * u2 * (10 - p + (2*p - 15)*u + (6 - p)*u2));
 }
 
-static INLINE double
-g_blend(u, q)             /* p equals 2 */
-     double u, q;
+static inline double
+g_blend(double u, double q)             /* p equals 2 */
 {
   return(u*(q + u*(2*q + u*(8 - 12*q + u*(14*q - 11 + u*(4 - 5*q))))));
 }
 
-static INLINE double
-h_blend(u, q)
-     double u, q;
+static inline double
+h_blend(double u, double q)
 {
   double u2 = u*u;
    return (u * (q + u * (2 * q + u2 * (-2*q - u*q))));
 }
 
-static INLINE void
-negative_s1_influence(t, s1, A0, A2)
-     double       t, s1, *A0 ,*A2;
+static inline void
+negative_s1_influence(double t, double s1, double *A0, double *A2)
 {
   *A0 = h_blend(-t, Q(s1));
   *A2 = g_blend(t, Q(s1));
 }
 
-static INLINE void
-negative_s2_influence(t, s2, A1, A3)
-     double       t, s2, *A1 ,*A3;
+static inline void
+negative_s2_influence(double t, double s2, double *A1, double *A3)
 {
   *A1 = g_blend(1-t, Q(s2));
   *A3 = h_blend(t-1, Q(s2));
 }
 
-static INLINE void
-positive_s1_influence(k, t, s1, A0, A2)
-     int          k;
-     double       t, s1, *A0 ,*A2;
+static inline void
+positive_s1_influence(int k, double t, double s1, double *A0, double *A2)
 {
   double Tk;
-  
+
   Tk = k+1+s1;
   *A0 = (t+k+1<Tk) ? f_blend(t+k+1-Tk, k-Tk) : 0.0;
-  
+
   Tk = k+1-s1;
   *A2 = f_blend(t+k+1-Tk, k+2-Tk);
 }
 
-static INLINE void
-positive_s2_influence(k, t, s2, A1, A3)
-     int          k;
-     double       t, s2, *A1 ,*A3;
+static inline void
+positive_s2_influence(int k, double t, double s2, double *A1, double *A3)
 {
   double Tk;
 
-  Tk = k+2+s2; 
+  Tk = k+2+s2;
   *A1 = f_blend(t+k+1-Tk, k+1-Tk);
-  
+
   Tk = k+2-s2;
   *A3 = (t+k+1>Tk) ? f_blend(t+k+1-Tk, k+3-Tk) : 0.0;
 }
 
-static INLINE void
-point_adding(A_blend, p0, p1, p2, p3)
-     F_point     *p0, *p1, *p2, *p3;
-     double      *A_blend;
+static inline void
+point_adding(double *A_blend, F_point *p0, F_point *p1, F_point *p2,F_point *p3)
 {
   double weights_sum;
 
@@ -346,11 +326,9 @@ point_adding(A_blend, p0, p1, p2, p3)
       too_many_points();
 }
 
-static INLINE void
-point_computing(A_blend, p0, p1, p2, p3, x, y)
-     F_point     *p0, *p1, *p2, *p3;
-     double      *A_blend;
-     int         *x, *y;
+static inline void
+point_computing(double *A_blend, F_point *p0, F_point *p1, F_point *p2,
+		F_point *p3, int *x, int *y)
 {
   double weights_sum;
 
@@ -361,17 +339,14 @@ point_computing(A_blend, p0, p1, p2, p3, x, y)
 }
 
 static float
-step_computing(k, p0, p1, p2, p3, s1, s2, precision)
-     int     k;
-     F_point *p0, *p1, *p2, *p3;
-     double  s1, s2;
-     float   precision;
+step_computing(int k, F_point *p0, F_point *p1, F_point *p2, F_point *p3,
+		double s1, double s2, float precision)
 {
   double A_blend[4];
   int    xstart, ystart, xend, yend, xmid, ymid, xlength, ylength;
   int    start_to_end_dist, number_of_steps;
   float  step, angle_cos, scal_prod, xv1, xv2, yv1, yv2, sides_length_prod;
-  
+
   /* This function computes the step used to draw the segment (p1, p2)
      (xv1, yv1) : coordinates of the vector from middle to origin
      (xv2, yv2) : coordinates of the vector from middle to extremity */
@@ -380,17 +355,17 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
   if (s1>0) {
       if (s2<0) {
 	  positive_s1_influence(k, 0.0, s1, &A_blend[0], &A_blend[2]);
-	  negative_s2_influence(0.0, s2, &A_blend[1], &A_blend[3]); 
+	  negative_s2_influence(0.0, s2, &A_blend[1], &A_blend[3]);
       } else {
 	  positive_s1_influence(k, 0.0, s1, &A_blend[0], &A_blend[2]);
-	  positive_s2_influence(k, 0.0, s2, &A_blend[1], &A_blend[3]); 
+	  positive_s2_influence(k, 0.0, s2, &A_blend[1], &A_blend[3]);
       }
       point_computing(A_blend, p0, p1, p2, p3, &xstart, &ystart);
   } else {
       xstart = p1->x;
       ystart = p1->y;
   }
-  
+
   /* compute coordinates  of the extremity */
   if (s2>0) {
       if (s1<0) {
@@ -398,7 +373,7 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
 	  positive_s2_influence(k, 1.0, s2, &A_blend[1], &A_blend[3]);
       } else {
 	  positive_s1_influence(k, 1.0, s1, &A_blend[0], &A_blend[2]);
-	  positive_s2_influence(k, 1.0, s2, &A_blend[1], &A_blend[3]); 
+	  positive_s2_influence(k, 1.0, s2, &A_blend[1], &A_blend[3]);
       }
       point_computing(A_blend, p0, p1, p2, p3, &xend, &yend);
   } else {
@@ -413,7 +388,7 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
 	  positive_s2_influence(k, 0.5, s2, &A_blend[1], &A_blend[3]);
       } else {
 	  positive_s1_influence(k, 0.5, s1, &A_blend[0], &A_blend[2]);
-	  positive_s2_influence(k, 0.5, s2, &A_blend[1], &A_blend[3]); 
+	  positive_s2_influence(k, 0.5, s2, &A_blend[1], &A_blend[3]);
       }
   } else if (s1<0) {
       negative_s1_influence(0.5, s1, &A_blend[0], &A_blend[2]);
@@ -430,7 +405,7 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
   yv2 = yend - ymid;
 
   scal_prod = xv1*xv2 + yv1*yv2;
-  
+
   sides_length_prod = sqrt((xv1*xv1 + yv1*yv1)*(xv2*xv2 + yv2*yv2));
 
   /* compute cosinus of origin-middle-extremity angle, which approximates the
@@ -441,7 +416,7 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
    if (sides_length_prod == 0.0)
      angle_cos = 0.0;
    else
-     angle_cos = scal_prod/sides_length_prod; 
+     angle_cos = scal_prod/sides_length_prod;
 
   xlength = xend - xstart;
   ylength = yend - ystart;
@@ -458,23 +433,20 @@ step_computing(k, p0, p1, p2, p3, s1, s2, precision)
     step = 1.0;
   else
     step = precision/number_of_steps;
-  
+
   if ((step > MAX_SPLINE_STEP) || (step == 0))
     step = MAX_SPLINE_STEP;
   return step;
 }
 
 static void
-spline_segment_computing(step, k, p0, p1, p2, p3, s1, s2)
-     float   step;
-     F_point *p0, *p1, *p2, *p3;
-     int     k;
-     double  s1, s2;
+spline_segment_computing(float step, int k, F_point *p0, F_point *p1,
+			F_point *p2, F_point *p3, double s1, double s2)
 {
   double A_blend[4];
   double t;
-  
-  if (s1<0) {  
+
+  if (s1<0) {
      if (s2<0) {
 	 for (t=0.0 ; t<1 ; t+=step) {
 	     negative_s1_influence(t, s1, &A_blend[0], &A_blend[2]);
@@ -503,25 +475,24 @@ spline_segment_computing(step, k, p0, p1, p2, p3, s1, s2)
 	     positive_s2_influence(k, t, s2, &A_blend[1], &A_blend[3]);
 
 	     point_adding(A_blend, p0, p1, p2, p3);
-      } 
+      }
   }
 }
 
 
 F_line *
-create_line_with_spline(s)
-    F_spline	   *s;
+create_line_with_spline(F_spline *s)
 {
-  zXPoint  *points;
+  F_pos  *points;
   F_line   *line;
   int      i = 0;
   int      start = 0;
   F_point  *ptr, *pt;
   F_comment *lcomm, *scomm;
-  
+
   points = open_spline(s) ? compute_open_spline(s, HIGH_PRECISION)
                           : compute_closed_spline(s, HIGH_PRECISION);
-  if (points==NULL)  
+  if (points==NULL)
     return NULL;
 
 
@@ -529,7 +500,7 @@ create_line_with_spline(s)
     free_point_array(points);
     return NULL;
   }
-  line->style      = s->style;  
+  line->style      = s->style;
   line->thickness  = s->thickness;
   line->pen_color  = s->pen_color;
   line->depth      = s->depth;
@@ -556,19 +527,19 @@ create_line_with_spline(s)
 	lcomm = lcomm->next;
     }
   }
-  
+
   if (s->for_arrow) {
     s->for_arrow = NULL;
     if (npoints > ARROW_START) {
 	points[npoints - ARROW_START] = points[npoints - 1];
-	npoints -= (ARROW_START-1);          /* avoid some points to have good 
+	npoints -= (ARROW_START-1);          /* avoid some points to have good
 					    orientation for arrow */
     }
   }
   if (s->back_arrow) {
     s->back_arrow = NULL;
     if (npoints > ARROW_START) {
-	points[ARROW_START - 1] = points[0];   /* avoid some points to have good 
+	points[ARROW_START - 1] = points[0];   /* avoid some points to have good
 					      orientation for arrow */
 	npoints -= (ARROW_START - 1);
 	start = ARROW_START - 1;
@@ -576,11 +547,11 @@ create_line_with_spline(s)
 	start = 0;
     }
   }
-  
+
   line->type = open_spline(s) ? T_POLYLINE : T_POLYGON;
   line->radius = 0;
   line->next = NULL;
-  line->pic = NULL;  
+  line->pic = NULL;
   ptr = NULL;
   for (i = start; i<npoints+start; i++)
     {
@@ -596,7 +567,7 @@ create_line_with_spline(s)
 
       if (ptr == NULL)
 	ptr = line->points = pt;
-      else 
+      else
 	{
 	  ptr->next = pt;
 	  ptr = ptr->next;
@@ -609,22 +580,20 @@ create_line_with_spline(s)
 }
 
 
-
 int
-make_control_factors(spl)
-     F_spline *spl;
+make_control_factors(F_spline *spl)
 {
   F_point   *p = spl->points;
   F_control *cp, *cur_cp;
   int       type_s = approx_spline(spl) ? S_SPLINE_APPROX : S_SPLINE_INTERP;
-  
+
   spl->controls = NULL;
   if ((cp = create_cpoint()) == NULL)
     return 0;
   spl->controls = cur_cp = cp;
   cp->s = closed_spline(spl) ? type_s : S_SPLINE_ANGULAR;
   p = p->next;
-  
+
   for(; p != NULL ; p = p->next)
     {
       if ((cp = create_cpoint()) == NULL)
@@ -634,32 +603,31 @@ make_control_factors(spl)
       cp->s = type_s;
       cur_cp = cur_cp->next;
     }
-  
+
   cur_cp->s = spl->controls->s;
   cur_cp->next = NULL;
   return 1;
 }
 
 
-
-static F_control      *
-create_cpoint()
+static F_control *
+create_cpoint(void)
 {
     F_control	   *cp;
 
     if ((cp = (F_control *) malloc(CONTROL_SIZE)) == NULL)
-	fprintf(stderr,Err_mem);
+	fputs(Err_mem, stderr);
     return cp;
 }
 
 
-static F_line	       *
-create_line()
+static F_line *
+create_line(void)
 {
     F_line	   *l;
 
     if ((l = (F_line *) malloc(LINOBJ_SIZE)) == NULL)
-	fprintf(stderr,Err_mem);
+	fputs(Err_mem, stderr);
     l->pic = NULL;
     l->next = NULL;
     l->for_arrow = NULL;
@@ -670,8 +638,9 @@ create_line()
     return l;
 }
 
-static F_point	       *
-create_point()
+
+static F_point *
+create_point(void)
 {
     F_point	   *p;
 
@@ -681,10 +650,8 @@ create_point()
 }
 
 
-
 static int
-num_points(points)
-    F_point	   *points;
+num_points(F_point *points)
 {
     int		    n;
     F_point	   *p;

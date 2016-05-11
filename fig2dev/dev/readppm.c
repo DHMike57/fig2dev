@@ -16,18 +16,14 @@
 #include "fig2dev.h"
 #include "object.h"
 
-extern	int	_read_pcx();
+extern	int	_read_pcx(FILE *pcxfile, F_pic *pic);	/* readpcx.c */
 
 /* return codes:  1 : success
 		  0 : failure
 */
 
 int
-read_ppm(file,filetype,pic,llx,lly)
-    FILE	   *file;
-    int		    filetype;
-    F_pic	   *pic;
-    int		   *llx, *lly;
+read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 {
 	char	 buf[512],pcxname[PATH_MAX];
 	FILE	*giftopcx;
@@ -43,6 +39,7 @@ read_ppm(file,filetype,pic,llx,lly)
 	sprintf(buf, "ppmtopcx > %s 2> /dev/null", pcxname);
 	if ((giftopcx = popen(buf,"w" )) == 0) {
 	    fprintf(stderr,"Cannot open pipe to giftoppm\n");
+	    unlink(pcxname);
 	    return 0;
 	}
 	while ((size=fread(buf, 1, 512, file)) != 0) {

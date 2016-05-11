@@ -7,14 +7,14 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-/* 
- *	genbitmaps.c : bitmap driver for fig2dev 
+/*
+ *	genbitmaps.c: bitmap driver for fig2dev
  *
  *	Author: Brian V. Smith
  *		Handles AutoCad Slide, GIF, JPEG, TIFF, PCX, PNG, XBM and XPM.
@@ -26,12 +26,12 @@
  */
 
 #include "fig2dev.h"
-#include "genps.h"
 #include "object.h"
+#include "genps.h"
 #include "texfonts.h"
 
 static	char	 *gsdev,tmpname[PATH_MAX];
-static	Boolean	 direct;
+static	bool	 direct;
 static	FILE	*saveofile;
 static	char	*ofile;
 static	int	 width,height;
@@ -40,9 +40,7 @@ static	int	 border_margin = 0;
 static	int	 smooth = 0;
 
 void
-genbitmaps_option(opt, optarg)
-char opt;
-char *optarg;
+genbitmaps_option(char opt, char *optarg)
 {
     switch (opt) {
 
@@ -52,7 +50,7 @@ char *optarg;
 
 	case 'g':			/* background color (handled in postscript gen) */
 	    if (lookup_X_color(optarg,&background) >= 0) {
-		bgspec = True;
+		bgspec = true;
 	    } else {
 		fprintf(stderr,"Can't parse color '%s', ignoring background option\n",
 				optarg);
@@ -73,7 +71,7 @@ char *optarg;
 	    if (strcmp(lang,"gif") != 0)
 		fprintf(stderr,"-t option only allowed for GIF transparent color; ignored\n");
 	    (void) strcpy(gif_transparent,optarg);
-	    transspec = True;
+	    transspec = true;
 	    break;
 
 	case 'S':			/* smoothing factor */
@@ -86,13 +84,8 @@ char *optarg;
 	    }
 	    break;
 
-	case 'F':	/* ignore magnification, font sizes and lang here */
-	case 'f':
-	case 'm':
-	case 's':
-      	case 'G':	/* grid */
+	case 'G':
 	case 'L':
-			/* these are all handled in fig2dev.c */
 	    break;
 
 	default:
@@ -102,8 +95,7 @@ char *optarg;
 }
 
 void
-genbitmaps_start(objects)
-F_compound	*objects;
+genbitmaps_start(F_compound *objects)
 {
     char extra_options[200];
     float bd;
@@ -123,7 +115,7 @@ F_compound	*objects;
     /* Add conditionals here if gs has a driver built-in */
     /* gs has a driver for png, ppm, pcx, jpeg and tiff */
 
-    direct = True;
+    direct = true;
     ofile = (to == NULL? "-": to);
     extra_options[0]='\0';
 
@@ -155,7 +147,7 @@ F_compound	*objects;
 	    /* make a unique name for the temporary ppm file */
 	    sprintf(tmpname,"%s/f2d%d.ppm",TMPDIR,getpid());
 	    ofile = tmpname;
-	    direct = False;
+	    direct = false;
 	}
     }
     /* make up the command for gs */
@@ -174,12 +166,12 @@ F_compound	*objects;
 	exit(1);
     }
     /* generate eps and not ps */
-    epsflag = True;
+    epsflag = true;
     genps_start(objects);
 }
 
 int
-genbitmaps_end()
+genbitmaps_end(void)
 {
 	char	 com[PATH_MAX+200],com1[200];
 	char	 errfname[PATH_MAX];
@@ -289,7 +281,7 @@ genbitmaps_end()
 }
 
 struct driver dev_bitmaps = {
-  	genbitmaps_option,
+	genbitmaps_option,
 	genbitmaps_start,
 	genps_grid,
 	genps_arc,
@@ -300,5 +292,3 @@ struct driver dev_bitmaps = {
 	genbitmaps_end,
 	INCLUDE_TEXT
 };
-
-

@@ -9,29 +9,28 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-/* 
+/*
  *	gentextyl.c : TeXtyl driver for fig2dev
  *
- * 	Author: Gary Beihl, MCC 8/90
+ *	Author: Gary Beihl, MCC 8/90
  *	(beihl@mcc.com)
  *
- *      Based on the pictex driver by Micah Beck
+ *	Based on the pictex driver by Micah Beck
  *
  */
 
 #include "fig2dev.h"
 #include "object.h"
 #include "texfonts.h"
+#include "localmath.h"	/* arc_tangent() */
 
 static void putline();
-
-#define rint(a) floor((a)+0.5)     /* close enough? */
 
 static void gentextyl_ctl_spline(), gentextyl_itp_spline();
 static void bezier_spline();
@@ -41,13 +40,12 @@ static void rtop();
 static void set_linewidth();
 static void set_style();
 
-static int		line_style = 0; /* Textyl solid line style */
-static int 		linethick = 2;  /* Range is 1-12 `pixels' */
- 
+static int	line_style = 0; /* Textyl solid line style */
+static int	linethick = 2;	/* Range is 1-12 `pixels' */
+
 
 static void
-gentextyl_option(opt, optarg)
-char opt, *optarg;
+gentextyl_option(char opt, char *optarg)
 {
   int i;
 
@@ -78,15 +76,13 @@ char opt, *optarg;
 
 		case 'l':			/* set line thickness */
 		    linethick = atoi(optarg);
-                    if (linethick < 1 || linethick > 12) {
-                      put_msg(Err_badarg, opt, "textyl");
-                      exit(1);
-                    }
+		    if (linethick < 1 || linethick > 12) {
+		      put_msg(Err_badarg, opt, "textyl");
+		      exit(1);
+		    }
 		    break;
 
-		case 'p':
-		case 's':
-		case 'm':
+		case 'G':
 		case 'L':
 		    break;
 
@@ -101,26 +97,23 @@ char opt, *optarg;
 #define measure 'S'
 
 static int
-convy(a)
-double a;
+convy(double a)
 {
    return (int)(((ury - a) * SCALE) / ppi);
 }
 
 static int
-convx(a)
-double a; {
+convx(double a) {
   float f;
   f = a * SCALE;
   return (int)(f / ppi);
 }
 
 void
-gentextyl_start(objects)
-F_compound	*objects;
+gentextyl_start(F_compound *objects)
 {
 
-	texfontsizes[0] = texfontsizes[1] = 
+	texfontsizes[0] = texfontsizes[1] =
 		texfontsizes[(font_size != 0.0? (int) font_size : DEFAULT_FONT_SIZE)+1];
 
 	/* print any whole-figure comments prefixed with "%" */
@@ -134,7 +127,7 @@ F_compound	*objects;
 }
 
 int
-gentextyl_end()
+gentextyl_end(void)
 {
   fprintf(tfp,"\\endtyl\n");
 
@@ -142,17 +135,14 @@ gentextyl_end()
   return 0;
 }
 
-
 static void
-set_linewidth(w)
-int	w;
+set_linewidth(int w)
 {
 /* Nop */
 }
 
 void
-gentextyl_line(l)
-F_line	*l;
+gentextyl_line(F_line *l)
 {
 	F_point		*p, *q;
 
@@ -166,13 +156,13 @@ F_line	*l;
 
 	p = l->points;
 	q = p->next;
-        
+
 
 	if (q == NULL) { /* A single point line */
-	    fprintf(tfp, "\\special{tyl line %c %d L %d %u %u; %u %u}\n", 
-               measure,linethick,line_style,
-			convx((double)p->x), convy((double)p->y), 
-                        convx((double)p->x), convy((double)p->y));
+	    fprintf(tfp, "\\special{tyl line %c %d L %d %u %u; %u %u}\n",
+	       measure,linethick,line_style,
+			convx((double)p->x), convy((double)p->y),
+			convx((double)p->x), convy((double)p->y));
 	    return;
 	    }
 	if (l->back_arrow)
@@ -196,24 +186,22 @@ F_line	*l;
 		fprintf(stderr, "Line area fill not implemented\n");
 	}
 
-/* 
+/*
  * set_style - issue style commands as appropriate
  */
 static void
-set_style(style, dash_len)
-     int style;
-     double dash_len;
+set_style(int style, double dash_len)
 {
-  
+
   switch (style) {
   case SOLID_LINE:
     line_style = 0;
     break;
-    
+
   case DASH_LINE:
     line_style = 2;
     break;
-    
+
   case DOTTED_LINE:
     line_style = 1;
     break;
@@ -224,21 +212,18 @@ set_style(style, dash_len)
  * putline
  */
 static void
-putline (start_x, start_y, end_x, end_y)
-int	start_x, start_y, end_x, end_y;
+putline(int start_x, int start_y, int end_x, int end_y)
 {
 
-   fprintf(tfp, "\\special{tyl line %c %d L %d %u %u; %u %u}\n", 
-        measure, linethick,line_style,
-	convx((double)start_x), convy((double)start_y), 
-        convx((double)end_x), convy((double)end_y));
+   fprintf(tfp, "\\special{tyl line %c %d L %d %u %u; %u %u}\n",
+	measure, linethick,line_style,
+	convx((double)start_x), convy((double)start_y),
+	convx((double)end_x), convy((double)end_y));
 
 }
 
-
 void
-gentextyl_spline(s)
-F_spline	*s;
+gentextyl_spline(F_spline *s)
 {
 	/* print any comments prefixed with "%" */
 	print_comments("% ",s->comments, "");
@@ -256,8 +241,7 @@ F_spline	*s;
 }
 
 void
-gentextyl_ellipse(e)
-F_ellipse	*e;
+gentextyl_ellipse(F_ellipse *e)
 {
 	int sx, sy;
 	int radius;
@@ -271,42 +255,41 @@ F_ellipse	*e;
 	set_style(e->style, e->style_val);
 
 	if (e->radiuses.x == e->radiuses.y) {
-          fprintf(tfp, "\\special{tyl arc %c %d L 0 %u @ %u,%u 0 360}\n",
-            measure,linethick,convx((double)e->radiuses.x),
-            convx((double)e->center.x),convy((double)e->center.y));
-        }
+	  fprintf(tfp, "\\special{tyl arc %c %d L 0 %u @ %u,%u 0 360}\n",
+	    measure,linethick,convx((double)e->radiuses.x),
+	    convx((double)e->center.x),convy((double)e->center.y));
+	}
 	else {
-          if (e->radiuses.x > e->radiuses.y) {
-            sy = 100;
-            sx = ((float)e->radiuses.x/(float)e->radiuses.y) * 100.0;
-            radius = e->radiuses.y;
-          }
-          else {
-            sx = 100;
-            sy = ((float)e->radiuses.y/(float)e->radiuses.x) * 100.0;
-            radius = e->radiuses.x;            
-          }
-                fprintf(tfp, 
-                 "\\special{tyl arc %c T %u %u 0 0 0 %d L 0 %u @ %u,%u 0 360}\n",
-                  measure,sx,sy,linethick,convx((double)radius),
-            convx((double)e->center.x),convy((double)e->center.y));
+	  if (e->radiuses.x > e->radiuses.y) {
+	    sy = 100;
+	    sx = ((float)e->radiuses.x/(float)e->radiuses.y) * 100.0;
+	    radius = e->radiuses.y;
+	  }
+	  else {
+	    sx = 100;
+	    sy = ((float)e->radiuses.y/(float)e->radiuses.x) * 100.0;
+	    radius = e->radiuses.x;
+	  }
+		fprintf(tfp,
+		 "\\special{tyl arc %c T %u %u 0 0 0 %d L 0 %u @ %u,%u 0 360}\n",
+		  measure,sx,sy,linethick,convx((double)radius),
+	    convx((double)e->center.x),convy((double)e->center.y));
 		if (e->fill_style && (int)e->fill_style != DEFAULT)
 			fprintf(stderr, "Ellipse area fill not implemented\n");
 		}
 	}
 
-#define			HT_OFFSET	(0.2 / 72.0)
+#define		HT_OFFSET	(0.2 / 72.0)
 
 void
-gentextyl_text(t)
-F_text	*t;
+gentextyl_text(F_text *t)
 {
 	double	x, y;
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ",t->comments, "");
 
-        fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
+	fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
 	x = t->base_x;
 	y = t->base_y;
@@ -318,17 +301,16 @@ F_text	*t;
 		break;
 	    default:
 		fprintf(stderr, "Warning: Text incorrectly positioned\n");
-	        break;
+		break;
 	    }
 
-        fprintf(tfp,"\\special{tyl label %c 1 %u %u \"%s\"}\n",
-          measure,convx(x),convy(y),t->cstring);
+	fprintf(tfp,"\\special{tyl label %c 1 %u %u \"%s\"}\n",
+	  measure,convx(x),convy(y),t->cstring);
 
 }
 
 void
-gentextyl_arc(a)
-F_arc	*a;
+gentextyl_arc(F_arc *a)
 {
 	double		x, y;
 	double		cx, cy, sx, sy, ex, ey;
@@ -370,35 +352,32 @@ F_arc	*a;
 	cy = a->center.y;
 	sy = a->point[0].y;
 	ey = a->point[2].y;
-	    
+	
 	rtop(dx1, dy1, &r1, &th1);
 	rtop(dx2, dy2, &r2, &th2);
 
 	set_linewidth(a->thickness);
 
 	if (a->direction) { /* Counterclockwise */
-              fprintf(tfp,"\\special{tyl arc %c %d L 0 %u @ %u,%u %d %d}\n",
-                measure,linethick,convx(r1),convx(cx),convy(cy),
-                (int)(180/M_PI * th1), (int)(180/M_PI * th2));
+	      fprintf(tfp,"\\special{tyl arc %c %d L 0 %u @ %u,%u %d %d}\n",
+		measure,linethick,convx(r1),convx(cx),convy(cy),
+		(int)(180/M_PI * th1), (int)(180/M_PI * th2));
 	      }
 	else {
-              fprintf(tfp,"\\special{tyl arc %c %d L 0 %u @ %u,%u %d %d}\n",
-                measure,linethick,convx(r1),convx(cx),convy(cy),
-                (int)(180/M_PI * th2), (int)(180/M_PI * th1));
+	      fprintf(tfp,"\\special{tyl arc %c %d L 0 %u @ %u,%u %d %d}\n",
+		measure,linethick,convx(r1),convx(cx),convy(cy),
+		(int)(180/M_PI * th2), (int)(180/M_PI * th1));
 	      }
 
 	if (a->fill_style && (int)a->fill_style != DEFAULT)
 		fprintf(stderr, "Arc area fill not implemented\n");
 	}
 
-
-
 /*
  * rtop - rectangular to polar conversion
  */
 static void
-rtop(x, y, r, th)
-double x, y, *r, *th;
+rtop(double x, double y, double *r, double *th)
 {
 	*r = sqrt(x*x+y*y);
 	*th = acos(x/(*r));
@@ -409,9 +388,8 @@ double x, y, *r, *th;
 /*	draw arrow heading from (x1, y1) to (x2, y2)	*/
 
 static void
-draw_arrow_head(x1, y1, x2, y2, arrowht, arrowwid)
-double	x1, y1, x2, y2;
-double  arrowht, arrowwid;
+draw_arrow_head(double x1, double y1, double x2, double y2,
+		double arrowht, double arrowwid)
 {
 	double	x, y, xb, yb, dx, dy, l, sina, cosa;
 	double	xc, yc, xd, yd;
@@ -434,12 +412,12 @@ double  arrowht, arrowwid;
 	xd = x*cosa + y*sina;
 	yd = -x*sina + y*cosa;
 
-        fprintf(tfp, "%%\n%% arrow head\n%%\n");
+	fprintf(tfp, "%%\n%% arrow head\n%%\n");
 
 	fprintf(tfp, "\\special{tyl line %c %d %u %u; %u %u}\n",measure,linethick,
 		convx(xc), convy(yc), convx(x2), convy(y2));
 	fprintf(tfp, "\\special{tyl line %c %d %u %u; %u %u}\n",measure,linethick,
-                convx(x2), convy(y2), convx(xd), convy(yd));
+		convx(x2), convy(y2), convx(xd), convy(yd));
 
 	}
 
@@ -447,8 +425,8 @@ double  arrowht, arrowwid;
 double last_x, last_y;
 
 static void
-quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
-double	a1, b1, a2, b2, a3, b3, a4, b4;
+quadratic_spline(double a1, double b1, double a2, double b2,
+		double a3, double b3, double a4, double b4)
 {
 	double	x1, y1, x4, y4;
 	double	xmid, ymid;
@@ -458,10 +436,10 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	xmid = (a2 + a3) / 2;
 	ymid = (b2 + b3) / 2;
 	if (fabs(x1 - xmid) < THRESHOLD && fabs(y1 - ymid) < THRESHOLD) {
-	    fprintf(tfp, "\\special{tyl line %c %d %u %u; %u %u}\n", 
-              measure, linethick,convx(last_x),convy(last_y),
-              convx(xmid), convy(ymid));
-            last_x = xmid; last_y = ymid;
+	    fprintf(tfp, "\\special{tyl line %c %d %u %u; %u %u}\n",
+	      measure, linethick,convx(last_x),convy(last_y),
+	      convx(xmid), convy(ymid));
+	    last_x = xmid; last_y = ymid;
 	}
 
 	else {
@@ -470,9 +448,9 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	    }
 
 	if (fabs(xmid - x4) < THRESHOLD && fabs(ymid - y4) < THRESHOLD) {
-	    fprintf(tfp, "\\special{tyl line %c %d %u %u; %u %u}\n", 
-              measure, linethick,convx(last_x),convy(last_y),convx(x4), convy(y4));
-            last_x = x4; last_y = y4;
+	    fprintf(tfp, "\\special{tyl line %c %d %u %u; %u %u}\n",
+	      measure, linethick,convx(last_x),convy(last_y),convx(x4), convy(y4));
+	    last_x = x4; last_y = y4;
 	}
 
 	else {
@@ -482,113 +460,111 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	}
 
 static void
-gentextyl_ctl_spline(s)
-F_spline	*s;
+gentextyl_ctl_spline(F_spline *s)
 {
-	F_point	*p;
+	F_point *p;
 	double	cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4;
 	double	x1, y1, x2, y2;
 
-    	fprintf(tfp, "%%\n%% Fig CONTROL PT SPLINE\n%%\n");
+	fprintf(tfp, "%%\n%% Fig CONTROL PT SPLINE\n%%\n");
 
 	p = s->points;
 	x1 = p->x;  y1 = p->y;
 	p = p->next;
 	x2 = p->x;  y2 = p->y;
-	cx1 = (x1 + x2) / 2;      cy1 = (y1 + y2) / 2;
+	cx1 = (x1 + x2) / 2;	  cy1 = (y1 + y2) / 2;
 	cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
 
 	if (closed_spline(s)) {
 	    fprintf(tfp, "%% closed spline\n%%\n");
-            last_x = cx1; last_y = cy1;
+	    last_x = cx1; last_y = cy1;
 	    }
 	else {
 	    fprintf(tfp, "%% open spline\n%%\n");
 	    if (s->back_arrow)
-	        draw_arrow_head(cx1, cy1, x1, y1,
+		draw_arrow_head(cx1, cy1, x1, y1,
 			s->back_arrow->ht, s->back_arrow->wid);
-            fprintf(tfp, "\\special{tyl line %c %d %u %u;%u %u}\n",
-              measure,linethick,
-              convx(x1),convy(y1),convx(cx1),convy(cy1));
-            last_x = cx1; last_y = cy1;
+	    fprintf(tfp, "\\special{tyl line %c %d %u %u;%u %u}\n",
+	      measure,linethick,
+	      convx(x1),convy(y1),convx(cx1),convy(cy1));
+	    last_x = cx1; last_y = cy1;
 	    }
 
 	for (p = p->next; p != NULL; p = p->next) {
 	    x1 = x2;  y1 = y2;
-	    x2 = p->x;  y2 = p->y;
+	    x2 = p->x;	y2 = p->y;
 	    cx3 = (3 * x1 + x2) / 4;  cy3 = (3 * y1 + y2) / 4;
 	    cx4 = (x1 + x2) / 2;      cy4 = (y1 + y2) / 2;
 	    quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
-	    cx1 = cx4;  cy1 = cy4;
+	    cx1 = cx4;	cy1 = cy4;
 	    cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
 	    }
 	x1 = x2;  y1 = y2;
 	p = s->points->next;
 	x2 = p->x;  y2 = p->y;
 	cx3 = (3 * x1 + x2) / 4;  cy3 = (3 * y1 + y2) / 4;
-	cx4 = (x1 + x2) / 2;      cy4 = (y1 + y2) / 2;
+	cx4 = (x1 + x2) / 2;	  cy4 = (y1 + y2) / 2;
 	if (closed_spline(s)) {
 	    quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
 	    }
 	else {
-            fprintf(tfp,"\\special{tyl line %c %d %u %u;%u %u}\n",
-              measure,linethick,
-              convx(cx1),convy(cy1),convx(x1),convy(y1));
+	    fprintf(tfp,"\\special{tyl line %c %d %u %u;%u %u}\n",
+	      measure,linethick,
+	      convx(cx1),convy(cy1),convx(x1),convy(y1));
 	    if (s->for_arrow)
-	    	draw_arrow_head(cx1, cy1, x1, y1,
+		draw_arrow_head(cx1, cy1, x1, y1,
 			s->for_arrow->ht, s->for_arrow->wid);
 	    }
 
 	}
 
-static void 
-gentextyl_itp_spline(s)
-F_spline	*s;
+static void
+gentextyl_itp_spline(F_spline *s)
 {
   F_point	*p1, *p2;
   F_control	*cp1, *cp2;
   double	 x1, x2, y1, y2;
-  
-  
+
+
   p1 = s->points;
   cp1 = s->controls;
   x2 = p1->x; y2 = p1->y;
-  
+
   if (s->back_arrow)
     draw_arrow_head(cp1->rx, cp1->ry, x2, y2,
 		    s->back_arrow->ht, s->back_arrow->wid);
-  
+
   last_x = x2; last_y = y2;
-  
+
   fprintf(tfp, "%%\n%% Fig INTERPOLATED SPLINE\n%%\n");
-  for (p2 = p1->next, cp2 = s->controls->next; 
-       p2 != NULL; 
+  for (p2 = p1->next, cp2 = s->controls->next;
+       p2 != NULL;
        cp1 = cp2, p2 = p2->next, cp2 = cp2->next) {
     x1 = x2; y1 = y2; x2 = p2->x; y2 = p2->y;
     bezier_spline(x1,y1,cp1->rx,cp1->ry,
 		  cp2->lx,cp2->ly,x2,y2);
   }
-  
+
   if (s->for_arrow)
     draw_arrow_head(cp1->lx, cp1->ly, x2, y2,
 		    s->for_arrow->ht, s->for_arrow->wid);
 }
 
 static void
-bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
-double	a0, b0, a1, b1, a2, b2, a3, b3;
+bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2,
+		double a3, double b3)
 {
   double	x0, y0, x3, y3;
   double	sx1, sy1, sx2, sy2, tx, ty, tx1, ty1, tx2, ty2, xmid, ymid;
-  
+
   x0 = a0; y0 = b0;
   x3 = a3; y3 = b3;
   if (fabs(x0 - x3) < THRESHOLD && fabs(y0 - y3) < THRESHOLD)  {
     fprintf(tfp,"\\special{tyl line %c %d %u %u ; %u %u}\n",measure,linethick,
 	    convx(last_x),convy(last_y),convx(x3),convy(y3));
-    last_x = x3; last_y = y3; 
+    last_x = x3; last_y = y3;
   }
-  
+
   else {
     tx = (a1 + a2) / 2;		ty = (b1 + b2) / 2;
     sx1 = (x0 + a1) / 2;	sy1 = (y0 + b1) / 2;
@@ -596,16 +572,16 @@ double	a0, b0, a1, b1, a2, b2, a3, b3;
     tx2 = (a2 + x3) / 2;	ty2 = (b2 + y3) / 2;
     tx1 = (tx2 + tx) / 2;	ty1 = (ty2 + ty) / 2;
     xmid = (sx2 + tx1) / 2;	ymid = (sy2 + ty1) / 2;
-    
+
     bezier_spline(x0, y0, sx1, sy1, sx2, sy2, xmid, ymid);
     bezier_spline(xmid, ymid, tx1, ty1, tx2, ty2, x3, y3);
   }
 }
 
 struct driver dev_textyl = {
-     	gentextyl_option,
+	gentextyl_option,
 	gentextyl_start,
-	gendev_null,
+	gendev_nogrid,
 	gentextyl_arc,
 	gentextyl_ellipse,
 	gentextyl_line,
@@ -614,4 +590,3 @@ struct driver dev_textyl = {
 	gentextyl_end,
 	EXCLUDE_TEXT
 };
-

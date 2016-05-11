@@ -1,5 +1,5 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * gencgm.c: convert fig to clear text version-1 Computer Graphics Metafile
  * Copyright (c) 1999 by Philippe Bekaert
  * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
@@ -8,15 +8,13 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
 /*
- * gencgm -- convert fig to clear text version-1 Computer Graphics Metafile
- *
  * Limitations:
  *
  * - old style splines are not supported by this driver. New style (X) splines
@@ -34,7 +32,7 @@
  * text font e.g. needs to be recognized and supported by the viewer.
  * Same is true for special characters in text strings, text orientation, ...
  * This driver also assumes that the background remains visible behind
- * hatched polygons for correct appearance of pattern filled shapes with 
+ * hatched polygons for correct appearance of pattern filled shapes with
  * non-white background. This is not always true ...
  *
  * Known bugs:
@@ -69,18 +67,18 @@
 #include "object.h"
 
 #define	UNDEFVALUE	-100	/* undefined attribute value */
-#define	FILL_COLOR_INDEX 999 	/* special color index for solid filled shapes.
+#define	FILL_COLOR_INDEX 999	/* special color index for solid filled shapes.
 				 * see fillshade() and conv_color(). */
 #define	EPSILON		1e-4	/* small floating point value */
 
-static	int rounded_arrows;	/* If rounded_arrows is False, the position
+static	int rounded_arrows;	/* If rounded_arrows is false, the position
 				 * of arrows will be corrected for
 				 * compensating line width effects. This
 				 * correction is not needed if arrows appear
 				 * rounded with the used CGM viewer.
 				 * See -r driver command line option. */
 
-static	Boolean	 binary_output = False;	/* default is ASCII output */
+static	bool	 binary_output = false;	/* default is ASCII output */
 static	FILE	*saveofile;	/* used when piping to ralcgm for binary output */
 static	char	 cgmcom[PATH_MAX];
 
@@ -130,22 +128,22 @@ int map_pattern [22] = { 0, 0, 0, 4,
 			 0, 0, 0, 0,
 			 0, 0, 0, 0,
 			 0, 0 };
+
+
 void
-gencgm_start(objects)
-   F_compound	*objects;
+gencgm_start(F_compound *objects)
 {
   int	 i;
   char	*p, *figname;
-  
+
   if (from) {
-	figname = malloc(strlen(from)+1);
-	sprintf(figname, from);
+	figname = strdup(from);
 	p = strrchr(figname, '/');
-	if (p) 
-	    figname = p+1;		/* remove path from name for comment in file */
+	if (p)
+	    figname = p+1;	/* remove path from name for comment in file */
 	p = strchr(figname, '.');	
 	if (p)
-	    *p = '\0';			/* and extension */
+	    *p = '\0';		/* and extension */
   } else {
 	figname = "(stdin)";
   }
@@ -162,7 +160,7 @@ gencgm_start(objects)
 	fprintf(stderr,"Command was: %s\n", cgmcom);
 	/* failed, revert back to ASCII */
 	tfp = saveofile;
-	binary_output = False;
+	binary_output = false;
     }
   }
 
@@ -199,21 +197,21 @@ gencgm_start(objects)
 
   fprintf(tfp, "BEGMFDEFAULTS;\n");
   fprintf(tfp, "  vdcext (0,0) (%d,%d);\n", urx-llx, ury-lly);
-                                /* see _pos() below */
+				/* see _pos() below */
   fprintf(tfp, "  clip off;\n");
   fprintf(tfp, "  colrmode indexed;\n");
   fprintf(tfp, "  colrtable 1");	/* color table */
   for (i=0; i<NUM_STD_COLS; i++) {	/* standard colors */
-    fprintf(tfp, "\n    %d %d %d",
+    fprintf(tfp, "\n	%d %d %d",
 	    (int)(stdcols[i].r * 255.),
 	    (int)(stdcols[i].g * 255.),
 	    (int)(stdcols[i].b * 255.));
   }
   for (i=0; i<num_usr_cols; i++) {	/* user defined colors */
-    fprintf(tfp, "\n    %d %d %d",
-	    user_colors[i].r, 
-	    user_colors[i].g, 
-	    user_colors[i].b);    
+    fprintf(tfp, "\n	%d %d %d",
+	    user_colors[i].r,
+	    user_colors[i].g,
+	    user_colors[i].b);
   }
   fprintf(tfp, ";\n");
   fprintf(tfp, "  linewidthmode abs;\n");
@@ -235,7 +233,7 @@ gencgm_start(objects)
 }
 
 int
-gencgm_end()
+gencgm_end(void)
 {
     fprintf(tfp,"%% End of Picture %%\n");
     fprintf(tfp, "ENDPIC;\n");
@@ -257,23 +255,19 @@ gencgm_end()
 }
 
 void
-gencgm_option(opt, optarg)
-   char		 opt;
-   char		*optarg;
+gencgm_option(char opt, char *optarg)
 {
-    rounded_arrows = False;
+    rounded_arrows = false;
     switch (opt) {
 	case 'b':
-	    binary_output = True;	/* call ralcgm to convert output to binary cgm */
+	    binary_output = true;	/* call ralcgm to convert output to binary cgm */
 	    break;
 
-	case 'r': 
-	    rounded_arrows = True;
+	case 'r':
+	    rounded_arrows = true;
 	    break;
 
-	case 'f':		/* ignore magnification, font sizes and lang here */
-	case 'm':
-	case 's':
+	case 'G':
 	case 'L':
 	    break;
 
@@ -281,7 +275,7 @@ gencgm_option(opt, optarg)
 	    /* other CGM driver options to consider are:
 	     * faithful reproduction of FIG linestyles and fill patterns
 	     * (linetyles e.g. by drawing multiple short lines), other
-	     * CGM encodings beside clear text, non-white (e.g. black) 
+	     * CGM encodings beside clear text, non-white (e.g. black)
 	     * background with corresponding change of foreground color, ... */
 
 	    put_msg(Err_badarg, opt, "cgm");
@@ -294,18 +288,14 @@ gencgm_option(opt, optarg)
  * that means: 1200 units/inch. */
 
 static void
-_pos(x, y)
-   int	x;
-   int	y;
+_pos(int x, int y)
 {
     fprintf(tfp, "(%d,%d)", x-llx, ury-y);
 }
 
 /* only reverses y if Y axis points down (relative position) */
 static void
-_relpos(x, y)
-   int	x;
-   int	y;
+_relpos(int x, int y)
 {
     fprintf(tfp, "(%d,%d)", x, -y);
 }
@@ -318,14 +308,13 @@ point(p)
 }
 
 static void
-pos(p)
-    F_pos	*p;
+pos(F_pos *p)
 {
   _pos(p->x, p->y);
 }
 
 /* piece of code to avoid unnecessary attribute changes */
-#define chkcache(val, cachedval) 	\
+#define chkcache(val, cachedval)	\
   if (val == cachedval)			\
     return;				\
   else					\
@@ -336,8 +325,7 @@ pos(p)
  * dotted FIG line style is reproduced as a solid line. */
 
 static int
-conv_linetype(type)
-   int	type;
+conv_linetype(int type)
 {
   if (type < 0)
      type = -1;
@@ -347,10 +335,9 @@ conv_linetype(type)
 }
 
 static void
-linetype(type)
-    int	type;
+linetype(int type)
 {
-  static int oldtype = UNDEFVALUE;  
+  static int oldtype = UNDEFVALUE;
 
   chkcache(type, oldtype);
   type = conv_linetype(type);
@@ -358,10 +345,9 @@ linetype(type)
 }
 
 static void
-edgetype(type)
-    int	type;
+edgetype(int type)
 {
-  static int oldtype = UNDEFVALUE;  
+  static int oldtype = UNDEFVALUE;
 
   chkcache(type, oldtype);
   type = conv_linetype(type);
@@ -369,8 +355,7 @@ edgetype(type)
 }
 
 static void
-linewidth(width)
-    int	width;
+linewidth(int width)
 {
   static int oldwidth = UNDEFVALUE;
 
@@ -379,8 +364,7 @@ linewidth(width)
 }
 
 static void
-edgewidth(width)
-    int	width;
+edgewidth(int width)
 {
   static int oldwidth = UNDEFVALUE;
 
@@ -391,10 +375,10 @@ edgewidth(width)
 /* Converts FIG color index to CGM color index into the color table
  * defined in the pre-amble (see gencgm_start(). */
 
-static int conv_color(color)
-    int color;
+static int
+conv_color(int color)
 {
-  if (color < 0)			/* default color = black */ 
+  if (color < 0)			/* default color = black */
     color = 0;	
   else if (color == FILL_COLOR_INDEX)	/* special index used for solid */
     color = NUM_STD_COLS + num_usr_cols;  /* fill color, see fillshade() */
@@ -403,8 +387,7 @@ static int conv_color(color)
 }
 
 static void
-linecolr(color)
-    int color;
+linecolr(int color)
 {
   static int oldcolor = UNDEFVALUE;
 
@@ -414,8 +397,7 @@ linecolr(color)
 }
 
 static void
-edgecolr(color)
-    int color;
+edgecolr(int color)
 {
   static int oldcolor = UNDEFVALUE;
 
@@ -425,8 +407,7 @@ edgecolr(color)
 }
 
 static void
-edgevis(onoff)
-    int onoff;
+edgevis(int onoff)
 {
   static int old = UNDEFVALUE;
 
@@ -435,10 +416,7 @@ edgevis(onoff)
 }
 
 static void
-lineattr(type, width, color)
-    int type;
-    int width;
-    int color;
+lineattr(int type, int width, int color)
 {
     linetype(type);
     linewidth(width);
@@ -446,11 +424,7 @@ lineattr(type, width, color)
 }
 
 static void
-edgeattr(vis, type, width, color)
-   int vis;
-   int type;
-   int width;
-   int color;
+edgeattr(int vis, int type, int width, int color)
 {
     edgevis(vis);
     edgetype(type);
@@ -463,8 +437,7 @@ edgeattr(vis, type, width, color)
 typedef enum {SOLID, HOLLOW, HATCH, EMPTY, UNDEF} INTSTYLE;
 
 static void
-intstyle(style)
-    INTSTYLE style;
+intstyle(INTSTYLE style)
 {
   static INTSTYLE oldstyle = UNDEF;
 
@@ -472,7 +445,7 @@ intstyle(style)
 
   switch (style) {
   case HOLLOW:
-    fprintf(tfp, "intstyle HOLLOW;\n"); 
+    fprintf(tfp, "intstyle HOLLOW;\n");
     break;
   case SOLID:
     fprintf(tfp, "intstyle SOLID;\n");
@@ -493,8 +466,7 @@ static int oldfillcolor = UNDEFVALUE;
 /* updates unconditionally */
 
 static void
-_fillcolr(color)
-    int color;
+_fillcolr(int color)
 {
   oldfillcolor = color;
   color = conv_color(color);
@@ -504,14 +476,13 @@ _fillcolr(color)
 /* set fill color if standard or user defined color */
 
 static void
-fillcolr(color)
-    int color;
+fillcolr(int color)
 {
   chkcache(color, oldfillcolor);
   _fillcolr(color);
 }
 
-/* used to set solid fill color if something else than standard or user defined 
+/* used to set solid fill color if something else than standard or user defined
  * color, see fillshade(). */
 
 static void fillcolrgb(int r, int g, int b)
@@ -550,11 +521,7 @@ hatchindex(index)
 /* Looks up RGB color values for color with given index. */
 
 static void
-getrgb(color, r, g, b)
-    int color;
-    int *r;
-    int *g;
-    int *b;
+getrgb(int color, int *r, int *g, int *b)
 {
   if (color < NUM_STD_COLS) {
     *r = stdcols[color].r * 255.;
@@ -580,8 +547,7 @@ getrgb(color, r, g, b)
 /* Computes and sets fill color for solid filled shapes (fill style 0 to 40). */
 
 static void
-fillshade(l)
-    F_line *l;
+fillshade(F_line *l)
 {
   int shade, r, g, b;
   float f;
@@ -615,14 +581,12 @@ fillshade(l)
   }
 }
 
-/* Draws interior and outline of a simple closed shape. Cannot be 
+/* Draws interior and outline of a simple closed shape. Cannot be
  * used for polylines and arcs (open shapes) or for arcboxes
  * (closed but not a simple CGM primitive). */
 
 static void
-shape(l, drawshape)
-    F_line *l;
-    void (*drawshape)(F_line *);
+shape(F_line *l, void (*drawshape)(F_line *))
 {
   int style = l->fill_style;
 
@@ -634,10 +598,10 @@ shape(l, drawshape)
   }
 
   intstyle(SOLID);
-  if (style >= 0 && style <= 40) { 	/* solid filled shape */
+  if (style >= 0 && style <= 40) {	/* solid filled shape */
     fillshade(l);
     edgeattr(1, l->style, l->thickness, l->pen_color);
-  } else {		   		/* pattern filled shape: draw a */
+  } else {				/* pattern filled shape: draw a */
     fillcolr(l->fill_color);		/* first time for correct pattern */
     edgevis(0);				/* background color. */
   }
@@ -657,9 +621,7 @@ shape(l, drawshape)
  * polylines, arcboxes and arcs. */
 
 static void
-shape_interior(l, drawshape)
-    F_line *l;
-    void (*drawshape)(F_line *);
+shape_interior(F_line *l, void (*drawshape)(F_line *))
 {
   int style = l->fill_style;
   if (style < 0)
@@ -668,7 +630,7 @@ shape_interior(l, drawshape)
   edgevis(0);				/* don't draw edges */
 
   intstyle(SOLID);
-  if (style >= 0 && style <= 40)  	/* solid filled shape */
+  if (style >= 0 && style <= 40)	/* solid filled shape */
     fillshade(l);
   else					/* fill pattern background */
     fillcolr(l->fill_color);
@@ -759,8 +721,7 @@ cgm_arrow(P, a, l, dir)
  * an end where an arrow needs to be drawn. */
 
 static double
-arrow_length(a)
-    F_arrow *a;
+arrow_length(F_arrow *a)
 {
   double len;
 
@@ -787,7 +748,7 @@ arrow_length(a)
 }
 
 /* Computes distance and normalized direction vector from q to p.
- * Returns True if the points do not coincide and False if they do. */
+ * Returns true if the points do not coincide and false if they do. */
 
 static int
 direction(p, q, dir, dist)
@@ -800,14 +761,14 @@ direction(p, q, dir, dist)
   dir->y = p->y - q->y;
   *dist = sqrt((dir->x) * (dir->x) + (dir->y) * (dir->y));
   if (*dist < EPSILON)
-    return False;
+    return false;
   dir->x /= *dist;
   dir->y /= *dist;
-  return True;
+  return true;
 }
 
 /* Replaces P by the starting point of the arrow pointing from q to P.
- * Returns True if the arrow is shorter than the line segment [qP]. In
+ * Returns true if the arrow is shorter than the line segment [qP]. In
  * this case, we shorten the polyline in order to achieve a better fit with
  * the arrow. If the arrow is longer than the line segment, shortening
  * the segment wont help, and the polyline needs to be erased under the
@@ -829,12 +790,11 @@ polyline_arrow_adjust(P, q, a)
     return (L < D);
   }
   fprintf(stderr, "Warning: arrow at zero-length line segment omitted.\n");
-  return True;
+  return true;
 }
 
 static void
-_line(x1, y1, x2, y2)
-    int x1, y1, x2, y2;
+_line(int x1, int y1, int x2, int y2)
 {
   fprintf(tfp, "line "); _pos(x1, y1); fprintf(tfp, " "); _pos(x2, y2); fprintf(tfp, ";\n");
 }
@@ -850,11 +810,10 @@ line(p, q)
 /* draws polyline boundary (with arrows if needed) */
 
 static void
-polyline(l)
-    F_line *l;
+polyline(F_line *l)
 {
   F_point *p, *q, P0, Pn;
-  int count, erase_head=False, erase_tail=False;
+  int count, erase_head=false, erase_tail=false;
   Dir dir;
   double d;
 
@@ -869,7 +828,7 @@ polyline(l)
   fprintf(tfp, "line");
   for (q=p=l->points, count=0; p; q=p, p=p->next) {
     if (count!=0 && count%5 == 0)
-      fprintf(tfp, "\n    ");
+      fprintf(tfp, "\n	  ");
     fprintf(tfp, " ");
 
     if (count == 0 && l->back_arrow) {		/* first point with arrow */
@@ -923,8 +882,7 @@ polyline(l)
 }
 
 static void
-rect(l)
-    F_line *l;
+rect(F_line *l)
 {
   if (!l->points || !l->points->next || !l->points->next->next) {
     fprintf(stderr, "Warning: Invalid FIG box omitted.\n");
@@ -937,8 +895,7 @@ rect(l)
 }
 
 static void
-polygon(l)
-    F_line *l;
+polygon(F_line *l)
 {
   F_point *p;
   int count;
@@ -946,7 +903,7 @@ polygon(l)
   fprintf(tfp, "polygon");
   for (p=l->points, count=0; p; p=p->next) {
     if (count!=0 && count%5 == 0)
-      fprintf(tfp, "\n    ");
+      fprintf(tfp, "\n	  ");
     fprintf(tfp, " "); point(p);
     count++;
   }
@@ -954,9 +911,7 @@ polygon(l)
 }
 
 static void
-arcboxsetup(l, llx, lly, urx, ury, r)
-    F_line *l;
-    int *llx, *lly, *urx, *ury, *r;
+arcboxsetup(F_line *l, int *llx, int *lly, int *urx, int *ury, int *r)
 {
   *llx = l->points->x;
   *lly = l->points->y;
@@ -968,8 +923,7 @@ arcboxsetup(l, llx, lly, urx, ury, r)
 }
 
 static void
-_arcctr(cx, cy, x1, y1, x2, y2, r)
-    int cx, cy, x1, y1, x2, y2, r;
+_arcctr(int cx, int cy, int x1, int y1, int x2, int y2, int r)
 {
   fprintf(tfp, "arcctr ");
   _pos(cx, cy);
@@ -981,8 +935,7 @@ _arcctr(cx, cy, x1, y1, x2, y2, r)
 }
 
 static void
-arcboxoutline(l)
-    F_line *l;
+arcboxoutline(F_line *l)
 {
   int llx, lly, urx, ury, r;
   arcboxsetup(l, &llx, &lly, &urx, &ury, &r);
@@ -999,8 +952,7 @@ arcboxoutline(l)
 }
 
 static void
-_circle(cx, cy, r)
-    int cx, cy, r;
+_circle(int cx, int cy, int r)
 {
   fprintf(tfp, "circle ");
   _pos(cx, cy);
@@ -1008,8 +960,7 @@ _circle(cx, cy, r)
 }
 
 static void
-arcboxinterior(l)
-    F_line *l;
+arcboxinterior(F_line *l)
 {
   int llx, lly, urx, ury, r;
   arcboxsetup(l, &llx, &lly, &urx, &ury, &r);
@@ -1018,11 +969,11 @@ arcboxinterior(l)
   _pos(llx  , lly+r); fprintf(tfp, " ");
   _pos(llx  , ury-r); fprintf(tfp, " ");
   _pos(llx+r, ury-r); fprintf(tfp, " ");
-  _pos(llx+r, ury  ); fprintf(tfp, "\n    ");
+  _pos(llx+r, ury  ); fprintf(tfp, "\n	  ");
   _pos(urx-r, ury  ); fprintf(tfp, " ");
   _pos(urx-r, ury-r); fprintf(tfp, " ");
   _pos(urx  , ury-r); fprintf(tfp, " ");
-  _pos(urx  , lly+r); fprintf(tfp, "\n    ");
+  _pos(urx  , lly+r); fprintf(tfp, "\n	  ");
   _pos(urx-r, lly+r); fprintf(tfp, " ");
   _pos(urx-r, lly  ); fprintf(tfp, " ");
   _pos(llx+r, lly  ); fprintf(tfp, " ");
@@ -1035,8 +986,7 @@ arcboxinterior(l)
 }
 
 static void
-picbox(l)
-    F_line *l;
+picbox(F_line *l)
 {
   static int wgiv = 0;
   if (!wgiv) {
@@ -1047,8 +997,7 @@ picbox(l)
 }
 
 void
-gencgm_line(l)
-    F_line *l;
+gencgm_line(F_line *l)
 {
   /* print any comments prefixed with "%" */
   print_comments("% ",l->comments, " %");
@@ -1085,8 +1034,7 @@ gencgm_line(l)
 }
 
 void
-gencgm_spline(s)
-    F_spline *s;
+gencgm_spline(F_spline *s)
 {
   static int wgiv = 0;
   if (!wgiv) {
@@ -1099,8 +1047,7 @@ or higher and saving again.\n");
 }
 
 static void
-circle(e)
-    F_ellipse *e;
+circle(F_ellipse *e)
 {
   _circle(e->center.x, e->center.y, e->radiuses.x);
 }
@@ -1108,18 +1055,15 @@ circle(e)
 /* rotates counter clockwise around origin */
 
 static void
-rotate(x, y, angle)
-    double *x, *y, angle;
+rotate(double *x, double *y, double angle)
 {
   double s = sin(angle), c = cos(angle), xt = *x, yt = *y;
-  *x =  c * xt + s * yt;
+  *x =	c * xt + s * yt;
   *y = -s * xt + c * yt;
 }
 
 static void
-ellipsetup(e, x1, y1, x2, y2)
-    F_ellipse *e;
-    double *x1, *y1, *x2, *y2;
+ellipsetup(F_ellipse *e, double *x1, double *y1, double *x2, double *y2)
 {
   double r1 = e->radiuses.x, r2 = e->radiuses.y;
   *x1 = r1; *y1 = 0 ;
@@ -1133,8 +1077,7 @@ ellipsetup(e, x1, y1, x2, y2)
 }
 
 static void
-_ellipse(cx, cy, x1, y1, x2, y2)
-    int cx, cy, x1, y1, x2, y2;
+_ellipse(int cx, int cy, int x1, int y1, int x2, int y2)
 {
   fprintf(tfp, "ellipse ");
   _pos(cx, cy); fprintf(tfp, " ");
@@ -1143,8 +1086,7 @@ _ellipse(cx, cy, x1, y1, x2, y2)
 }
 
 static void
-ellipse(e)
-    F_ellipse *e;
+ellipse(F_ellipse *e)
 {
   double x1, y1, x2, y2;
   ellipsetup(e, &x1, &y1, &x2, &y2);
@@ -1152,8 +1094,7 @@ ellipse(e)
 }
 
 void
-gencgm_ellipse(e)
-    F_ellipse *e;
+gencgm_ellipse(F_ellipse *e)
 {
   /* print any comments prefixed with "%" */
   print_comments("% ",e->comments, " %");
@@ -1174,9 +1115,8 @@ gencgm_ellipse(e)
   }
 }
 
-static char
-*arctype(type)
-    int type;
+static char *
+arctype(int type)
 {
   switch (type) {
   case T_OPEN_ARC:
@@ -1190,8 +1130,7 @@ static char
 }
 
 static void
-arcinterior(a)
-    F_arc *a;
+arcinterior(F_arc *a)
 {
   fprintf(tfp, "arc3ptclose ");
   pos(&a->point[0]); fprintf(tfp, " ");
@@ -1201,15 +1140,15 @@ arcinterior(a)
 
 /* integer cross product */
 
-static int icprod(x1, y1, x2, y2)
-    int x1, y1, x2, y2;
+static int
+icprod(int x1, int y1, int x2, int y2)
 {
   return x1 * y2 - y1 * x2;
 }
 
-/* Returns True if the arc is a clockwise arc. */
-static int cwarc(a)
-    F_arc *a;
+/* Returns true if the arc is a clockwise arc. */
+static int
+cwarc(F_arc *a)
 {
   int x1 = a->point[1].x - a->point[0].x,
       y1 = a->point[1].y - a->point[0].y,
@@ -1222,8 +1161,7 @@ static int cwarc(a)
 /* reverses arc direction by swapping endpoints and arrows */
 
 static void
-arc_reverse(arc)
-    F_arc *arc;
+arc_reverse(F_arc *arc)
 {
   F_arrow *arw;
   F_pos pp;
@@ -1232,16 +1170,14 @@ arc_reverse(arc)
 }
 
 static double
-distance(x1, y1, x2, y2)
-    double x1, y1, x2, y2;
+distance(double x1, double y1, double x2, double y2)
 {
   double dx = x2-x1, dy=y2-y1;
   return sqrt(dx*dx + dy*dy);
 }
 
 static double
-arc_radius(a)
-    F_arc *a;
+arc_radius(F_arc *a)
 {
   return (distance((double)a->point[0].x, (double)a->point[0].y, a->center.x, a->center.y) +
 	  distance((double)a->point[1].x, (double)a->point[1].y, a->center.x, a->center.y) +
@@ -1259,13 +1195,12 @@ pos2point(P, p)
 }
 
 static void
-translate(x, y, tx, ty)
-    double *x, *y, tx, ty;
+translate(double *x, double *y, double tx, double ty)
 {
   *x += tx; *y += ty;
 }
 
-/* rotates the point P counter clockwise along the arc with center c and 
+/* rotates the point P counter clockwise along the arc with center c and
  * radius R. */
 
 static void
@@ -1338,8 +1273,7 @@ arc_arrow(p, q, arw, arc)
 }
 
 static void
-arcwitharrows(a)
-    F_arc *a;
+arcwitharrows(F_arc *a)
 {
   F_point P0, P1, P2;
   double R = arc_radius(a);
@@ -1363,8 +1297,7 @@ arcwitharrows(a)
 }
 
 static void
-arcoutline(a)
-    F_arc *a;
+arcoutline(F_arc *a)
 {
   if ((a->type == T_OPEN_ARC) && (a->thickness != 0) && (a->back_arrow || a->for_arrow)) {
     arcwitharrows(a);
@@ -1391,8 +1324,7 @@ arcoutline(a)
 }
 
 void
-gencgm_arc(_a)
-    F_arc *_a;
+gencgm_arc(F_arc *_a)
 {
     F_arc a = *_a;
 
@@ -1400,7 +1332,7 @@ gencgm_arc(_a)
     print_comments("% ",a.comments, " %");
 
     fprintf(tfp,"%% Arc %%\n");
-    if (cwarc(&a)) 
+    if (cwarc(&a))
 	arc_reverse(&a);	/* make counter clockwise arc */
 
     shape_interior((F_line *)&a, (void (*)(F_line *))arcinterior);
@@ -1411,8 +1343,7 @@ gencgm_arc(_a)
 }
 
 static void
-texttype(type)
-    int type;
+texttype(int type)
 {
   static int oldtype = UNDEFVALUE;
   chkcache(type, oldtype);
@@ -1434,9 +1365,8 @@ texttype(type)
 /* Converts FIG font index to CGM font index into font table in the pre-amble
  * (see gencgm_start()) taking into account the flags. */
 
-static int conv_fontindex(font, flags)
-    int font;
-    int flags;
+static int
+conv_fontindex(int font, int flags)
 {
   if (flags&4) {		/* postscript fonts */
     if (font < 0) font = 0;
@@ -1459,9 +1389,7 @@ static int conv_fontindex(font, flags)
 }
 
 static void
-textfont(font, flags)
-    int font;
-    int flags;
+textfont(int font, int flags)
 {
   static int oldfont = UNDEFVALUE;
   font = conv_fontindex(font, flags);	/* first convert it ... */
@@ -1470,8 +1398,7 @@ textfont(font, flags)
 }
 
 static void
-textcolr(color)
-    int color;
+textcolr(int color)
 {
   static int oldcolor = UNDEFVALUE;
   chkcache(color, oldcolor);
@@ -1480,8 +1407,7 @@ textcolr(color)
 }
 
 static void
-textsize(size)
-    double size;
+textsize(double size)
 {
   static double oldsize = UNDEFVALUE;
   chkcache(size, oldsize);
@@ -1490,8 +1416,7 @@ textsize(size)
 }
 
 static void
-textangle(angle)
-    double angle;
+textangle(double angle)
 {
   int c, s;
   static double oldangle = UNDEFVALUE;
@@ -1501,9 +1426,7 @@ textangle(angle)
 }
 
 static void
-cgm_text(x, y, text)
-    int x, y;
-    char *text;
+cgm_text(int x, int y, char *text)
 {
   fprintf(tfp, "text ");
   _pos(x, y);
@@ -1519,8 +1442,7 @@ cgm_text(x, y, text)
 }
 
 void
-gencgm_text(t)
-    F_text *t;
+gencgm_text(F_text *t)
 {
   /* print any comments prefixed with "%" */
   print_comments("% ",t->comments, " %");
@@ -1535,9 +1457,9 @@ gencgm_text(t)
 }
 
 struct driver dev_cgm = {
-     	gencgm_option,
+	gencgm_option,
 	gencgm_start,
-	gendev_null,
+	gendev_nogrid,
 	gencgm_arc,
 	gencgm_ellipse,
 	gencgm_line,

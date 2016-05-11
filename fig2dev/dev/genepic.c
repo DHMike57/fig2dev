@@ -10,8 +10,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -22,7 +22,7 @@
  * Converted from fig2epic 5/89 by Micah Beck
  */
 /*==================================================================*/
-/*	fig2epic (Fig to EPIC converter) 			    */
+/*	fig2epic (Fig to EPIC converter)			    */
 /*	     Version 1.1d <March 30, 1988>			    */
 /*								    */
 /*	Written by Conrad Kwok, Division of Computer Science, UCD   */
@@ -49,7 +49,7 @@
   Version 3.1.2: <Aug 17, 1995>
   Changes from Andre Eickler (eickler@db.fmi.uni-passau.de)
   1. Line thicknesses did not get scaled correctly. This was especially a
-	problem with dotted lines. 
+	problem with dotted lines.
   2. Dashlines in Eepic do not work as documented. I included an option "-t"
 	to set the stretch of the dashlines. By default, it is set to a
 	reasonable value (30, before it defaulted to 0, which made dashlines
@@ -90,21 +90,24 @@
 
 ====================================================================*/
 
-  
+
 #include "fig2dev.h"
 #include "object.h"
 #include "setfigfont.h"
 #include "texfonts.h"
+#include "localmath.h"
 
 extern float	THICK_SCALE;	/* ratio of dpi/80 */
-extern Boolean	FontSizeOnly;	/* defined in setfigfont.c */
+extern bool	FontSizeOnly;	/* defined in setfigfont.c */
+extern char	*ISO1toTeX[];	/* iso2tex.c */
+extern char	*ISO2toTeX[];	/* iso2tex.c */
 
 #define DrawOutLine
 #ifdef DrawOutLine
 int OutLine=0;
 #endif
 
-#define TopCoord 840		/* 10.5 in * 80 (DPI)            */
+#define TopCoord 840		/* 10.5 in * 80 (DPI)		 */
 				/* Actually, it can be any value */
 #define PtPerLine 3
 #define ThinLines 0
@@ -120,22 +123,6 @@ int OutLine=0;
 #define Economic 1
 #define DottedDash 2
 
-static void genepic_ctl_spline(); 
-static void genepic_open_spline();
-static void genepic_closed_spline(); 
-static void quadratic_spline();
-static void bezier_spline();
-static void arc_arrow();
-static void draw_arrow_head();
-static void set_style();
-static void genepic_itp_spline();
-static void quadratic_spline();
-static void chaikin_curve();
-static void rtop();
-static void drawarc();
-static void fdraw_arrow_head();
-static char *FillCommands();
-
 /* Structure for Point with "double" values */
 struct fp_struct {
     double x,y;
@@ -143,17 +130,38 @@ struct fp_struct {
 
 typedef struct fp_struct FPoint;
 
+static void genepic_ctl_spline(F_spline *spl);
+static void genepic_open_spline(F_spline *spl);
+static void genepic_closed_spline(F_spline *spl);
+static void quadratic_spline(double a1, double b1, double a2, double b2, double
+		a3, double b3, double a4, double b4);
+static void bezier_spline(double a0, double b0, double a1, double b1, double
+		a2, double b2, double a3, double b3);
+static void arc_arrow(FPoint *pt1, FPoint *pt2, int direction, F_arrow *arrow,
+		FPoint *pt3);
+static void draw_arrow_head(F_point *pt1, F_point *pt2, double arrowht,
+		double arrowwid, int type, int style, double thickness);
+static void set_style(int style, double dash_len);
+static void genepic_itp_spline(F_spline *spl);
+static void chaikin_curve(double a1, double b1, double a2, double b2, double
+		a3, double b3);
+static void rtop(double x, double y, double *r, double *th);
+static void drawarc(FPoint *ctr, double r, double th1, double angle);
+static void fdraw_arrow_head(FPoint *pt1, FPoint *pt2, double arrowht, double
+		arrowwid, int type, int style, double thickness);
+static char *FillCommands(int style, int color);
+
 /* Local to the file only */
 static int	encoding;
 static double	Threshold;
-static Boolean	linew_spec = False;
+static bool	linew_spec = false;
 static int	CurWidth = 0;
 static int	LineStyle = SOLID_LINE;
 static int	LLX = 0, LLY = 0;
 static char	*LnCmd;
 static int	MaxCircleRadius;
 static double	DashLen;
-static int	PageMode = False;
+static int	PageMode = false;
 static int	PatternType=UNFILLED;
 static int	PatternColor=WHITE_COLOR;
 static struct {
@@ -182,7 +190,6 @@ char *EllCmdstr[] = {
 
 /* Shading that is used instead of hatchings */
 #define DEFAULT_SHADING 8
-char *FillCommands();
 
 #define TEXT_LINE_SEP '\n'
 /* The following two arrays are used to translate characters which
@@ -209,7 +216,7 @@ char *latex_text_mappings[] = {
 /* Configurable parameters */
 int	LowerLeftX=0, LowerLeftY=0;
 double	SegLen = 0.0625; /* inch */
-int	Verbose = False;
+int	Verbose = false;
 int	TopMargin = 5;
 int	BottomMargin = 10;
 int	DotDist = 5;
@@ -221,25 +228,23 @@ int	UseBox=BoxTypeNone;
 int	DashType=Normal;
 char	*Preamble="\\documentstyle[epic,eepic]{article}\n\\pagestyle{empty}\\begin{document}\n\\begin{center}\n";
 char	*Postamble="\\end{center}\n\\end{document}\n";
-int	VarWidth=False;
+int	VarWidth=false;
 int	DashStretch=30;
 double	ArrowScale=1.0;
 int	AllowRotatedText = 0;
 
 
 void
-genepic_option(opt, optarg)
-char opt, *optarg;
+genepic_option(char opt, char *optarg)
 {
-  	int loop, i;
+	int loop, i;
 
-        linew_spec = False;
-	FontSizeOnly = False;
+	linew_spec = false;
+	FontSizeOnly = false;
 
-        switch (opt) {
+	switch (opt) {
 
-	  case 's':
-	  case 'm':
+	  case 'G':	/* processed in fig2dev.c */
 	    break;
 
 	  case 'A':
@@ -272,14 +277,14 @@ char opt, *optarg;
 	    }
 	    break;
 
-          case 'l':
-	    linew_spec = True;
-            LineThick = atoi(optarg);	/* save user's argument here */
-            break;
+	  case 'l':
+	    linew_spec = true;
+	    LineThick = atoi(optarg);	/* save user's argument here */
+	    break;
 
 	  case 'L':
 	    for (loop=0; loop < 3; loop++) {
-	    	if (strcasecmp(optarg, Tlangkw[loop]) == 0) break;
+		if (strcasecmp(optarg, Tlangkw[loop]) == 0) break;
 	    }
 	    TeXLang = loop;
 	    break;
@@ -288,20 +293,20 @@ char opt, *optarg;
 	    PageMode = 1;
 	    break;
 
-          case 'S':
-            loop = atoi(optarg);
-            if (loop < 8 || loop > 12) {
-            	put_msg("Scale must be between 8 and 12 inclusively\n");
-            	exit(1);
-            }
-            loop -= 8;
-            mag = ScaleTbl[loop].mag;
-            font_size = (double) ScaleTbl[loop].size;
-            break;
+	  case 'S':
+	    loop = atoi(optarg);
+	    if (loop < 8 || loop > 12) {
+		put_msg("Scale must be between 8 and 12 inclusively\n");
+		exit(1);
+	    }
+	    loop -= 8;
+	    mag = ScaleTbl[loop].mag;
+	    font_size = (double) ScaleTbl[loop].size;
+	    break;
 
-          case 'v':
-            Verbose = True;
-            break;
+	  case 'v':
+	    Verbose = true;
+	    break;
 
 	  case 'W':
 	  case 'w':
@@ -315,7 +320,7 @@ char opt, *optarg;
 	    break;
 
 	  case 'F':
-	    FontSizeOnly = True;
+	    FontSizeOnly = true;
 	    break;
 
 	  case 'R':
@@ -325,12 +330,11 @@ char opt, *optarg;
 	  default:
 	    put_msg(Err_badarg, opt, "epic");
 	    exit(1);
-        }
+	}
 }
 
 static void
-fconvertCS(fpt)
-FPoint *fpt;
+fconvertCS(FPoint *fpt)
 {
     fpt->y = TopCoord - fpt->y;
     fpt->x -= LLX;
@@ -338,8 +342,7 @@ FPoint *fpt;
 }
 
 static void
-convertCS(pt)
-F_point *pt;
+convertCS(F_point *pt)
 {
     pt->y = TopCoord - pt->y;
     pt->x -= LLX;
@@ -347,8 +350,7 @@ F_point *pt;
 }
 
 void
-genepic_start(objects)
-F_compound *objects;
+genepic_start(F_compound *objects)
 {
     int temp;
     F_point pt1, pt2;
@@ -365,19 +367,19 @@ F_compound *objects;
 
     switch (TeXLang) {
       case Epic:
-        EllipseCmd = 1; /* Oval */
-        LnCmd = "drawline";
-        break;
+	EllipseCmd = 1; /* Oval */
+	LnCmd = "drawline";
+	break;
       case EEpic_emu:
       case EEpic:
-        LnCmd = "path";
-        break;
+	LnCmd = "path";
+	break;
       default:
-        put_msg("Program error in main\n");
-        break;
+	put_msg("Program error in main\n");
+	break;
     }
     if (PageMode) {
-        fputs(Preamble, stdout);
+	fputs(Preamble, stdout);
     }
 
     if (linew_spec)
@@ -392,19 +394,19 @@ F_compound *objects;
     convertCS(&pt1);
     convertCS(&pt2);
     if (pt1.x > pt2.x) {
-        temp = pt1.x;
-        pt1.x = pt2.x;
-        pt2.x = temp;
+	temp = pt1.x;
+	pt1.x = pt2.x;
+	pt2.x = temp;
     }
     if (pt1.y > pt2.y) {
-        temp = pt1.y;
-        pt1.y = pt2.y;
-        pt2.y = temp;
+	temp = pt1.y;
+	pt1.y = pt2.y;
+	pt2.y = temp;
     }
     LLX = pt1.x - LowerLeftX;
     LLY = pt1.y - LowerLeftY;
     if (Verbose) {
-        fprintf(tfp, "%%\n%% Language in use is %s\n%%\n", Tlangkw[TeXLang]);
+	fprintf(tfp, "%%\n%% Language in use is %s\n%%\n", Tlangkw[TeXLang]);
     }
     Threshold = 1.0 / ppi * mag;
     fprintf(tfp, "\\setlength{\\unitlength}{%.8fin}\n", Threshold);
@@ -414,26 +416,25 @@ F_compound *objects;
     if (DashStretch)
       fprintf(tfp, "{\\renewcommand{\\dashlinestretch}{%d}\n", DashStretch);
     fprintf(tfp, "\\begin{picture}(%d,%d)(%d,%d)\n",
-           pt2.x-pt1.x, pt2.y-pt1.y + TopMargin + BottomMargin,
-           LowerLeftX, LowerLeftY-BottomMargin);
+	   pt2.x-pt1.x, pt2.y-pt1.y + TopMargin + BottomMargin,
+	   LowerLeftX, LowerLeftY-BottomMargin);
 }
 
 int
-genepic_end()
+genepic_end(void)
 {
     fprintf(tfp, "\\end{picture}\n");
     if (DashStretch)
       fprintf(tfp, "}\n");
     if (PageMode)
-        fputs(Postamble, stdout);
+	fputs(Postamble, stdout);
 
     /* all ok */
     return 0;
 }
 
 static void
-set_linewidth(w)
-int w;
+set_linewidth(int w)
 {
     int old_width;
 
@@ -452,207 +453,206 @@ int w;
 }
 
 static void
-set_pattern(type, color)
-int type, color;
+set_pattern(int type, int color)
 {
     static unsigned long patterns[][32] = {
 
       /* shading data */
       {
-	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
-	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
-	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
-	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
-	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
-	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
-	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
-	0x00000000, 0x00000000, 0x00000000, 0x00000000, 
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
       }, {
-	0x00000000, 0x00000000, 0x00000000, 0x00888888, 
-	0x88000000, 0x00000000, 0x00000000, 0x00080808, 
-	0x08000000, 0x00000000, 0x00000000, 0x00888888, 
-	0x88000000, 0x00000000, 0x00000000, 0x00080808, 
-	0x08000000, 0x00000000, 0x00000000, 0x00888888, 
-	0x88000000, 0x00000000, 0x00000000, 0x00080808, 
-	0x08000000, 0x00000000, 0x00000000, 0x00888888, 
-	0x88000000, 0x00000000, 0x00000000, 0x00080808, 
+	0x00000000, 0x00000000, 0x00000000, 0x00888888,
+	0x88000000, 0x00000000, 0x00000000, 0x00080808,
+	0x08000000, 0x00000000, 0x00000000, 0x00888888,
+	0x88000000, 0x00000000, 0x00000000, 0x00080808,
+	0x08000000, 0x00000000, 0x00000000, 0x00888888,
+	0x88000000, 0x00000000, 0x00000000, 0x00080808,
+	0x08000000, 0x00000000, 0x00000000, 0x00888888,
+	0x88000000, 0x00000000, 0x00000000, 0x00080808,
       }, {
-	0x08101010, 0x10000000, 0x00444444, 0x44000000, 
-	0x00011101, 0x11000000, 0x00444444, 0x44000000, 
-	0x00101010, 0x10000000, 0x00444444, 0x44000000, 
-	0x00010101, 0x01000000, 0x00444444, 0x44000000, 
-	0x00101010, 0x10000000, 0x00444444, 0x44000000, 
-	0x00011101, 0x11000000, 0x00444444, 0x44000000, 
-	0x00101010, 0x10000000, 0x00444444, 0x44000000, 
-	0x00010101, 0x01000000, 0x00444444, 0x44000000, 
+	0x08101010, 0x10000000, 0x00444444, 0x44000000,
+	0x00011101, 0x11000000, 0x00444444, 0x44000000,
+	0x00101010, 0x10000000, 0x00444444, 0x44000000,
+	0x00010101, 0x01000000, 0x00444444, 0x44000000,
+	0x00101010, 0x10000000, 0x00444444, 0x44000000,
+	0x00011101, 0x11000000, 0x00444444, 0x44000000,
+	0x00101010, 0x10000000, 0x00444444, 0x44000000,
+	0x00010101, 0x01000000, 0x00444444, 0x44000000,
       }, {
-	0x00000000, 0x00115111, 0x51000000, 0x00444444, 
-	0x44000000, 0x00151515, 0x15000000, 0x00444444, 
-	0x44000000, 0x00511151, 0x11000000, 0x00444444, 
-	0x44000000, 0x00151515, 0x15000000, 0x00444444, 
-	0x44000000, 0x00115111, 0x51000000, 0x00444444, 
-	0x44000000, 0x00151515, 0x15000000, 0x00444444, 
-	0x44000000, 0x00511151, 0x11000000, 0x00444444, 
-	0x44000000, 0x00151515, 0x15000000, 0x00444444, 
+	0x00000000, 0x00115111, 0x51000000, 0x00444444,
+	0x44000000, 0x00151515, 0x15000000, 0x00444444,
+	0x44000000, 0x00511151, 0x11000000, 0x00444444,
+	0x44000000, 0x00151515, 0x15000000, 0x00444444,
+	0x44000000, 0x00115111, 0x51000000, 0x00444444,
+	0x44000000, 0x00151515, 0x15000000, 0x00444444,
+	0x44000000, 0x00511151, 0x11000000, 0x00444444,
+	0x44000000, 0x00151515, 0x15000000, 0x00444444,
       }, {
-	0x44000000, 0x00aaaaaa, 0xaa000000, 0x008a888a, 
-	0x88000000, 0x00aaaaaa, 0xaa000000, 0x00888888, 
-	0x88000000, 0x00aaaaaa, 0xaa000000, 0x008a8a8a, 
-	0x8a000000, 0x00aaaaaa, 0xaa000000, 0x00888888, 
-	0x88000000, 0x00aaaaaa, 0xaa000000, 0x008a888a, 
-	0x88000000, 0x00aaaaaa, 0xaa000000, 0x00888888, 
-	0x88000000, 0x00aaaaaa, 0xaa000000, 0x008a8a8a, 
-	0x8a000000, 0x00aaaaaa, 0xaa000000, 0x00888888, 
+	0x44000000, 0x00aaaaaa, 0xaa000000, 0x008a888a,
+	0x88000000, 0x00aaaaaa, 0xaa000000, 0x00888888,
+	0x88000000, 0x00aaaaaa, 0xaa000000, 0x008a8a8a,
+	0x8a000000, 0x00aaaaaa, 0xaa000000, 0x00888888,
+	0x88000000, 0x00aaaaaa, 0xaa000000, 0x008a888a,
+	0x88000000, 0x00aaaaaa, 0xaa000000, 0x00888888,
+	0x88000000, 0x00aaaaaa, 0xaa000000, 0x008a8a8a,
+	0x8a000000, 0x00aaaaaa, 0xaa000000, 0x00888888,
       }, {
-	0x88555555, 0x55000000, 0x00555555, 0x55000000, 
-	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
-	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
-	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
-	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
-	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
-	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
-	0x00555555, 0x55000000, 0x00555555, 0x55000000, 
+	0x88555555, 0x55000000, 0x00555555, 0x55000000,
+	0x00555555, 0x55000000, 0x00555555, 0x55000000,
+	0x00555555, 0x55000000, 0x00555555, 0x55000000,
+	0x00555555, 0x55000000, 0x00555555, 0x55000000,
+	0x00555555, 0x55000000, 0x00555555, 0x55000000,
+	0x00555555, 0x55000000, 0x00555555, 0x55000000,
+	0x00555555, 0x55000000, 0x00555555, 0x55000000,
+	0x00555555, 0x55000000, 0x00555555, 0x55000000,
       }, {
-	0x00555555, 0x55000000, 0x00555555, 0x55888888, 
-	0x88555555, 0x55000000, 0x00555555, 0x55808080, 
-	0x80555555, 0x55000000, 0x00555555, 0x55888888, 
-	0x88555555, 0x55000000, 0x00555555, 0x55888088, 
-	0x80555555, 0x55000000, 0x00555555, 0x55888888, 
-	0x88555555, 0x55000000, 0x00555555, 0x55808080, 
-	0x80555555, 0x55000000, 0x00555555, 0x55888888, 
-	0x88555555, 0x55000000, 0x00555555, 0x55888088, 
+	0x00555555, 0x55000000, 0x00555555, 0x55888888,
+	0x88555555, 0x55000000, 0x00555555, 0x55808080,
+	0x80555555, 0x55000000, 0x00555555, 0x55888888,
+	0x88555555, 0x55000000, 0x00555555, 0x55888088,
+	0x80555555, 0x55000000, 0x00555555, 0x55888888,
+	0x88555555, 0x55000000, 0x00555555, 0x55808080,
+	0x80555555, 0x55000000, 0x00555555, 0x55888888,
+	0x88555555, 0x55000000, 0x00555555, 0x55888088,
       }, {
-	0x80222222, 0x22555555, 0x55808080, 0x80555555, 
-	0x55222222, 0x22555555, 0x55880888, 0x08555555, 
-	0x55222222, 0x22555555, 0x55808080, 0x80555555, 
-	0x55222222, 0x22555555, 0x55080808, 0x08555555, 
-	0x55222222, 0x22555555, 0x55808080, 0x80555555, 
-	0x55222222, 0x22555555, 0x55880888, 0x08555555, 
-	0x55222222, 0x22555555, 0x55808080, 0x80555555, 
-	0x55222222, 0x22555555, 0x55080808, 0x08555555, 
+	0x80222222, 0x22555555, 0x55808080, 0x80555555,
+	0x55222222, 0x22555555, 0x55880888, 0x08555555,
+	0x55222222, 0x22555555, 0x55808080, 0x80555555,
+	0x55222222, 0x22555555, 0x55080808, 0x08555555,
+	0x55222222, 0x22555555, 0x55808080, 0x80555555,
+	0x55222222, 0x22555555, 0x55880888, 0x08555555,
+	0x55222222, 0x22555555, 0x55808080, 0x80555555,
+	0x55222222, 0x22555555, 0x55080808, 0x08555555,
       }, {
-	0x55888888, 0x88555555, 0x5522a222, 0xa2555555, 
-	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555, 
-	0x55888888, 0x88555555, 0x55a222a2, 0x22555555, 
-	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555, 
-	0x55888888, 0x88555555, 0x5522a222, 0xa2555555, 
-	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555, 
-	0x55888888, 0x88555555, 0x55a222a2, 0x22555555, 
-	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555, 
+	0x55888888, 0x88555555, 0x5522a222, 0xa2555555,
+	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555,
+	0x55888888, 0x88555555, 0x55a222a2, 0x22555555,
+	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555,
+	0x55888888, 0x88555555, 0x5522a222, 0xa2555555,
+	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555,
+	0x55888888, 0x88555555, 0x55a222a2, 0x22555555,
+	0x55888888, 0x88555555, 0x552a2a2a, 0x2a555555,
       }, {
-	0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa545454, 
-	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444, 
-	0x44aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa445444, 
-	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444, 
-	0x44aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa545454, 
-	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444, 
-	0x44aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa445444, 
-	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444, 
+	0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa545454,
+	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444,
+	0x44aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa445444,
+	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444,
+	0x44aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa545454,
+	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444,
+	0x44aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa445444,
+	0x54aaaaaa, 0xaa555555, 0x55aaaaaa, 0xaa444444,
       }, {
-	0x44555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0x44555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaa555555, 0x55aaaaaa, 0xaa555555, 0x55aaaaaa,
       }, {
-	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaad5d5d5, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaaddd5dd, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaad5d5d5, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa, 
-	0xaaddd5dd, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa, 
+	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaad5d5d5, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaaddd5dd, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaad5d5d5, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaadddddd, 0xddaaaaaa, 0xaa555555, 0x55aaaaaa,
+	0xaaddd5dd, 0xd5aaaaaa, 0xaa555555, 0x55aaaaaa,
       }, {
-	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa, 
-	0xaa777777, 0x77aaaaaa, 0xaadd5ddd, 0x5daaaaaa, 
-	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa, 
-	0xaa777777, 0x77aaaaaa, 0xaa5ddd5d, 0xddaaaaaa, 
-	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa, 
-	0xaa777777, 0x77aaaaaa, 0xaadd5ddd, 0x5daaaaaa, 
-	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa, 
-	0xaa777777, 0x77aaaaaa, 0xaa5ddd5d, 0xddaaaaaa, 
+	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa,
+	0xaa777777, 0x77aaaaaa, 0xaadd5ddd, 0x5daaaaaa,
+	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa,
+	0xaa777777, 0x77aaaaaa, 0xaa5ddd5d, 0xddaaaaaa,
+	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa,
+	0xaa777777, 0x77aaaaaa, 0xaadd5ddd, 0x5daaaaaa,
+	0xaa777777, 0x77aaaaaa, 0xaad5d5d5, 0xd5aaaaaa,
+	0xaa777777, 0x77aaaaaa, 0xaa5ddd5d, 0xddaaaaaa,
       }, {
-	0xaa555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe, 
-	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55eeefee, 
-	0xef555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe, 
-	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55efefef, 
-	0xef555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe, 
-	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55eeefee, 
-	0xef555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe, 
-	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55efefef, 
+	0xaa555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe,
+	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55eeefee,
+	0xef555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe,
+	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55efefef,
+	0xef555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe,
+	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55eeefee,
+	0xef555555, 0x55bbbbbb, 0xbb555555, 0x55fefefe,
+	0xfe555555, 0x55bbbbbb, 0xbb555555, 0x55efefef,
       }, {
-	0xefffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaa777f77, 0x7faaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaa7f7f7f, 0x7faaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaa777f77, 0x7faaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaa7f7f7f, 0x7faaaaaa, 
+	0xefffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaa777f77, 0x7faaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaa7f7f7f, 0x7faaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaa777f77, 0x7faaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaa777777, 0x77aaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaa7f7f7f, 0x7faaaaaa,
       }, {
-	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
-	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa, 
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa,
+	0xaaffffff, 0xffaaaaaa, 0xaaffffff, 0xffaaaaaa,
       }, {
-	0xaa555555, 0x55ffffff, 0xffdddddd, 0xddffffff, 
-	0xff555555, 0x55ffffff, 0xff5ddd5d, 0xddffffff, 
-	0xff555555, 0x55ffffff, 0xffdddddd, 0xddffffff, 
-	0xff555555, 0x55ffffff, 0xff5d5d5d, 0x5dffffff, 
-	0xff555555, 0x55ffffff, 0xffdddddd, 0xddffffff, 
-	0xff555555, 0x55ffffff, 0xff5ddd5d, 0xddffffff, 
-	0xff555555, 0x55ffffff, 0xffdddddd, 0xddffffff, 
-	0xff555555, 0x55ffffff, 0xff5d5d5d, 0x5dffffff, 
+	0xaa555555, 0x55ffffff, 0xffdddddd, 0xddffffff,
+	0xff555555, 0x55ffffff, 0xff5ddd5d, 0xddffffff,
+	0xff555555, 0x55ffffff, 0xffdddddd, 0xddffffff,
+	0xff555555, 0x55ffffff, 0xff5d5d5d, 0x5dffffff,
+	0xff555555, 0x55ffffff, 0xffdddddd, 0xddffffff,
+	0xff555555, 0x55ffffff, 0xff5ddd5d, 0xddffffff,
+	0xff555555, 0x55ffffff, 0xffdddddd, 0xddffffff,
+	0xff555555, 0x55ffffff, 0xff5d5d5d, 0x5dffffff,
       }, {
-	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff, 
-	0xffeeeeee, 0xeeffffff, 0xffabbbab, 0xbbffffff, 
-	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff, 
-	0xffeeeeee, 0xeeffffff, 0xffbbabbb, 0xabffffff, 
-	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff, 
-	0xffeeeeee, 0xeeffffff, 0xffabbbab, 0xbbffffff, 
-	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff, 
-	0xffeeeeee, 0xeeffffff, 0xffbbabbb, 0xabffffff, 
+	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff,
+	0xffeeeeee, 0xeeffffff, 0xffabbbab, 0xbbffffff,
+	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff,
+	0xffeeeeee, 0xeeffffff, 0xffbbabbb, 0xabffffff,
+	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff,
+	0xffeeeeee, 0xeeffffff, 0xffabbbab, 0xbbffffff,
+	0xffeeeeee, 0xeeffffff, 0xffbbbaba, 0xbaffffff,
+	0xffeeeeee, 0xeeffffff, 0xffbbabbb, 0xabffffff,
       }, {
-	0xffffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb, 
-	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbbbf, 
-	0xbbffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb, 
-	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbfbf, 
-	0xbfffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb, 
-	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbbbf, 
-	0xbbffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb, 
-	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbfbf, 
+	0xffffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb,
+	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbbbf,
+	0xbbffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb,
+	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbfbf,
+	0xbfffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb,
+	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbbbf,
+	0xbbffffff, 0xffeeeeee, 0xeeffffff, 0xfffbfbfb,
+	0xfbffffff, 0xffeeeeee, 0xeeffffff, 0xffbfbfbf,
       }, {
-	0xbfffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb, 
-	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb, 
-	0xfbffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb, 
-	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb, 
-	0xfbffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb, 
-	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb, 
-	0xfbffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb, 
-	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb, 
+	0xbfffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb,
+	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb,
+	0xfbffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb,
+	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb,
+	0xfbffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb,
+	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb,
+	0xfbffffff, 0xffffffff, 0xffffffff, 0xffbbbbbb,
+	0xbbffffff, 0xffffffff, 0xffffffff, 0xfffbfbfb,
       }, {
-	0xfbffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
-	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
-	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
-	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
-	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
-	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
-	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
-	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 
+	0xfbffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
       }
     };
 
     int count, loop1, loop2, i;
 
-    if ( type <= WHITE_FILL || 
+    if ( type <= WHITE_FILL ||
 	(type >= BLACK_FILL && type < NUMSHADES + NUMTINTS) ||
 	type >= NUMSHADES + NUMTINTS + NUMPATTERNS )
       return;
@@ -663,7 +663,7 @@ int type, color;
 	if (type < NUMSHADES + NUMTINTS)
 	  if (color == BLACK_COLOR || color == DEFAULT)
 	    i = type;
-	  else 
+	  else
 	    i= NUMSHADES - type - 1;
 	else
 	  i= DEFAULT_SHADING;
@@ -671,7 +671,7 @@ int type, color;
 	fprintf(tfp, "\\texture{");
 	count=0;
 	for (loop1=4; loop1>0;) {
-	    for (loop2=8; loop2>0; loop2--) 
+	    for (loop2=8; loop2>0; loop2--)
 		fprintf(tfp, "%lx ", patterns[i][count++]);
 	    if (--loop1 > 0)
 		fprintf(tfp, "\n\t");
@@ -682,12 +682,11 @@ int type, color;
 }
 
 void
-genepic_line(line)
-F_line *line;
+genepic_line(F_line *line)
 {
     F_point *p, *q;
     int pt_count = 0, temp;
-    int boxflag = False, llx, lly, urx, ury;
+    int boxflag = false, llx, lly, urx, ury;
     int r;
     double dtemp;
 
@@ -705,9 +704,9 @@ F_line *line;
     /* first any backward arrowhead */
     if (line->back_arrow) {
 	draw_arrow_head(q, p, line->back_arrow->ht, line->back_arrow->wid,
-			line->back_arrow->type, line->back_arrow->style, 
+			line->back_arrow->type, line->back_arrow->style,
 			line->back_arrow->thickness);
-    	if (Verbose) fprintf(tfp, "%%\n");
+	if (Verbose) fprintf(tfp, "%%\n");
     }
     /* now set attributes */
     set_linewidth(line->thickness);
@@ -715,12 +714,12 @@ F_line *line;
     if (line->type == T_ARC_BOX) { /* A box with rounded corners */
 
       if (TeXLang == Epic || /* Sorry, can't do more */
-	  LineStyle != SOLID_LINE || 
-	  line->fill_style != UNFILLED) { 
+	  LineStyle != SOLID_LINE ||
+	  line->fill_style != UNFILLED) {
 	fprintf(stderr, "Arc box not implemented; substituting box.\n");
 	line->type = T_BOX;
       } else {
-	if (TeXLang == Epic && (LineStyle != SOLID_LINE || line->fill_style != UNFILLED)) { 
+	if (TeXLang == Epic && (LineStyle != SOLID_LINE || line->fill_style != UNFILLED)) {
 	    fprintf(stderr, "Arc boxes may only have solid lines and be unfilled.\n");
 	    LineStyle = SOLID_LINE;
 	    line->fill_style = UNFILLED;
@@ -764,12 +763,12 @@ F_line *line;
 	switch (LineStyle) {
 	  case SOLID_LINE:
 	    if (UseBox == BothBoxType || UseBox == SolidLineBox) {
-	        boxflag = True;
+		boxflag = true;
 	    }
 	    break;
 	  case DASH_LINE:
 	    if (UseBox == BothBoxType || UseBox == DashLineBox) {
-	        boxflag = True;
+		boxflag = true;
 	    }
 	    break;
 	}
@@ -777,33 +776,33 @@ F_line *line;
 	    llx = urx = p->x;
 	    lly = ury = p->y;
 	    while (q != NULL) {
-	        if (q->x < llx) {
-	            llx = q->x;
-	        } else if (q->x > urx) {
-	            urx = q->x;
-	        }
-	        if (q->y < lly) {
-	            lly = q->y;
-	        } else if (q->y > ury) {
-	            ury = q->y;
-	        }
-	        if ((q = q->next))
+		if (q->x < llx) {
+		    llx = q->x;
+		} else if (q->x > urx) {
+		    urx = q->x;
+		}
+		if (q->y < lly) {
+		    lly = q->y;
+		} else if (q->y > ury) {
+		    ury = q->y;
+		}
+		if ((q = q->next))
 		   convertCS(q);
 	    }
 	    switch(LineStyle) {
 	      case SOLID_LINE:
-	        fprintf(tfp, "\\put(%d,%d){\\framebox(%d,%d){}}\n",
-	            llx, lly, urx-llx, ury-lly);
-	        break;
+		fprintf(tfp, "\\put(%d,%d){\\framebox(%d,%d){}}\n",
+		    llx, lly, urx-llx, ury-lly);
+		break;
 	      case DASH_LINE:
 		temp = (int) ((urx-llx) / DashLen);
 		dtemp = (double) (urx-llx) / temp;
-	        fprintf(tfp, "\\put(%d,%d){\\dashbox{%4.3f}(%d,%d){}}\n",
-	            llx, lly, dtemp , urx-llx, ury-lly);
-	        break;
+		fprintf(tfp, "\\put(%d,%d){\\dashbox{%4.3f}(%d,%d){}}\n",
+		    llx, lly, dtemp , urx-llx, ury-lly);
+		break;
 	      default:
-	        put_msg("Program Error! No other line styles allowed.\n");
-	        break;
+		put_msg("Program Error! No other line styles allowed.\n");
+		break;
 	    }
 	    return;
 	  }
@@ -825,9 +824,9 @@ F_line *line;
 #endif
 	break;
       case DASH_LINE:
-        if ((TeXLang==Epic || TeXLang ==EEpic_emu) && DashType == Economic) {
-            fprintf(tfp, "\\drawline[-50]");
-        } else {
+	if ((TeXLang==Epic || TeXLang ==EEpic_emu) && DashType == Economic) {
+	    fprintf(tfp, "\\drawline[-50]");
+	} else {
 	    fprintf(tfp, "\\dashline{%4.3f}", DashLen);
 	}
 	break;
@@ -877,26 +876,24 @@ F_line *line;
 	draw_arrow_head(p, q, line->for_arrow->ht, line->for_arrow->wid,
 			line->for_arrow->type,line->for_arrow->style,
 			line->for_arrow->thickness);
-    	if (Verbose) fprintf(tfp, "%%\n");
+	if (Verbose) fprintf(tfp, "%%\n");
     }
 }
 
 static void
-set_style(style, dash_len)
-int style;
-double dash_len;
+set_style(int style, double dash_len)
 {
     LineStyle = style;
     if (LineStyle == DASH_LINE) {
-        switch (DashType) {
-          case DottedDash:
-            LineStyle = DOTTED_LINE;
+	switch (DashType) {
+	  case DottedDash:
+	    LineStyle = DOTTED_LINE;
 	    DotDist = round(dash_len * DashScale);
-            break;
-          default:
-            DashLen = round(dash_len * DashScale);
-            break;
-        }
+	    break;
+	  default:
+	    DashLen = round(dash_len * DashScale);
+	    break;
+	}
     } else if (LineStyle == DOTTED_LINE) {
 	DotDist = round(dash_len * DashScale);
     }
@@ -905,8 +902,7 @@ double dash_len;
 
 
 static void
-genepic_spline(s)
-F_spline *s;
+genepic_spline(F_spline *s)
 {
     /* print any comments prefixed with "%" */
     print_comments("% ",s->comments,"");
@@ -921,8 +917,7 @@ F_spline *s;
 }
 
 static void
-genepic_ctl_spline(spl)
-F_spline *spl;
+genepic_ctl_spline(F_spline *spl)
 {
     if (closed_spline(spl)) {
 	genepic_closed_spline(spl);
@@ -932,8 +927,7 @@ F_spline *spl;
 }
 
 static void
-genepic_open_spline(spl)
-F_spline *spl;
+genepic_open_spline(F_spline *spl)
 {
     F_point *p, *q, *r;
     FPoint first, mid;
@@ -945,8 +939,8 @@ F_spline *spl;
     convertCS(q);
     if (spl->back_arrow) {
       draw_arrow_head(q, p, spl->back_arrow->ht, spl->back_arrow->wid,
-                      spl->back_arrow->type,spl->back_arrow->style,
-                      spl->back_arrow->thickness);
+		      spl->back_arrow->type,spl->back_arrow->style,
+		      spl->back_arrow->thickness);
       if (Verbose) fprintf(tfp, "%%\n");
     }
     if (q->next == NULL) {
@@ -955,52 +949,51 @@ F_spline *spl;
 	return;
     }
     if (TeXLang == EEpic || TeXLang == EEpic_emu) {
-        fprintf(tfp, "\\spline(%d,%d)\n", p->x, p->y);
-        pt_count++;
-        while(q->next != NULL) {
-             if (++pt_count > PtPerLine) {
-                 pt_count=1;
-                 fprintf(tfp, "\n\t");
-             }
-             fprintf(tfp, "(%d,%d)", q->x, q->y);
-             p=q;
-             q = q->next;
-             convertCS(q);
-        }
-        fprintf(tfp, "(%d,%d)\n", q->x, q->y);
+	fprintf(tfp, "\\spline(%d,%d)\n", p->x, p->y);
+	pt_count++;
+	while(q->next != NULL) {
+	     if (++pt_count > PtPerLine) {
+		 pt_count=1;
+		 fprintf(tfp, "\n\t");
+	     }
+	     fprintf(tfp, "(%d,%d)", q->x, q->y);
+	     p=q;
+	     q = q->next;
+	     convertCS(q);
+	}
+	fprintf(tfp, "(%d,%d)\n", q->x, q->y);
     } else {
-        fprintf(tfp, "\\%s(%d,%d)\n", LnCmd, p->x, p->y);
-        r = q->next;
-        convertCS(r);
-        first.x = p->x;
-        first.y = p->y;
-        while (r->next != NULL) {
-            mid.x = (q->x + r->x) / 2.0;
-            mid.y = (q->y + r->y) / 2.0;
-            chaikin_curve(first.x, first.y, (double) q->x, (double) q->y,
-                            mid.x, mid.y);
-            first = mid;
-            q=r;
-            r = r->next;
-            convertCS(r);
-        }
-        chaikin_curve(first.x, first.y, (double) q->x, (double) q->y,
-                        (double) r->x, (double) r->y);
-        p=q;
-        q=r;
+	fprintf(tfp, "\\%s(%d,%d)\n", LnCmd, p->x, p->y);
+	r = q->next;
+	convertCS(r);
+	first.x = p->x;
+	first.y = p->y;
+	while (r->next != NULL) {
+	    mid.x = (q->x + r->x) / 2.0;
+	    mid.y = (q->y + r->y) / 2.0;
+	    chaikin_curve(first.x, first.y, (double) q->x, (double) q->y,
+			    mid.x, mid.y);
+	    first = mid;
+	    q=r;
+	    r = r->next;
+	    convertCS(r);
+	}
+	chaikin_curve(first.x, first.y, (double) q->x, (double) q->y,
+			(double) r->x, (double) r->y);
+	p=q;
+	q=r;
 	fprintf(tfp, "\n");
     }
     if (spl->for_arrow) {
 	draw_arrow_head(p, q, spl->for_arrow->ht, spl->for_arrow->wid,
 			spl->for_arrow->type, spl->for_arrow->style,
 			spl->for_arrow->thickness);
-    	if (Verbose) fprintf(tfp, "%%\n");
+	if (Verbose) fprintf(tfp, "%%\n");
     }
 }
 
 static void
-genepic_closed_spline(spl)
-F_spline *spl;
+genepic_closed_spline(F_spline *spl)
 {
     F_point *p;
     double cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4;
@@ -1008,10 +1001,10 @@ F_spline *spl;
 
     p = spl->points;
     convertCS(p);
-    x1 = p->x;  y1 = p->y;
+    x1 = p->x;	y1 = p->y;
     p = p->next;
     convertCS(p);
-    x2 = p->x;  y2 = p->y;
+    x2 = p->x;	y2 = p->y;
     cx1 = (x1 + x2) / 2;      cy1 = (y1 + y2) / 2;
     cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
     for (p = p->next; p != NULL; p = p->next) {
@@ -1020,7 +1013,7 @@ F_spline *spl;
 	convertCS(p);
 	x2 = p->x;  y2 = p->y;
 	cx3 = (3 * x1 + x2) / 4;  cy3 = (3 * y1 + y2) / 4;
-	cx4 = (x1 + x2) / 2;      cy4 = (y1 + y2) / 2;
+	cx4 = (x1 + x2) / 2;	  cy4 = (y1 + y2) / 2;
 	quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
 	fprintf(tfp, "\n");
 	cx1 = cx4;  cy1 = cy4;
@@ -1028,7 +1021,7 @@ F_spline *spl;
     }
     x1 = x2;  y1 = y2;
     p = spl->points->next;
-    x2 = p->x;  y2 = p->y;
+    x2 = p->x;	y2 = p->y;
     cx3 = (3 * x1 + x2) / 4;  cy3 = (3 * y1 + y2) / 4;
     cx4 = (x1 + x2) / 2;      cy4 = (y1 + y2) / 2;
     fprintf(tfp, "\\%s(%.3f,%.3f)", LnCmd, cx1, cy1);
@@ -1037,28 +1030,27 @@ F_spline *spl;
 }
 
 static void
-chaikin_curve(a1, b1, a2, b2, a3, b3)
-double a1, b1, a2, b2, a3, b3;
+chaikin_curve(double a1, double b1, double a2, double b2, double a3, double b3)
 {
     double xm1, xmid, xm2, ym1, ymid, ym2;
 
     if (fabs(a1-a3) < Threshold && fabs(b1-b3) < Threshold) {
-        fprintf(tfp, "\t(%.3f,%.3f)\n", a3, b3);
+	fprintf(tfp, "\t(%.3f,%.3f)\n", a3, b3);
     } else {
-        xm1 = (a1 + a2) / 2;
-        ym1 = (b1 + b2) / 2;
-        xm2 = (a2 + a3) / 2;
-        ym2 = (b2 + b3) / 2;
-        xmid = (xm1 + xm2) / 2;
-        ymid = (ym1 + ym2) / 2;
-        chaikin_curve(a1, b1, xm1, ym1, xmid, ymid);
-        chaikin_curve(xmid, ymid, xm2, ym2, a3, b3);
+	xm1 = (a1 + a2) / 2;
+	ym1 = (b1 + b2) / 2;
+	xm2 = (a2 + a3) / 2;
+	ym2 = (b2 + b3) / 2;
+	xmid = (xm1 + xm2) / 2;
+	ymid = (ym1 + ym2) / 2;
+	chaikin_curve(a1, b1, xm1, ym1, xmid, ymid);
+	chaikin_curve(xmid, ymid, xm2, ym2, a3, b3);
     }
 }
 
 static void
-quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
-double	a1, b1, a2, b2, a3, b3, a4, b4;
+quadratic_spline(double a1, double b1, double a2, double b2,
+		double a3, double b3, double a4, double b4)
 {
     double	x1, y1, x4, y4;
     double	xmid, ymid;
@@ -1084,8 +1076,7 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 }
 
 static void
-genepic_itp_spline(spl)
-F_spline *spl;
+genepic_itp_spline(F_spline *spl)
 {
     F_point *p1, *p2;
     FPoint pt1l, pt1r, pt2l, pt2r, tmpfpt;
@@ -1104,9 +1095,9 @@ F_spline *spl;
       tmpfpt.x = p1->x;
       tmpfpt.y = p1->y;
       fdraw_arrow_head(&pt1r, &tmpfpt,
-                       spl->back_arrow->ht, spl->back_arrow->wid,
-                       spl->back_arrow->type, spl->back_arrow->style,
-                       spl->back_arrow->thickness);
+		       spl->back_arrow->ht, spl->back_arrow->wid,
+		       spl->back_arrow->type, spl->back_arrow->style,
+		       spl->back_arrow->thickness);
       if (Verbose) fprintf(tfp, "%%\n");
     }
 
@@ -1130,7 +1121,7 @@ F_spline *spl;
     if (spl->for_arrow) {
 	tmpfpt.x = p1->x;
 	tmpfpt.y = p1->y;
-	fdraw_arrow_head(&pt2l, &tmpfpt, 
+	fdraw_arrow_head(&pt2l, &tmpfpt,
 			 spl->for_arrow->ht, spl->for_arrow->wid,
 			 spl->for_arrow->type, spl->for_arrow->style,
 			 spl->for_arrow->thickness);
@@ -1139,8 +1130,8 @@ F_spline *spl;
 }
 
 static void
-bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
-double	a0, b0, a1, b1, a2, b2, a3, b3;
+bezier_spline(double a0, double b0, double a1, double b1,
+		double a2, double b2, double a3, double b3)
 {
     double	x0, y0, x3, y3;
     double	sx1, sy1, sx2, sy2, tx, ty, tx1, ty1, tx2, ty2, xmid, ymid;
@@ -1163,8 +1154,7 @@ double	a0, b0, a1, b1, a2, b2, a3, b3;
 }
 
 void
-genepic_ellipse(ell)
-F_ellipse *ell;
+genepic_ellipse(F_ellipse *ell)
 {
     F_point pt;
 
@@ -1177,11 +1167,11 @@ F_ellipse *ell;
     convertCS(&pt);
     if (TeXLang == EEpic || TeXLang == EEpic_emu ||
 	  ell->radiuses.x != ell->radiuses.y ||
-          ell->radiuses.x > MaxCircleRadius) {
+	  ell->radiuses.x > MaxCircleRadius) {
 	set_pattern(ell->fill_style, ell->fill_color);
-        fprintf(tfp, "\\put(%d,%d){", pt.x, pt.y );
+	fprintf(tfp, "\\put(%d,%d){", pt.x, pt.y );
 #ifndef OLDCODE
-        if (EllipseCmd == 0) {
+	if (EllipseCmd == 0) {
 	    if (ell->fill_style < UNFILLED)
 		ell->fill_style = UNFILLED;
 	    fprintf(tfp, "%s", FillCommands(ell->fill_style, ell->fill_color));
@@ -1189,13 +1179,13 @@ F_ellipse *ell;
 	    if (ell->fill_style != UNFILLED && OutLine == 0)
 		OutLine = 1;
 #  endif
-        }
- 	fprintf(tfp, EllCmdstr[EllipseCmd],EllCmdkw[EllipseCmd], "",
+	}
+	fprintf(tfp, EllCmdstr[EllipseCmd],EllCmdkw[EllipseCmd], "",
 	       2 * ell->radiuses.x, 2 * ell->radiuses.y);
 #  ifdef DrawOutLine
 	if (OutLine == 1) {
 	    OutLine=0;
-            fprintf(tfp, "\\put(%d,%d){", pt.x, pt.y );
+	    fprintf(tfp, "\\put(%d,%d){", pt.x, pt.y );
 	    fprintf(tfp, EllCmdstr[EllipseCmd],EllCmdkw[EllipseCmd], "",
 		   2 * ell->radiuses.x, 2 * ell->radiuses.y);
 	}
@@ -1206,18 +1196,17 @@ F_ellipse *ell;
 	       2 * ell->radiuses.x, 2 * ell->radiuses.y);
 #endif
     } else {
-        fprintf(tfp, "\\put(%d,%d){\\circle", pt.x, pt.y);
-        if (ell->fill_style == BLACK_FILL) {
-            fputc('*', tfp);
-        }
-        fprintf(tfp, "{%d}}\n", 2*ell->radiuses.x);
+	fprintf(tfp, "\\put(%d,%d){\\circle", pt.x, pt.y);
+	if (ell->fill_style == BLACK_FILL) {
+	    fputc('*', tfp);
+	}
+	fprintf(tfp, "{%d}}\n", 2*ell->radiuses.x);
     }
 }
 
 
-void 
-setfigfont( text )
-    F_text *text;
+void
+setfigfont(F_text *text)
 {
     int texsize;
     double baselineskip;
@@ -1241,12 +1230,8 @@ setfigfont( text )
 }
 
 
-extern char *ISO1toTeX[];
-extern char *ISO2toTeX[];
-
 void
-genepic_text(text)
-    F_text *text;
+genepic_text(F_text *text)
 {
     F_point pt;
     char *tpos, *esc_cp, *special_index;
@@ -1312,7 +1297,7 @@ genepic_text(text)
     if (!special_text(text))
 	/* This loop escapes special LaTeX characters. */
 	for (cp = (unsigned char*)text->cstring; *cp; cp++) {
-      	    if (special_index=strchr(latex_text_specials, *cp)) {
+	    if (special_index=strchr(latex_text_specials, *cp)) {
 	      /* Write out the replacement.  Implementation note: we can't
 		 use puts since that will output an additional newline. */
 	      esc_cp=latex_text_mappings[special_index-latex_text_specials];
@@ -1322,7 +1307,7 @@ genepic_text(text)
 	    else if (*cp == TEXT_LINE_SEP) {
 	      /* Handle multi-line text strings. The problem being addressed here
 		 is a LaTeX bug where LaTeX is unable to handle a font which
-		 spans multiple lines.  What we are doing here is closing off
+		 spans multiple lines.	What we are doing here is closing off
 		 the current font, starting a new line, and then resuming with
 		 the current font. */
 	      fprintf(tfp, "} \\\\\n");
@@ -1331,8 +1316,8 @@ genepic_text(text)
 	    }
 	    else
 		fputc(*cp, tfp);
-      	}
-    else 
+	}
+    else
 	for (cp = (unsigned char*)text->cstring; *cp; cp++) {
 	    if (*cp == TEXT_LINE_SEP) {
 		/* Handle multi-line text strings. */
@@ -1341,24 +1326,24 @@ genepic_text(text)
 
 	    } else {
 #ifdef I18N
-		extern Boolean support_i18n;
+		extern bool support_i18n;
 		if (support_i18n && (text->font <= 2))
 			fputc(*cp, tfp);
 	    else
 #endif /* I18N */
-	        if (*cp >= 0xa0) {	/* we escape 8-bit char */
-	            switch (encoding) {
-	                case 0: /* no escaping */
+		if (*cp >= 0xa0) {	/* we escape 8-bit char */
+		    switch (encoding) {
+			case 0: /* no escaping */
 			    fputc(*cp, tfp);
-	                    break;
-	                case 1: /* iso-8859-1 */
-	    		    fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
-	                    break;
-	                case 2: /* iso-8859-2 */
-	    		    fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
-	                    break;
-	            }
-	        } else
+			    break;
+			case 1: /* iso-8859-1 */
+			    fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
+			    break;
+			case 2: /* iso-8859-2 */
+			    fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
+			    break;
+		    }
+		} else
 		    /* no escaping */
 		    fputc(*cp, tfp);
 	  }
@@ -1367,8 +1352,7 @@ genepic_text(text)
 }
 
 void
-genepic_arc(arc)
-F_arc *arc;
+genepic_arc(F_arc *arc)
 {
     FPoint pt1, pt2, ctr, tmp;
     double r1, r2, th1, th2, theta;
@@ -1401,7 +1385,7 @@ F_arc *arc;
     set_linewidth(arc->thickness);
     if (TeXLang == EEpic) {
 	set_pattern(arc->fill_style, arc->fill_color);
-        fprintf(tfp, "\\put(%4.3f,%4.3f){", ctr.x, ctr.y);
+	fprintf(tfp, "\\put(%4.3f,%4.3f){", ctr.x, ctr.y);
     } else {
 	fprintf(tfp, "\\drawline");
     }
@@ -1423,13 +1407,13 @@ F_arc *arc;
 #ifdef DrawOutLine
 	    if (OutLine==1) {
 		OutLine=0;
-	        fprintf(tfp, "\\put(%4.3f,%4.3f){", ctr.x, ctr.y);
+		fprintf(tfp, "\\put(%4.3f,%4.3f){", ctr.x, ctr.y);
 		fprintf(tfp, "\\arc{%4.3f}{%2.4f}{%2.4f}}\n", 2*r1, th2, th2+theta);
 	    }
 #endif
-        } else {
-            drawarc(&ctr, r1, 2*M_PI - th2 - theta, theta);
-        }
+	} else {
+	    drawarc(&ctr, r1, 2*M_PI - th2 - theta, theta);
+	}
     } else {
 	theta = th1 - th2;
 	if (theta < 0) theta += 2 * M_PI;
@@ -1439,15 +1423,15 @@ F_arc *arc;
 #ifdef DrawOutLine
 	    if (OutLine==1) {
 		OutLine=0;
-	        fprintf(tfp, "\\put(%4.3f,%4.3f){", ctr.x, ctr.y);
+		fprintf(tfp, "\\put(%4.3f,%4.3f){", ctr.x, ctr.y);
 		fprintf(tfp, "\\arc{%4.3f}{%2.4f}{%2.4f}}\n", 2*r2, th1, th1+theta);
 	    }
 #endif
 	} else {
-            drawarc(&ctr, r2, 2*M_PI - th1 - theta, theta);
-        }
+	    drawarc(&ctr, r2, 2*M_PI - th1 - theta, theta);
+	}
     }
-    if ((arc->type == T_OPEN_ARC) && (arc->thickness != 0) && 
+    if ((arc->type == T_OPEN_ARC) && (arc->thickness != 0) &&
 	(arc->back_arrow || arc->for_arrow)) {
 	 if (arc->for_arrow) {
 	    arc_arrow(&ctr, &pt2, arc->direction, arc->for_arrow, &tmp);
@@ -1457,7 +1441,7 @@ F_arc *arc;
 			 arc->for_arrow->type,
 			 arc->for_arrow->style,
 			 arc->for_arrow->thickness);
-    	    if (Verbose)
+	    if (Verbose)
 		fprintf(tfp, "%%\n");
 	 }
 	 if (arc->back_arrow) {
@@ -1468,16 +1452,14 @@ F_arc *arc;
 			 arc->back_arrow->type,
 			 arc->back_arrow->style,
 			 arc->back_arrow->thickness);
-    	    if (Verbose)
+	    if (Verbose)
 		fprintf(tfp, "%%\n");
 	 }
     }
 }
 
 static void
-drawarc(ctr, r, th1, angle)
-FPoint *ctr;
-double r, th1, angle;
+drawarc(FPoint *ctr, double r, double th1, double angle)
 {
     double delta;
     int division, pt_count = 0;
@@ -1487,36 +1469,33 @@ double r, th1, angle;
     delta = angle / division;
     division++;
     while (division-- > 0) {
-        if (++pt_count > PtPerLine) {
-            fprintf(tfp, "\n\t");
-            pt_count = 1;
-        }
-        fprintf(tfp, "(%.3f,%.3f)", ctr->x + cos(th1) * r,
-                                ctr->y + sin(th1) * r);
-        th1 += delta;
+	if (++pt_count > PtPerLine) {
+	    fprintf(tfp, "\n\t");
+	    pt_count = 1;
+	}
+	fprintf(tfp, "(%.3f,%.3f)", ctr->x + cos(th1) * r,
+				ctr->y + sin(th1) * r);
+	th1 += delta;
     }
     fprintf(tfp, "\n");
 }
 
 /*************************** ARROWS *****************************
 
- arc_arrow - Computes a point on a line which is a chord to the 
-        arc specified by center pt1 and endpoint pt2, where the 
-        chord intersects the arc arrow->ht from the endpoint.
+ arc_arrow - Computes a point on a line which is a chord to the
+	arc specified by center pt1 and endpoint pt2, where the
+	chord intersects the arc arrow->ht from the endpoint.
 
  May give strange values if the arrow.ht is larger than about 1/4 of
  the circumference of a circle on which the arc lies.
 
-  This function is copied from xfig-3.2.0-beta3/u_draw.c 
+  This function is copied from xfig-3.2.0-beta3/u_draw.c
        compute_arcarrow_angle. Thanks to the author.
 
 ****************************************************************/
 
 static void
-arc_arrow(pt1, pt2, direction, arrow, pt3)
-FPoint *pt1, *pt2, *pt3;
-int direction;
-F_arrow *arrow;
+arc_arrow(FPoint *pt1, FPoint *pt2, int direction, F_arrow *arrow, FPoint *pt3)
 {
     double	r, alpha, beta, dy, dx, x1, x2, y1, y2;
     double	lpt,h;
@@ -1554,8 +1533,7 @@ F_arrow *arrow;
 }
 
 static void
-rtop(x, y, r, th)
-double x, y, *r, *th;
+rtop(double x, double y, double *r, double *th)
 {
     *r = sqrt(x*x+y*y);
     *th = acos(x/(*r));
@@ -1564,10 +1542,8 @@ double x, y, *r, *th;
 }
 
 static void
-draw_arrow_head(pt1, pt2, arrowht, arrowwid, type, style, thickness)
-F_point *pt1, *pt2;
-int type, style;
-double arrowht, arrowwid, thickness;
+draw_arrow_head(F_point *pt1, F_point *pt2, double arrowht, double arrowwid,
+		int type, int style, double thickness)
 {
     FPoint fpt1, fpt2;
 
@@ -1579,10 +1555,8 @@ double arrowht, arrowwid, thickness;
 }
 
 static void
-fdraw_arrow_head(pt1, pt2, arrowht, arrowwid, type, style, thickness)
-FPoint *pt1, *pt2;
-int type, style;
-double arrowht, arrowwid, thickness;
+fdraw_arrow_head(FPoint *pt1, FPoint *pt2, double arrowht, double arrowwid,
+		int type, int style, double thickness)
 {
     double x1, y1, x2, y2;
     double x,y, xb,yb,dx,dy,l,sina,cosa;
@@ -1644,15 +1618,14 @@ double arrowht, arrowwid, thickness;
     }
 }
 
-static char* 
-FillCommands(style, color)
-int style, color;
+static char *
+FillCommands(int style, int color)
 {
   static char empty[]= "";
   static char shaded[]= "\\shade";
   static char whiten[]= "\\whiten";
   static char blacken[]= "\\blacken";
-  
+
   if (style == UNFILLED)
     return empty;
 
@@ -1674,9 +1647,9 @@ int style, color;
 }
 
 struct driver dev_epic = {
-     	genepic_option,
+	genepic_option,
 	genepic_start,
-	gendev_null,
+	gendev_nogrid,
 	genepic_arc,
 	genepic_ellipse,
 	genepic_line,

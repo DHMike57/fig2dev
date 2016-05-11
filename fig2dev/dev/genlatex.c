@@ -2,6 +2,7 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1988 by Frank Schmuck
  * Parts Copyright (c) 1989-2002 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
@@ -9,19 +10,19 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-/* 
+/*
  *	genlatex.c : LaTeX driver for fig2dev
  *
  *	Author: Frank Schmuck, Cornell University 6/88
- * 	Converted from fig2latex 5/89 by Micah Beck
- * 	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
- *      Arc boxes added by C. Scott Ananian 6/99
+ *	Converted from fig2latex 5/89 by Micah Beck
+ *	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
+ *	Arc boxes added by C. Scott Ananian 6/99
  *
  *	Gabriel Zachmann <Gabriel.Zachmann@gmx.net>:
  *	- add option -F (for the PSTEX output language; it is not really an option
@@ -39,22 +40,10 @@
 #include "setfigfont.h"
 #include "texfonts.h"
 
-extern double rad2deg;
-extern void get_slope();
-extern void unpsfont();
-extern Boolean	FontSizeOnly;	/* defined in setfigfont.c */
+extern void unpsfont(F_text *t);	/* psfonts.c */
+extern bool	FontSizeOnly;	/* defined in setfigfont.c */
 
-static void put_box();
-static void put_arc_box();
-static void single_line();
-static void put_solidline();
-static void put_dashline();
-static void put_dotline();
-static void put_quarter();
-
-#define rint(a) floor((a)+0.5)     /* close enough? */
-
-/* 
+/*
  *  Installation dependent constants:
  *
  *  THINDOT	latex command for generating a dot if line width = \thinlines
@@ -67,11 +56,11 @@ static void put_quarter();
  */
 
 #ifdef NFSS
-#define THICKDOT	"\\normalsize{\\rmdefault}{\\mddefault}{\\updefault}."
-#define THINDOT		"\\small{\\rmdefault}{\\mddefault}{\\updefault}."
+#define THICKDOT	"\\normalsize."
+#define THINDOT		"\\small."
 #else
-#define THICKDOT	"\\normalsize{rm}."
-#define THINDOT		"\\small{rm}."
+#define THICKDOT	"\\normalsize."
+#define THINDOT		"\\small."
 #endif
 double	THIN_XOFF =	(0.1/72.0);
 double	THIN_YOFF =	(0.7/72.0);
@@ -109,7 +98,7 @@ char		thickdot[] = THICKDOT;
 char		thin_ldot [] = THIN_LDOT;
 char		thick_ldot[] = THICK_LDOT;
 
-static  int 	encoding = 1;
+static	int	encoding = 1;
 static	int	verbose = 0;
 double		dash_mag = 1.0;
 int		thick_width = 2;
@@ -127,33 +116,105 @@ double		dot_yoffset;
 double		ldot_xoffset;
 double		ldot_yoffset;
 static int	border_margin = 0;
+static double	rad2deg = 57.295779513082320877;
 
-extern char *ISO1toTeX[];
-extern char *ISO2toTeX[];
+extern char *ISO1toTeX[];	/* iso2tex.c */
+extern char *ISO2toTeX[];	/* iso2tex.c */
+
+/*
+ *	struct angle_table line_angles, arrow_angles and get_slope()
+ *	from latex_line.c:
+ *	    Subroutines for drawing and translating lines for the LaTeX
+ *	    picture environment.
+ *	Written by Frank Schmuck (schmuck@svax.cs.cornell.edu)
+ *	June 1988
+ *
+ *	The LaTeX picture environment allows generating pictures in standard
+ *	LaTeX.	However, some restrictions apply:  lines and vectors (a vector
+ *	is a line with an arrow at the end) can only be drawn with a finite
+ *	number of slopes.  The available slopes are given by dy/dx where
+ *	dx and dy must be integers <= 6 for lines and <= 4 for vectors.
+ *
+ *	The subroutines in this file are used in fig2latex to approximate
+ *	an arbitrary line or vector by a LaTeX line/vector, and in fig to
+ *	restrict line drawing to slopes supported by LaTeX.
+ */
+/*
+ *  Tables of line and vector slopes supported by LaTeX
+ */
+struct angle_table {
+	int    x, y;
+	double angle;
+};
+
+#define N_LINE 25
+
+static struct angle_table line_angles[N_LINE] = {
+	{0, 1, 90.0},
+	{1, 0,	0.0},
+	{1, 1, 45.0},
+	{1, 2, 63.434948822922010648},
+	{1, 3, 71.565051177077989351},
+	{1, 4, 75.963756532073521417},
+	{1, 5, 78.690067525979786913},
+	{1, 6, 80.537677791974382609},
+	{2, 1, 26.565051177077989351},
+	{2, 3, 56.309932474020213086},
+	{2, 5, 68.198590513648188229},
+	{3, 1, 18.434948822922010648},
+	{3, 2, 33.690067525979786913},
+	{3, 4, 53.130102354155978703},
+	{3, 5, 59.036243467926478582},
+	{4, 1, 14.036243467926478588},
+	{4, 3, 36.869897645844021297},
+	{4, 5, 51.340191745909909396},
+	{5, 1, 11.309932474020213086},
+	{5, 2, 21.801409486351811770},
+	{5, 3, 30.963756532073521417},
+	{5, 4, 38.659808254090090604},
+	{5, 6, 50.194428907734805993},
+	{6, 1, 9.4623222080256173906},
+	{6, 5, 39.805571092265194006}
+};
+
+#define N_ARROW 13
+
+static struct angle_table arrow_angles[N_ARROW] = {
+	{0, 1, 90.0},
+	{1, 0,	0.0},
+	{1, 1, 45.0},
+	{1, 2, 63.434948822922010648},
+	{1, 3, 71.565051177077989351},
+	{1, 4, 75.963756532073521417},
+	{2, 1, 26.565051177077989351},
+	{2, 3, 56.309932474020213086},
+	{3, 1, 18.434948822922010648},
+	{3, 2, 33.690067525979786913},
+	{3, 4, 53.130102354155978703},
+	{4, 1, 14.036243467926478588},
+	{4, 3, 36.869897645844021297},
+};
 
 static void
-translate2(xp, yp)
-  int	*xp, *yp;
+translate2(int *xp, int *yp)
 {
 	*xp = *xp + 1;
 	*yp = (double)(TOP - *yp -1);
 	}
 
 static void
-translate2_d(xp, yp)
-  double	*xp, *yp;
+translate2_d(double *xp, double *yp)
 {
 	*xp = *xp + 1.0;
 	*yp = (double)TOP - *yp -1.0;
 	}
 
 void
-genlatex_option(opt, optarg)
-  char opt, *optarg;
+genlatex_option(char opt, char *optarg)
 {
     int i;
 
-    FontSizeOnly = False;
+    FontSizeOnly = false;
     switch (opt) {
 	case 'a':
 	    fprintf(stderr, "warning: latex option -a obsolete");
@@ -168,7 +229,7 @@ genlatex_option(opt, optarg)
 	    break;
 
 	case 'F':
-	    FontSizeOnly = True;
+	    FontSizeOnly = true;
 	    break;
 
 	case 'f':			/* set default text font */
@@ -201,9 +262,8 @@ genlatex_option(opt, optarg)
 		encoding = 1;
 	    break;
 
+	case 'G':
 	case 'L':
-	case 'm':
-	case 's':
 	    break;
 
 	default:
@@ -213,15 +273,14 @@ genlatex_option(opt, optarg)
 }
 
 void
-genlatex_start(objects)
-  F_compound	*objects;
+genlatex_start(F_compound *objects)
 {
 	int tmp;
 
-	texfontsizes[0] = texfontsizes[1] = 
+	texfontsizes[0] = texfontsizes[1] =
 		TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
 
- 	unitlength = mag/ppi;
+	unitlength = mag/ppi;
 	dash_mag /= unitlength*80.0;
 	border_margin /= unitlength*72.0;
 
@@ -253,11 +312,11 @@ genlatex_start(objects)
 	/* define the SetFigFont macro */
 	define_setfigfont(tfp);
 	fprintf(tfp, "\\begin{picture}(%d,%d)(%d,%d)\n",
-	 				 urx-llx, ury-lly, llx, lly);
+					 urx-llx, ury-lly, llx, lly);
 }
 
 int
-genlatex_end()
+genlatex_end(void)
 {
 	/* LaTeX ending */
 	fprintf(tfp, "\\end{picture}%%\n");
@@ -267,8 +326,7 @@ genlatex_end()
 }
 
 static void
-set_linewidth(w)
-  int	w;
+set_linewidth(int w)
 {
 	int		latex_w;
 
@@ -288,7 +346,7 @@ set_linewidth(w)
 		}
 	    else {
 		fprintf(tfp, "\\thinlines\n");
-		dot_cmd = thin_ldot;
+		dot_cmd = thindot;
 		dot_xoffset = round4(THIN_XOFF/unitlength);
 		dot_yoffset = round4(THIN_YOFF/unitlength);
 		ldot_cmd = thin_ldot;
@@ -298,14 +356,346 @@ set_linewidth(w)
 	    }
 	}
 
+/*
+ * draw a solid line given latex slope
+ */
+static void
+put_solidline(int x, int y, int sx, int sy, double l, int arrow,
+		double val /* unused */)
+{
+	double	cosine;		/* cosine of line angle */
+	double	dx, dy;
+	int	x2, y2, n;
+
+	if (sx) {
+	    cosine = (double)abs(sx) / sqrt((double)(sx*sx)+(double)(sy*sy));
+	    x2 = (sx >= 0)? x + round(l): x - round(l);
+	    y2 = y + round( ((sx>=0)? l: -l) * (double)sy / (double)sx);
+	    }
+	else {
+	    cosine = 1.0;
+	    x2 = x;
+	    y2 = (sy >= 0)? y + round(l): y - round(l);
+	    }
+	if (sx == 0  ||  sy == 0  ||  l*unitlength >= MIN_LEN) {
+	    switch (arrow) {
+	    case 0:  /* simple line */
+		fprintf(tfp, "\\put(%3d,%3d){\\line(%2d,%2d)", x, y, sx,sy);
+		break;
+	    case 1:  /* forward arrow */
+		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d)", x, y, sx,sy);
+		break;
+	    case -1: /* backward arrow */
+		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d)", x2, y2, -sx,-sy);
+		break;
+	    case 2:  /* double arrow */
+		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){  0}}\n", x,y,-sx,-sy);
+		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d)", x, y, sx, sy);
+		break;
+		}
+	    if (l == floor(l))
+		fprintf(tfp, "{%3.0f}}\n", l);
+	    else
+		fprintf(tfp, "{%7.3f}}\n", l);
+	    }
+	else {
+	    n = 2 * (l/cosine) / (ldot_diameter/unitlength);
+	    if (n==0)	/* missing */
+		return;
+	    fprintf(stderr, "Line too short; will do %d dots\n", n);
+	    dx = l / (double)n;
+	    if (sx < 0) dx = -dx;
+	    dy = dx * (double)sy / (double)sx;
+	    fprintf(tfp,
+	      "\\multiput(%3d,%3d)(%.5f,%.5f){%d}{\\makebox(%.4f,%.4f){%s}}\n",
+	      x, y, dx, dy, n+1, ldot_xoffset, ldot_yoffset, ldot_cmd);
+	    if (arrow == 1  ||	arrow == 2)  /* forward arrow */
+		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x2,y2, sx,sy);
+	    if (arrow == -1  ||  arrow == 2) /* backward arrow */
+		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x,y, -sx,-sy);
+	    }
+	}
+
+/*
+ * draw a dashed line given latex slope
+ */
+static void
+put_dashline(int x, int y, int sx, int sy, double l, int arrow, double val)
+{
+	double	cosine;		/* cosine of line angle */
+	double	nd;		/* number of dashes and gaps fitting on line */
+	int	n;		/* nd rounded to the nearest odd integer */
+	double	dl;		/* actual x-length of each dash */
+	double	dg;		/* actual x-length of each gap */
+	double	dx, dy;		/* step between dashes */
+	int	x2, y2;
+
+	if (sx) {
+	    cosine = (double)abs(sx) / sqrt((double)(sx*sx)+(double)(sy*sy));
+	    x2 = (sx >= 0)? x + round(l): x - round(l);
+	    y2 = y + round( ((sx>=0)? l: -l) * (double)sy / (double)sx );
+	    }
+	else {
+	    cosine = 1.0;
+	    x2 = x;
+	    y2 = (sy >= 0)? y + round(l): y - round(l);
+	    }
+	/*** compute number of dashes, length of dashes and gaps ***/
+	nd = l / (val*dash_mag*cosine);
+	n = round((nd + 1.0)/2.0)*2 - 1;
+	dl = l / (double)n;
+	if (sx	&&  sy	&&  dl*unitlength < MIN_LEN) {
+	    fprintf(stderr, "Dash too small; using larger dash\n");
+	    dl = MIN_LEN/unitlength * cosine;
+	    nd = l / dl;
+	    n = round((nd + 1.0)/2.0)*2 - 1;
+	    }
+	if (2*dl >= l  ||  (sx	&&  sy	&&  l*unitlength < MIN_LEN)) {
+	    fprintf(stderr, "Dashed line too short; drawing solid line\n");
+	    put_solidline (x, y, sx, sy, l, arrow, (double) 0.0);
+	    return;
+	    }
+	dg = (l - (n/2+1)*dl) / (double)(n/2);
+	if (sx) {
+	    dx = dl+dg;
+	    if (sx < 0) dx = -dx;
+	    dy = dx * (double)sy / (double)sx;
+	    }
+	else {
+	    dx = 0.0;
+	    dy = dl+dg;
+	    if (sy < 0) dy = -dy;
+	    }
+	/*** draw dashed line ***/
+	fprintf(tfp, "\\multiput(%3d,%3d)(%.5f,%.5f){%d}{\\line(%2d,%2d){%7.3f}}\n",
+	    x, y, dx, dy, n/2+1, sx, sy, dl);
+	/*** draw arrow heads ***/
+	if (arrow == 1	||  arrow == 2)
+	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x2, y2, sx, sy);
+	if (arrow == -1  ||  arrow == 2)
+	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x, y, -sx, -sy);
+	}
+
+/*
+ * draw a dotted line given latex slope
+ */
+static void
+put_dotline(int x, int y, int sx, int sy, double l, int arrow, double val)
+{
+	double	cosine;		/* cosine of line angle */
+	double	nd;		/* number of dots fitting on line */
+	int	n;		/* nd rounded to the nearest integer */
+	double	dx, dy;		/* step between dashes */
+	int	x2, y2;
+
+
+	cosine = (sx)? (double)abs(sx) / sqrt((double)(sx*sx)+(double)(sy*sy)): 1.0;
+	/*** compute step width ***/
+	nd = l / (3*val*cosine);
+	n = round(nd);
+	if (n == 0)
+		n = 1;		/* sanity check */
+	if (sx) {
+	    dx = l / (double)n;
+	    if (sx < 0) dx = -dx;
+	    dy = dx * (double)sy / (double)sx;
+	    }
+	else {
+	    dx = 0.0;
+	    dy = l / (double)n;
+	    if (sy < 0) dy = -dy;
+	    }
+	/*** draw arrow heads ***/
+	if (arrow == 1	||  arrow == 2) {
+	    /* forward arrow */
+	    if (sx) {
+		x2 = (sx >= 0)? x + round(l): x - round(l);
+		y2 = y + round( ((sx>=0)? l: -l) * (double)sy / (double)sx );
+		}
+	    else {
+		x2 = x;
+		y2 = (sy >= 0)? y + round(l): y - round(l);
+		}
+	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x2, y2, sx, sy);
+	    n--;
+	    }
+	if (arrow == -1  ||  arrow == 2) {
+	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x, y, -sx, -sy);
+	    x = round(x + dx);
+	    y = round(y + dy);
+	    n--;
+	    }
+	/*** draw dotted line ***/
+	fprintf(tfp, "\\multiput(%3d,%3d)(%.5f,%.5f){%d}{\\makebox(%.4f,%.4f){%s}}\n",
+	    x, y, dx, dy, n+1, dot_xoffset, dot_yoffset, dot_cmd);
+	}
+
 void
-genlatex_line(l)
-  F_line	*l;
+get_slope(int dx, int dy, int *sxp, int *syp, int arrow)
+/*
+ *  Find the LaTeX line slope that is closest to the one given by dx, dy.
+ *  Result is returned in *sxp, *syp.  If (arrow != 0) the closest LaTeX
+ *  vector slope is selected.
+ */
+{
+	double angle;
+	int    i, s, max;
+	double d, d1;
+	struct angle_table *st;
+
+	if (dx == 0) {
+	    *sxp = 0;
+	    *syp = (dy < 0)? -1: 1;
+	    return;
+	}
+	angle = atan((double)abs(dy) / (double)abs(dx)) * rad2deg;
+	if (arrow) {
+	    st = arrow_angles;
+	    max = N_ARROW;
+	} else {
+	    st = line_angles;
+	    max = N_LINE;
+	}
+	s = 0;
+	d = 9.9e9;
+	for (i = 0; i < max; i++) {
+	    d1 = fabs(angle - st[i].angle);
+	    if (d1 < d) {
+		s = i;
+		d = d1;
+	    }
+	}
+	*sxp = st[s].x;
+	if (dx < 0) *sxp = -*sxp;
+	*syp = st[s].y;
+	if (dy < 0) *syp = -*syp;
+}
+
+static void
+single_line(int x1, int y1, int x2, int y2, int arrow, int style, double val)
+{
+	int    dx, dy, sx, sy;
+	double l, m, deviation;
+
+	TRANS2(x1, y1, x2, y2);
+	dx = x2-x1;
+	dy = y2-y1;
+	/*** compute direction vector ***/
+	get_slope(dx, dy, &sx, &sy, arrow);
+	/*** compute line length in x-direction ***/
+	if (sx == 0) {
+	    l = (double)abs(dy);
+	} else {
+	    m = (double)abs(sy) / (double)abs(sx);
+	    l = ((double)abs(dx) + m*(double)abs(dy)) / (1.0 + m*m);
+	    deviation = fabs(l-abs(dx)) + fabs(m*l-abs(dy));
+	    if (deviation > tolerance)
+		fprintf(stderr,
+		  "Not a LaTeX slope (%d, %d), deviation %.1f pixels\n",
+		  dx, dy, deviation);
+	}
+	l = round4(l);
+	/*** output letex command ***/
+	switch (style) {
+	    case SOLID_LINE:
+		put_solidline(x1, y1, sx, sy, l, arrow, val);
+		break;
+	    case DASH_LINE:
+		put_dashline(x1, y1, sx, sy, l, arrow, val);
+		break;
+	    case DOTTED_LINE:
+		put_dotline(x1, y1, sx, sy, l, arrow, val);
+		break;
+	    default:
+		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
+		break;
+	    }
+	}
+
+/*
+ * draw arc box
+ */
+static void
+put_arc_box(int llx, int lly, int urx, int ury, int radius, int style,
+	    double val)
+{
+	int	radius2= 2*radius;
+	double	swidth = (double)(urx-llx-radius2);
+	double	sheight= (double)(ury-lly-radius2);
+	void (*put_line)();
+
+	switch (style) {
+	    case SOLID_LINE:
+		put_line = put_solidline;
+		break;
+	    case DASH_LINE:
+		fprintf(stderr, "Dashed arc boxes approximated with solid arcs\n");
+		put_line = put_dashline;
+		break;
+	    case DOTTED_LINE:
+		fprintf(stderr, "Dotted arc boxes approximated with solid arcs\n");
+		put_line = put_dotline;
+		break;
+	    default:
+		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
+		break;
+	    }
+	put_line = put_solidline;
+	fprintf(tfp,
+		"\\put(%3d,%3d){\\oval(%3d,%3d)[bl]}\n"
+		"\\put(%3d,%3d){\\oval(%3d,%3d)[tl]}\n"
+		"\\put(%3d,%3d){\\oval(%3d,%3d)[br]}\n"
+		"\\put(%3d,%3d){\\oval(%3d,%3d)[tr]}\n",
+		llx+radius,lly+radius,radius2,radius2,
+		llx+radius,ury-radius,radius2,radius2,
+		urx-radius,lly+radius,radius2,radius2,
+		urx-radius,ury-radius,radius2,radius2);
+	put_line (llx+radius, lly, 1, 0, swidth, 0, val);
+	put_line (llx+radius, ury, 1, 0, swidth, 0, val);
+	put_line (llx, lly+radius, 0, 1, sheight, 0, val);
+	put_line (urx, lly+radius, 0, 1, sheight, 0, val);
+	return;
+	}
+
+/*
+ * draw box
+ */
+static void
+put_box(int llx, int lly, int urx, int ury, int style, double val)
+{
+	int	dlen;
+
+	switch (style) {
+	    case SOLID_LINE:
+		fprintf(tfp, "\\put(%3d,%3d){\\framebox(%d,%d){}}\n",
+		  llx, lly, urx-llx, ury-lly);
+		break;
+	    case DASH_LINE:
+		dlen = round(val*dash_mag);
+		fprintf(tfp, "\\put(%3d,%3d){\\dashbox{%d}(%d,%d){}}\n",
+		  llx, lly, dlen, urx-llx, ury-lly);
+		break;
+	    case DOTTED_LINE:
+		put_dotline (llx, lly, 1, 0, (double)(urx-llx), 0, val);
+		put_dotline (llx, ury, 1, 0, (double)(urx-llx), 0, val);
+		put_dotline (llx, lly, 0, 1, (double)(ury-lly), 0, val);
+		put_dotline (urx, lly, 0, 1, (double)(ury-lly), 0, val);
+		break;
+	    default:
+		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
+		break;
+	    }
+	return;
+	}
+
+
+void
+genlatex_line(F_line *l)
 {
 	F_point		*p, *q;
 	int		x, y, llx, lly, urx, ury, arrow;
 
-	if (verbose) 
+	if (verbose)
 	    fprintf(tfp, "%%\n%% Fig POLYLINE object\n%%\n");
 
 	/* print any comments prefixed with "%" */
@@ -365,325 +755,19 @@ genlatex_line(l)
 	reset_color(l->pen_color);
 	}
 
-static void
-single_line (x1, y1, x2, y2, arrow, style, val)
-  int	x1, y1, x2, y2, arrow, style;
-  double	val;
-{
-	int    dx, dy, sx, sy;
-	double l, m, deviation;
-
-	TRANS2(x1, y1, x2, y2);
-	dx = x2-x1;
-	dy = y2-y1;
-	/*** compute direction vector ***/
-	get_slope(dx, dy, &sx, &sy, arrow);
-	/*** compute line length in x-direction ***/
-	if (sx == 0) {
-	    l = (double)abs(dy);
-	} else {
-	    m = (double)abs(sy) / (double)abs(sx);
-	    l = ((double)abs(dx) + m*(double)abs(dy)) / (1.0 + m*m);
-	    deviation = fabs(l-abs(dx)) + fabs(m*l-abs(dy));
-	    if (deviation > tolerance)
-		fprintf(stderr,
-		  "Not a LaTeX slope (%d, %d), deviation %.1f pixels\n",
-		  dx, dy, deviation);
-	}
-	l = round4(l);
-	/*** output letex command ***/
-	switch (style) {
-	    case SOLID_LINE:
-		put_solidline(x1, y1, sx, sy, l, arrow, val);
-		break;
-	    case DASH_LINE:
-		put_dashline(x1, y1, sx, sy, l, arrow, val);
-		break;
-	    case DOTTED_LINE:
-		put_dotline(x1, y1, sx, sy, l, arrow, val);
-		break;
-	    default:
-		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
-		break;
-	    }
-	}
-
-
-/*
- * draw arc box
- */
-static void
-put_arc_box (llx, lly, urx, ury, radius, style, val)
-int	llx, lly, urx, ury, radius, style;
-double	val;
-{
-        int     radius2= 2*radius;
-	double  swidth = (double)(urx-llx-radius2);
-	double  sheight= (double)(ury-lly-radius2);
-	void (*put_line)();
-
-	switch (style) {
-	    case SOLID_LINE:
-	        put_line = put_solidline;
-		break;
-	    case DASH_LINE:
-		fprintf(stderr, "Dashed arc boxes approximated with solid arcs\n");
-	        put_line = put_dashline;
-		break;
-	    case DOTTED_LINE:
-		fprintf(stderr, "Dotted arc boxes approximated with solid arcs\n");
-	        put_line = put_dotline;
-		break;
-	    default:
-		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
-		break;
-	    }
-        put_line = put_solidline;
-	fprintf(tfp, 
-		"\\put(%3d,%3d){\\oval(%3d,%3d)[bl]}\n"
-		"\\put(%3d,%3d){\\oval(%3d,%3d)[tl]}\n"
-		"\\put(%3d,%3d){\\oval(%3d,%3d)[br]}\n"
-		"\\put(%3d,%3d){\\oval(%3d,%3d)[tr]}\n",
-		llx+radius,lly+radius,radius2,radius2,
-		llx+radius,ury-radius,radius2,radius2,
-		urx-radius,lly+radius,radius2,radius2,
-		urx-radius,ury-radius,radius2,radius2);
-	put_line (llx+radius, lly, 1, 0, swidth, 0, val);
-	put_line (llx+radius, ury, 1, 0, swidth, 0, val);
-	put_line (llx, lly+radius, 0, 1, sheight, 0, val);
-	put_line (urx, lly+radius, 0, 1, sheight, 0, val);
-	return;
-	}
-
-/*
- * draw box
- */
-static void
-put_box (llx, lly, urx, ury, style, val)
-  int	llx, lly, urx, ury, style;
-  double	val;
-{
-	int	dlen;
-
-	switch (style) {
-	    case SOLID_LINE:
-		fprintf(tfp, "\\put(%3d,%3d){\\framebox(%d,%d){}}\n",
-		  llx, lly, urx-llx, ury-lly);
-		break;
-	    case DASH_LINE:
-		dlen = round(val*dash_mag);
-		fprintf(tfp, "\\put(%3d,%3d){\\dashbox{%d}(%d,%d){}}\n",
-		  llx, lly, dlen, urx-llx, ury-lly);
-		break;
-	    case DOTTED_LINE:
-		put_dotline (llx, lly, 1, 0, (double)(urx-llx), 0, val);
-		put_dotline (llx, ury, 1, 0, (double)(urx-llx), 0, val);
-		put_dotline (llx, lly, 0, 1, (double)(ury-lly), 0, val);
-		put_dotline (urx, lly, 0, 1, (double)(ury-lly), 0, val);
-		break;
-	    default:
-		fprintf(stderr, "Unknown line style -- approximating with solid lines\n");
-		break;
-	    }
-	return;
-	}
-
-/*
- * draw a solid line given latex slope
- */
-static void
-put_solidline (x, y, sx, sy, l, arrow, val)
-  int	x, y, sx, sy, arrow;
-  double	l;
-  double  val; /* unused */
-{
-	double	cosine;		/* cosine of line angle */
-	double	dx, dy;
-	int	x2, y2, n;
-
-	if (sx) {
-	    cosine = (double)abs(sx) / sqrt((double)(sx*sx)+(double)(sy*sy));
-	    x2 = (sx >= 0)? x + round(l): x - round(l);
-	    y2 = y + round( ((sx>=0)? l: -l) * (double)sy / (double)sx);
-	    }
-	else {
-	    cosine = 1.0;
-	    x2 = x;
-	    y2 = (sy >= 0)? y + round(l): y - round(l);
-	    }
-	if (sx == 0  ||  sy == 0  ||  l*unitlength >= MIN_LEN) {
-	    switch (arrow) {
-	    case 0:  /* simple line */
-		fprintf(tfp, "\\put(%3d,%3d){\\line(%2d,%2d)", x, y, sx,sy);
-		break;
-	    case 1:  /* forward arrow */
-		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d)", x, y, sx,sy);
-		break;
-	    case -1: /* backward arrow */
-		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d)", x2, y2, -sx,-sy);
-		break;
-	    case 2:  /* double arrow */
-		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){  0}}\n", x,y,-sx,-sy);
-		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d)", x, y, sx, sy);
-		break;
-		}
-	    if (l == floor(l))
-		fprintf(tfp, "{%3.0f}}\n", l);
-	    else
-		fprintf(tfp, "{%7.3f}}\n", l);
-	    }
-	else {
-	    n = 2 * (l/cosine) / (ldot_diameter/unitlength);
-	    if (n==0)	/* missing */
-	    	return;
-	    fprintf(stderr, "Line too short; will do %d dots\n", n);
-	    dx = l / (double)n;
-	    if (sx < 0) dx = -dx;
-	    dy = dx * (double)sy / (double)sx;
-	    fprintf(tfp, 
-	      "\\multiput(%3d,%3d)(%.5f,%.5f){%d}{\\makebox(%.4f,%.4f){%s}}\n",
-	      x, y, dx, dy, n+1, ldot_xoffset, ldot_yoffset, ldot_cmd);
-	    if (arrow == 1  ||  arrow == 2)  /* forward arrow */
-		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x2,y2, sx,sy);
-	    if (arrow == -1  ||  arrow == 2) /* backward arrow */
-		fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x,y, -sx,-sy);
-	    }
-	}
-
-/*
- * draw a dashed line given latex slope
- */
-static void
-put_dashline (x, y, sx, sy, l, arrow, val)
-  int	x, y, sx, sy, arrow;
-  double	l;
-  double	val;
-{
-	double	cosine;		/* cosine of line angle */
-	double	nd;		/* number of dashes and gaps fitting on line */
-	int	n;		/* nd rounded to the nearest odd integer */
-	double	dl;		/* actual x-length of each dash */
-	double	dg;		/* actual x-length of each gap */
-	double	dx, dy;		/* step between dashes */
-	int	x2, y2;
-
-	if (sx) {
-	    cosine = (double)abs(sx) / sqrt((double)(sx*sx)+(double)(sy*sy));
-	    x2 = (sx >= 0)? x + round(l): x - round(l);
-	    y2 = y + round( ((sx>=0)? l: -l) * (double)sy / (double)sx );
-	    }
-	else {
-	    cosine = 1.0;
-	    x2 = x;
-	    y2 = (sy >= 0)? y + round(l): y - round(l);
-	    }
-	/*** compute number of dashes, length of dashes and gaps ***/
-	nd = l / (val*dash_mag*cosine);
-	n = (int) (rint((nd + 1.0)/2.0)*2 - 1);
-	dl = l / (double)n;
-	if (sx  &&  sy  &&  dl*unitlength < MIN_LEN) {
-	    fprintf(stderr, "Dash too small; using larger dash\n");
-	    dl = MIN_LEN/unitlength * cosine;
-	    nd = l / dl;
-	    n = (int) (rint((nd + 1.0)/2.0)*2 - 1);
-	    }
-	if (2*dl >= l  ||  (sx  &&  sy  &&  l*unitlength < MIN_LEN)) {
-	    fprintf(stderr, "Dashed line too short; drawing solid line\n");
-	    put_solidline (x, y, sx, sy, l, arrow, (double) 0.0);
-	    return;
-	    }
-	dg = (l - (n/2+1)*dl) / (double)(n/2);
-	if (sx) {
-	    dx = dl+dg;
-	    if (sx < 0) dx = -dx;
-	    dy = dx * (double)sy / (double)sx;
-	    }
-	else {
-	    dx = 0.0;
-	    dy = dl+dg;
-	    if (sy < 0) dy = -dy;
-	    }
-	/*** draw dashed line ***/
-	fprintf(tfp, "\\multiput(%3d,%3d)(%.5f,%.5f){%d}{\\line(%2d,%2d){%7.3f}}\n",
-	    x, y, dx, dy, n/2+1, sx, sy, dl);
-	/*** draw arrow heads ***/
-	if (arrow == 1  ||  arrow == 2)
-	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x2, y2, sx, sy);
-	if (arrow == -1  ||  arrow == 2)
-	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x, y, -sx, -sy);
-	}
-
-/*
- * draw a dotted line given latex slope
- */
-static void
-put_dotline (x, y, sx, sy, l, arrow, val)
-  int	x, y, sx, sy, arrow;
-  double	l;
-  double	val;
-{
-	double	cosine;		/* cosine of line angle */
-	double	nd;		/* number of dots fitting on line */
-	int	n;		/* nd rounded to the nearest integer */
-	double	dx, dy;		/* step between dashes */
-	int	x2, y2;
-
-
-	cosine = (sx)? (double)abs(sx) / sqrt((double)(sx*sx)+(double)(sy*sy)): 1.0;
-	/*** compute step width ***/
-	nd = l / (3*val*cosine);
-	n = rint(nd);
-	if (n == 0)
-		n = 1;		/* sanity check */
-	if (sx) {
-	    dx = l / (double)n;
-	    if (sx < 0) dx = -dx;
-	    dy = dx * (double)sy / (double)sx;
-	    }
-	else {
-	    dx = 0.0;
-	    dy = l / (double)n;
-	    if (sy < 0) dy = -dy;
-	    }
-	/*** draw arrow heads ***/
-	if (arrow == 1  ||  arrow == 2) {
-	    /* forward arrow */
-	    if (sx) {
-		x2 = (sx >= 0)? x + round(l): x - round(l);
-		y2 = y + round( ((sx>=0)? l: -l) * (double)sy / (double)sx );
-		}
-	    else {
-		x2 = x;
-		y2 = (sy >= 0)? y + round(l): y - round(l);
-		}
-	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x2, y2, sx, sy);
-	    n--;
-	    }
-	if (arrow == -1  ||  arrow == 2) {
-	    fprintf(tfp, "\\put(%3d,%3d){\\vector(%2d,%2d){0}}\n", x, y, -sx, -sy);
-	    x = round(x + dx);
-	    y = round(y + dy);
-	    n--;
-	    }
-	/*** draw dotted line ***/
-	fprintf(tfp, "\\multiput(%3d,%3d)(%.5f,%.5f){%d}{\\makebox(%.4f,%.4f){%s}}\n",
-	    x, y, dx, dy, n+1, dot_xoffset, dot_yoffset, dot_cmd);
-	}
 
 void
-genlatex_spline(s)
-  F_spline	*s;
+genlatex_spline(F_spline *s)
 {
 	fprintf(stderr, "Can't generate spline; omitting object\n");
 	}
 
 void
-genlatex_ellipse(e)
-  F_ellipse	*e;
+genlatex_ellipse(F_ellipse *e)
 {
 	int  x, y, d, dx, dy;
 
-	if (verbose) 
+	if (verbose)
 	    fprintf(tfp, "%%\n%% Fig ELLIPSE\n%%\n");
 
 	/* print any comments prefixed with "%" */
@@ -714,14 +798,14 @@ genlatex_ellipse(e)
 
 	    d = 2 * e->radiuses.x;
 	    if (e->fill_style == BLACK_FILL)
-	    	fprintf(tfp, "\\put(%3d,%3d){\\circle*{%d}}\n", x, y, d);
+		fprintf(tfp, "\\put(%3d,%3d){\\circle*{%d}}\n", x, y, d);
 	    else {
-	      	fprintf(tfp, "\\put(%3d,%3d){\\circle{%d}}\n", x, y, d);
+		fprintf(tfp, "\\put(%3d,%3d){\\circle{%d}}\n", x, y, d);
 		if (e->fill_style != UNFILLED)
 			fprintf(stderr, "Circle area fill not implemented\n");
 	    }
 
-	} else {	    
+	} else {
 	    dx = 2 * e->radiuses.x;
 	    dy = 2 * e->radiuses.y;
 	    fprintf(tfp, "\\put(%3d,%3d){\\oval(%d,%d)}\n", x, y, dx, dy);
@@ -733,14 +817,13 @@ genlatex_ellipse(e)
       }
 
 void
-genlatex_text(t)
-  F_text	*t;
+genlatex_text(F_text *t)
 {
-	int   	x, y;
+	int	x, y;
 	char	*tpos;
 	unsigned char	*cp;
 
-	if (verbose) 
+	if (verbose)
 	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
 	/* print any comments prefixed with "%" */
@@ -754,20 +837,20 @@ genlatex_text(t)
 
 	    case T_LEFT_JUSTIFIED:
 	    case DEFAULT:
-	    	tpos = "[lb]";
+		tpos = "[lb]";
 		break;
 
 	    case T_CENTER_JUSTIFIED:
-	    	tpos = "[b]";
+		tpos = "[b]";
 		break;
 
 	    case T_RIGHT_JUSTIFIED:
-	    	tpos = "[rb]";
+		tpos = "[rb]";
 		break;
 
 	    default:
 		fprintf(stderr, "Text incorrectly positioned\n");
-	    	tpos = "[lb]";	/* make left in this case */
+		tpos = "[lb]";	/* make left in this case */
 	    }
 
 	/* smash is used to position text at baseline */
@@ -775,9 +858,9 @@ genlatex_text(t)
 
 	fprintf(tfp, "\\put(%3d,%3d){", x, y);
 
-#ifdef DVIPS
-        if(t->angle)
-          fprintf(tfp, "\\rotatebox{%.1f}{", t->angle*180/M_PI);
+#ifdef LATEX2E_GRAPHICS
+	if(t->angle)
+	  fprintf(tfp, "\\rotatebox{%.1f}{", t->angle*180/M_PI);
 #endif
 
 	fprintf(tfp, "\\makebox(0,0)%s{\\smash{", tpos);
@@ -790,50 +873,87 @@ genlatex_text(t)
 		/* this loop escapes characters "$&%#_{}" */
 		/* and deleted characters "~^\" */
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
-	      	    if (strchr("$&%#_{}", *cp)) 
+		    if (strchr("$&%#_{}", *cp))
 			fputc('\\', tfp);
-	      	    if (strchr("~^\\", *cp))
+		    if (strchr("~^\\", *cp))
 			fprintf(stderr,
 				"Bad character in text object '%c'\n" ,*cp);
 		    else
 			fputc(*cp, tfp);
-	      	}
-	else 
+		}
+	else
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
 #ifdef I18N
-		    extern Boolean support_i18n;
+		    extern bool support_i18n;
 		    if (support_i18n && (t->font <= 2))
 			fputc(*cp, tfp);
 		    else
 #endif
 		    if (*cp >= 0xa0) {
-	                switch (encoding) {
-	                   case 0: /* no escaping */
-			        fputc(*cp, tfp);
-	                        break;
-	                   case 1: /* iso-8859-1 */
-	    	    	        fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
-	                        break;
-	                   case 2: /* iso-8859-2 */
-	    		        fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
-	                        break;
-	                }
-	            } else
+			switch (encoding) {
+			   case 0: /* no escaping */
+				fputc(*cp, tfp);
+				break;
+			   case 1: /* iso-8859-1 */
+				fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
+				break;
+			   case 2: /* iso-8859-2 */
+				fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
+				break;
+			}
+		    } else
 			fputc(*cp, tfp);
 		}
 
 	reset_color(t->color);
 
-#ifdef DVIPS
-        if(t->angle)
-             fprintf(tfp, "}");
+#ifdef LATEX2E_GRAPHICS
+	if(t->angle)
+	     fprintf(tfp, "}");
 #endif
- 	fprintf(tfp, "}}}}\n");
+	fprintf(tfp, "}}}}\n");
+	}
+
+static void
+put_quarter(F_pos p1, F_pos p2, int q)
+/*
+ *  Draw quarter oval from p1 to p2 in quadrant q
+ */
+{
+	char	*opt;
+	int	px, py, dx, dy;
+
+	dx = 2*ABS(p1.x - p2.x);
+	dy = 2*ABS(p1.y - p2.y);
+	if (dx == 0  &&  dy == 0)
+	    return;
+	switch (q) {
+	    case 0:
+		px = MIN(p1.x, p2.x);
+		py = MIN(p1.y, p2.y);
+		opt = "tr";
+		break;
+	    case 1:
+		px = MAX(p1.x, p2.x);
+		py = MIN(p1.y, p2.y);
+		opt = "tl";
+		break;
+	    case 2:
+		px = MAX(p1.x, p2.x);
+		py = MAX(p1.y, p2.y);
+		opt = "bl";
+		break;
+	    case 3:
+		px = MIN(p1.x, p2.x);
+		py = MAX(p1.y, p2.y);
+		opt = "br";
+		break;
+	    }
+	fprintf(tfp, "\\put(%3d,%3d){\\oval(%3d,%3d)[%s]}\n", px, py, dx, dy, opt);
 	}
 
 void
-genlatex_arc(a)
-  F_arc	*a;
+genlatex_arc(F_arc *a)
 /*
  *  Approximates an arc by a sequence of quarter ovals.
  *
@@ -869,7 +989,7 @@ genlatex_arc(a)
 	static char	*ad1[4] = { " 0,-1", " 1, 0", " 0, 1", "-1, 0" };
 	static char	*ad2[4] = { "-1, 0", " 0,-1", " 1, 0", " 0, 1" };
 
-	if (verbose) 
+	if (verbose)
 	    fprintf(tfp, "%%\n%% Fig ARC object\n%%\n");
 
 	/* print any comments prefixed with "%" */
@@ -913,9 +1033,9 @@ genlatex_arc(a)
 	angle1 = atan2(v1y, v1x) * rad2deg;
 	angle2 = atan2(v2y, v2x) * rad2deg;
 	if (angle1 < 0.0)
-	    angle1 += 360.0; 
+	    angle1 += 360.0;
 	if (angle2 < 0.0)
-	    angle2 += 360.0; 
+	    angle2 += 360.0;
 	/* compute arc radius */
 	r = sqrt(v1x*v1x+v1y*v1y);
 	/*** compute intersection of arc with x and y axis (origin at cx, cy) */
@@ -930,7 +1050,7 @@ genlatex_arc(a)
 	/*** compute in which quadrants p1 and p2 are located ***/
 	q1 = (int)(angle1/90.0);
 	q2 = (int)(angle2/90.0);
-	if (fabs(angle1 - 90.0*q1) > arc_tolerance 
+	if (fabs(angle1 - 90.0*q1) > arc_tolerance
 	 || fabs(angle2 - 90.0*q2) > arc_tolerance)
 	    fprintf(stderr, "Approximating arc by ovals\n");
 	/*** Draw arc ***/
@@ -950,54 +1070,13 @@ genlatex_arc(a)
 	reset_color(a->pen_color);
 	}
 
-static void
-put_quarter(p1, p2, q)
-  F_pos	p1, p2;
-  int	q;
-/*
- *  Draw quarter oval from p1 to p2 in quadrant q
- */
-{
-	char	*opt;
-	int	px, py, dx, dy;
-
-	dx = 2*ABS(p1.x - p2.x);
-	dy = 2*ABS(p1.y - p2.y);
-	if (dx == 0  &&  dy == 0)
-	    return;
-	switch (q) {
-	    case 0:
-		px = MIN(p1.x, p2.x);
-		py = MIN(p1.y, p2.y);
-		opt = "tr";
-		break;
-	    case 1:
-		px = MAX(p1.x, p2.x);
-		py = MIN(p1.y, p2.y);
-		opt = "tl";
-		break;
-	    case 2:
-		px = MAX(p1.x, p2.x);
-		py = MAX(p1.y, p2.y);
-		opt = "bl";
-		break;
-	    case 3:
-		px = MIN(p1.x, p2.x);
-		py = MAX(p1.y, p2.y);
-		opt = "br";
-		break;
-	    }
-	fprintf(tfp, "\\put(%3d,%3d){\\oval(%3d,%3d)[%s]}\n", px, py, dx, dy, opt);
-	}
-
 #define  MAXCOLORS 32
 
 /* need this for communication between color routines. Sorry */
 static int lastcolor=-1;
 
 void
-set_color(col)
-int col;
+set_color(int col)
 {
    static char *colors[] = {
    "0,0,0",    /* black */
@@ -1033,9 +1112,9 @@ int col;
    "1,.88,.88",	/* lt pink */
    "1,.84,0",	/* gold */
    };
-   
 
-#ifdef DVIPS
+
+#ifdef LATEX2E_GRAPHICS
    if (col != -1) {
        /* we do not support nested colors, although LaTeX would */
        if (lastcolor == -1)
@@ -1055,10 +1134,9 @@ int col;
 }
 
 void
-reset_color(col)
-int col;
+reset_color(int col)
 {
-#ifdef DVIPS
+#ifdef LATEX2E_GRAPHICS
     if (col != -1 && col < NUM_STD_COLS + MAX_USR_COLS) {
        /* end using the last color */
        fprintf(tfp, "}%%\n");
@@ -1071,9 +1149,9 @@ int col;
 
 
 struct driver dev_latex = {
-     	genlatex_option,
+	genlatex_option,
 	genlatex_start,
-	gendev_null,
+	gendev_nogrid,
 	genlatex_arc,
 	genlatex_ellipse,
 	genlatex_line,

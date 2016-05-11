@@ -9,40 +9,34 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
 void
-arc_tangent(x1, y1, x2, y2, direction, x, y)
-double	x1, y1, x2, y2, *x, *y;
-int	direction;
+arc_tangent(double x1, double y1, double x2, double y2, int direction,
+	double *x, double *y)
 {
 	if (direction) { /* counter clockwise  */
 	    *x = x2 - (y2 - y1);
 	    *y = y2 + (x2 - x1);
-	    }
-	else {
+	} else {
 	    *x = x2 + (y2 - y1);
 	    *y = y2 - (x2 - x1);
-	    }
 	}
+}
 
 void
-arc_tangent_int(x1, y1, x2, y2, direction, x, y)
-double	x1, y1, x2, y2;
-int	*x, *y;
-int	direction;
+arc_tangent_int(double x1, double y1, double x2, double y2, int direction,
+	int *x, int *y)
 {
 	if (direction) { /* counter clockwise  */
 	    *x = x2 - (y2 - y1);
 	    *y = y2 + (x2 - x1);
-	    }
-	else {
+	} else {
 	    *x = x2 + (y2 - y1);
 	    *y = y2 - (x2 - x1);
-	    }
 	}
-
+}

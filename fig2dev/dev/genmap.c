@@ -8,8 +8,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -33,9 +33,9 @@
 
 #define TEXT_LENGTH  300
 
-static int      border_margin = 0;
-static char     url[TEXT_LENGTH], alt[TEXT_LENGTH];
-static char     buf[2000];
+static int	border_margin = 0;
+static char	url[TEXT_LENGTH], alt[TEXT_LENGTH];
+static char	buf[2000];
 
 struct hlink_item {
   char *url;
@@ -61,16 +61,14 @@ static hlink* last_link = 0;
 
 
 void
-genmap_option(opt, optarg)
-     char opt;
-     char *optarg;
+genmap_option(char opt, char *optarg)
 {
   switch (opt) {
-  case 'b':     /* border margin */
+  case 'b':	/* border margin */
     sscanf(optarg,"%d",&border_margin);
     break;
-  case 'L':     /* ignore language and magnif. */
-  case 'm':
+  case 'G':
+  case 'L':
     break;
   default:
     put_msg(Err_badarg, opt, "map");
@@ -79,11 +77,10 @@ genmap_option(opt, optarg)
 }
 
 static char *
-is_link(comment)
-     F_comment  *comment;
+is_link(F_comment *comment)
 {
   char *cp1, *cp2;
-  Boolean have_alt = False;
+  bool have_alt = false;
   int i;
 
   url[0] = '\0';
@@ -103,24 +100,24 @@ is_link(comment)
       url[i] = '\0';
       while (isspace(*cp2)) cp2++;  /* spaces */
       if (*cp2 != '\0') {
-        if (strncasecmp(cp2, "ALT=", 4) == 0) {
-          have_alt = True;
+	if (strncasecmp(cp2, "ALT=", 4) == 0) {
+	  have_alt = true;
 	  cp2 = cp2 + 4;
-	  while (isspace(*cp2)) cp2++;  /* spaces */
+	  while (isspace(*cp2)) cp2++;	/* spaces */
 	  i = 0;
 	  if (*cp2 == '"') {
 	    cp2++;
 	    while (*cp2 != '\0' && *cp2 != '"') alt[i++] = *(cp2++);  /* text */
 	  } else {
-	    while (isgraph(*cp2)) alt[i++] = *(cp2++);  /* text */
+	    while (isgraph(*cp2)) alt[i++] = *(cp2++);	/* text */
 	  }
 	  alt[i] = '\0';
-        } else {
-          fprintf(stderr, "fig2dev(map): unknown attribute: %s\n", cp2);
-        }
-      } 
+	} else {
+	  fprintf(stderr, "fig2dev(map): unknown attribute: %s\n", cp2);
+	}
+      }
       if (!have_alt)
-        fprintf(stderr, "fig2dev(map): ALT is required in HTML 3.2: %s\n", cp1);
+	fprintf(stderr, "fig2dev(map): ALT is required in HTML 3.2: %s\n", cp1);
       return cp1;
     }
     comment = comment->next;
@@ -128,7 +125,7 @@ is_link(comment)
   return NULL;
 }
 
-void
+static void
 add_link(char *area)
 {
     hlink* hl = (hlink*)malloc(sizeof(hlink));
@@ -143,8 +140,7 @@ add_link(char *area)
 }
 
 void
-genmap_start(objects)
-     F_compound *objects;
+genmap_start(F_compound *objects)
 {
   char *basename;
   char *ref;
@@ -155,8 +151,8 @@ genmap_start(objects)
     strcpy(basename, to);
     for (i = strlen(basename) - 1; 0 < i; i--) {
       if (basename[i] == '.') {
-        basename[i] = '\0';
-        break;
+	basename[i] = '\0';
+	break;
       }
     }
   } else {
@@ -178,13 +174,13 @@ genmap_start(objects)
   ref = is_link(objects->comments);
   if (ref != NULL) {
     sprintf(buf, "<AREA COORDS=\"%d,%d,%d,%d\" %s>\n",
-            XZOOM(llx), YZOOM(lly), XZOOM(urx), YZOOM(ury), ref);
+	    XZOOM(llx), YZOOM(lly), XZOOM(urx), YZOOM(ury), ref);
     add_link(buf);
   }
 }
 
 int
-genmap_end()
+genmap_end(void)
 {
   hlink* l;
   int len;
@@ -212,7 +208,7 @@ genmap_end()
     else sprintf(label, "<TT>%s</TT>", l->url);
     fprintf(tfp, "%s<A HREF=%s>%s</A>\n",
 	    (len == 0) ? "" : " | ", l->url, label);
-	    
+
     len = len + strlen(label) + 3;
     if (50 < len) {
       fprintf(tfp, "<BR>\n");
@@ -230,8 +226,7 @@ genmap_end()
 }
 
 void
-genmap_arc(a)
-     F_arc      *a;
+genmap_arc(F_arc *a)
 {
   char *ref;
   int cx, cy, sx, sy, ex, ey;
@@ -276,8 +271,7 @@ genmap_arc(a)
 }
 
 void
-genmap_ellipse(e)
-     F_ellipse  *e;
+genmap_ellipse(F_ellipse *e)
 {
   char *ref;
   int x0, y0;
@@ -314,8 +308,7 @@ genmap_ellipse(e)
 }
 
 void
-genmap_line(l)
-     F_line     *l;
+genmap_line(F_line *l)
 {
   char *ref;
   int xmin, xmax, ymin, ymax;
@@ -331,33 +324,33 @@ genmap_line(l)
       xmin = xmax = l->points->x;
       ymin = ymax = l->points->y;
       for (p = l->points->next; p != NULL; p = p->next) {
-        if (p->x < xmin) xmin = p->x;
-        if (xmax < p->x) xmax = p->x;
-        if (p->y < ymin) ymin = p->y;
-        if (ymax < p->y) ymax = p->y;
+	if (p->x < xmin) xmin = p->x;
+	if (xmax < p->x) xmax = p->x;
+	if (p->y < ymin) ymin = p->y;
+	if (ymax < p->y) ymax = p->y;
       }
       sprintf(buf, "<AREA COORDS=\"%d,%d,%d,%d\" %s>\n",
-              XZOOM(xmin), YZOOM(ymin), XZOOM(xmax), YZOOM(ymax), ref);
+	      XZOOM(xmin), YZOOM(ymin), XZOOM(xmax), YZOOM(ymax), ref);
       add_link(buf);
       break;
     case T_POLYLINE:
     case T_POLYGON:
       sprintf(buf, "<AREA SHAPE=\"poly\" COORDS=\"");
       for (p = l->points; (l->type==T_POLYLINE? p: p->next) != NULL; p = p->next) {
-        x = XZOOM(p->x);
-        y = YZOOM(p->y);
-        if (p == l->points
-            || MIN_DIST < abs(last_x - x) || MIN_DIST < abs(last_y - y)) {
-          if (sizeof(buf) < strlen(buf) + 100) {
-            fprintf(stderr, "fig2dev(map): too complex POLYLINE... ignored\n");
-            return;
-          } else {
-            if (p != l->points) sprintf(&buf[strlen(buf)], ",");
-            sprintf(&buf[strlen(buf)], "%d,%d", x, y);
-            last_x = x;
-            last_y = y;
-          }
-        }
+	x = XZOOM(p->x);
+	y = YZOOM(p->y);
+	if (p == l->points
+	    || MIN_DIST < abs(last_x - x) || MIN_DIST < abs(last_y - y)) {
+	  if (sizeof(buf) < strlen(buf) + 100) {
+	    fprintf(stderr, "fig2dev(map): too complex POLYLINE... ignored\n");
+	    return;
+	  } else {
+	    if (p != l->points) sprintf(&buf[strlen(buf)], ",");
+	    sprintf(&buf[strlen(buf)], "%d,%d", x, y);
+	    last_x = x;
+	    last_y = y;
+	  }
+	}
       }
       sprintf(&buf[strlen(buf)], "\" %s>\n", ref);
       add_link(buf);
@@ -367,8 +360,7 @@ genmap_line(l)
 }
 
 void
-genmap_text(t)
-     F_text     *t;
+genmap_text(F_text *t)
 {
   char *ref;
 
@@ -379,15 +371,15 @@ genmap_text(t)
 }
 
 struct driver dev_map = {
-        genmap_option,
-        genmap_start,
+	genmap_option,
+	genmap_start,
+	gendev_nogrid,
+	genmap_arc,
+	genmap_ellipse,
+	genmap_line,
 	gendev_null,
-        genmap_arc,
-        genmap_ellipse,
-        genmap_line,
-        gendev_null,
-        genmap_text,
-        genmap_end,
-        INCLUDE_TEXT
+	genmap_text,
+	genmap_end,
+	INCLUDE_TEXT
 };
 

@@ -7,14 +7,14 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-/* 
- *	genpdf.c : pdf driver for fig2dev 
+/*
+ *	genpdf.c : pdf driver for fig2dev
  *
  *	Author: Brian V. Smith
  *		Uses genps functions to generate PostScript output then
@@ -22,27 +22,24 @@
  */
 
 #include "fig2dev.h"
-#include "genps.h"
 #include "object.h"
+#include "genps.h"
 #include "texfonts.h"
 
 static	FILE	*saveofile;
 static	char	*ofile;
 
 void
-genpdf_option(opt, optarg)
-char opt;
-char *optarg;
+genpdf_option(char opt, char *optarg)
 {
 	/* just use the eps options */
-	pdfflag = True;
-	epsflag = True;
+	pdfflag = true;
+	epsflag = true;
 	gen_ps_eps_option(opt, optarg);
 }
 
 void
-genpdf_start(objects)
-F_compound	*objects;
+genpdf_start(F_compound *objects)
 {
     /* divert output from ps driver to the pipe into ghostscript */
     /* but first close the output file that main() opened */
@@ -65,7 +62,7 @@ F_compound	*objects;
 }
 
 int
-genpdf_end()
+genpdf_end(void)
 {
 	int	 status;
 
@@ -89,7 +86,7 @@ genpdf_end()
 }
 
 struct driver dev_pdf = {
-  	genpdf_option,
+	genpdf_option,
 	genpdf_start,
 	genps_grid,
 	genps_arc,
@@ -100,5 +97,3 @@ struct driver dev_pdf = {
 	genpdf_end,
 	INCLUDE_TEXT
 };
-
-

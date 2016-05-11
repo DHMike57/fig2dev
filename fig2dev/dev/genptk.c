@@ -10,8 +10,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -25,12 +25,14 @@
 
 #include "fig2dev.h"
 #include "object.h"
-#include "readxbm.h"
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
 
 #define NONE (0xffffff + 1)
+
+int ReadFromBitmapFile(FILE *file, unsigned int *width, unsigned int *height,
+		unsigned char **data_ret);	/* readxbm.c */
 
 static void
 	drawBitmap(F_line *),
@@ -56,39 +58,36 @@ static char jpegRequired = 0;
 static char tiffRequired = 0;
 
 #define		TOP	8.5 /* inches */
-static int	full_page = False;
+static int	full_page = false;
 
 /*
  *   g e n p T k O p t i o n ( )
  */
 
 void
-genptk_option(opt, optarg)
-char opt, *optarg;
+genptk_option(char opt, char *optarg)
 {
     switch (opt) {
 	case 'l':			/* landscape mode */
-		landscape = True;	/* override the figure file setting */
-		orientspec = True;	/* user-specified */
+		landscape = true;	/* override the figure file setting */
+		orientspec = true;	/* user-specified */
 		break;
 
 	case 'p':			/* portrait mode */
-		landscape = False;	/* override the figure file setting */
-		orientspec = True;	/* user-specified */
+		landscape = false;	/* override the figure file setting */
+		orientspec = true;	/* user-specified */
 		break;
 
 	case 'P':			/* use full page instead of bounding box */
-		full_page = True;
+		full_page = true;
 		break;
 
 	case 'z':			/* papersize */
 		(void) strcpy (papersize, optarg);
-		paperspec = True;	/* user-specified */
+		paperspec = true;	/* user-specified */
 		break;
 
-	case 'f':			/* ignore magnification, font sizes and lang here */
-	case 'm':
-	case 's':
+	case 'G':
 	case 'L':
 		break;
 
@@ -179,7 +178,7 @@ genptk_start(F_compound *objects)
 	sprintf(stfp, "#$c->configure(qw/-xscrollincrement 1p -yscrollincrement 1p/);\n");
 	niceLine(stfp);
 	if ( !full_page ) {
-	    sprintf(stfp, "$c->configure(-scrollregion => ['%.2fi','%.2fi','%.2fi','%.2fi']);\n", 
+	    sprintf(stfp, "$c->configure(-scrollregion => ['%.2fi','%.2fi','%.2fi','%.2fi']);\n",
 			    MIN(X(urx),X(llx)), MIN(Y(ury),Y(lly)),MAX(X(urx),X(llx)), MAX(Y(ury),Y(lly)));
 	    niceLine(stfp);
 	    sprintf(stfp, "# Shift canvas by lower of bounding box\n");
@@ -211,7 +210,7 @@ genptk_start(F_compound *objects)
  */
 
 int
-genptk_end()
+genptk_end(void)
 {
 	char	stfp[64];
 
@@ -331,8 +330,8 @@ drawBitmap(F_line *l)
 	FILE	*fd;
 	int	filtype;	/* file (0) or pipe (1) */
 	int	stat;
-	FILE	*open_picfile();
-	void	close_picfile();
+	FILE	*open_picfile(char *name, int *type, bool pipeok,char *retname);
+	void	close_picfile(FILE *file, int type);
 	char	xname[PATH_MAX];
 	char    isphoto;
 
@@ -346,7 +345,7 @@ drawBitmap(F_line *l)
 
 	/* see if supported image format first */
 
-	if ((fd=open_picfile(p->file, &filtype, True, xname)) == NULL) {
+	if ((fd=open_picfile(p->file, &filtype, true, xname)) == NULL) {
 	    fprintf(stderr,"drawBitmap: can't open bitmap file %s\n",p->file);
 	    return;
 	}
@@ -363,7 +362,7 @@ drawBitmap(F_line *l)
 	isphoto = 0;
 	if ((strncmp((char *) buf,"GIF",3) == 0) ||
 	    (*buf == 'P'  && (*(buf+1) == '5' || *(buf+1) == '6')) /* PPM/PGM */ ||
-	    (strncmp((char *) buf,"BM",2) == 0) /* Windows BMP */ || 
+	    (strncmp((char *) buf,"BM",2) == 0) /* Windows BMP */ ||
 	    (strncmp((char *) buf,"/* XPM */",9) == 0) /* X11 Pixmap */ ) {
 		isphoto = 1;
 	} else if (strncmp((char *) buf+1,"PNG",3) == 0) {
@@ -407,7 +406,9 @@ drawBitmap(F_line *l)
 	} else {
 	    /* Try for an X Bitmap file format. */
 	    rewind(fd);
-	    if (ReadFromBitmapFile(fd, &dx, &dy, &p->bitmap)) {
+	    unsigned int dummy; /* Thomas Loimer, 2015-12 */
+			/* return values width, height obviously not used */
+	    if (ReadFromBitmapFile(fd, &dummy, &dummy, &p->bitmap)) {
 		sprintf(stfp, "%s->createBitmap(qw/%fi %fi -anchor nw",
 			canvas, X(l->points->x), Y(l->points->y));
 		niceLine(stfp);
@@ -445,7 +446,7 @@ drawBitmap(F_line *l)
 #define latexFontTypewriter	13
 
 void
-genptk_text(F_text * t)
+genptk_text(F_text *t)
 {
 	char		stfp[2048];
 	int		i, j;
@@ -828,7 +829,7 @@ genptk_ctlSpline(F_spline *s)
 		cx2	 = (x1 + 3.0*x2)/4.0;
 		cy2	 = (y1 + 3.0*y2)/4.0;
 	}
-	x1	 = x2; 
+	x1	 = x2;
 	y1	 = y2;
 	p	 = s->points->next;
 	x2	 = p->x/ppi;
@@ -943,7 +944,7 @@ genptk_ctlSpline(F_spline *s)
  *   g e n p T k S p l i n e ( )
  */
 
-void 
+void
 genptk_spline(F_spline *s)
 {
 	/* print any comments prefixed with "#" */
@@ -1316,7 +1317,7 @@ ptkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
 {
 	char		stfp[1024];
 	extern char	*canvas;	/* Tk canvas name. */
-	F_point 	*p, *q;
+	F_point		*p, *q;
 	int		pts;
 
 	p = (F_point *) shape;
@@ -1482,7 +1483,7 @@ niceLine(char *s)
 struct driver   dev_ptk = {
 	genptk_option,
 	genptk_start,
-	gendev_null,
+	gendev_nogrid,
 	genptk_arc,
 	genptk_ellipse,
 	genptk_line,
@@ -1491,4 +1492,3 @@ struct driver   dev_ptk = {
 	genptk_end,
 	INCLUDE_TEXT
 };
-

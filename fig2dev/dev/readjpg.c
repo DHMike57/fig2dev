@@ -10,8 +10,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -28,21 +28,21 @@
 #include "fig2dev.h"
 #include "object.h"
 #include "psimage.h"
-
-extern void	 close_picfile();
-extern FILE	*open_picfile();
-
-#ifdef REQUIRES_GETOPT
-int      getopt(int nargc, char **nargv, char *ostr);
+#ifdef HAVE_SETMODE	/* see fig2dev.c */
+#include <io.h>
+#include <fcntl.h>
 #endif
 
-int Margin     	= 20;           /* safety margin */
-Boolean quiet	= False;	/* suppress informational messages */
-Boolean autorotate = False;	/* disable automatic rotation */
+extern void	 close_picfile(FILE *file, int type);
+extern FILE	*open_picfile(char *name, int *type, bool pipeok,char *retname);
 
-extern	Boolean	AnalyzeJPEG(imagedata * image);
+int Margin	= 20;		/* safety margin */
+bool quiet	= false;	/* suppress informational messages */
+bool autorotate = false;	/* disable automatic rotation */
+
+extern	bool	AnalyzeJPEG(imagedata *image);
 extern	int	ASCII85Encode(FILE *in, FILE *out);
-extern	void    ASCIIHexEncode(FILE *in, FILE *out);
+extern	void	ASCIIHexEncode(FILE *in, FILE *out);
 
 #define BUFFERSIZE 1024
 static char buffer[BUFFERSIZE];
@@ -53,17 +53,13 @@ static imagedata image;
 /* only read the jpeg file header to get the pertinent info and put in pic struct */
 
 int
-read_jpg(file, filetype, pic, llx, lly)
-    FILE	   *file;
-    int		    filetype;
-    F_pic	   *pic;
-    int		   *llx, *lly;
+read_jpg(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 {
 
 	/* setup internal header */
 	image.mode	= ASCII85;	/* we won't use the BINARY mode */
 	image.dpi	= DPI_IGNORE;	/* ignore any DPI info from JPEG file */
-	image.adobe	= False;
+	image.adobe	= false;
 	image.fp	= file;
 	image.filename	= pic->file;
 
@@ -88,7 +84,7 @@ read_jpg(file, filetype, pic, llx, lly)
 
 /* here's where we read the rest of the jpeg file and format for PS */
 
-void 
+void
 JPEGtoPS(char *jpegfile, FILE *PSfile) {
   imagedata	*JPEG;
   size_t	 n;
@@ -99,7 +95,7 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
   JPEG = &image;
 
   /* reopen the file */
-  JPEG->fp = open_picfile(jpegfile, &filtype, True, realname);
+  JPEG->fp = open_picfile(jpegfile, &filtype, true, realname);
 
   time(&t);
 
@@ -108,10 +104,10 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
   fprintf(PSfile, "%%%%Creator: jpeg2ps %s by Thomas Merz\n", VERSION);
   fprintf(PSfile, "%%%%Title: %s\n", JPEG->filename);
   fprintf(PSfile, "%%%%CreationDate: %s", ctime(&t));
-  fprintf(PSfile, "%%%%BoundingBox: %d %d %d %d\n", 
-                   0, 0, JPEG->width, JPEG->height);
-  fprintf(PSfile, "%%%%DocumentData: %s\n", 
-                  JPEG->mode == BINARY ? "Binary" : "Clean7Bit");
+  fprintf(PSfile, "%%%%BoundingBox: %d %d %d %d\n",
+		   0, 0, JPEG->width, JPEG->height);
+  fprintf(PSfile, "%%%%DocumentData: %s\n",
+		  JPEG->mode == BINARY ? "Binary" : "Clean7Bit");
   fprintf(PSfile, "%%%%LanguageLevel: 2\n");
   fprintf(PSfile, "%%%%EndComments\n");
   fprintf(PSfile, "%%%%BeginProlog\n");
@@ -120,7 +116,7 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
   fprintf(PSfile, "/languagelevel where {pop languagelevel 2 lt}");
   fprintf(PSfile, "{true} ifelse {\n");
   fprintf(PSfile, "  (JPEG file '%s' needs PostScript Level 2!",
-                  JPEG->filename);
+		  JPEG->filename);
   fprintf(PSfile, "\\n) dup print flush\n");
   fprintf(PSfile, "  /Helvetica findfont 20 scalefont setfont ");
   fprintf(PSfile, "100 100 moveto show showpage stop\n");
@@ -129,9 +125,9 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
   fprintf(PSfile, "save\n");
   fprintf(PSfile, "/RawData currentfile ");
 
-  if (JPEG->mode == ASCIIHEX)            /* hex representation... */
+  if (JPEG->mode == ASCIIHEX)		 /* hex representation... */
     fprintf(PSfile, "/ASCIIHexDecode filter ");
-  else if (JPEG->mode == ASCII85)        /* ...or ASCII85         */
+  else if (JPEG->mode == ASCII85)	 /* ...or ASCII85	  */
     fprintf(PSfile, "/ASCII85Decode filter ");
   /* else binary mode: don't use any additional filter! */
 
@@ -140,16 +136,16 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
   fprintf(PSfile, "/Data RawData << ");
   fprintf(PSfile, ">> /DCTDecode filter def\n");
 
-  fprintf(PSfile, "/Device%s setcolorspace\n", 
-                  ColorSpaceNames[JPEG->components]);
+  fprintf(PSfile, "/Device%s setcolorspace\n",
+		  ColorSpaceNames[JPEG->components]);
   fprintf(PSfile, "{ << /ImageType 1\n");
-  fprintf(PSfile, "     /Width %d\n", JPEG->width);
-  fprintf(PSfile, "     /Height %d\n", JPEG->height);
-  fprintf(PSfile, "     /ImageMatrix [ %d 0 0 %d 0 %d ]\n",
-                  JPEG->width, -JPEG->height, JPEG->height);
-  fprintf(PSfile, "     /DataSource Data\n");
-  fprintf(PSfile, "     /BitsPerComponent %d\n", 
-                  JPEG->bits_per_component);
+  fprintf(PSfile, "	/Width %d\n", JPEG->width);
+  fprintf(PSfile, "	/Height %d\n", JPEG->height);
+  fprintf(PSfile, "	/ImageMatrix [ %d 0 0 %d 0 %d ]\n",
+		  JPEG->width, -JPEG->height, JPEG->height);
+  fprintf(PSfile, "	/DataSource Data\n");
+  fprintf(PSfile, "	/BitsPerComponent %d\n",
+		  JPEG->bits_per_component);
 
   /* workaround for color-inverted CMYK files produced by Adobe Photoshop:
    * compensate for the color inversion in the PostScript code
@@ -157,10 +153,10 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
   if (JPEG->adobe && JPEG->components == 4) {
     if (!quiet)
 	fprintf(stderr, "Note: Adobe-conforming CMYK file - applying workaround for color inversion.\n");
-    fprintf(PSfile, "     /Decode [1 0 1 0 1 0 1 0]\n");
+    fprintf(PSfile, "	  /Decode [1 0 1 0 1 0 1 0]\n");
   }else {
-    fprintf(PSfile, "     /Decode [0 1");
-    for (i = 1; i < JPEG->components; i++) 
+    fprintf(PSfile, "	  /Decode [0 1");
+    for (i = 1; i < JPEG->components; i++)
       fprintf(PSfile," 0 1");
     fprintf(PSfile, "]\n");
   }
@@ -176,16 +172,16 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
 	case BINARY:
 	    /* important: ONE blank and NO newline */
 	    fprintf(PSfile, " ");
-	#if defined(DOS)
-	    fflush(PSfile);         	  /* up to now we have CR/NL mapping */
-	    setmode(fileno(PSfile), O_BINARY);    /* continue in binary mode */
+	#ifdef HAVE_SETMODE	/* equivalent to #ifdef DOS */
+	    fflush(PSfile);		  /* up to now we have CR/NL mapping */
+	    setmode(fileno(PSfile), O_BINARY);	  /* continue in binary mode */
 	#endif
 	    /* copy data without change */
 	    while ((n = fread(buffer, 1, sizeof(buffer), JPEG->fp)) != 0)
 	      fwrite(buffer, 1, n, PSfile);
-	#if defined(DOS)
-	    fflush(PSfile);                  	/* binary yet */
-	    setmode(fileno(PSfile), O_TEXT);    /* text mode */
+	#ifdef HAVE_SETMODE
+	    fflush(PSfile);			/* binary yet */
+	    setmode(fileno(PSfile), O_TEXT);	/* text mode */
 	#endif
 	    break;
 
@@ -215,31 +211,31 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
  * is rather simple-minded about markers
  */
 
-extern Boolean quiet;
+extern bool quiet;
 
 typedef enum {		/* JPEG marker codes			*/
   M_SOF0  = 0xc0,	/* baseline DCT				*/
   M_SOF1  = 0xc1,	/* extended sequential DCT		*/
   M_SOF2  = 0xc2,	/* progressive DCT			*/
   M_SOF3  = 0xc3,	/* lossless (sequential)		*/
-  
+
   M_SOF5  = 0xc5,	/* differential sequential DCT		*/
   M_SOF6  = 0xc6,	/* differential progressive DCT		*/
   M_SOF7  = 0xc7,	/* differential lossless		*/
-  
+
   M_JPG   = 0xc8,	/* JPEG extensions			*/
   M_SOF9  = 0xc9,	/* extended sequential DCT		*/
   M_SOF10 = 0xca,	/* progressive DCT			*/
   M_SOF11 = 0xcb,	/* lossless (sequential)		*/
-  
+
   M_SOF13 = 0xcd,	/* differential sequential DCT		*/
   M_SOF14 = 0xce,	/* differential progressive DCT		*/
   M_SOF15 = 0xcf,	/* differential lossless		*/
-  
+
   M_DHT   = 0xc4,	/* define Huffman tables		*/
-  
+
   M_DAC   = 0xcc,	/* define arithmetic conditioning table	*/
-  
+
   M_RST0  = 0xd0,	/* restart				*/
   M_RST1  = 0xd1,	/* restart				*/
   M_RST2  = 0xd2,	/* restart				*/
@@ -248,7 +244,7 @@ typedef enum {		/* JPEG marker codes			*/
   M_RST5  = 0xd5,	/* restart				*/
   M_RST6  = 0xd6,	/* restart				*/
   M_RST7  = 0xd7,	/* restart				*/
-  
+
   M_SOI   = 0xd8,	/* start of image			*/
   M_EOI   = 0xd9,	/* end of image				*/
   M_SOS   = 0xda,	/* start of scan			*/
@@ -257,7 +253,7 @@ typedef enum {		/* JPEG marker codes			*/
   M_DRI   = 0xdd,	/* define restart interval		*/
   M_DHP   = 0xde,	/* define hierarchical progression	*/
   M_EXP   = 0xdf,	/* expand reference image(s)		*/
-  
+
   M_APP0  = 0xe0,	/* application marker, used for JFIF	*/
   M_APP1  = 0xe1,	/* application marker			*/
   M_APP2  = 0xe2,	/* application marker			*/
@@ -274,11 +270,11 @@ typedef enum {		/* JPEG marker codes			*/
   M_APP13 = 0xed,	/* application marker			*/
   M_APP14 = 0xee,	/* application marker, used by Adobe	*/
   M_APP15 = 0xef,	/* application marker			*/
-  
+
   M_JPG0  = 0xf0,	/* reserved for JPEG extensions		*/
   M_JPG13 = 0xfd,	/* reserved for JPEG extensions		*/
   M_COM   = 0xfe,	/* comment				*/
-  
+
   M_TEM   = 0x01,	/* temporary use			*/
 
   M_ERROR = 0x100	/* dummy marker, internal use only	*/
@@ -292,7 +288,7 @@ typedef enum {		/* JPEG marker codes			*/
  * Murphy's law, there are indeed compilers which produce the wrong
  * order of the getc() calls, e.g. the Metrowerks C compilers for BeOS
  * and Macintosh.
- * Since there are only few calls we don't care about the performance 
+ * Since there are only few calls we don't care about the performance
  * penalty and use a simplistic C function.
  */
 
@@ -305,42 +301,42 @@ get_2bytes(FILE *fp) {
     return val;
 }
 
-static int 
+static int
 next_marker(FILE *fp) { /* look for next JPEG Marker  */
   int c, nbytes = 0;
 
   if (feof(fp))
-    return M_ERROR;                 /* dummy marker               */
+    return M_ERROR;		    /* dummy marker		  */
 
   do {
-    do {                            /* skip to FF 		  */
+    do {			    /* skip to FF		  */
       nbytes++;
       c = getc(fp);
     } while (c != 0xFF);
-    do {                            /* skip repeated FFs  	  */
+    do {			    /* skip repeated FFs	  */
       c = getc(fp);
     } while (c == 0xFF);
-  } while (c == 0);                 /* repeat if FF/00 	      	  */
+  } while (c == 0);		    /* repeat if FF/00		  */
 
   return c;
 }
 
 /* analyze JPEG marker */
 
-Boolean
+bool
 AnalyzeJPEG(imagedata *image) {
   int b, c, unit;
   unsigned long i, length = 0;
 #define APP_MAX 255
   unsigned char appstring[APP_MAX];
-  Boolean SOF_done = False;
+  bool SOF_done = false;
 
   /* process JPEG markers */
   while (!SOF_done && (c = next_marker(image->fp)) != M_EOI) {
     switch (c) {
       case M_ERROR:
 	fprintf(stderr, "Error: unexpected end of JPEG file!\n");
-	return False;
+	return false;
 
       /* The following are not officially supported in PostScript level 2 */
       case M_SOF2:
@@ -354,9 +350,9 @@ AnalyzeJPEG(imagedata *image) {
       case M_SOF13:
       case M_SOF14:
       case M_SOF15:
-	fprintf(stderr, 
-         "Warning: JPEG file uses compression method %X - proceeding anyway.\n", c);
-        fprintf(stderr, "PostScript output does not work on all PS interpreters!\n");
+	fprintf(stderr,
+	 "Warning: JPEG file uses compression method %X - proceeding anyway.\n", c);
+	fprintf(stderr, "PostScript output does not work on all PS interpreters!\n");
 	/* FALLTHROUGH */
 
       case M_SOF0:
@@ -364,11 +360,11 @@ AnalyzeJPEG(imagedata *image) {
 	length = get_2bytes(image->fp);    /* read segment length  */
 
 	image->bits_per_component = getc(image->fp);
-	image->height             = (int) get_2bytes(image->fp);
-	image->width              = (int) get_2bytes(image->fp);
-	image->components         = getc(image->fp);
+	image->height		  = (int) get_2bytes(image->fp);
+	image->width		  = (int) get_2bytes(image->fp);
+	image->components	  = getc(image->fp);
 
-	SOF_done = True;
+	SOF_done = true;
 	break;
 
       case M_APP0:		/* check for JFIF marker with resolution */
@@ -388,12 +384,12 @@ AnalyzeJPEG(imagedata *image) {
 
 #define ASPECT_RATIO	0	/* JFIF unit byte: aspect ratio only */
 #define DOTS_PER_INCH	1	/* JFIF unit byte: dots per inch     */
-#define DOTS_PER_CM	2	/* JFIF unit byte: dots per cm       */
+#define DOTS_PER_CM	2	/* JFIF unit byte: dots per cm	     */
 
 	if (image->dpi == DPI_USE_FILE && length >= 14 &&
 	    !strncmp((const char *)appstring, "JFIF", 4)) {
-	  unit = appstring[7];		        /* resolution unit */
-	  					/* resolution value */
+	  unit = appstring[7];			/* resolution unit */
+						/* resolution value */
 	  image->dpi = (float) ((appstring[8]<<8) + appstring[9]);
 
 	  if (image->dpi == 0.0) {
@@ -415,13 +411,13 @@ AnalyzeJPEG(imagedata *image) {
 	      break;
 
 	    default:				/* unknown ==> ignore */
-	      fprintf(stderr, 
+	      fprintf(stderr,
 		"Warning: JPEG file contains unknown JFIF resolution unit - ignored!\n");
 	      image->dpi = DPI_IGNORE;
 	      break;
 	  }
 	}
-        break;
+	break;
 
       case M_APP14:				/* check for Adobe marker */
 	length = get_2bytes(image->fp);
@@ -436,7 +432,7 @@ AnalyzeJPEG(imagedata *image) {
 	 * to contain the string "Adobe" at the start of the APP14 marker.
 	 */
 	if (length >= 12 && !strncmp((const char *) appstring, "Adobe", 5))
-	  image->adobe = True;			/* set Adobe flag */
+	  image->adobe = true;			/* set Adobe flag */
 
 	break;
 
@@ -464,7 +460,7 @@ AnalyzeJPEG(imagedata *image) {
   /* do some sanity checks with the parameters */
   if (image->height <= 0 || image->width <= 0 || image->components <= 0) {
     fprintf(stderr, "Error: DNL marker not supported in PostScript Level 2!\n");
-    return False;
+    return false;
   }
 
   /* some broken JPEG files have this but they print anyway... */
@@ -474,13 +470,13 @@ AnalyzeJPEG(imagedata *image) {
   if (image->bits_per_component != 8) {
     fprintf(stderr, "Error: %d bits per color component ", image->bits_per_component);
     fprintf(stderr, "not supported in PostScript level 2!\n");
-    return False;
+    return false;
   }
 
   if (image->components!=1 && image->components!=3 && image->components!=4) {
     fprintf(stderr, "Error: unknown color space (%d components)!\n", image->components);
-    return False;
+    return false;
   }
 
-  return True;
+  return true;
 }

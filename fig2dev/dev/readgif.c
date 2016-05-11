@@ -7,8 +7,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -28,8 +28,9 @@
 #include "fig2dev.h"
 #include "object.h"
 
-extern	FILE	*open_picfile();
-extern	int	 _read_pcx();
+								/* readpics.c */
+extern	FILE	*open_picfile(char *name, int *type, bool pipeok,char *retname);
+extern	int	 _read_pcx(FILE *pcxfile, F_pic *pic);		/* readpcx.c */
 
 #define BUFLEN 1024
 
@@ -46,9 +47,10 @@ extern	int	 _read_pcx();
 /* +-------------------------------------------------------------------+ */
 
 
-static Boolean	 ReadColorMap();
-static Boolean	 DoGIFextension();
-static int	 GetDataBlock();
+static bool	 ReadColorMap(FILE *, unsigned int,
+		unsigned char cmap[3][MAXCOLORMAPSIZE]);
+static bool	 DoGIFextension(FILE *, int);
+static int	 GetDataBlock(FILE *, unsigned char *);
 
 #define LOCALCOLORMAP		0x80
 #define	ReadOK(file,buffer,len)	(fread(buffer, len, 1, file) != 0)
@@ -78,11 +80,7 @@ struct {
 */
 
 int
-read_gif(filename,filetype,pic,llx,lly)
-    char	   *filename;
-    int		    filetype;
-    F_pic	   *pic;
-    int		   *llx, *lly;
+read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 {
 	char		 buf[BUFLEN],pcxname[PATH_MAX];
 	char		 realname[PATH_MAX];
@@ -95,7 +93,7 @@ read_gif(filename,filetype,pic,llx,lly)
 	unsigned char    transp[3]; /* RGB of transparent color (if any) */
 
 	/* open the file */
-	if ((file=open_picfile(filename, &filetype, False, realname)) == NULL) {
+	if ((file=open_picfile(filename, &filetype, false, realname)) == NULL) {
 		fprintf(stderr,"No such GIF file: %s\n",realname);
 		return 0;
 	}
@@ -149,7 +147,7 @@ read_gif(filename,filetype,pic,llx,lly)
 			break;			/* all done */
 		}
 
-		if (c == '!') { 		/* Extension */
+		if (c == '!') {			/* Extension */
 		    if (! ReadOK(file,&c,1))
 			fprintf(stderr,"GIF read error on extention function code\n");
 		    (void) DoGIFextension(file, c);
@@ -191,7 +189,7 @@ read_gif(filename,filetype,pic,llx,lly)
 
 	/* reposition the file at the beginning */
 	fseek(file, 0, SEEK_SET);
-	
+
 	/* now call giftopnm and ppmtopcx */
 
 	/* make name for temp output file */
@@ -219,7 +217,7 @@ read_gif(filename,filetype,pic,llx,lly)
 	/* remove temp file */
 	unlink(pcxname);
 
-	/* now match original transparent colortable index with possibly new 
+	/* now match original transparent colortable index with possibly new
 	   colortable from ppmtopcx */
 	if (pic->transp != -1) {
 	    for (i=0; i<pic->numcols; i++) {
@@ -235,11 +233,9 @@ read_gif(filename,filetype,pic,llx,lly)
 	return stat;
 }
 
-static Boolean
-ReadColorMap(fd,number,cmap)
-FILE	*fd;
-unsigned int	number;
-unsigned char cmap[3][MAXCOLORMAPSIZE];
+static bool
+ReadColorMap(FILE *fd, unsigned int number,
+		unsigned char cmap[3][MAXCOLORMAPSIZE])
 {
 	int		i;
 	unsigned char	rgb[3];
@@ -247,19 +243,17 @@ unsigned char cmap[3][MAXCOLORMAPSIZE];
 	for (i = 0; i < number; ++i) {
 	    if (! ReadOK(fd, rgb, sizeof(rgb))) {
 		fprintf(stderr,"bad GIF colormap\n" );
-		return False;
+		return false;
 	    }
 	    cmap[RED][i]   = rgb[RED];
 	    cmap[GREEN][i] = rgb[GREEN];
 	    cmap[BLUE][i]  = rgb[BLUE];
 	}
-	return True;
+	return true;
 }
 
-static Boolean
-DoGIFextension(fd, label)
-FILE	*fd;
-int	label;
+static bool
+DoGIFextension(FILE *fd, int label)
 {
 	static unsigned char buf[256];
 	char	    *str;
@@ -276,7 +270,7 @@ int	label;
 		while (GetDataBlock(fd, buf) != 0) {
 			; /* GIF comment */
 		}
-		return False;
+		return false;
 	    case 0xf9:		/* Graphic Control Extension */
 		str = "Graphic Control Extension";
 		(void) GetDataBlock(fd, (unsigned char*) buf);
@@ -288,7 +282,7 @@ int	label;
 
 		while (GetDataBlock(fd, buf) != 0)
 			;
-		return False;
+		return false;
 	    default:
 		str = (char *) buf;
 		sprintf(str, "UNKNOWN (0x%02x)", label);
@@ -298,15 +292,13 @@ int	label;
 	while (GetDataBlock(fd, buf) != 0)
 		;
 
-	return False;
+	return false;
 }
 
-int	ZeroDataBlock = False;
+int	ZeroDataBlock = false;
 
 static int
-GetDataBlock(fd, buf)
-FILE		*fd;
-unsigned char 	*buf;
+GetDataBlock(FILE *fd, unsigned char *buf)
 {
 	unsigned char	count;
 

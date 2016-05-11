@@ -2,7 +2,21 @@ Changes to Transfig/fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
+Patchlevel 6-beta (April 2016)
 
+NEW FEATURES:
+	o New pict2e and tikz output language, for use with TeX/LaTeX.
+	o Compile with ./configure; make; make install.
+	  Optionally, use make check; make installcheck.
+	o By default, transfig is not built.
+
+BUGS FIXED:
+	o Swap patterns in PostScript output, were upside down.
+	o Silence most compiler warnings.
+	o Update man-pages and help text.
+	o Accurately position arrowheads, flush with line, in PostScript output.
+
+-------------------------------------
 Patchlevel 5e (August 2013)
 
 BUGS FIXED:

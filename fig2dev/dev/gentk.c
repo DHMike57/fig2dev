@@ -10,8 +10,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -24,12 +24,14 @@
 
 #include "fig2dev.h"
 #include "object.h"
-#include "readxbm.h"
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
 
 #define NONE (0xffffff + 1)
+
+int ReadFromBitmapFile(FILE *file, unsigned int *width, unsigned int *height,
+		unsigned char **data_ret);	/* readxbm.c */
 
 static void
 	drawBitmap(F_line *),
@@ -53,20 +55,19 @@ static char *xbmPathVar = "$xbmPath";
 static char *xbmPathName = BITMAPDIR;
 
 #define		TOP	8.5 /* inches */
-static int	full_page = False;
+static int	full_page = false;
 
 /*
  *   g e n T k O p t i o n ( )
  */
 
 void
-gentk_option(opt, optarg)
-char opt, *optarg;
+gentk_option(char opt, char *optarg)
 {
     switch (opt) {
 	case 'g':			/* background color */
 		if (lookup_X_color(optarg,&background) >= 0) {
-		    bgspec = True;
+		    bgspec = true;
 		} else {
 		    fprintf(stderr,"Can't parse color '%s', ignoring background option\n",
 				optarg);
@@ -74,27 +75,25 @@ char opt, *optarg;
 		break;
 
 	case 'l':			/* landscape mode */
-		landscape = True;	/* override the figure file setting */
-		orientspec = True;	/* user-specified */
+		landscape = true;	/* override the figure file setting */
+		orientspec = true;	/* user-specified */
 		break;
 
 	case 'p':			/* portrait mode */
-		landscape = False;	/* override the figure file setting */
-		orientspec = True;	/* user-specified */
+		landscape = false;	/* override the figure file setting */
+		orientspec = true;	/* user-specified */
 		break;
 
 	case 'P':			/* use full page instead of bounding box */
-		full_page = True;
+		full_page = true;
 		break;
 
 	case 'z':			/* papersize */
 		(void) strcpy (papersize, optarg);
-		paperspec = True;	/* user-specified */
+		paperspec = true;	/* user-specified */
 		break;
 
-	case 'f':			/* ignore magnification, font sizes and lang here */
-	case 'm':
-	case 's':
+	case 'G':
 	case 'L':
 		break;
 
@@ -119,7 +118,8 @@ gentk_start(F_compound *objects)
 	struct paperdef	*pd;
 	char		bkgnd[20];
 
-	sprintf(stfp, "# Produced by fig2dev Version %s Patchlevel %s\n", VERSION, PATCHLEVEL);
+	sprintf(stfp, "# Produced by fig2dev Version %s Patchlevel %s\n",
+		FIG_FILEVERSION, FIG_PATCHLEVEL);
 	niceLine(stfp);
 	ppi = ppi / mag * 80/72.0;
 
@@ -130,9 +130,9 @@ gentk_start(F_compound *objects)
 	    fprintf(tfp,"#\n");
 	}
 	sprintf(stfp, "# The canvas name (\".c\") can be changed to anything you "
-		"like.  It only\n");
+		"like.	It only\n");
 	niceLine(stfp);
-	sprintf(stfp, "# occurs in the following line.  The canvas size"
+	sprintf(stfp, "# occurs in the following line.	The canvas size"
 		" can be changed as well.\n\n");
 	niceLine(stfp);
 
@@ -153,7 +153,7 @@ gentk_start(F_compound *objects)
 
 	} else {
 	    /* full page, get the papersize as the width and height for the canvas */
-            for (pd = paperdef; pd->name != NULL; pd++)
+	    for (pd = paperdef; pd->name != NULL; pd++)
 		if (strcasecmp (papersize, pd->name) == 0) {
 		    /* width/height are in dpi, convert to inches */
 		    wid = pd->width/80.0;
@@ -184,11 +184,11 @@ gentk_start(F_compound *objects)
 	}
 
 	sprintf(stfp, "set %s [canvas .c -width %.2fi -height %.2fi]", canvas+1, wid, ht);
- 	if (bgspec) {
+	if (bgspec) {
 	    sprintf(bkgnd, " -bg #%02x%02x%02x",
- 	    background.red/255,
- 	    background.green/255,
- 	    background.blue/255);
+	    background.red/255,
+	    background.green/255,
+	    background.blue/255);
 	    strcat(stfp, bkgnd);
 	}
 	strcat(stfp, "\n");
@@ -340,8 +340,8 @@ drawBitmap(F_line *l)
 	FILE	*fd;
 	int	filtype;	/* file (0) or pipe (1) */
 	int	stat;
-	FILE	*open_picfile();
-	void	close_picfile();
+	FILE	*open_picfile(char *name, int *type, bool pipeok,char *retname);
+	void	close_picfile(FILE *file, int type);
 	char	xname[PATH_MAX];
 
 	p = l->pic;
@@ -353,7 +353,7 @@ drawBitmap(F_line *l)
 
 	/* see if GIF first */
 
-	if ((fd=open_picfile(p->file, &filtype, True, xname)) == NULL) {
+	if ((fd=open_picfile(p->file, &filtype, true, xname)) == NULL) {
 	    fprintf(stderr,"Can't open image file %s\n",p->file);
 	    return;
 	}
@@ -368,7 +368,7 @@ drawBitmap(F_line *l)
 	}
 
 	/* see if GIF or PPM (ASCII or binary) */
-	if ((strncmp((char *) buf,"GIF",3) == 0) || 
+	if ((strncmp((char *) buf,"GIF",3) == 0) ||
 	    (strncmp((char *) buf,"P3\n",3) == 0) || (strncmp((char *) buf,"P6\n",3) == 0)) {
 	    /* GIF or PPM allright, create the image command */
 	    /* first make a name without the suffix */
@@ -390,7 +390,8 @@ drawBitmap(F_line *l)
 	} else {
 	    /* Try for an X Bitmap file format. */
 	    rewind(fd);
-	    if (ReadFromBitmapFile(fd, &x, &y, &p->bitmap)) {
+	    unsigned int dummy;	/* Thomas Loimer, 2015-12 */
+	    if (ReadFromBitmapFile(fd, &dummy, &dummy, &p->bitmap)) {
 		sprintf(stfp, "%s create bitmap %fi %fi -anchor nw",
 			canvas, X(l->points->x), Y(l->points->y));
 		niceLine(stfp);
@@ -807,7 +808,7 @@ gentk_ctlSpline(F_spline *s)
 		cx2	 = (x1 + 3.0*x2)/4.0;
 		cy2	 = (y1 + 3.0*y2)/4.0;
 	}
-	x1	 = x2; 
+	x1	 = x2;
 	y1	 = y2;
 	p	 = s->points->next;
 	x2	 = p->x/ppi;
@@ -1278,7 +1279,7 @@ tkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
 {
 	char		stfp[256];
 	extern char	*canvas;	/* Tk canvas name. */
-	F_point 	*p, *q;
+	F_point		*p, *q;
 	int		pts;
 
 	p = (F_point *) shape;
@@ -1330,7 +1331,7 @@ tkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
 	niceLine("\n");
 }
 
-static void 
+static void
 tk_setstyle(int style, double v)
 {
 	char stfp[200];
@@ -1340,17 +1341,17 @@ tk_setstyle(int style, double v)
 	} else if (style == DOTTED_LINE) {
 	    if (v > 0.0) sprintf(stfp, " -dash {%d %d}", round(v), round(v));
 	} else if (style == DASH_DOT_LINE) {
-	    if (v > 0.0) sprintf(stfp, " -dash {%d %d %d %d}", 
+	    if (v > 0.0) sprintf(stfp, " -dash {%d %d %d %d}",
 		round(v), round(v*0.5),
 		round(ppi/80.0), round(v*0.5));
 	} else if (style == DASH_2_DOTS_LINE) {
-	    if (v > 0.0) sprintf(stfp, " -dash {%d %d %d %d %d %d}", 
+	    if (v > 0.0) sprintf(stfp, " -dash {%d %d %d %d %d %d}",
 		round(v), round(v*0.45),
 		round(ppi/80.0), round(v*0.333),
 		round(ppi/80.0), round(v*0.45));
 	} else if (style == DASH_3_DOTS_LINE) {
-	    if (v > 0.0) sprintf(stfp, 
-                " -dash {%d %d %d %d %d %d %d %d}", 
+	    if (v > 0.0) sprintf(stfp,
+		" -dash {%d %d %d %d %d %d %d %d}",
 		round(v), round(v*0.4),
 		round(ppi/80.0), round(v*0.3),
 		round(ppi/80.0), round(v*0.3),
@@ -1473,10 +1474,10 @@ niceLine(char *s)
  *   isolate the device specific details.
  */
 
-struct driver   dev_tk = {
+struct driver	dev_tk = {
 	gentk_option,
 	gentk_start,
-	gendev_null,
+	gendev_nogrid,
 	gentk_arc,
 	gentk_ellipse,
 	gentk_line,

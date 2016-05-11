@@ -9,8 +9,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -88,4 +88,4 @@ static char		texfontsizes[] = {
 				      				: (MAXFONTSIZE-1)])
 #define TEXFONTMAG(T)	TEXFONTSIZE(T->size*(rigid_text(T) ? 1.0 : fontmag))
 
-void setfigfont( F_text *text );		/* genepic.c */
+void setfigfont(F_text *text);		/* genepic.c */

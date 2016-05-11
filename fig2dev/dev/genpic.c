@@ -10,25 +10,25 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-/* 
+/*
  *	genpic : PIC driver for fig2dev
  *
  *	Author: Conrad Kwok, UC Davis, 12/88
- *      Modified: Richard Auletta, George Mason Univ., 6/21/89
+ *	Modified: Richard Auletta, George Mason Univ., 6/21/89
  *	Added code comments are marked with "rja".
- *      Added: Support for native pic arrowheads.
- *      Added: Support for arrowheads at both ends of lines, arc, splines.
+ *	Added: Support for native pic arrowheads.
+ *	Added: Support for arrowheads at both ends of lines, arc, splines.
  *
- *      Modified: Stuart Kemp & Dave Bonnell, July, 1991
+ *	Modified: Stuart Kemp & Dave Bonnell, July, 1991
  *		  James Cook University,
  *		  Australia
- *      Changes:
+ *	Changes:
  *		Added T_ARC_BOX to genpic_line()
  *		Added 'thickness' attribute all over
  *		Added 'fill' attribute to ellipse
@@ -40,24 +40,25 @@
 #include "picfonts.h"
 #include "picpsfonts.h"
 
-static void genpic_ctl_spline(), genpic_itp_spline();
-static void genpic_open_spline(), genpic_closed_spline();
+static void genpic_ctl_spline(F_spline *s);
+static void genpic_itp_spline(F_spline *s);
+static void genpic_open_spline(F_spline *s);
+static void genpic_closed_spline(F_spline *s);
 
-#define			TOP	10.5	/* top of page is 10.5 inch */
+#define		TOP	10.5	/* top of page is 10.5 inch */
 static int LineThickness = 0;
-static int OptArcBox = 0;		/* Conditional use */
+static int OptArcBox = 0;	/* Conditional use */
 static int OptLineThick = 0;
 static int OptEllipseFill = 0;
-static int OptNoUnps = 0;    /* prohibit unpsfont() */
+static int OptNoUnps = 0;	/* prohibit unpsfont() */
 
 void
-genpic_option(opt, optarg)
-char opt, *optarg;
+genpic_option(char opt, char *optarg)
 {
 	switch (opt) {
 
 	case 'f':		/* set default text font */
-	        {   int i;
+		{   int i;
 
 		    for ( i = 1; i <= MAX_FONT; i++ )
 			if ( !strcmp(optarg, picfontnames[i]) ) break;
@@ -66,12 +67,11 @@ char opt, *optarg;
 			fprintf(stderr,
 			"warning: non-standard font name %s\n", optarg);
 		}
-		
+
 		picfontnames[0] = picfontnames[1] = optarg;
 		break;
 
-	case 's':
-	case 'm':
+	case 'G':
 	case 'L':
 		break;
 
@@ -107,16 +107,14 @@ char opt, *optarg;
 	}
 }
 
-static
-double convy(a)
-double	a;
+static double
+convy(double a)
 {
 	return((double) TOP-a);
 }
 
 void
-genpic_start(objects)
-F_compound	*objects;
+genpic_start(F_compound *objects)
 {
 	ppi = ppi/mag;
 
@@ -127,14 +125,14 @@ F_compound	*objects;
 	    fprintf(tfp,".\\\"\n");
 	}
 
-	fprintf(tfp, ".PS\n.ps %d\n",	 	/* PIC preamble */
+	fprintf(tfp, ".PS\n.ps %d\n",		/* PIC preamble */
 		(int)(font_size != 0.0? (int) font_size : DEFAULT_FONT_SIZE));
 }
 
 int
-genpic_end()
+genpic_end(void)
 {
-  	fprintf(tfp, ".PE\n");				/* PIC ending */
+	fprintf(tfp, ".PE\n");				/* PIC ending */
 
 	/* all ok */
 	return 0;
@@ -143,7 +141,7 @@ genpic_end()
 /*
   The line thickness is, unfortunately, multiple of pixel.
   One pixel thickness is a little too thick on the hard copy
-  so I scale it with 0.7; i.e., it's a kludge.  The best way is
+  so I scale it with 0.7; i.e., it's a kludge.	The best way is
   to allow thickness in fraction of pixel.
 
   Note that the current version of psdit (a ditroff to postcript filter)
@@ -151,23 +149,20 @@ genpic_end()
 */
 
 static void
-set_linewidth(w)
-int	w;
+set_linewidth(int w)
 {
 	LineThickness = w*80/ppi;
 }
 
 static void
-AddThickness()
+AddThickness(void)
 {
   if (OptLineThick && LineThickness)
     fprintf(tfp, " thickness %d", LineThickness);
 }
 
 static void
-set_style(s, v)
-int	s;
-double	v;
+set_style(int s, double v)
 {
 	static float	style_val = -1;
 
@@ -187,14 +182,13 @@ double	v;
  */
 
 static int
-genpic_box(l)
-F_line *l;
+genpic_box(F_line *l)
 {
   int count, minx, miny, maxx, maxy;
   int Valid;		/* Valid box */
   double width, height;
   F_point *p, *q;
-	
+
   p = l->points;
   q = p->next;
   count = 1;		/* Just a sanity check */
@@ -253,8 +247,7 @@ F_line *l;
 }
 
 void
-genpic_line(l)
-F_line	*l;
+genpic_line(F_line *l)
 {
 	F_point		*p, *q;
 
@@ -281,7 +274,7 @@ F_line	*l;
 	if (l->type == T_BOX || l->type == T_ARC_BOX)
 	{ if (genpic_box(l)) return;
 	  fprintf(stderr, "Invalid T_BOX or T_ARC_BOX in fig file\n");
-          fprintf(stderr, "  Using 'line' instead\n");
+	  fprintf(stderr, "  Using 'line' instead\n");
 	}
 
 	fprintf(tfp, "line");
@@ -314,8 +307,7 @@ F_line	*l;
 }
 
 void
-genpic_spline(s)
-F_spline	*s;
+genpic_spline(F_spline *s)
 {
 	/* print any comments */
 	print_comments(".\\\" ",s->comments, "");
@@ -327,8 +319,7 @@ F_spline	*s;
 	}
 
 static void
-genpic_ctl_spline(s)
-F_spline	*s;
+genpic_ctl_spline(F_spline *s)
 {
 	if (closed_spline(s))
 	    genpic_closed_spline(s);
@@ -337,8 +328,7 @@ F_spline	*s;
 	}
 
 static void
-genpic_open_spline(s)
-F_spline	*s;
+genpic_open_spline(F_spline *s)
 {
 	double		x1, y1, x2, y2;
 	F_point		*p, *q;
@@ -355,7 +345,7 @@ F_spline	*s;
 	if (p->next == NULL) {
 	    fprintf(tfp, "line");
 
-           /* Attach arrowhead as required */
+	   /* Attach arrowhead as required */
 	    if ((s->for_arrow) && (s->back_arrow))
 	       fprintf(tfp, " <->");
 	    else if (s->back_arrow)
@@ -372,9 +362,9 @@ F_spline	*s;
 	    return;
 	    }
 
-	fprintf(tfp, "spline"); 
+	fprintf(tfp, "spline");
 
-           /* Attach arrowhead as required */
+	   /* Attach arrowhead as required */
 	    if ((s->for_arrow) && (s->back_arrow))
 	       fprintf(tfp, " <->");
 	    else if (s->back_arrow)
@@ -394,8 +384,7 @@ F_spline	*s;
 }
 
 void
-genpic_ellipse(e)
-F_ellipse	*e;
+genpic_ellipse(F_ellipse *e)
 {
 	/* print any comments */
 	print_comments(".\\\" ",e->comments, "");
@@ -426,15 +415,14 @@ coordinate. HT_OFFSET is use to compensate all the above factors
 so text position in fig 1.4 should be at the same position on
 the screen as on the hard copy.
 */
-#define			HT_OFFSET	(0.2 / 72.0)
+#define		HT_OFFSET	(0.2 / 72.0)
 
 void
-genpic_text(t)
-F_text	*t;
+genpic_text(F_text *t)
 {
 	float	 y;
 	int	 size;
-        char	*tpos;
+	char	*tpos;
 
 	/* print any comments */
 	print_comments(".\\\" ",t->comments, "");
@@ -449,33 +437,32 @@ F_text	*t;
 	  fprintf(tfp, ".ft\n.ft %s\n", PICPSFONT(t) );
 	}
 
-        switch (t->type) {
-        case T_LEFT_JUSTIFIED:
-        case DEFAULT:
-            tpos = "ljust";
-            break;
-        case T_CENTER_JUSTIFIED:
-            tpos = "";
-            break;
-        case T_RIGHT_JUSTIFIED:
-            tpos = "rjust";
-            break;
-        default:
-            fprintf(stderr, "unknown text position type\n");
-            exit(1);
-        }    
- 	y = convy(t->base_y/ppi) + size * HT_OFFSET;
- 	if (!OptNoUnps)
- 	    fprintf(tfp, "%s\\fP\" at %.3f,%.3f %s\n",
- 			t->cstring, t->base_x/ppi, y, tpos);
- 	else
- 	    fprintf(tfp, "\"%s\" at %.3f,%.3f %s\n.ft \n.ps \n",
+	switch (t->type) {
+	case T_LEFT_JUSTIFIED:
+	case DEFAULT:
+	    tpos = "ljust";
+	    break;
+	case T_CENTER_JUSTIFIED:
+	    tpos = "";
+	    break;
+	case T_RIGHT_JUSTIFIED:
+	    tpos = "rjust";
+	    break;
+	default:
+	    fprintf(stderr, "unknown text position type\n");
+	    exit(1);
+	}
+	y = convy(t->base_y/ppi) + size * HT_OFFSET;
+	if (!OptNoUnps)
+	    fprintf(tfp, "%s\\fP\" at %.3f,%.3f %s\n",
+			t->cstring, t->base_x/ppi, y, tpos);
+	else
+	    fprintf(tfp, "\"%s\" at %.3f,%.3f %s\n.ft \n.ps \n",
 			t->cstring, t->base_x/ppi, y, tpos);
 	}
 
 void
-genpic_arc(a)
-F_arc	*a;
+genpic_arc(F_arc *a)
 {
 	double		cx, cy, sx, sy, ex, ey;
 
@@ -524,8 +511,7 @@ F_arc	*a;
 #define		THRESHOLD	.05	/* inch */
 
 static void
-quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
-double	a1, b1, a2, b2, a3, b3, a4, b4;
+quadratic_spline(double a1, double b1, double a2, double b2, double a3, double b3, double a4, double b4)
 {
 	double	x1, y1, x4, y4;
 	double	xmid, ymid;
@@ -552,19 +538,18 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	    }
 	}
 
-void
-genpic_closed_spline(s)
-F_spline	*s;
+static void
+genpic_closed_spline(F_spline *s)
 {
-	F_point	*p;
+	F_point *p;
 	double	cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4;
 	double	x1, y1, x2, y2;
 
 	p = s->points;
-	x1 = p->x/ppi;  y1 = convy(p->y/ppi);
+	x1 = p->x/ppi;	y1 = convy(p->y/ppi);
 	p = p->next;
-	x2 = p->x/ppi;  y2 = convy(p->y/ppi);
-	cx1 = (x1 + x2) / 2;      cy1 = (y1 + y2) / 2;
+	x2 = p->x/ppi;	y2 = convy(p->y/ppi);
+	cx1 = (x1 + x2) / 2;	  cy1 = (y1 + y2) / 2;
 	cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
 
 	for (p = p->next; p != NULL; p = p->next) {
@@ -576,14 +561,14 @@ F_spline	*s;
 	    quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
 	    AddThickness();
 	    fprintf(tfp, "\n");
-	    cx1 = cx4;  cy1 = cy4;
+	    cx1 = cx4;	cy1 = cy4;
 	    cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
 	    }
 	x1 = x2;  y1 = y2;
 	p = s->points->next;
-	x2 = p->x/ppi;  y2 = convy(p->y/ppi);
+	x2 = p->x/ppi;	y2 = convy(p->y/ppi);
 	cx3 = (3 * x1 + x2) / 4;  cy3 = (3 * y1 + y2) / 4;
-	cx4 = (x1 + x2) / 2;      cy4 = (y1 + y2) / 2;
+	cx4 = (x1 + x2) / 2;	  cy4 = (y1 + y2) / 2;
 	fprintf(tfp, "line from %.3f,%.3f ", cx1, cy1);
 	quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
 	AddThickness();
@@ -591,8 +576,7 @@ F_spline	*s;
 }
 
 static void
-bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
-double	a0, b0, a1, b1, a2, b2, a3, b3;
+bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2, double a3, double b3)
 {
 	double	x0, y0, x3, y3;
 	double	sx1, sy1, sx2, sy2, tx, ty, tx1, ty1, tx2, ty2, xmid, ymid;
@@ -615,9 +599,8 @@ double	a0, b0, a1, b1, a2, b2, a3, b3;
 	    }
 	}
 
-void
-genpic_itp_spline(s)
-F_spline	*s;
+static void
+genpic_itp_spline(F_spline *s)
 {
 	F_point		*p1, *p2, *pfirst;
 	F_control	*cp1, *cp2;
@@ -628,13 +611,13 @@ F_spline	*s;
 	cp2 = cp1->next;
 	x2 = p1->x/ppi; y2 = convy(p1->y/ppi);
 
-         pfirst = p1->next;/*save first to test in loop*/
+	 pfirst = p1->next;/*save first to test in loop*/
 	for (p2 = p1->next, cp2 = cp1->next; p2 != NULL;
 		p1 = p2, cp1 = cp2, p2 = p2->next, cp2 = cp2->next) {
 
 	    fprintf(tfp, "line ");
 
-           /* Attach arrowhead as required */
+	   /* Attach arrowhead as required */
 
 	    if ((s->back_arrow) && (p2 == pfirst))
 	       fprintf(tfp, " <- ");
@@ -654,9 +637,9 @@ F_spline	*s;
 	}
 
 struct driver dev_pic = {
-     	genpic_option,
+	genpic_option,
 	genpic_start,
-	gendev_null,
+	gendev_nogrid,
 	genpic_arc,
 	genpic_ellipse,
 	genpic_line,

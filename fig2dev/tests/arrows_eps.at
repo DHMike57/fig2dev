@@ -1,0 +1,34 @@
+AT_BANNER([Test PostScript output language.])
+AT_SETUP([compare arrow tips with template])
+AT_KEYWORDS(eps arrows)
+
+dnl AT_TESTED(pnmarith) does not start the testsuite, if pnmarith does not exist
+# Skip this test, if the necessary programs are not found
+AT_SKIP_IF([! gs --version])
+AT_SKIP_IF([! pnmarith --version])
+AT_SKIP_IF([! ppmhist --version])
+
+# The original must be saved as eps, not converted to pdf.
+# Conversion to pdf introduces a few pixel errors.
+gs -sDEVICE=pgmraw -dEPSCrop -r1200 -dNOPAUSE -dBATCH -dQUIET \
+	-sOutputFile=a.pgm $abs_srcdir/data/arrows.eps
+
+fig2dev -L eps $abs_srcdir/data/arrows.fig | \
+	gs -sDEVICE=pgmraw -dEPSCrop -r1200 -dNOPAUSE -dBATCH -dQUIET \
+	   -sOutputFile=b.pgm -
+
+# Was pamsumm -sum -brief, to expect 0\n on stdout - but pamsumm does not
+# exist on Debian stretch, so use ppmhist -noheader
+AT_CHECK([pnmarith -difference a.pgm b.pgm | ppmhist -noheader | tr -d ' 	'], 0,
+[000026673361
+],ignore, [pnmtopng -compression=9 -comp_mem_level=9 a.pgm > orig.png
+pnmtopng -compression=9 -comp_mem_level=9 b.pgm > current.png
+pnmarith -difference a.pgm b.pgm | pnmtopng -compression=9 -comp_mem_level=9 > diff.png
+rm a.pgm b.pgm
+])
+
+AT_CAPTURE_FILE(orig.png)
+AT_CAPTURE_FILE(current.png)
+AT_CAPTURE_FILE(diff.png)
+
+AT_CLEANUP

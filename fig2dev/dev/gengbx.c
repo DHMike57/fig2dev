@@ -19,21 +19,20 @@
  *   -) Hatched or non uniform fills - Not supported.
  *   -) Dashed lines - Not suported.
  *   -) Fancy end caps (arrows etc.) - Not supported
- *   -) Multiple layers - These are flattened to one layer.  Gerber does 
- *      support multiple layers, however there is currently no option 
+ *   -) Multiple layers - These are flattened to one layer.  Gerber does
+ *      support multiple layers, however there is currently no option
  *      to preserve these.
  *
  * It should be realised that Gerber is _not_ a well supported
  * standard and various output devices do not honour certain aspects
  * of it.  Good luck!
- * 
+ *
  * Author: Edward Grace <edward.grace@gmail.com>
  *
  */
 
 #include "fig2dev.h"
 #include "object.h"
-#include "../../patchlevel.h"
 #include "alloc.h"
 
 #define GBX_DRIVER_VERSION "0.1.1"
@@ -59,8 +58,8 @@ float gbx_offset_a=0, gbx_offset_b=0;
 int gbx_debug_comments=1;
 
 /* Warning stack. */
-enum warnings { warn=0, warn_square_join, 
-		warn_filled_poly_with_line, 
+enum warnings { warn=0, warn_square_join,
+		warn_filled_poly_with_line,
 		warn_open_filled_polygon,
 		warn_open_filled_arc,
 		warn_text_unsupported,
@@ -73,7 +72,7 @@ enum warnings { warn=0, warn_square_join,
 int warning_counts[warn_max];
 
 /* TODO - These should be defined from FIG, as they may change */
-enum pen_colours { p_colour_default = -1, 
+enum pen_colours { p_colour_default = -1,
 		   p_colour_black = 0,
 		   p_colour_max };
 
@@ -90,7 +89,7 @@ void warn_once(long int warning_type, char *message) {
   ++warning_counts[warning_type];
 }
 
-/* Boolean to state if the plotter exposure is on or not. */
+/* bool to state if the plotter exposure is on or not. */
 unsigned long int is_exposure=1;
 
 /* Function prototypes, just to keep the compiler quiet. */
@@ -100,10 +99,10 @@ void  print_comments(char *string, F_comment *comment, char *string2);
 double length (long int x1, long int y1, long int x2, long int y2) {
   double deltax=(double)(x2-x1), deltay=(double)(y2-y1);
   double l=0;
-  if (abs(deltax) > abs(deltay)) {
-    l =  abs(deltax) * sqrt(1.0 + (deltay/deltax)*(deltay/deltax));
+  if (fabs(deltax) > fabs(deltay)) {
+    l =  fabs(deltax) * sqrt(1.0 + (deltay/deltax)*(deltay/deltax));
   } else {
-    l =  abs(deltay) * sqrt(1.0 + (deltax/deltay)*(deltax/deltay));
+    l =  fabs(deltay) * sqrt(1.0 + (deltax/deltay)*(deltax/deltay));
   }
   return l;
 }
@@ -114,7 +113,7 @@ enum cap_styles { cap_style_butt=0, cap_style_round, cap_style_square };
 /* enums describing FIG fill styles. */
 enum fill_styles { fill_style_none=-1 };
 
-long unsigned long int gbx_scale_factor;
+unsigned long int gbx_scale_factor;
 
 /* Fundemental scaling parameters. */
 #define INCH2MM  25.4
@@ -140,17 +139,19 @@ unsigned long int last_code_type=-1;
 unsigned long int last_code_value=-1;
 
 /*
- * Begin a parameter. 
+ * Begin a parameter.
  */
-void begin_param() { fprintf( tfp, "%%" ); ++count_begin_param; }
+void
+begin_param(void) { fprintf( tfp, "%%" ); ++count_begin_param; }
 
 /*
  * End a parameter.
  */
-void end_param() { fprintf( tfp, "%%\n" ); ++count_end_param; }
+void
+end_param(void) { fprintf( tfp, "%%\n" ); ++count_end_param; }
 
 
-/* 
+/*
  * Enumerate M codes (misc codes)
  */
 unsigned long int total_m_code_count=0;
@@ -175,17 +176,17 @@ int is_pen_colour_ok(long int colour) {
   case p_colour_default:
     return 1;
   }
- 
+
   warn_once(warn_line_colour,"By default only objects with line colour of \"default\" or  \"black\" are output.");
   return 0;
 }
 
-/* 
+/*
  * Enumerate D codes (draft codes) selects apertures and determine if
  * the feature to be drawn should be a line or "flashed".
  */
 unsigned long int total_d_code_count=0;
-enum d_codes { d_exposure_on = 1, d_exposure_off = 2, 
+enum d_codes { d_exposure_on = 1, d_exposure_off = 2,
 	       d_flash = 3, d_select_aperture = 10 };
 
 /** Define the maximum aperture index. */
@@ -223,7 +224,7 @@ struct ap_square aperture_square_list[MAX_APERTURE_INDEX];
 struct ap_ellipse aperture_ellipse_list[MAX_APERTURE_INDEX];
 
 
-/** 
+/**
   Test two numbers for equality by comparing their string representation.
 */
 int is_double_equal(double a, double b) {
@@ -233,15 +234,15 @@ int is_double_equal(double a, double b) {
   return strcmp(s_a,s_b) == 0 ? 1 : 0;
 }
 
-/** 
-    Returns the index of any simple circle if it already exists. 
+/**
+    Returns the index of any simple circle if it already exists.
 
     -1 if it does not exists.
 */
 int test_ap_circ(double outer_dia) {
   long int n=0;
   for (n=0; n<count_circ_aperture; ++n) {
-    //    fprintf(stderr, "%f, %f\n", aperture_circ_list[n].dia, outer_dia);
+    /*    fprintf(stderr, "%f, %f\n", aperture_circ_list[n].dia, outer_dia); */
     if ( is_double_equal(aperture_circ_list[n].dia,outer_dia) ) {
       return n;
     }
@@ -250,15 +251,15 @@ int test_ap_circ(double outer_dia) {
 }
 
 
-/** 
-    Returns the index of an elliptical aperture if it already exists. 
+/**
+    Returns the index of an elliptical aperture if it already exists.
 
     -1 if it does not exists.
 */
 int test_ap_ellipse(double w, double h) {
   long int n=0;
   for (n=0; n<count_ellipse_aperture; ++n) {
-    if ( is_double_equal(aperture_ellipse_list[n].w,w) && 
+    if ( is_double_equal(aperture_ellipse_list[n].w,w) &&
 	 is_double_equal(aperture_ellipse_list[n].h,h) ) {
       return n;
     }
@@ -269,7 +270,7 @@ int test_ap_ellipse(double w, double h) {
 int test_ap_square(double width) {
   long int n=0;
   for (n=0; n<count_square_aperture; ++n) {
-    // fprintf(stderr,"%f, %f\n",aperture_square_list[n].width, width);
+    /* fprintf(stderr,"%f, %f\n",aperture_square_list[n].width, width); */
      if ( is_double_equal(aperture_square_list[n].width,width) ) {
       return n;
     }
@@ -279,58 +280,55 @@ int test_ap_square(double width) {
 
 
 /** Returns 1 if the aperture is defined, zero if not defined. */
-int is_aperture_defined(unsigned long int index) { 
+int is_aperture_defined(unsigned long int index) {
   return index < count_apertures ? 1 : 0;
 }
 
 unsigned long int total_g_code_count = 0 ;
 /* Enumerate G (general function) codes. */
-enum g_codes { move = 00, line_interp_1x = 01, 
+enum g_codes { move = 00, line_interp_1x = 01,
 	       circ_interp_clock = 02, circ_interp_anti = 03,
 	       ignore_data_block = 04,
 	       lin_interp_10x = 10,
 	       lin_interp_01x = 11,
 	       lin_interp_001x = 12,
 	       poly_area_fill_on = 36, poly_area_fill_off = 37,
-	       tool_prepare = 54, 
+	       tool_prepare = 54,
 	       dim_inches = 70, dim_mm = 71,
 	       circ_interp_disable = 74, circ_interp_enable = 75,
 	       abs_meas = 90, rel_meas = 91 };
 
 
 /*
- * Mark end of data block.  Do this inteligently. 
+ * Mark end of data block.  Do this inteligently.
  *
  * e.g. If the most recent data block is a comment add a new line.
  */
-void write_end_block() { 
-  fprintf( tfp, "*\n" ); 
-  ++count_data_block; 
+void
+write_end_block(void) {
+  fprintf( tfp, "*\n" );
+  ++count_data_block;
 }
 
 
-/** Print the G code padded with zeros to produce two characters. 
-    
+/** Print the G code padded with zeros to produce two characters.
     e.g. G03 */
-void write_g_code(enum g_codes g) { 
-  fprintf(tfp, "G%02u",g); 
-  total_g_code_count++; 
+void write_g_code(enum g_codes g) {
+  fprintf(tfp, "G%02u",g);
+  total_g_code_count++;
   last_code_type=g_code;
   last_code_value=g;
 }
 
+extern long int  pagewidth, pageheight;
 
-extern long int  pagewidth, pageheight; 
-
-int     vw, vh; 
-
+int     vw, vh;
 
 /** Convert the units from fig to gbx */
 double width_fig2gbx(long int f) {
   double conversion_factor = gbx_dimensions == units_mm ? XY_FIG2MM : XY_FIG2IN;
   return (double)(f * mag * conversion_factor );
 }
-
 
 /** Convert position units from fig to gbx */
 int x_fig2gbx(long int f) {
@@ -356,27 +354,29 @@ int y_fig2gbx(long int f) {
     aperture has been defined and if it is in range.  If not it will
     produce an error and quit.
 */
-void write_d_code(enum d_codes d) { 
+void write_d_code(enum d_codes d) {
   if (d < 10) {
     fprintf(tfp, "D%02u", d);
   } else {
     fprintf(tfp, "D%u", d);
-  } 
+  }
   last_code_type=d_code;
   last_code_value=d;
 }
 
 /** Switch off exposure of pen. */
-void exposure_off() {
+void
+exposure_off(void) {
   write_d_code(d_exposure_off);
   is_exposure=0;
 }
 
-void exposure_on() {
+void
+exposure_on(void) {
   write_d_code(d_exposure_on);
   is_exposure=1;
 }
-  
+
 /** Select an aperture to use for drawing. */
 void use_aperture(long int aperture_index) {
   write_g_code(tool_prepare);
@@ -394,7 +394,7 @@ void write_comment(char *c) {
 
 /* Writes traceing output for the types of object */
 void write_trace(char *c) {
-  if ( gbx_debug_comments ) 
+  if ( gbx_debug_comments )
     write_comment(c);
 }
 
@@ -432,19 +432,21 @@ void flash_xy(long int x, long int y, int aperture_index ) {
   write_d_code(d_flash);
   write_end_block();
 }
-  
+
 
 /** Define a filled circular aperture given the diameter.
-    
-    Returns the corresponding aperture index. 
-*/ 
+
+    Returns the corresponding aperture index.
+*/
 unsigned long int ad_aperture_define_circ(double outer_dia) {
   /* Check to see if the aperture count is zero, if so initialise the array*/
   long int index;
+  long int ap_index;
+
   if (!count_circ_aperture)
     for (index=0; index<MAX_APERTURE_INDEX; ++index)
       aperture_circ_list[index].dia=-1.0;
-  
+
   /* Sanity check on aperture size */
   if (! (outer_dia > 0.0) ) {
     fprintf(stderr,"Error: Something tried to define a circular aperture of zero size.\n");
@@ -452,7 +454,7 @@ unsigned long int ad_aperture_define_circ(double outer_dia) {
   }
 
   /* First check to see if the aperture is defined. */
-  long int ap_index = test_ap_circ(outer_dia);
+  ap_index = test_ap_circ(outer_dia);
 
   /* If the aperture has not been defined, add it. */
   if (ap_index == -1) {
@@ -464,17 +466,19 @@ unsigned long int ad_aperture_define_circ(double outer_dia) {
     count_apertures++;
   }
 
-  /* Return the index to this aperture. */ 
+  /* Return the index to this aperture. */
   return ap_index;
 }
 
 /** Define a filled elliptical aperture given the width and height.
-    
-    Returns the corresponding aperture index. 
-*/ 
+
+    Returns the corresponding aperture index.
+*/
 unsigned long int ad_aperture_define_ellipse(double w, double h) {
   /* Check to see if the aperture count is zero, if so initialise the array*/
   long int index;
+  long int ap_index;
+
   if (!count_ellipse_aperture)
     for (index=0; index<MAX_APERTURE_INDEX; ++index) {
       aperture_ellipse_list[index].w=-1.0;
@@ -488,7 +492,7 @@ unsigned long int ad_aperture_define_ellipse(double w, double h) {
   }
 
   /* First check to see if the aperture is defined. */
-  long int ap_index = test_ap_ellipse(w,h);
+  ap_index = test_ap_ellipse(w,h);
 
   /* If the aperture has not been defined, add it. */
   if (ap_index == -1) {
@@ -501,17 +505,19 @@ unsigned long int ad_aperture_define_ellipse(double w, double h) {
     count_apertures++;
   }
 
-  /* Return the index to this aperture. */ 
+  /* Return the index to this aperture. */
   return ap_index;
 }
 
 /** Define a filled square aperture given the width.
-   
+
     Returns the corresponding aperture index.
 */
 unsigned long int ad_aperture_define_square(double width) {
   /* Check to see if the aperture count is zero, if so initialise the array*/
   long int index;
+  long int ap_index;
+
   if (!count_square_aperture)
     for (index=0; index<MAX_APERTURE_INDEX; ++index) {
       aperture_square_list[index].width=-1.0;
@@ -524,14 +530,14 @@ unsigned long int ad_aperture_define_square(double width) {
   }
 
    /* First check to see if the aperture is defined. */
-  long int ap_index = test_ap_square(width);
-  
+  ap_index = test_ap_square(width);
+
   /* If the aperture has not been defined, add it. */
   if (ap_index == -1) {
-    ap_index = count_apertures; 
+    ap_index = count_apertures;
     fprintf(tfp, "%%ADD%liR,%fX%f*%%\n",d_select_aperture + ap_index, width, width);
     aperture_square_list[ap_index].width=width;
-  
+
     count_square_aperture++;
     count_apertures++;
   }
@@ -547,15 +553,15 @@ int define_aperture_for_line(F_line *l) {
   double width;
   width = width_fig2gbx(l->thickness);
 
-  /* 
+  /*
      The prevailing aperture style is set from the join style.
   */
-  if (l->join_style == 1) 
+  if (l->join_style == 1)
     index=ad_aperture_define_circ(width);
   else  {
     index=ad_aperture_define_square(width);
     /* If there are more than two points in a line issue a warning. */
-    if (l->points && l->points->next && l->points->next->next && l->points->next->next->next) 
+    if (l->points && l->points->next && l->points->next->next && l->points->next->next->next)
       warn_once(warn_square_join, "Join style of square does not translate well to intermediate points in Gerber format.");
   }
   return index;
@@ -569,13 +575,13 @@ int define_aperture_for_line_end(F_line *l) {
   double width;
   width = width_fig2gbx(l->thickness);
 
-  /* 
+  /*
      The prevailing aperture style is set from the cap style.
   */
-  if (l->cap_style == 1) 
+  if (l->cap_style == 1)
     index=ad_aperture_define_circ(width);
   else  {
-    index=ad_aperture_define_square(width); 
+    index=ad_aperture_define_square(width);
   }
   return index;
 }
@@ -586,7 +592,7 @@ int define_aperture_for_arc(F_arc *a) {
   width = width_fig2gbx(a->thickness);
   if (a->cap_style  == 1)
     index=ad_aperture_define_circ(width);
-  else 
+  else
     index=ad_aperture_define_square(width);
   return index;
 }
@@ -595,7 +601,7 @@ int define_aperture_for_arc(F_arc *a) {
 char   *cctype[] = { "none", "black", "white" };
 
 /* arrowhead arrays */
-Point   points[50];
+F_pos   points[50];
 int     npoints;
 int     arrowx1, arrowy1;	/* first point of object */
 int     arrowx2, arrowy2;	/* second point of object */
@@ -618,24 +624,16 @@ unsigned long int max_block_horizontal_count=10;
 /*
   Process options for producing the Gerber file.
 */
-void gengbx_option(opt, optarg)
-     char opt;
-     char *optarg;
+void
+gengbx_option(char opt, char *optarg)
 {
-  
+
   switch (opt) {
-    /* Ignore Language, font, fontsize options.*/
-  case 'h':
-  case 'V': 
-  case 'F':
-  case 'G':	
+    /* Ignore language and grid. */
+  case 'G':
   case 'L':
-  case 's':
-  case 'm':
-  case 'j':
-  case 'D':	  
-  case '?':
     break;
+
   case 'd':
     if (strcmp(optarg,"mm") == 0 )
       gbx_dimensions = units_mm;
@@ -644,40 +642,45 @@ void gengbx_option(opt, optarg)
     else
       fprintf(stderr,"Dimensions should be given in 'mm' for millimeters or 'in' for inches respectively\n");
     break;
+
   case 'p':
     /* Image polarity. [+,-] */
-    if (strcmp(optarg,"pos") == 0 || strcmp(optarg,"+") == 0 ) 
+    if (strcmp(optarg,"pos") == 0 || strcmp(optarg,"+") == 0 )
       gbx_image_polarity = 0;
-    else if (strcmp(optarg,"neg") == 0 || strcmp(optarg,"-") == 0) 
+    else if (strcmp(optarg,"neg") == 0 || strcmp(optarg,"-") == 0)
       gbx_image_polarity = 1;
-    else 
+    else
       fprintf(stderr,"Polarity option should be [+,pos] for positive images (marks add material making it opaque) or [-,neg] for negative images (marks remove material, making it transparent)\n");
     break;
+
   case 'g':
     /* Scaling and offset, form -s <double>x<double>+<double>+<double> */
     if ( sscanf(optarg,"%fx%f+%f+%f",&gbx_scale_factor_a,&gbx_scale_factor_b,&gbx_offset_a, &gbx_offset_b) == 0)
       fprintf(stderr,"Error in scaling format, expect <double>x<double>+<double>+<double> for X and Y scale and x, y offset respectively.\n");
     break;
+
   case 'f':
     /* Numerical format, ofrm -f <integer>.<integer> */
-    if ( sscanf(optarg,"%u.%u",&gbx_before, &gbx_after) == 0 ) 
+    if ( sscanf(optarg,"%u.%u",&gbx_before, &gbx_after) == 0 )
       fprintf(stderr,"Error in numeric format, expect form  <unsigned int>.<unsigned int> for degree of precision.\n");
-    if (gbx_before > 4) 
+    if (gbx_before > 4)
       fprintf(stderr,"Warning: Having more than 4 digits before the decimal place is unusual\n");
     if (gbx_after > 5)
       fprintf(stderr,"Warning: Having more than 5 digits after the decimal place is unusual\n");
     if (gbx_before + gbx_after  > 9)
       fprintf(stderr,"Warning: Having more than nine significant figures is usually unrealistic\n");
     break;
+
   case 'i':
     /* Include debug comments? */
-    if ( strcmp(optarg,"off") == 0) 
+    if ( strcmp(optarg,"off") == 0)
       gbx_debug_comments = 0;
     else if ( strcmp(optarg,"on") == 0)
       gbx_debug_comments = 1;
     else
       fprintf(stderr,"Error: Debug comments option should be 'on' or 'off'\n");
     break;
+
   default:
     put_msg(Err_badarg, opt, "gbx");
     exit(1);
@@ -685,31 +688,30 @@ void gengbx_option(opt, optarg)
 }
 
 void
-gengbx_start (objects)
-     F_compound *objects;
+gengbx_start(F_compound *objects)
 {
-  //struct paperdef *pd;      
-  time_t  when; 
-  char    stime[80]; 
+  /* struct paperdef *pd; */
+  time_t  when;
+  char    stime[80];
   /*     long int     i; */
 
   gbx_scale_factor=pow(10,gbx_after);
 
-  write_comment("Gerber RS-274x file"); 
+  write_comment("Gerber RS-274x file");
 
   sprintf(outbuf, "Creator: %s",prog);   write_comment(outbuf);
-  sprintf(outbuf, "Version: %s", VERSION); write_comment(outbuf);
-  sprintf(outbuf, "Patchlevel: %s", PATCHLEVEL); write_comment(outbuf);
+  sprintf(outbuf, "Version: %s", FIG_FILEVERSION); write_comment(outbuf);
+  sprintf(outbuf, "Patchlevel: %s", FIG_PATCHLEVEL); write_comment(outbuf);
   sprintf(outbuf, "Driver version: %s", GBX_DRIVER_VERSION); write_comment(outbuf);
   write_comment("Author: Edward Grace <edward.grace@gmail.com>");
-  
+
   (void) time (&when);
   strcpy (stime, ctime (&when));
   /* remove trailing newline from date/time */
   stime[strlen (stime) - 1] = '\0';
 
   sprintf(outbuf, "Creation date: %s", stime); write_comment(outbuf);
-  
+
   switch (gbx_dimensions) {
   case units_mm:
     fprintf(tfp,"%%MOMM*%%\n");
@@ -725,7 +727,7 @@ gengbx_start (objects)
   fprintf(tfp,"%%OFA%fB%f*%%\n",gbx_offset_a, gbx_offset_b);
   fprintf(tfp, "%%FSLAX%i%iY%i%i*%%\n", gbx_before,gbx_after,gbx_before,gbx_after);
   fprintf(tfp, "%%SFA%fB%f%%\n",gbx_scale_factor_a,gbx_scale_factor_b);
-  if (gbx_image_polarity) 
+  if (gbx_image_polarity)
     fprintf(tfp,"%%IPNEG*%%\n");
   else
     fprintf(tfp,"%%IPPOS*%%\n");
@@ -736,7 +738,8 @@ gengbx_start (objects)
 }
 
 /** Output end of file marker. */
-int gengbx_end () {
+int
+gengbx_end(void) {
   write_m_code(end_of_program);
   return 0;
 }
@@ -764,32 +767,36 @@ F_point * insert_after_point(F_point *p) {
 }
 
 void gengbx_line (F_line *l) {
+  double	dx, dy;
+  long int	x1, x2, y1, y2;
+  long int	is_same_place;
+  long int	n_points, n_points_original;
+  F_point	*p_penultimate;
+  long int	circsquare;
+
   /* Always check. If the colour is not black or "default" then bail
      out with a warning. */
   if (! is_pen_colour_ok(l->pen_color) ) return;
-		    
+
   /* If line thickness is less than or equal to zero, warn and don't output. */
   if ( ( ! l->thickness > 0.0 ) && l->fill_style == fill_style_none ) {
     warn_once(warn_line_zero_width,"Unfilled line of zero width, ignoring.");
     return;
   }
 
-
-  double dx,dy;
-
   /* Used to compare the start and end points of polygons. */
-  long int x1=0,x2=0,y1=0,y2=0;
+  x1=0; x2=0; y1=0; y2=0;
 
   /*
     First check to see if the line has all points at the same place.
     If they are all at the same place then this "line" should be
-    interpreted as a flashed aperture of the appropriate shape. 
+    interpreted as a flashed aperture of the appropriate shape.
   */
-  long int is_same_place = 1;
-  p = l->points; x1=p->x; y1=p->y; 
+  is_same_place = 1;
+  p = l->points; x1=p->x; y1=p->y;
   for (p = p->next; p; p = p->next) {
     is_same_place = p->x == x1 && p->y == y1 ? 1 : 0;
-    if (!is_same_place) 
+    if (!is_same_place)
       break;
     x1=p->x; y1=p->y;
   }
@@ -805,33 +812,34 @@ void gengbx_line (F_line *l) {
     write_trace("## START:POLYGON:CLOSED");
   }
 
-  
+
    /* Now find the penultimate point of the line by traversing the
      list, also store the total number of points in n_points. */
-  long int n_points=0;
-  long int n_points_original=0;
-  F_point *p_penultimate = l->points;
+  n_points = 0;
+  n_points_original = 0;
+  p_penultimate = l->points;
   for (p = l->points; p->next; p = p->next, ++n_points)
     p_penultimate = p;
   ++n_points;
   n_points_original=n_points;
- 
+
  /** The following evaluates to unity if the line has square ends and
      circular join style, AND is long enough to actually mean
      something. */
-  long int circsquare=0;
+  circsquare = 0;
 
   if (l->join_style == 1 && ((l->cap_style == cap_style_butt )
 			     || l->cap_style == cap_style_square))  {
-    if (n_points > 2) 
+    if (n_points > 2)
       circsquare=1;
-    else 
+    else
       l->join_style = 0;
   }
 
   /* Open polygon. */
   if (l->fill_style == fill_style_none) {
     if (l->type != T_BOX && l->type != T_ARC_BOX && l->type !=  T_POLYGON ) {
+      F_point	*p2, *pA, *pB;
 
       /* For a butt end cap move the first and last points half the
 	 thickness of the line forward and backward respectively.
@@ -842,7 +850,7 @@ void gengbx_line (F_line *l) {
       if ( l->cap_style == cap_style_butt && l->points->next ) {
 
 	/* Go to start of line. */
-	p = l->points; 
+	p = l->points;
 	x1=p->x; y1=p->y;
 	p=p->next; x2=p->x; y2=p->y;
 
@@ -850,33 +858,31 @@ void gengbx_line (F_line *l) {
 	get_dx_dy(x1, y1, x2, y2, l->thickness/2, &dx, &dy);
 	p = l->points;
 	p->x += round(dx); p->y += round(dy);
-	
+
 	/* Set p to the penultimate point. */
 	p = p_penultimate;
 	x1=p->x; y1=p->y; p=p->next;
-	x2=p->x; y2=p->y; 
-	
+	x2=p->x; y2=p->y;
+
 	/* Shift the end point back by half a line thickness. */
 
-	//	fprintf(stderr,"***** HERE %li, %li, %li ****\n",l->points,l->points->next,p_penultimate);
+	/*	fprintf(stderr,"***** HERE %li, %li, %li ****\n",l->points,l->points->next,p_penultimate); */
 	get_dx_dy(x1, y1, x2, y2, l->thickness/2, &dx, &dy);
 	p->x -= round(dx); p->y -= round(dy);
       }
 
-
-      F_point *p2, *pA, *pB;
       if ( circsquare ) {
 	if (n_points_original >= 3) {
-	  /** Circular join style square end style. 
-	      
+	  /** Circular join style square end style.
+
 	      Need to move second and third points (if they exist) so
 	      that they are out the way */
 	  p = l->points;
 	  p2 = p->next;
-	  
+
 	  pA=insert_after_point(p2); n_points++;
 	  pB=insert_after_point(p2); n_points++;
-	  
+
 	  /* Will move the second+3rd point back to make way for the circular join. */
 	  p = l->points;
 	  p2 = p->next;
@@ -884,13 +890,13 @@ void gengbx_line (F_line *l) {
 	  x2=p2->x; y2=p2->y;
 	  get_dx_dy(x1, y1, x2, y2, l->thickness/2, &dx, &dy);
 	  p2->x -= round(dx); p2->y -= round(dy);
-	  
+
 
 	  if (n_points_original == 3) {
 	    /* If there are just three original points we want to move
 	       the (now) 4th point forward. */
 	    p = pA;
-	    p2 = p->next;	    
+	    p2 = p->next;
 	  } else {
 	    /* Similarly for the new point after the original second point. */
 	    p = pB->next;
@@ -900,13 +906,13 @@ void gengbx_line (F_line *l) {
 	  x2=p2->x; y2=p2->y;
 	  get_dx_dy(x1, y1, x2, y2, l->thickness/2, &dx, &dy);
 	  p->x += round(dx); p->y += round(dy);
-	} 
+	}
 
 	if ( n_points_original > 3 ) {
-	  
+
 	  /* Insert a new penultimate point */
 	  pA = insert_after_point(p_penultimate); n_points++;
-	  
+
 	  /* Move the new penultimate point forward slightly. */
 	  p = pA;
 	  p2 = p->next;
@@ -916,11 +922,11 @@ void gengbx_line (F_line *l) {
 	  p->x += round(dx); p->y += round(dy);
 	}
       }
-    } 
-    
-    
+    }
+
+
     /* If we have square ends with round joins we need to swap over to
-       a circular aperture for the main part of the line. 
+       a circular aperture for the main part of the line.
 
        Draw the line.
 
@@ -931,7 +937,7 @@ void gengbx_line (F_line *l) {
 	   last pair are line segments to draw with square cross
 	   section.  The 3rd point is an aperture to flash. */
 	p = l->points;
-	
+
 	use_aperture(define_aperture_for_line_end(l));
 
 	/* Move to start point */
@@ -940,40 +946,40 @@ void gengbx_line (F_line *l) {
 	/* Draw first segment with end cap style.*/
 	p = p->next;
 	draw_xy(p->x, p->y);
-	
+
 	/* Now flash the aperture at the corner. */
 	p = p->next;
 	flash_xy(p->x, p->y, define_aperture_for_line(l));
-	
+
 	/* Now draw the final line segment. */
 	p = p->next;
 	use_aperture(define_aperture_for_line_end(l));
 	move_xy(p->x, p->y);
-	
+
 	p=p->next;
 	draw_xy(p->x, p->y);
       } else if (n_points_original > 3) {
 	/* The line has been modified to add end sections to allow us to
 	   draw the end as a square and the joining parts as circular
 	   apertures. */
-	
-	
+
+
 	/* Start to draw the line.  First move to the start point. */
 	p = l->points;
-	
+
 	/* Set the aperture to the end cap aperture. */
 	use_aperture(define_aperture_for_line_end(l));
-	
+
 	/* Move to start point of line */
 	move_xy(p->x, p->y);
-	
+
 	/* Draw the first segment with the end cap style. */
 	p = p->next;
 	draw_xy(p->x, p->y);
-	
+
 	/* Set the aperture to the join style */
 	use_aperture(define_aperture_for_line(l));
-	
+
 	/* Move to end of square line */
 	move_xy(p->x,p->y);
 	p = p->next;
@@ -982,11 +988,11 @@ void gengbx_line (F_line *l) {
 	p = p->next;
 	draw_xy(p->x, p->y);
 	move_xy(p->x,p->y);
-	
+
 	/* Draw the remainder - using the join style. */
 	for (; p->next->next ; p = p->next)
 	  draw_xy(p->x, p->y);
-	
+
 	/* Add end section of line. */
 	use_aperture(define_aperture_for_line_end(l));
 	move_xy(p->x,p->y);
@@ -1015,7 +1021,7 @@ void gengbx_line (F_line *l) {
     */
     if (l->thickness > 0.0 ) {
       warn_once(warn_filled_poly_with_line,"You have specified a filled polygon with a finite edge thickness.  Check this is what you want");
-    
+
 
       l->fill_style = fill_style_none;
       /* Call myself, generating an outline around the polygon of the appropriate line width */
@@ -1031,17 +1037,17 @@ void gengbx_line (F_line *l) {
       x2 = p->x; y2 = p->y;
     }
     write_g_code(poly_area_fill_off); write_end_block();
-    
+
     /* Finish with an explicit exposure off */
-    exposure_off(); 
-    
+    exposure_off();
+
     /* The line surrounding the polygon is not closed.  Can lead to
        misrepresentation errors. */
-    if (x1 != x2 || y1 != y2 ) 
+    if (x1 != x2 || y1 != y2 )
       warn_once(warn_open_filled_polygon,"A filled polygon is not closed.  This can appear different in the Gerber file.");
     write_trace("## END:POLYGON:FILLED");
   }
-  if (l->for_arrow || l->back_arrow ) 
+  if (l->for_arrow || l->back_arrow )
     warn_once(warn_arrow_not_implemented,"Arrows on lines are not yet implemented.");
 
 }
@@ -1052,33 +1058,35 @@ void gengbx_spline (F_spline *s) {
 
 void
 gengbx_arc (F_arc *a) {
+  long int clockwise;
+
   /* Always check. If the colour is not black or "default" then bail
      out with a warning. */
   if (! is_pen_colour_ok(a->pen_color) )  return;
-  
-  
+
+
   /* If line thickness is less than or equal to zero, warn and don't output. */
   if ( (! a->thickness > 0.0 ) && a->fill_style == fill_style_none ) {
     warn_once(warn_line_zero_width,"Unfilled arc of zero width, ignoring.");
     return;
   }
-  
-  
+
+
   if (a->fill_style == fill_style_none) {
     /** We want to draw an unfilled arc. */
     write_trace("## START:ARC:OPEN");
   } else {
     write_trace("## START:ARC:FILLED");
   }
-  
 
-  if (a->fill_style == fill_style_none) 
+
+  if (a->fill_style == fill_style_none)
     use_aperture(define_aperture_for_arc(a));
-  
-  
+
+
   move_xy(a->point[0].x, a->point[0].y);
   write_g_code(circ_interp_enable);  write_end_block();
-  
+
 
   /* If this is to be filled switch on fill */
   if (a->fill_style != fill_style_none) {
@@ -1087,38 +1095,38 @@ gengbx_arc (F_arc *a) {
   }
 
   /* Need to interpret clockwise and anticlockwise relative to the applied x & y axis scaling */
-  long int clockwise = 1;
+  clockwise = 1;
   /* We now need to determine if this is clockwise or anticlockwise.*/
-  if (a->direction == clockwise ) 
+  if (a->direction == clockwise )
     write_g_code(circ_interp_clock);
   else
     write_g_code(circ_interp_anti);
   write_end_block();
-     
-  fprintf(tfp,"X%iY%iI%iJ%iD01*\n", x_fig2gbx(a->point[2].x), y_fig2gbx(a->point[2].y),
-	  x_fig2gbx(a->center.x-a->point[0].x), y_fig2gbx(a->center.y-a->point[0].y)); 
 
-  if (a->fill_style != fill_style_none) { 
+  fprintf(tfp,"X%iY%iI%iJ%iD01*\n", x_fig2gbx(a->point[2].x), y_fig2gbx(a->point[2].y),
+	  x_fig2gbx(a->center.x-a->point[0].x), y_fig2gbx(a->center.y-a->point[0].y));
+
+  if (a->fill_style != fill_style_none) {
     write_g_code(poly_area_fill_off);
     write_end_block();
   }
   write_g_code(circ_interp_disable); write_end_block();
   write_g_code(line_interp_1x); write_end_block();
   exposure_off();
-    
+
   /* If the line has thickness and is filled switch off fill, and call myself to draw the line arc. */
   if (a->thickness > 0  && a->fill_style != fill_style_none) {
     write_trace("## START:ARC:OUTLINE:CURVE");
     a->fill_style = fill_style_none;
     gengbx_arc(a);
-    
+
     /* Issue a warning. We are about to add a border. */
     warn_once(warn_open_filled_arc,"Polygon fill on an arc with finite line thickness.  Check this is what you want.");
-    
+
     /* Draw a line from start to end point. */
     /*use_aperture(define_aperture_for_arc(a));*/
     write_trace("## START:ARC:OUTLINE:LINE");
-    
+
     move_xy(a->point[0].x,a->point[0].y);
     draw_xy(a->point[2].x,a->point[2].y);
     write_trace("## END:ARC:OUTLINE:LINE");
@@ -1132,20 +1140,20 @@ gengbx_arc (F_arc *a) {
   } else {
     write_trace("## END:ARC:FILLED");
   }
-  
+
 
 }
 
 void
 gengbx_ellipse (F_ellipse *e) {
-  if (e->type == T_CIRCLE_BY_RAD || e->type == T_CIRCLE_BY_DIA) { 
+  if (e->type == T_CIRCLE_BY_RAD || e->type == T_CIRCLE_BY_DIA) {
+    F_arc	*a;
+
     /* Always check. If the colour is not black or "default" then bail
        out with a warning. */
     if (! is_pen_colour_ok(e->pen_color) )  return;
 
     write_trace("## START:CIRCLE");
-    F_arc *a;
-
     if (NULL == (Arc_malloc(a))) {
       put_msg(Err_mem);
       exit (2);
@@ -1168,7 +1176,7 @@ gengbx_ellipse (F_ellipse *e) {
     a->center.y = e->center.y;
     a->thickness = e->thickness;
     gengbx_arc(a);
-  } else 
+  } else
     warn_once(warn_ellipse_unsupported,"Ellipse output is currently unsupported.");
   /** To implement the ellipse consider it described parametrically.
       We want to represent the curve as a set of lines such that the
@@ -1179,9 +1187,9 @@ gengbx_ellipse (F_ellipse *e) {
 
 void gengbx_text (F_text *t) {
   warn_once(warn_text_unsupported,"Text output is currently unsupported.");
-  /* Messy!  Done with a LUT for 0-9 A-Z a-z . - _ / 
+  /* Messy!  Done with a LUT for 0-9 A-Z a-z . - _ /
 
-     Or, can I translate the PS Type 1 fonts in to polylines? 
+     Or, can I translate the PS Type 1 fonts in to polylines?
 
      Alternatively use some sort of external program like autotrace as an intermediate stage.
 
@@ -1192,7 +1200,7 @@ void gengbx_text (F_text *t) {
 struct driver dev_gbx = {
   gengbx_option,
   gengbx_start,
-  gendev_null,
+  gendev_nogrid,
   gengbx_arc,
   gengbx_ellipse,
   gengbx_line,

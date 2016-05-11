@@ -10,20 +10,20 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
-/* 
+/*
  *	gentpic : TPIC driver for fig2dev
  *
  *	Author: Conrad Kwok, UC Davis, 12/88
- *      Modified: Richard Auletta, George Mason Univ., 6/21/89
+ *	Modified: Richard Auletta, George Mason Univ., 6/21/89
  *		Added code comments are marked with "rja".
- *      	Added: Support for native pic arrowheads.
- *      	Added: Support for arrowheads at both ends of lines, arc, splines.
+ *		Added: Support for native pic arrowheads.
+ *		Added: Support for arrowheads at both ends of lines, arc, splines.
  *	Modified: Modified from pic to tpic. Baron Grey, UCLA. 10/2/90.
  *
  *		This driver supports TeX's virtual font mechanism. Any Fig
@@ -78,30 +78,25 @@
 #include "object.h"
 #include "tpicfonts.h"
 
-/*
- * Define TPIC_ARC_BOX if your tpic supports rounded-corner boxes
- * via a "radius" attribute of a box specification.
- */
-#define TPIC_ARC_BOX
-
 #define			TOP	10.5	/* top of page is 10.5 inch */
 static int		line_width = 8;	/* milli-inches */
 static int		vfont = 0; /* true if using a virtual TeX font */
 
-void gentpic_ctl_spline(), gentpic_itp_spline();
-void gentpic_open_spline(), gentpic_closed_spline();
-void gentpic_spline(), gentpic_ellipse(), gentpic_text();
-void gentpic_arc(), gentpic_line();
-static void bezier_spline();
-static void newline();
+extern void gentpic_ctl_spline(F_spline *s);
+extern void gentpic_itp_spline(F_spline *s);
+extern void gentpic_open_spline(F_spline *s);
+extern void gentpic_closed_spline(F_spline *s);
+static void bezier_spline(double a0, double b0, double a1, double b1,
+		double a2, double b2, double a3, double b3);
+static void newline(void);
 
-void gentpic_option(opt, optarg)
-char opt, *optarg;
+void
+gentpic_option(char opt, char *optarg)
 {
 	switch (opt) {
 
 	case 'f':		/* set default text font */
-	        {   int i;
+		{   int i;
 
 		    for ( i = 1; i <= MAX_TPICFONT; i++ )
 			if ( !strcmp(optarg, texfontnames[i]) ) break;
@@ -113,25 +108,24 @@ char opt, *optarg;
 		texfontnames[0] = optarg;
 		break;
 
-	case 's':
-	case 'm':
+	case 'G':
 	case 'L':
 		break;
 
- 	default:
+	default:
 		put_msg(Err_badarg, opt, "tpic");
 		exit(1);
 	}
 }
 
-static double convy(a)
-double	a;
+static double
+convy(double a)
 {
 	return((double) TOP-a);
 }
 
-void gentpic_start(objects)
-F_compound	*objects;
+void
+gentpic_start(F_compound *objects)
 {
 	ppi = ppi/mag;
 
@@ -139,9 +133,9 @@ F_compound	*objects;
 }
 
 int
-gentpic_end()
+gentpic_end(void)
 {
-  	fprintf(tfp, ".PE\n");				/* PIC ending */
+	fprintf(tfp, ".PE\n");				/* PIC ending */
 
 	/* all ok */
 	return 0;
@@ -151,8 +145,8 @@ gentpic_end()
  * tpic's line thickness is given in milli-inches with a default of 8
  * milli-inches. We simply multiply this default with the Fig pixel width.
  */
-static void set_linewidth(w)
-int	w;
+static void
+set_linewidth(int w)
 {
 	static int	cur_thickness = -1;
 
@@ -163,9 +157,8 @@ int	w;
 	    }
 	}
 
-static void set_style(s, v)
-int	s;
-float	v;
+static void
+set_style(int s, float v)
 {
 	static float	style_val = -1;
 
@@ -176,8 +169,8 @@ float	v;
 	    }
 	}
 
-static void set_baseline(b)
-int	b;
+static void
+set_baseline(int b)
 {
 	static int	cur_baseline = -1;
 
@@ -187,8 +180,8 @@ int	b;
 	}
 }
 
-static void set_texture(cur_texture)
-int	cur_texture;
+static void
+set_texture(int cur_texture)
 {
 	/*
 	 * This applies only to bitmapped texture patterns defined in
@@ -207,8 +200,8 @@ int	cur_texture;
  * otherwise, it should do a normal gray-scale fill. Note that the gray-
  * scale fill parameter is wired for fig2.X (the constant 0.05).
  */
-static void set_fill(cur_fill)
-int	cur_fill;
+static void
+set_fill(int cur_fill)
 {
 	if(cur_fill < WHITE_FILL ||
 	   cur_fill > BLACK_FILL + MAXPATTERNS)
@@ -230,8 +223,8 @@ int	cur_fill;
 }
 
 #ifdef TPIC_ARC_BOX
-void gentpic_line(l)
-F_line	*l;
+void
+gentpic_line(F_line *l)
 {
 	F_point		*p, *q;
 	int	llx, lly, urx, ury;
@@ -303,7 +296,7 @@ F_line	*l;
 	    fprintf(tfp, " <- from");
 	else if (l->for_arrow)
 	    fprintf(tfp, " -> from");
-        else
+	else
 	    fprintf(tfp, " from ");
 
 	fprintf(tfp, " %.3f,%.3f to", p->x/ppi, convy(p->y/ppi));
@@ -321,8 +314,8 @@ F_line	*l;
 	}
 
 #else
-void gentpic_line(l)
-F_line	*l;
+void
+gentpic_line(F_line *l)
 {
 	F_point		*p, *q;
 	int		radius = l->radius;
@@ -349,43 +342,43 @@ F_line	*l;
 		strcat(attr, " invis");
 
 	if (radius > 0) {	/* T_ARC_BOX */
-                register int xmin,xmax,ymin,ymax;
+		register int xmin,xmax,ymin,ymax;
 
-                xmin = xmax = p->x;
-                ymin = ymax = p->y;
-                while (p->next != NULL) { /* find lower left and upper right corners */
-                        p=p->next;
-                        if (xmin > p->x)
-                                xmin = p->x;
-                        else if (xmax < p->x)
-                                xmax = p->x;
-                        if (ymin > p->y)
-                                ymin = p->y;
-                        else if (ymax < p->y)
-                                ymax = p->y;
+		xmin = xmax = p->x;
+		ymin = ymax = p->y;
+		while (p->next != NULL) { /* find lower left and upper right corners */
+			p=p->next;
+			if (xmin > p->x)
+				xmin = p->x;
+			else if (xmax < p->x)
+				xmax = p->x;
+			if (ymin > p->y)
+				ymin = p->y;
+			else if (ymax < p->y)
+				ymax = p->y;
 		}
-                fprintf(tfp, "line %s from  %.3f,%.3f to %.3f, %.3f\n", attr,
+		fprintf(tfp, "line %s from  %.3f,%.3f to %.3f, %.3f\n", attr,
 			(xmin+radius)/ppi, convy(ymin/ppi),
 			(xmax-radius)/ppi, convy(ymin/ppi));
-                fprintf(tfp, "arc cw %s from %.3f, %.3f to %.3f,%.3f radius %.3f\n",
+		fprintf(tfp, "arc cw %s from %.3f, %.3f to %.3f,%.3f radius %.3f\n",
 			attr, (xmax-radius)/ppi, convy(ymin/ppi),
 			(xmax/ppi), convy((ymin+radius)/ppi), radius/ppi);
-                fprintf(tfp, "line %s from  %.3f,%.3f to %.3f, %.3f\n", attr,
+		fprintf(tfp, "line %s from  %.3f,%.3f to %.3f, %.3f\n", attr,
 			xmax/ppi, convy((ymin+radius)/ppi),
 			xmax/ppi, convy((ymax-radius)/ppi));
-                fprintf(tfp, "arc cw %s from %.3f, %.3f to %.3f,%.3f radius %.3f\n",
+		fprintf(tfp, "arc cw %s from %.3f, %.3f to %.3f,%.3f radius %.3f\n",
 			attr, xmax/ppi, convy((ymax-radius)/ppi),
 			(xmax-radius)/ppi, convy(ymax/ppi), radius/ppi);
-                fprintf(tfp, "line %s from  %.3f,%.3f to %.3f, %.3f\n", attr,
+		fprintf(tfp, "line %s from  %.3f,%.3f to %.3f, %.3f\n", attr,
 			(xmax-radius)/ppi, convy(ymax/ppi),
 			(xmin+radius)/ppi, convy(ymax/ppi));
-                fprintf(tfp, "arc cw %s from %.3f, %.3f to %.3f,%.3f radius %.3f\n",
+		fprintf(tfp, "arc cw %s from %.3f, %.3f to %.3f,%.3f radius %.3f\n",
 			attr, (xmin+radius)/ppi, convy(ymax/ppi),
 			xmin/ppi, convy((ymax-radius)/ppi), radius/ppi);
-                fprintf(tfp, "line %s from  %.3f,%.3f to %.3f, %.3f\n", attr,
+		fprintf(tfp, "line %s from  %.3f,%.3f to %.3f, %.3f\n", attr,
 			xmin/ppi, convy((ymax-radius)/ppi),
 			xmin/ppi, convy((ymin+radius)/ppi));
-                fprintf(tfp, "arc cw %s from %.3f, %.3f to %.3f,%.3f radius %.3f",
+		fprintf(tfp, "arc cw %s from %.3f, %.3f to %.3f,%.3f radius %.3f",
 			attr, xmin/ppi, convy((ymin+radius)/ppi),
 			(xmin+radius)/ppi, convy(ymin/ppi), radius/ppi);
 	} else {
@@ -414,8 +407,8 @@ F_line	*l;
 	}
 #endif
 
-void gentpic_spline(s)
-F_spline	*s;
+void
+gentpic_spline(F_spline *s)
 {
 	if (int_spline(s))
 	    gentpic_itp_spline(s);
@@ -423,8 +416,8 @@ F_spline	*s;
 	    gentpic_ctl_spline(s);
 	}
 
-void gentpic_ctl_spline(s)
-F_spline	*s;
+void
+gentpic_ctl_spline(F_spline *s)
 {
 	if (closed_spline(s))
 	    gentpic_closed_spline(s);
@@ -432,8 +425,8 @@ F_spline	*s;
 	    gentpic_open_spline(s);
 	}
 
-void gentpic_open_spline(s)
-F_spline	*s;
+void
+gentpic_open_spline(F_spline *s)
 {
 	double		x1, y1, x2, y2;
 	F_point		*p, *q;
@@ -454,7 +447,7 @@ F_spline	*s;
 		    fprintf(tfp, " dotted");
 
 
-           /* Attach arrowhead as required */
+	   /* Attach arrowhead as required */
 	    if ((s->for_arrow) && (s->back_arrow))
 	       fprintf(tfp, " <->");
 	    else if (s->back_arrow)
@@ -467,14 +460,14 @@ F_spline	*s;
 	    return;
 	    }
 
-	fprintf(tfp, "spline"); 
+	fprintf(tfp, "spline");
 	if (s->style == DASH_LINE && s->style_val > 0.0)
 	    fprintf(tfp, " dashed");
 	else if (s->style == DOTTED_LINE && s->style_val > 0.0)
 	    fprintf(tfp, " dotted");
 
 
-           /* Attach arrowhead as required */
+	   /* Attach arrowhead as required */
 	    if ((s->for_arrow) && (s->back_arrow))
 	       fprintf(tfp, " <->");
 	    else if (s->back_arrow)
@@ -491,8 +484,8 @@ F_spline	*s;
 	newline();
 	}
 
-void gentpic_ellipse(e)
-F_ellipse	*e;
+void
+gentpic_ellipse(F_ellipse *e)
 {
 	set_linewidth(e->thickness);
 	set_texture(e->fill_style);
@@ -527,11 +520,11 @@ baseline at the given coordinates as does fig -- Baron.
 */
 #define			HT_OFFSET	(0.25 / 72.0)
 
-void gentpic_text(t)
-F_text	*t;
+void
+gentpic_text(F_text *t)
 {
 	float	y;
-        char	*tpos;
+	char	*tpos;
 	int	virtual_font = 0;
 
 	/*
@@ -554,27 +547,27 @@ F_text	*t;
 			TEXFONT(t->font), TEXFONT(t->font), (int)t->size,
 			TEXFONT(t->font));
 	else
-#ifdef FST
+#ifdef FST	/* TODO: never defined - check what is correct */
 		fprintf(tfp, "\"\\%spt\\%s ", TEXFONTMAG(t), TEXFONT(t->font));
 #else
 		fprintf(tfp, "\"\\%s%s ", TEXFONTMAG(t), TEXFONT(t->font));
 #endif
 
-        switch (t->type) {
-        case T_LEFT_JUSTIFIED:
-        case DEFAULT:
-            tpos = "ljust";
-            break;
-        case T_CENTER_JUSTIFIED:
-            tpos = "";
-            break;
-        case T_RIGHT_JUSTIFIED:
-            tpos = "rjust";
-            break;
-        default:
-            fprintf(stderr, "unknown text position type\n");
-            exit(1);
-        }    
+	switch (t->type) {
+	case T_LEFT_JUSTIFIED:
+	case DEFAULT:
+	    tpos = "ljust";
+	    break;
+	case T_CENTER_JUSTIFIED:
+	    tpos = "";
+	    break;
+	case T_RIGHT_JUSTIFIED:
+	    tpos = "rjust";
+	    break;
+	default:
+	    fprintf(stderr, "unknown text position type\n");
+	    exit(1);
+	}
 	y = convy(t->base_y/ppi) + (TEXFONTMAGINT(t)
 		* HT_OFFSET);
 
@@ -583,8 +576,8 @@ F_text	*t;
 	newline();
 }
 
-void gentpic_arc(a)
-F_arc	*a;
+void
+gentpic_arc(F_arc *a)
 {
 	double		cx, cy, sx, sy, ex, ey;
 
@@ -627,26 +620,11 @@ F_arc	*a;
 
 	}
 
-#if 0 /* function arc_tangent() is unused */
-static void arc_tangent(x1, y1, x2, y2, direction, x, y)
-double	x1, y1, x2, y2, *x, *y;
-int	direction;
-{
-	if (direction) { /* counter clockwise  */
-	    *x = x2 + (y2 - y1);
-	    *y = y2 - (x2 - x1);
-	    }
-	else {
-	    *x = x2 - (y2 - y1);
-	    *y = y2 + (x2 - x1);
-	    }
-}
-#endif /* function arc_tangent() is unused */
-
 #define		THRESHOLD	.05	/* inch */
 
-static void quadratic_spline(a1, b1, a2, b2, a3, b3, a4, b4)
-double	a1, b1, a2, b2, a3, b3, a4, b4;
+static void
+quadratic_spline(double a1, double b1, double a2, double b2,
+		double a3, double b3, double a4, double b4)
 {
 	double	x1, y1, x4, y4;
 	double	xmid, ymid;
@@ -673,18 +651,18 @@ double	a1, b1, a2, b2, a3, b3, a4, b4;
 	    }
 }
 
-void gentpic_closed_spline(s)
-F_spline	*s;
+void
+gentpic_closed_spline(F_spline *s)
 {
 	F_point	*p;
 	double	cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4;
 	double	x1, y1, x2, y2;
 
 	p = s->points;
-	x1 = p->x/ppi;  y1 = convy(p->y/ppi);
+	x1 = p->x/ppi;	y1 = convy(p->y/ppi);
 	p = p->next;
-	x2 = p->x/ppi;  y2 = convy(p->y/ppi);
-	cx1 = (x1 + x2) / 2;      cy1 = (y1 + y2) / 2;
+	x2 = p->x/ppi;	y2 = convy(p->y/ppi);
+	cx1 = (x1 + x2) / 2;	  cy1 = (y1 + y2) / 2;
 	cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
 
 	set_linewidth(s->thickness);
@@ -700,14 +678,14 @@ F_spline	*s;
 	    quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
 	    newline();
 	    /* fprintf(tfp, "\n"); */
-	    cx1 = cx4;  cy1 = cy4;
+	    cx1 = cx4;	cy1 = cy4;
 	    cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
 	    }
 	x1 = x2;  y1 = y2;
 	p = s->points->next;
-	x2 = p->x/ppi;  y2 = convy(p->y/ppi);
+	x2 = p->x/ppi;	y2 = convy(p->y/ppi);
 	cx3 = (3 * x1 + x2) / 4;  cy3 = (3 * y1 + y2) / 4;
-	cx4 = (x1 + x2) / 2;      cy4 = (y1 + y2) / 2;
+	cx4 = (x1 + x2) / 2;	  cy4 = (y1 + y2) / 2;
 	fprintf(tfp, "line from %.3f,%.3f ", cx1, cy1);
 	quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
 	if (s->thickness == 0)
@@ -717,8 +695,8 @@ F_spline	*s;
 	/* fprintf(tfp, "\n"); */
 	}
 
-void gentpic_itp_spline(s)
-F_spline	*s;
+void
+gentpic_itp_spline(F_spline *s)
 {
 	F_point		*p1, *p2, *pfirst;
 	F_control	*cp1, *cp2;
@@ -732,13 +710,13 @@ F_spline	*s;
 	cp1 = s->controls;
 	x2 = p1->x/ppi; y2 = convy(p1->y/ppi);
 
-         pfirst = p1->next;/*save first to test in loop*/
+	 pfirst = p1->next;/*save first to test in loop*/
 	for (p2 = p1->next, cp2 = cp1->next; p2 != NULL;
 		p1 = p2, cp1 = cp2, p2 = p2->next, cp2 = cp2->next) {
 
 	    fprintf(tfp, "line ");
 
-           /* Attach arrowhead as required */
+	   /* Attach arrowhead as required */
 
 	    if ((s->back_arrow) && (p2 == pfirst))
 	       fprintf(tfp, " <- ");
@@ -757,8 +735,9 @@ F_spline	*s;
 
 	}
 
-static void bezier_spline(a0, b0, a1, b1, a2, b2, a3, b3)
-double	a0, b0, a1, b1, a2, b2, a3, b3;
+static void
+bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2,
+		double a3, double b3)
 {
 	double	x0, y0, x3, y3;
 	double	sx1, sy1, sx2, sy2, tx, ty, tx1, ty1, tx2, ty2, xmid, ymid;
@@ -782,7 +761,7 @@ double	a0, b0, a1, b1, a2, b2, a3, b3;
 	}
 
 static void
-newline()
+newline(void)
 {
 	/*
 	 * A vestige from another version of this driver.
@@ -791,9 +770,9 @@ newline()
 }
 
 struct driver dev_tpic = {
-     	gentpic_option,
+	gentpic_option,
 	gentpic_start,
-	gendev_null,
+	gendev_nogrid,
 	gentpic_arc,
 	gentpic_ellipse,
 	gentpic_line,
@@ -802,4 +781,3 @@ struct driver dev_tpic = {
 	gentpic_end,
 	INCLUDE_TEXT
 };
-

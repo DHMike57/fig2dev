@@ -1,0 +1,8 @@
+# @configure_input@
+
+if test x"@abs_top_builddir@" == x"@abs_top_srcdir@"; then
+  PATH=@abs_top_builddir@/fig2dev:$PATH
+else
+  PATH=@abs_top_builddir@/fig2dev:@abs_top_srcdir@/fig2dev:$PATH
+fi
+FGREP='@FGREP@'

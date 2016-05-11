@@ -9,8 +9,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -18,19 +18,19 @@
 /*******************************************************************/
 /***************       Read version 1.3 format       ***************/
 /*******************************************************************/
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
+/* #include <sys/types.h>
+ * #include <sys/stat.h>
+ * #include <errno.h>	*/
 #include "alloc.h"
 #include "fig2dev.h"
 #include "object.h"
 #include "free.h"
 
 /*******    Fig 1.3 subtype of objects    *******/
-#define			DRAW_ELLIPSE_BY_RAD 	1
-#define			DRAW_ELLIPSE_BY_DIA 	2
-#define			DRAW_CIRCLE_BY_RAD 	3
-#define			DRAW_CIRCLE_BY_DIA 	4
+#define			DRAW_ELLIPSE_BY_RAD	1
+#define			DRAW_ELLIPSE_BY_DIA	2
+#define			DRAW_CIRCLE_BY_RAD	3
+#define			DRAW_CIRCLE_BY_DIA	4
 #define			DRAW_CIRCULAR_ARC	5
 #define			DRAW_POLYLINE		6
 #define			DRAW_BOX		7
@@ -40,15 +40,15 @@
 #define			DRAW_CLOSEDSPLINE	11
 #define			DRAW_COMPOUND		13
 
-extern F_arrow		*forward_arrow(), *backward_arrow();
+extern F_arrow		*forward_arrow(void), *backward_arrow(void);
 extern int		figure_modified;
 
-static F_ellipse	*read_ellipseobject();
-static F_line		*read_lineobject();
-static F_text		*read_textobject();
-static F_spline		*read_splineobject();
-static F_arc		*read_arcobject();
-static F_compound	*read_compoundobject();
+static F_ellipse	*read_ellipseobject(FILE *fp);
+static F_line		*read_lineobject(FILE *fp);
+static F_text		*read_textobject(FILE *fp);
+static F_spline		*read_splineobject(FILE *fp);
+static F_arc		*read_arcobject(FILE *fp);
+static F_compound	*read_compoundobject(FILE *fp);
 
 extern int		line_no;
 extern int		num_object;
@@ -58,9 +58,7 @@ extern int              suppress_error;/*ggstemme*/
 #endif /* V4_0 */
 
 int
-read_1_3_objects(fp, obj)
-FILE		*fp;
-F_compound	*obj;
+read_1_3_objects(FILE *fp, F_compound *obj)
 {
 	F_ellipse	*e, *le = NULL;
 	F_line		*l, *ll = NULL;
@@ -143,25 +141,24 @@ F_compound	*obj;
 	}
 
 static F_arc *
-read_arcobject(fp)
-FILE	*fp;
+read_arcobject(FILE *fp)
 {
 	F_arc	*a;
 	int	f, b, h, w, n;
 
 	Arc_malloc(a);
-      	a->pen_color = a->fill_color = BLACK_COLOR;
+	a->pen_color = a->fill_color = BLACK_COLOR;
 	a->depth = 0;
 	a->pen = 0;
 	a->for_arrow = NULL;
 	a->back_arrow = NULL;
 	a->next = NULL;
 	n = fscanf(fp, " %d %d %d %lf %d %d %d %d %d %lf %lf %d %d %d %d %d %d\n",
-		&a->type, &a->style, &a->thickness, 
+		&a->type, &a->style, &a->thickness,
 		&a->style_val, &a->direction, &f, &b,
-		&h, &w, &a->center.x, &a->center.y, 
-		&a->point[0].x, &a->point[0].y, 
-		&a->point[1].x, &a->point[1].y, 
+		&h, &w, &a->center.x, &a->center.y,
+		&a->point[0].x, &a->point[0].y,
+		&a->point[1].x, &a->point[1].y,
 		&a->point[2].x, &a->point[2].y);
 	a->type = T_OPEN_ARC;
 	if (n != 17) {
@@ -183,8 +180,7 @@ FILE	*fp;
 	}
 
 static F_compound *
-read_compoundobject(fp)
-FILE	*fp;
+read_compoundobject(FILE *fp)
 {
 	F_arc		*a, *la = NULL;
 	F_ellipse	*e, *le = NULL;
@@ -211,7 +207,7 @@ FILE	*fp;
 	while (fscanf(fp, "%d", &object) == 1) {
 	    switch (object) {
 		case O_POLYLINE :
-		    if ((l = read_lineobject(fp)) == NULL) { 
+		    if ((l = read_lineobject(fp)) == NULL) {
 			free_line(&l);
 			return(NULL);
 			}
@@ -221,7 +217,7 @@ FILE	*fp;
 			ll = com->lines = l;
 		    break;
 		case O_SPLINE :
-		    if ((s = read_splineobject(fp)) == NULL) { 
+		    if ((s = read_splineobject(fp)) == NULL) {
 			free_spline(&s);
 			return(NULL);
 			}
@@ -231,7 +227,7 @@ FILE	*fp;
 			ls = com->splines = s;
 		    break;
 		case O_ELLIPSE :
-		    if ((e = read_ellipseobject(fp)) == NULL) { 
+		    if ((e = read_ellipseobject(fp)) == NULL) {
 			free_ellipse(&e);
 			return(NULL);
 			}
@@ -241,7 +237,7 @@ FILE	*fp;
 			le = com->ellipses = e;
 		    break;
 		case O_ARC :
-		    if ((a = read_arcobject(fp)) == NULL) { 
+		    if ((a = read_arcobject(fp)) == NULL) {
 			free_arc(&a);
 			return(NULL);
 			}
@@ -251,7 +247,7 @@ FILE	*fp;
 			la = com->arcs = a;
 		    break;
 		case O_TEXT :
-		    if ((t = read_textobject(fp)) == NULL) { 
+		    if ((t = read_textobject(fp)) == NULL) {
 			free_text(&t);
 			return(NULL);
 			}
@@ -261,7 +257,7 @@ FILE	*fp;
 			lt = com->texts = t;
 		    break;
 		case O_COMPOUND :
-		    if ((c = read_compoundobject(fp)) == NULL) { 
+		    if ((c = read_compoundobject(fp)) == NULL) {
 			free_compound(&c);
 			return(NULL);
 			}
@@ -277,31 +273,34 @@ FILE	*fp;
 	if (feof(fp))
 	    return(com);
 	else {
+#ifdef	HAVE_STRERROR
 	    put_msg("Format error: %s", strerror(errno));
+#else
+	    put_msg("Format error.");
+#endif
 	    return(NULL);
 	    }
 	}
 
 static F_ellipse *
-read_ellipseobject(fp)
-FILE	*fp;
+read_ellipseobject(FILE *fp)
 {
 	F_ellipse	*e;
 	int		n, t;
 
 	Ellipse_malloc(e);
-      	e->pen_color = e->fill_color = BLACK_COLOR;
+	e->pen_color = e->fill_color = BLACK_COLOR;
 	e->angle = 0.0;
 	e->depth = 0;
 	e->pen = 0;
 	e->fill_style = UNFILLED;
 	e->next = NULL;
-	n = fscanf(fp," %d %d %d %lf %d %d %d %d %d %d %d %d %d\n", 
+	n = fscanf(fp," %d %d %d %lf %d %d %d %d %d %d %d %d %d\n",
 		&t, &e->style,
-		&e->thickness, &e->style_val, &e->direction, 
-		&e->center.x, &e->center.y, 
-		&e->radiuses.x, &e->radiuses.y, 
-		&e->start.x, &e->start.y, 
+		&e->thickness, &e->style_val, &e->direction,
+		&e->center.x, &e->center.y,
+		&e->radiuses.x, &e->radiuses.y,
+		&e->start.x, &e->start.y,
 		&e->end.x, &e->end.y);
 	if (n != 13) {
 	    put_msg("incomplete ellipse data");
@@ -320,15 +319,14 @@ FILE	*fp;
 	}
 
 static F_line *
-read_lineobject(fp)
-FILE			*fp;
+read_lineobject(FILE *fp)
 {
 	F_line	*l;
 	F_point	*p, *q;
 	int	f, b, h, w, n, t, x, y;
 
 	Line_malloc(l);
-      	l->pen_color = l->fill_color = BLACK_COLOR;
+	l->pen_color = l->fill_color = BLACK_COLOR;
 	l->depth = 0;
 	l->pen = 0;
 	l->fill_style = UNFILLED;
@@ -336,7 +334,7 @@ FILE			*fp;
 	l->back_arrow = NULL;
 	l->next = NULL;
 	l->points = Point_malloc(p);
-	n = fscanf(fp, " %d %d %d %lf %d %d %d %d %d %d", &t, 
+	n = fscanf(fp, " %d %d %d %lf %d %d %d %d %d %d", &t,
 		&l->style, &l->thickness, &l->style_val,
 		&f, &b, &h, &w, &p->x, &p->y);
 	if (n != 10) {
@@ -378,15 +376,14 @@ FILE			*fp;
 	}
 
 static F_spline *
-read_splineobject(fp)
-FILE	*fp;
+read_splineobject(FILE *fp)
 {
 	F_spline	*s;
 	F_point		*p, *q;
 	int		f, b, h, w, n, t, x, y;
 
 	Spline_malloc(s);
-      	s->pen_color = s->fill_color = BLACK_COLOR;
+	s->pen_color = s->fill_color = BLACK_COLOR;
 	s->depth = 0;
 	s->pen = 0;
 	s->fill_style = UNFILLED;
@@ -395,10 +392,10 @@ FILE	*fp;
 	s->controls = NULL;
 	s->next = NULL;
 	s->points = Point_malloc(p);
-	n = fscanf(fp, " %d %d %d %lf %d %d %d %d %d %d", 
-	    	&t, &s->style, &s->thickness, &s->style_val,
-	    	&f, &b,
-	    	&h, &w, &p->x, &p->y);
+	n = fscanf(fp, " %d %d %d %lf %d %d %d %d %d %d",
+		&t, &s->style, &s->thickness, &s->style_val,
+		&f, &b,
+		&h, &w, &p->x, &p->y);
 	if (n != 10) {
 	    put_msg("incomplete spline data");
 	    free((char*)s);
@@ -436,8 +433,7 @@ FILE	*fp;
 	}
 
 static F_text *
-read_textobject(fp)
-FILE	*fp;
+read_textobject(FILE *fp)
 {
 	F_text	*t;
 	int	n;
@@ -446,13 +442,13 @@ FILE	*fp;
 	Text_malloc(t);
 	t->type = T_LEFT_JUSTIFIED;
 	t->flags = 0;
-      	t->color = BLACK_COLOR;
+	t->color = BLACK_COLOR;
 	t->depth = 0;
 	t->pen = 0;
 	t->angle = 0.0;
 	t->next = NULL;
-	n = fscanf(fp," %d %lf %d %lf %lf %d %d %127[^\n]", &t->font, 
-		&t->size, &t->flags, &t->height, &t->length, 
+	n = fscanf(fp," %d %lf %d %lf %lf %d %d %127[^\n]", &t->font,
+		&t->size, &t->flags, &t->height, &t->length,
 		&t->base_x, &t->base_y, buf);
 	if (n != 8) {
 	    put_msg("incomplete text data");

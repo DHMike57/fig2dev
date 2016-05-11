@@ -8,8 +8,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -17,19 +17,14 @@
 #include "fig2dev.h"
 #include "object.h"
 
-int	_read_pcx();
-void	readpcxhead();
+extern int _read_pcx(FILE *pcxfile, F_pic *pic);
 
 /* return codes:  1 : success
 		  0 : invalid file
 */
 
 int
-read_pcx(file,filetype,pic,llx,lly)
-    FILE	   *file;
-    int		    filetype;
-    F_pic	   *pic;
-    int		   *llx, *lly;
+read_pcx(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 {
 	*llx = *lly = 0;
 	pic->transp = -1;
@@ -70,11 +65,8 @@ void dispbyte(unsigned char *ptr,int *xp,int *yp,int c,int w,int h,
    read_tif() and read_epsf().
  */
 
-void pcx_decode();
-
-_read_pcx(pcxfile,pic)
-    FILE	*pcxfile;
-    F_pic	*pic;
+int
+_read_pcx(FILE *pcxfile, F_pic *pic)
 {
 	int		 w,h,bytepp,x,y,yy,byteline,plane,pmask;
 	struct pcxhed	 header;
@@ -111,7 +103,7 @@ _read_pcx(pcxfile,pic)
 	      case 4: real_bpp=4; break;
 	    }
 	    break;
-	  
+
 	  case 8:
 	    switch(header.nplanes) {
 	      case 1: real_bpp=8; break;
@@ -147,7 +139,7 @@ _read_pcx(pcxfile,pic)
 	for (yy=0; yy<h; yy++) {
 	  plane=0;
 	  pmask=1;
-	  
+
 	  y=yy;
 	  x=0;
 	  while (y==yy) {
@@ -174,7 +166,7 @@ _read_pcx(pcxfile,pic)
 		pic->cmap[RED][1] = pic->cmap[GREEN][1] = pic->cmap[BLUE][1] = 255;
 		pic->numcols = 2;
 		break;
-	  
+
 	    case 2:
 	    case 3:
 	    case 4:
@@ -186,9 +178,9 @@ _read_pcx(pcxfile,pic)
 		    pic->cmap[BLUE][x] = header.pal16[x*3+2];
 		    /* if user wants grayscale (-N) then map to gray */
 		    if (grayonly)
-			pic->cmap[RED][x] = pic->cmap[GREEN][x] = pic->cmap[BLUE][x] = 
-			    (int) (rgb2luminance(pic->cmap[RED][x]/255.0, 
-						pic->cmap[GREEN][x]/255.0, 
+			pic->cmap[RED][x] = pic->cmap[GREEN][x] = pic->cmap[BLUE][x] =
+			    (int) (rgb2luminance(pic->cmap[RED][x]/255.0,
+						pic->cmap[GREEN][x]/255.0,
 						pic->cmap[BLUE][x]/255.0)*255.0);
 		}
 		break;
@@ -202,14 +194,14 @@ _read_pcx(pcxfile,pic)
 		    pic->cmap[BLUE][x] = fgetc(pcxfile);
 		    /* if user wants grayscale (-N) then map to gray */
 		    if (grayonly)
-			pic->cmap[RED][x] = pic->cmap[GREEN][x] = pic->cmap[BLUE][x] = 
-			    (int) (rgb2luminance(pic->cmap[RED][x]/255.0, 
-						pic->cmap[GREEN][x]/255.0, 
+			pic->cmap[RED][x] = pic->cmap[GREEN][x] = pic->cmap[BLUE][x] =
+			    (int) (rgb2luminance(pic->cmap[RED][x]/255.0,
+						pic->cmap[GREEN][x]/255.0,
 						pic->cmap[BLUE][x]/255.0)*255.0);
 		}
 		pic->numcols = 256;
 		break;
-	  
+
 	    case 24:
 		/* no palette, set flag in numcols to write out rgb values */
 		pic->numcols = 2<<24;
@@ -219,7 +211,7 @@ _read_pcx(pcxfile,pic)
 	pic->bit_size.x = w;
 	pic->bit_size.y = h;
 
-	return 1;  
+	return 1;
 }
 
 
@@ -276,7 +268,7 @@ dispbyte(unsigned char *ptr,int *xp,int *yp,int c,int w,int h,
 			return;
 		}
 		break;
-	  
+
 	  case 8:
 		*(ptr+(*yp)*w+*xp)=c;
 		(*xp)++;
@@ -285,7 +277,7 @@ dispbyte(unsigned char *ptr,int *xp,int *yp,int c,int w,int h,
 		    (*yp)++;
 		}
 		break;
-	  
+
 	  case 24:
 		*(ptr+((*yp)*w+*xp)*3+(2-(*planep)))=c;
 		(*xp)++;
