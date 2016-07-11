@@ -31,6 +31,7 @@
 #include "setfigfont.h"
 #include "texfonts.h"
 #include "localmath.h"
+#include "creationdate.h"
 
 #define UNIT "cm"	/* dip */
 #define CONVUNIT 2.54	/* dip */
@@ -54,7 +55,7 @@ static int	line_style = SOLID_LINE;
 static char	*linethick = "1pt";
 static char	*plotsymbol = "\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}";
 static int	cur_thickness = -1;
-static bool	anonymous = false;
+static bool	anonymous = true;
 static bool	rotate = true;
 
 static void
@@ -129,8 +130,8 @@ void
 genpictex_start(F_compound *objects)
 {
 	char		host[256];
-	time_t		when;
 	struct passwd	*who;
+	char		date_buf[CREATION_TIME_LEN];
 
 	texfontsizes[0] = texfontsizes[1] =
 		TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
@@ -139,12 +140,12 @@ genpictex_start(F_compound *objects)
 
 	/* announce filename, version etc */
 
-	(void) time(&when);
 	fprintf(tfp, "%%Title: %s\n",
 		(name? name: ((from) ? from : "stdin")));
-	fprintf(tfp, "%%%%Created by: %s Version %s Patchlevel %s\n",
-		prog, FIG_FILEVERSION, FIG_PATCHLEVEL);
-	fprintf(tfp, "%%%%CreationDate: %s", ctime(&when));
+	fprintf(tfp, "%%%%Created by: %s Version %s\n",
+		prog, PACKAGE_VERSION);
+	if (creation_date(date_buf))
+	    fprintf(tfp, "%%%%CreationDate: %s\n", date_buf);
 #ifdef HAVE_GETHOSTNAME
 	if (gethostname(host, sizeof(host)) == -1)
 #endif
@@ -397,7 +398,7 @@ put_box(int llx, int lly, int urx, int ury, F_line *l)
 	   }
 	   else if (l->fill_style && l->fill_style == WHITE_FILL)
 	   {
-	       fprintf(stderr,"WHITE_FILL not implemeted for boxes\n");
+	       fprintf(stderr,"WHITE_FILL not implemented for boxes\n");
 	   }
 
 	   fprintf(tfp,"\\putrectangle corners at %6.3f %6.3f and %6.3f %6.3f\n",
@@ -417,7 +418,7 @@ put_box(int llx, int lly, int urx, int ury, F_line *l)
 
 	   if (l->fill_style != UNFILLED)
 	   {
-	       fprintf(stderr,"area fill not implemeted for rounded corner boxes\n");
+	       fprintf(stderr,"area fill not implemented for rounded corner boxes\n");
 	   }
 
 	   fprintf(tfp,"\\putrule from %6.3f %6.3f to %6.3f %6.3f\n",

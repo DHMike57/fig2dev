@@ -583,7 +583,7 @@ default is 0.
 
 .TP
 .B \-y ymin
-specifies the minumum y coordinate value of the figure (inches). The
+specifies the minimum y coordinate value of the figure (inches). The
 default is 0.
 
 .TP
@@ -661,7 +661,7 @@ dvips, LaTeX + dvipdfm, pdflatex, xelatex, or ConTeX.
 Pattern fills are not supported by the PICT2E output language. The PICT2E driver
 renders patterns by filling the respective area with the pen-color at 25%
 intensity, i.e., a 75% tint of the pen-color.
-The PICT2E driver allows to choose any font available to the LaTeX engine,
+The PICT2E driver allows one to choose any font available to the LaTeX engine,
 including PostScript fonts. Apart from patterns and, possibly, text fonts,
 figures produced with PICT2E are identical to figures produced with the
 PostScript driver.

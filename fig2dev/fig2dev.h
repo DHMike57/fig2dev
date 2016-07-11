@@ -125,8 +125,6 @@ struct driver {
 extern void	gendev_null(void);
 extern void	gendev_nogrid(float major, float minor);
 
-extern int	lookup_X_color(char *name, RGB *rgb);
-extern float	rgb2luminance (float r, float g, float b);
 extern void	put_msg(char *fmt, ...);
 extern void	unpsfont();
 extern void	print_comments();

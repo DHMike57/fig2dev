@@ -18,27 +18,27 @@
 #include "fig2dev.h"
 
 struct color_db {
-	char *name;
-	int   red, green, blue;
+	char		*name;
+	unsigned short	red, green, blue;
 };
 
-static	int	  read_colordb(void);
-struct	color_db *Xcolors;
-int	numXcolors, maxcolors;
-bool	have_read_X_colors = false;
+static int		read_colordb(void);
+static int		numXcolors = 0;
+static struct color_db	*Xcolors;
 
 int
 lookup_X_color(char *name, RGB *rgb)
 {
+	static bool	have_read_X_colors = false;
 	int		i, n;
-	int		r, g, b;
+	unsigned short	r, g, b;
 	struct color_db *col;
 
 	/* read the X color database file if we haven't done that yet */
 	if (!have_read_X_colors) {
 	    if (read_colordb() != 0) {
 		/* error reading color database, return black */
-		rgb->red = rgb->green = rgb->blue = 0;
+		rgb->red = rgb->green = rgb->blue = 0u;
 		return -1;
 	    }
 	    have_read_X_colors = true;
@@ -46,22 +46,22 @@ lookup_X_color(char *name, RGB *rgb)
 
 	if (name[0] == '#') {			/* hex color parse it now */
 	    if (strlen(name) == 4) {		/* #rgb */
-		    n = sscanf(name,"#%1x%1x%1x",&r,&g,&b);
+		    n = sscanf(name,"#%1hx%1hx%1hx",&r,&g,&b);
 		    rgb->red   = ((r << 4) + r) << 8;
 		    rgb->green = ((g << 4) + g) << 8;
 		    rgb->blue  = ((b << 4) + b) << 8;
 	    } else if (strlen(name) == 7) {		/* #rrggbb */
-		    n = sscanf(name,"#%2x%2x%2x",&r,&g,&b);
+		    n = sscanf(name,"#%2hx%2hx%2hx",&r,&g,&b);
 		    rgb->red   = r << 8;
 		    rgb->green = g << 8;
 		    rgb->blue  = b << 8;
 	    } else if (strlen(name) == 10) {	/* #rrrgggbbb */
-		    n = sscanf(name,"#%3x%3x%3x",&r,&g,&b);
+		    n = sscanf(name,"#%3hx%3hx%3hx",&r,&g,&b);
 		    rgb->red   = r << 4;
 		    rgb->green = g << 4;
 		    rgb->blue  = b << 4;
 	    } else if (strlen(name) == 13) {	/* #rrrrggggbbbb */
-		    n = sscanf(name,"#%4x%4x%4x",&r,&g,&b);
+		    n = sscanf(name,"#%4hx%4hx%4hx",&r,&g,&b);
 		    rgb->red   = r;
 		    rgb->green = g;
 		    rgb->blue  = b;
@@ -72,7 +72,7 @@ lookup_X_color(char *name, RGB *rgb)
 	    }
 	} else {
 	    /* named color, look in the database we read in */
-	    for (col = Xcolors, i=0; i<numXcolors; col++, i++) {
+	    for (col = Xcolors, i=0; i<numXcolors; ++col, ++i) {
 		if (strcasecmp(col->name, name) == 0) {
 		    /* found it */
 		    rgb->red = col->red;
@@ -92,18 +92,17 @@ lookup_X_color(char *name, RGB *rgb)
 int
 read_colordb(void)
 {
-    FILE	*fp;
-    char	s[100], s1[100], *c1, *c2;
-    int		r,g,b;
-    struct color_db *col;
+    static int		maxcolors = 400;
+    FILE		*fp;
+    char		s[100], s1[100], *c1, *c2;
+    unsigned short	r,g,b;
+    struct color_db	*col;
 
     fp = fopen(RGB_FILE, "r");
     if (fp == NULL) {
       fprintf(stderr,"Couldn't open the RGB database file '%s'\n", RGB_FILE);
       return -1;
     }
-    numXcolors = 0;
-    maxcolors = 400;
     if ((Xcolors = (struct color_db*) malloc(maxcolors*sizeof(struct color_db)))
 		== NULL) {
       fprintf(stderr,"Couldn't allocate space for the RGB database file\n");
@@ -118,12 +117,12 @@ read_colordb(void)
 	      return -1;
 	    }
 	}
-	if (sscanf(s, "%d %d %d %[^\n]", &r, &g, &b, s1) == 4) {
+	if (sscanf(s, "%hu %hu %hu %[^\n]", &r, &g, &b, s1) == 4) {
 	    /* remove any white space from the color name */
-	    for (c1=s1, c2=s1; *c2; c2++) {
+	    for (c1=s1, c2=s1; *c2; ++c2) {
 		if (*c2 != ' ' && *c2 != '\t') {
 		   *c1 = *c2;
-		   c1++;
+		   ++c1;
 		}
 	    }
 	    *c1 = '\0';
@@ -133,7 +132,7 @@ read_colordb(void)
 	    col->blue = b << 8;
 	    col->name = malloc(strlen(s1)+1);
 	    strcpy(col->name, s1);
-	    numXcolors++;
+	    ++numXcolors;
 	}
     }
     fclose(fp);
@@ -145,5 +144,5 @@ read_colordb(void)
 float
 rgb2luminance (float r, float g, float b)
 {
-      return 0.3*r + 0.59*g + 0.11*b;
+      return (float) (0.3*r + 0.59*g + 0.11*b);
 }

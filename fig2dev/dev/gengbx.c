@@ -34,6 +34,7 @@
 #include "fig2dev.h"
 #include "object.h"
 #include "alloc.h"
+#include "creationdate.h"
 
 #define GBX_DRIVER_VERSION "0.1.1"
 #define MAX_APERTURES 989
@@ -43,8 +44,8 @@
 enum gbx_units { units_mm, units_inches };
 
 /* Number of leading and trailing digits around the decimal point.*/
-int gbx_before = 3;
-int gbx_after  = 5;
+static unsigned int gbx_before = 3u;
+static unsigned int gbx_after  = 5u;
 /* Dimensions to assume for output */
 int gbx_dimensions = units_mm;
 /* Scale factor to ascribe to the output image. */
@@ -663,11 +664,11 @@ gengbx_option(char opt, char *optarg)
     /* Numerical format, ofrm -f <integer>.<integer> */
     if ( sscanf(optarg,"%u.%u",&gbx_before, &gbx_after) == 0 )
       fprintf(stderr,"Error in numeric format, expect form  <unsigned int>.<unsigned int> for degree of precision.\n");
-    if (gbx_before > 4)
+    if (gbx_before > 4u)
       fprintf(stderr,"Warning: Having more than 4 digits before the decimal place is unusual\n");
-    if (gbx_after > 5)
+    if (gbx_after > 5u)
       fprintf(stderr,"Warning: Having more than 5 digits after the decimal place is unusual\n");
-    if (gbx_before + gbx_after  > 9)
+    if (gbx_before + gbx_after  > 9u)
       fprintf(stderr,"Warning: Having more than nine significant figures is usually unrealistic\n");
     break;
 
@@ -691,8 +692,7 @@ void
 gengbx_start(F_compound *objects)
 {
   /* struct paperdef *pd; */
-  time_t  when;
-  char    stime[80];
+  char    stime[CREATION_TIME_LEN];
   /*     long int     i; */
 
   gbx_scale_factor=pow(10,gbx_after);
@@ -700,17 +700,12 @@ gengbx_start(F_compound *objects)
   write_comment("Gerber RS-274x file");
 
   sprintf(outbuf, "Creator: %s",prog);   write_comment(outbuf);
-  sprintf(outbuf, "Version: %s", FIG_FILEVERSION); write_comment(outbuf);
-  sprintf(outbuf, "Patchlevel: %s", FIG_PATCHLEVEL); write_comment(outbuf);
+  sprintf(outbuf, "Version: %s", PACKAGE_VERSION); write_comment(outbuf);
   sprintf(outbuf, "Driver version: %s", GBX_DRIVER_VERSION); write_comment(outbuf);
   write_comment("Author: Edward Grace <edward.grace@gmail.com>");
 
-  (void) time (&when);
-  strcpy (stime, ctime (&when));
-  /* remove trailing newline from date/time */
-  stime[strlen (stime) - 1] = '\0';
-
-  sprintf(outbuf, "Creation date: %s", stime); write_comment(outbuf);
+  if (creation_date(stime))
+    sprintf(outbuf, "Creation date: %s", stime); write_comment(outbuf);
 
   switch (gbx_dimensions) {
   case units_mm:
@@ -725,7 +720,7 @@ gengbx_start(F_compound *objects)
   }
 
   fprintf(tfp,"%%OFA%fB%f*%%\n",gbx_offset_a, gbx_offset_b);
-  fprintf(tfp, "%%FSLAX%i%iY%i%i*%%\n", gbx_before,gbx_after,gbx_before,gbx_after);
+  fprintf(tfp, "%%FSLAX%u%uY%u%u*%%\n", gbx_before,gbx_after,gbx_before,gbx_after);
   fprintf(tfp, "%%SFA%fB%f%%\n",gbx_scale_factor_a,gbx_scale_factor_b);
   if (gbx_image_polarity)
     fprintf(tfp,"%%IPNEG*%%\n");

@@ -83,8 +83,8 @@ genmf_start(F_compound *objects)
 
 	curchar = (int)code;
 
-	fprintf(tfp,"%%\n%% fig2dev -L mf (Version %s Patchlevel %s)\n",
-			FIG_FILEVERSION, FIG_PATCHLEVEL);
+	fprintf(tfp,"%%\n%% fig2dev -L mf (Version %s)\n",
+			PACKAGE_VERSION);
 	fprintf(tfp,"%%\n");
 
 	/* print any whole-figure comments prefixed with "%" */

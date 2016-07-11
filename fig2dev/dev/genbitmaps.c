@@ -27,6 +27,7 @@
 
 #include "fig2dev.h"
 #include "object.h"
+#include "colors.h"	/* lookup_X_color(), rgb2luminance() */
 #include "genps.h"
 #include "texfonts.h"
 
@@ -151,7 +152,7 @@ genbitmaps_start(F_compound *objects)
 	}
     }
     /* make up the command for gs */
-    sprintf(gscom, "gs -q -dSAFER -sDEVICE=%s -r80 -g%dx%d -sOutputFile=%s%s -",
+    sprintf(gscom, "gs -q -dSAFER -sDEVICE=%s -r80 -g%dx%d -sOutputFile='%s'%s -",
 		   gsdev, width, height, ofile, extra_options);
     /* divert output from ps driver to the pipe into ghostscript */
     /* but first close the output file that main() opened */

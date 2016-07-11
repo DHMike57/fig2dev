@@ -1,4 +1,12 @@
 ## Run automake on this file to produce Makefile.in
+# This file is part of fig2dev - Translate Fig code to various devices.
+#
+# Copyright (c) 2016 Thomas Loimer <thomas.loimer@tuwien.ac.at>
+#
+# Copying and distribution of this file, with or without modification,
+# are permitted in any medium without royalty provided the copyright
+# notice and this notice are preserved. This file is offered as-is,
+# without any warranty.
 
 MAINTAINERCLEANFILES = Makefile.in
 
@@ -18,11 +26,15 @@ noinst_LIBRARIES = libdrivers.a
 ##   libdrivers_a_CPPFLAGS = -I..
 ## objects like libdrivers_a-as85ec.o etc. are created
 # i18ndir and bitmapsdir are defined and AC_SUBST'd in configure.ac
-AM_CPPFLAGS = -I$(top_srcdir)/fig2dev -DBITMAPDIR=\"$(bitmapsdir)\"
+AM_CPPFLAGS = -I$(top_srcdir)/fig2dev $(PATH_CPPFLAGS) \
+	      -DBITMAPDIR=\"$(bitmapsdir)\"
 if ENABLE_I18N
 AM_CPPFLAGS += -DI18N_DATADIR=\"$(i18ndir)\"
 endif
 AM_CFLAGS = -Wno-parentheses
+## libraries ignore LDFLAGS - they need not to be linked
+## AM_LDFLAGS = $(PATH_LDFLAGS)
+## libdrivers_a_LIBADD is appended to the link-command
 
 libdrivers_a_SOURCES = asc85ec.c genbitmaps.c genbox.c gencgm.c gendxf.c \
     genemf.h genemf.c genepic.c gengbx.c genge.c genibmgl.c genlatex.h \
@@ -39,5 +51,4 @@ endif
 
 if WITH_XPM
 libdrivers_a_SOURCES += readxpm.c
-AM_CPPFLAGS += $(XPM_CPPFLAGS)
 endif

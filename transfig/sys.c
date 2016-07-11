@@ -17,12 +17,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>	/* link() */
 #include "transfig.h"
 
 #define MAXSYS 10000
 static char sysbuf[MAXSYS];
 
-char *sysls()
+char *
+sysls(void)
 {
   FILE *ls;
   int i;
@@ -41,8 +43,9 @@ char *sysls()
   return sysbuf;
 }
 
-sysmv(file)
-char *file;
+
+void
+sysmv(char *file)
 {
   sprintf(sysbuf, "%s~", file);
   unlink(sysbuf);
@@ -52,8 +55,8 @@ char *file;
   }
 }
 
-char *strip(str, suf)
-char *str, *suf;
+char *
+strip(char *str, char *suf)
 {
   char *p1, *p2;
 
@@ -69,8 +72,8 @@ char *str, *suf;
 	return NULL;
 }
 
-char *mksuff(name, suff)
-char *name, *suff;
+char *
+mksuff(char *name, char *suff)
 {
   char *temp;
 

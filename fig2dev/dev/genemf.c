@@ -3195,13 +3195,13 @@ genemf_start(F_compound *objects)
 
     comm.next = objects->comments;
     if ((comm.comment = malloc(strlen(figname) +
-		80 + sizeof FIG_FILEVERSION + sizeof FIG_PATCHLEVEL)) == NULL) {
+		80 + sizeof PACKAGE_VERSION)) == NULL) {
 	perror("fig2dev: malloc");
 	exit(1);
     }
     sprintf(comm.comment,
-	"Converted from %s using fig2dev %s.%s for %s",
-       figname, FIG_FILEVERSION, FIG_PATCHLEVEL, emflevelname[emflevel]);
+	"Converted from %s using fig2dev %s for %s",
+       figname, PACKAGE_VERSION, emflevelname[emflevel]);
 
     /* prescan comment strings and (over)estimate the total length */
     commlen = 0;

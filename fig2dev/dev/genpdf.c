@@ -49,8 +49,12 @@ genpdf_start(F_compound *objects)
 
     /* make up the command for gs */
     ofile = (to == NULL? "-": to);
+    /* Notes about -ColorImageFilter:
+       /FlateEncode produces a lossless but large image
+       /DCTEncode produces a lossy but much smaller image
+    */
     sprintf(gscom,
-	 "gs -q -dNOPAUSE -sAutoRotatePages=None -dAutoFilterColorImages=false -dColorImageFilter=/FlateEncode -sDEVICE=pdfwrite -dPDFSETTINGS=/prepress -sOutputFile=%s - -c quit",
+	 "gs -q -dNOPAUSE -sAutoRotatePages=None -dAutoFilterColorImages=false -dColorImageFilter=/DCTEncode -sDEVICE=pdfwrite -dPDFSETTINGS=/prepress -sOutputFile=\'%s\' - -c quit",
 		ofile);
     (void) signal(SIGPIPE, gs_broken_pipe);
     if ((tfp = popen(gscom,"w" )) == 0) {

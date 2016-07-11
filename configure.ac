@@ -1,5 +1,13 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
+# This file is part of fig2dev - Translate Fig code to various devices.
+#
+# Copyright (c) 2016 Thomas Loimer <thomas.loimer@tuwien.ac.at>
+#
+# Copying and distribution of this file, with or without modification,
+# are permitted in any medium without royalty provided the copyright
+# notice and this notice are preserved. This file is offered as-is,
+# without any warranty.
 
 dnl TODO: Implement FST
 
@@ -17,8 +25,7 @@ AC_PREREQ([2.60])
 #
 # Initialize.
 #
-AC_INIT([fig2dev], [FIGFILEVERSION.FIGPATCHLEVEL],
-	[thomas.loimer@tuwien.ac.at],[],
+AC_INIT([fig2dev], [FIG_VERSION], [thomas.loimer@tuwien.ac.at],[],
 	[https://sourceforge.net/projects/mcj])
 dnl AC_INIT([FULL-PACKAGE-NAME], [VERSION], [BUG-REPORT-ADDRESS],
 dnl	[TARNAME], [URL])
@@ -39,6 +46,18 @@ dnl		README INSTALL
 dnl  subdir-objects...place objects into the dir where the corresponding
 dnl		source file resides, not into the build tree
 
+AC_CONFIG_MACRO_DIR([m4])
+
+# Add unusual search paths here.
+# Macports by default installs under /opt/local, fink under /sw.
+m4_define([LIBPATHS], [/opt/local/lib /sw/lib])
+m4_define([INCLUDEPATHS], [/opt/local/include /sw/include])
+m4_define([X_LIBPATHS], [LIBPATHS /opt/X11/lib ])
+m4_define([X_INC_PATHS], [INCLUDEPATHS /opt/X11/include])
+
+AC_SUBST([PATH_CPPFLAGS])
+AC_SUBST([PATH_LDFLAGS])
+
 # Check whether ./configure resides in the correct directory
 AC_CONFIG_SRCDIR([LATEX.AND.XFIG])
 
@@ -46,12 +65,6 @@ AC_CONFIG_SRCDIR([LATEX.AND.XFIG])
 # Therefore, make sure to #include "config.h" in each source file.
 AC_CONFIG_HEADERS([config.h])
 
-# Manually define variables for use by the preprocessor. These variables
-# are written into config.h.
-AC_DEFINE([FIG_FILEVERSION], "FIGFILEVERSION",
-	[Define the fig file format version. This is equal to the major version number.])
-AC_DEFINE([FIG_PATCHLEVEL], "FIGPATCHLEVEL",
-	[Define the patch level.])
 AC_SUBST([RELEASE_DATE], "RELEASEDATE")
 
 dnl Use the following if individual, fairly independent projects are to be
@@ -76,6 +89,8 @@ AC_PROG_FGREP
 # Checks for libraries.
 #
 AC_SEARCH_LIBS([cos], [m])
+# Darwin needs -liconv, I suppose
+AC_SEARCH_LIBS([iconv], [iconv])
 
 #
 # Checks for header files.
@@ -90,13 +105,13 @@ dnl AC_CHECK_HEADER(header.h,
 dnl	[ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND], [INCLUDES])
 dnl sets ac_cv_header_header_h
 AC_CHECK_HEADER([limits.h], [], [headers_missing=yes
-	AC_MSG_WARN(limits.h is missing!)], [AC_INCLUDES_DEFAULT])
+    AC_MSG_WARN(limits.h is missing!)], [AC_INCLUDES_DEFAULT])
 AC_CHECK_HEADER([netinet/in.h], [], [headers_missing=yes
-AC_MSG_WARN(netinet/in.h is missing!)], [AC_INCLUDES_DEFAULT])
+    AC_MSG_WARN(netinet/in.h is missing!)], [AC_INCLUDES_DEFAULT])
 AC_CHECK_HEADER([sys/file.h], [], [headers_missing=yes
-AC_MSG_WARN(sys/file.h is missing!)], [AC_INCLUDES_DEFAULT])
+    AC_MSG_WARN(sys/file.h is missing!)], [AC_INCLUDES_DEFAULT])
 AC_CHECK_HEADER([sys/param.h], [], [headers_missing=yes
-AC_MSG_WARN(sys/param.h is missing!)], [AC_INCLUDES_DEFAULT])
+    AC_MSG_WARN(sys/param.h is missing!)], [AC_INCLUDES_DEFAULT])
 # AC_INCLUDES_DEFAULT anyhow requires stdio.h and checks for
 # sys/types.h, sys/stat.h, stdlib.h, string.h, strings.h, inttypes.h,
 # stdint.h, unistd.h, and optionally stddef.h and memory.h. The
@@ -113,98 +128,113 @@ AC_MSG_WARN(sys/param.h is missing!)], [AC_INCLUDES_DEFAULT])
 #
 AC_ARG_ENABLE(transfig, [AS_HELP_STRING([--enable-transfig],
 	[build the transfig program (default: do not build)])],
-	[],[enableval=no])dnl
+    [],[enableval=no])dnl
 AM_CONDITIONAL([ENABLE_TRANSFIG],[test "x$enableval" = xyes])
 
 AC_ARG_ENABLE(letterpaper, [AS_HELP_STRING([--enable-letterpaper],
-	[set default papersize to letter for dxf and ibmgl-drivers (default: A4)])],
-	[],[enableval=no])dnl
-AS_IF([test "x$enableval" = xno || test "x$enableval" = xA4 || test "x$enableval" = xa4],dnl
-	[AC_DEFINE([A4], 1,dnl
-		[Define to 1 if the default papersize for the dxf- and ibmgl-drivers is A4, not letter.])dnl
+	[set default papersize to letter for dxf \
+		and ibmgl-drivers (default: A4)])],
+    [],[enableval=no])dnl
+AS_IF([test "x$enableval" = xno || test "x$enableval" = xA4 || \
+	test "x$enableval" = xa4],dnl
+    [AC_DEFINE([A4], 1,dnl
+	[Define to 1 if the default papersize for the dxf- \
+		and ibmgl-drivers is A4, not letter.])dnl
 # Used in fig2dev.1.in
-	 AC_SUBST(DEFAULT_PAPERSIZE, ["ISO A4"])dnl
-	 AC_SUBST(ALTERNATE_PAPERSIZE, ["ANSI A"])],dnl
-	[AC_SUBST(DEFAULT_PAPERSIZE, ["ANSI A"])dnl
-	 AC_SUBST(ALTERNATE_PAPERSIZE, ["ISO A4"])])dnl
+     AC_SUBST(DEFAULT_PAPERSIZE, ["ISO A4"])dnl
+     AC_SUBST(ALTERNATE_PAPERSIZE, ["ANSI A"])],dnl
+    [AC_SUBST(DEFAULT_PAPERSIZE, ["ANSI A"])dnl
+     AC_SUBST(ALTERNATE_PAPERSIZE, ["ISO A4"])])dnl
 
 AC_ARG_ENABLE([i18n], [AS_HELP_STRING([--disable-i18n],
-	[disable internationalization of text input for some drivers (default: enable)])],
-	[i18nman="/dev/null"],[enableval=yes; i18nman="$srcdir/man/i18n.man"])dnl
+	[disable internationalization of text input \
+		for some drivers (default: enable)])],
+    [i18nman="/dev/null"],
+    [enableval=yes; i18nman="$srcdir/man/i18n.man"])dnl
 AS_IF([test "x$enableval" = xyes],dnl
-	[AC_DEFINE([I18N], 1,dnl
-	 [Define to 1 to use internationalization of text input for some drivers.])dnl
+    [AC_DEFINE([I18N], 1,dnl
+	[Define to 1 to use internationalization of text input \
+		for some drivers.])dnl
 # The directory where internationalization data is installed to.
 # fig2dev/dev/Makefile.am defines -DI18N_DATADIR
 # i18ndir is used in fig2dev/i18n/Makefile.am
-	AC_SUBST([i18ndir],['$(pkgdatadir)/i18n'])])
+     AC_SUBST([i18ndir],['$(pkgdatadir)/i18n'])])
 AM_CONDITIONAL([ENABLE_I18N],[test "x$enableval" = xyes])
 dnl Substitute the file fragment i18n.man into man/fig1dev.1 (or not)
 AC_SUBST_FILE([i18nman])
 
 AC_ARG_ENABLE([NFSS], [AS_HELP_STRING([--disable-NFSS],
 	[disable LaTeX New Font Selection Scheme (default: enable)])],
-	[nfssman="/dev/null"],[enableval=yes; nfssman="$srcdir/man/nfss.man"])dnl
+    [nfssman="/dev/null"],[enableval=yes; nfssman="$srcdir/man/nfss.man"])dnl
 AS_IF([test "x$enableval" = xyes],dnl
-	[AC_DEFINE([NFSS], 1,dnl
+    [AC_DEFINE([NFSS], 1,dnl
 	 [Define to 1 to use the New Font Selection Scheme for LaTeX.])])dnl
 AC_SUBST_FILE([nfssman])
 
 AC_ARG_ENABLE([latex2e_graphicx], [AS_HELP_STRING([--disable-latex2e_graphicx],
-	[disable LaTeX2e-graphics commands in pstex- and latex-drivers (default: enable)])],
-	[],[enableval=yes])dnl
+	[disable LaTeX2e-graphics commands in pstex- \
+		and latex-drivers (default: enable)])],
+    [],[enableval=yes])dnl
 AS_IF([test "x$enableval" = xyes],dnl
-	[AC_DEFINE([LATEX2E_GRAPHICS], 1,dnl
-	 [Define to 1 to use LaTeX2e-graphics in pstex- and latex-drivers.])])dnl
+    [AC_DEFINE([LATEX2E_GRAPHICS], 1,dnl
+	[Define to 1 to use LaTeX2e-graphics in pstex- \
+		and latex-drivers.])])dnl
 
 AC_ARG_ENABLE([scale-pict2e], [AS_HELP_STRING([--enable-scale-pic2t2e],
-	[enable scaling of pict2e-graphics, e.g., with \XFigwidth (default: disable)])],
-	[],[enableval=no])dnl
+	[enable scaling of pict2e-graphics, e.g., \
+		with \XFigwidth (default: disable)])],
+    [],[enableval=no])dnl
 AS_IF([test "x$enableval" = xyes],dnl
-	[AC_DEFINE([SCALE_PICT2E], 1,dnl
-	 [Define to 1 if pict2e-graphics should honor \XFigwidth or \XFigheight.])])dnl
+    [AC_DEFINE([SCALE_PICT2E], 1,dnl
+	 [Define to 1 if pict2e-graphics should honor \
+		\XFigwidth or \XFigheight.])])dnl
 
 AC_ARG_ENABLE([IBM-GEC], [AS_HELP_STRING([--disable-IBM-GEC],
-	[disable instruction set for IBM Graphics Enhancement Cartridge (default: enable)])],
-	[],[enableval=yes])dnl
+	[disable instruction set for IBM Graphics Enhancement \
+		Cartridge (default: enable)])],
+    [],[enableval=yes])dnl
 AS_IF([test "x$enableval" = xyes],dnl
-	[AC_DEFINE([IBMGEC], 1,dnl
-	 [Define to 1 if the ibmgl-driver should create instructions for the IBM Graphics Enhancement Cartridge.])dnl
-	 AC_SUBST([WITH_IBMGEC],[without])],dnl
-	[AC_SUBST([WITH_IBMGEC],[with])])dnl
+    [AC_DEFINE([IBMGEC], 1,dnl
+	[Define to 1 if the ibmgl-driver should create instructions \
+		for the IBM Graphics Enhancement Cartridge.])dnl
+     AC_SUBST([WITH_IBMGEC],[without])],dnl
+    [AC_SUBST([WITH_IBMGEC],[with])])dnl
 
 AC_ARG_ENABLE([baseline-shift], [AS_HELP_STRING([--disable-baseline-shift],
 	[disable use of baseline-shift in the svg-driver (default: enable)])],
-	[],[enableval=yes])dnl
+    [],[enableval=yes])dnl
 AS_IF([test "x$enableval" != xyes],dnl
-	[AC_DEFINE([NOSUPER], 1,dnl
-	 [Define to 1 to not use baseline-shift sub/superscripts in the svg-driver])])dnl
+    [AC_DEFINE([NOSUPER], 1,dnl
+	 [Define to 1 to not use baseline-shift sub/superscripts \
+		in the svg-driver])])dnl
 
 AC_ARG_ENABLE([round-box], [AS_HELP_STRING([--disable-round-box],
-	[disable use of boxes with rounded corners in the tpic-driver (default: enable)])],
-	[],[enableval=yes])dnl
+	[disable use of boxes with rounded corners \
+		in the tpic-driver (default: enable)])],
+    [],[enableval=yes])dnl
 AS_IF([test "x$enableval" = xyes],dnl
-	[AC_DEFINE([TPIC_ARC_BOX], 1,dnl
-	 [Define to 1 to use boxes with rounded corners in the tpic-driver.])])dnl
+    [AC_DEFINE([TPIC_ARC_BOX], 1,dnl
+	 [Define to 1 to use boxes with rounded corners \
+		in the tpic-driver.])])dnl
 
+fig2dev_save_LDFLAGS="$LDFLAGS"
+# fig2dev_save_CPPFLAGS=$CPPFLAGS # brauch ma net
 AC_ARG_WITH(png,
-	[AS_HELP_STRING([--without-png],
+    [AS_HELP_STRING([--without-png],
 		[disable reading png-images (default: enable)])],
-	[],[with_png=try]dnl
+    [],[with_png=try]dnl
 )
-# If with-png is true, either given on the command line or implicitly,
-# check for libz and libpng, then, search for png.h, if all is found,
-# use png.
 AS_IF([test "x$with_png" != xno],
-	[AC_SEARCH_LIBS([deflate], [z])dnl
-	 AC_SEARCH_LIBS([png_read_info], [png])dnl
-	 AS_IF([test "$ac_cv_search_png_read_info" != no \
-		&& test "$ac_cv_search_deflate" != no],
-		[AC_CHECK_HEADERS([png.h])])]dnl
+    [# -lz does not seem to be necessary
+     # AC_SEARCH_LIBS([deflate], [z])dnl
+     TL_SEARCH_LIBS_PATH([png_read_info], [png], [LIBPATHS])dnl
+     AS_IF([test "$tl_cv_libs_path_png_read_info" != no],
+	[TL_CHECK_HEADER_PATH([png.h], [INCLUDEPATHS])
+	 AS_IF([test "$tl_cv_header_path_png_h" != no],
+	    [AC_DEFINE([HAVE_PNG_H], 1,
+		[Define to 1 if you have the <png.h> header file.])])])]dnl
 )
-# AC_CHECK_HEADERS writes HAVE_PNG_H into config.h.
-# AM_CONDITIONAL defines a boolean which can be used in Makefile.am.
-AM_CONDITIONAL([WITH_PNG],[test "x$ac_cv_header_png_h" = xyes])
+AM_CONDITIONAL([WITH_PNG], [test "$tl_cv_header_path_png_h" = yes])
 
 # If with-xpm is true, search for the X11 include and library paths,
 # then search for libXpm, then search for X11/xpm.h. If all are found,
@@ -218,25 +248,40 @@ AM_CONDITIONAL([WITH_PNG],[test "x$ac_cv_header_png_h" = xyes])
 # to the library dir. The X library path is appended, not prepended to
 # $LIBS. AC_PATH_XTRA is an extended version that sets additional
 # variables.
-AC_ARG_WITH(xpm,
-	[AS_HELP_STRING([--without-xpm],
-		[disable reading xpm-images (default: enable)])],
-	[],[with_xpm=try])
+AC_ARG_WITH(xpm, [AS_HELP_STRING([--without-xpm],
+	[disable reading xpm-images (default: enable)])],
+    [],[with_xpm=try])
 AS_IF([test "x$with_xpm" != xno],
-	[AC_PATH_X
-	 AS_IF([test "x$no_x" != xyes], LIBS="$LIBS $x_libraries")
-	 AC_SEARCH_LIBS([XpmReadFileToXpmImage], [Xpm])dnl
-	 AS_IF([test "$ac_cv_search_XpmReadFileToXpmImage" != no],
-		[save_CPPFLAGS=$CPPFLAGS
-		 AS_IF([test "x$x_includes" != x],
-			[XPM_CPPFLAGS="-I$x_includes"
-			 AC_SUBST([XPM_CPPFLAGS])dnl
-			 CPPFLAGS="$CPPFLAGS $XPM_CPPFLAGS"])
-		 AC_CHECK_HEADERS([X11/xpm.h])
-		 CPPFLAGS=$save_CPPFLAGS
-		 AS_UNSET([save_CPPFLAGS])dnl
-		])]dnl
-)
+    [fig2dev_save_CPPFLAGS="$CPPFLAGS"
+     # CPPFLAGS="$CPPFLAGS $PATH_CPPFLAGS"
+     AS_IF([test -n "$PATH_CPPFLAGS"], [AS_IF([test -n "$CPPFLAGS"],
+	    [CPPFLAGS="$CPPFLAGS $PATH_CPPFLAGS"],
+	    [CPPFLAGS="$PATH_CPPFLAGS"])])
+     AC_PATH_X
+     AS_IF([test "x$no_x" != xyes],
+	[#LDFLAGS="-L$x_libraries $LDFLAGS"
+	 #PATH_LDFLAGS="-L$x_libraries $PATH_LDFLAGS"
+	 AS_IF([test -n "$x_libraries"],
+	    [AS_IF([test -n "$LDFLAGS"],
+		[LDFLAGS="-L$x_libraries $LDFLAGS"],
+		[LDFLAGS="-L$x_libraries"])
+	     AS_IF([test -n "$PATH_LDFLAGS"],
+		[PATH_LDFLAGS="-L$x_libraries $PATH_LDFLAGS"],
+		[PATH_LDFLAGS="-L$x_libraries"])])])
+     # (1) Add -lXpm to LIBS
+     # (2) Check in X_LIBPATHS, if not found.
+     TL_SEARCH_LIBS_PATH([XpmReadFileToXpmImage], [Xpm], [X_LIBPATHS])dnl
+     AS_IF([test "$tl_cv_libs_path_XpmReadFileToXpmImage" != no],
+	[# PATH_CPPFLAGS="$PATH_CPPFLAGS -I$x_includes"
+	 AS_IF([test -n "$x_includes"],
+	    [AS_IF([test -n "$PATH_CPPFLAGS"],
+		[PATH_CPPFLAGS="$PATH_CPPFLAGS -I$x_includes"],
+		[PATH_CPPFLAGS="-I$x_includes"])])
+	 TL_CHECK_HEADER_PATH([X11/xpm.h], [X_INC_PATHS])
+	 AS_IF([test "x$tl_cv_header_path_x11_xpm_h" != xno],
+	    [AC_DEFINE([HAVE_X11_XPM_H], 1,
+		    [Define to 1 if you have the <X11/xpm.h> header file.])])])
+    CPPFLAGS="$fig2dev_save_CPPFLAGS"])
 AM_CONDITIONAL([WITH_XPM], [test "x$ac_cv_header_X11_xpm_h" = xyes])
 
 #
@@ -255,6 +300,7 @@ AC_C_BIGENDIAN
 # Sets it to 0 if not found, to 1 if found.
 AC_CHECK_DECLS([M_PI, M_PI_2, M_PI_4], [], [], [#include <math.h>])
 # Old BSD had MAXPATHLEN in sys/param.h. See fig2dev.h.
+# TODO: See xfig, PATHMAX.
 AC_CHECK_DECLS([PATH_MAX], [], [], [#include <limits.h>])
 
 # Check, whether sdtbool.h exists and whether the type _Bool is defined.
@@ -288,8 +334,7 @@ AC_FUNC_REALLOC
 # Here, if setmode exists, it is assumed that io.h and fcntl.h exist and
 # that O_BINARY is defined by fcntl.h.
 # If getpwuid() is found, <pwd.h> is assumed to exist.
-AC_CHECK_FUNCS_ONCE([floor gethostname memmove memset pow rint \
-	sqrt strerror strtol getpwuid setmode])
+AC_CHECK_FUNCS_ONCE([gethostname strerror getpwuid _setmode])
 dnl TODO:  Clean src from legacy code, replacing
 dnl probably xmalloc, xstrdup, etc.
 
@@ -299,6 +344,8 @@ dnl probably xmalloc, xstrdup, etc.
 # this are obsolete checks.
 AC_REPLACE_FUNCS([isascii strstr strchr strrchr strcasecmp strncasecmp \
 	strdup strndup])
+
+LDFLAGS="$fig2dev_save_LDFLAGS"
 
 # Place the replacement functions into this dir.
 AC_CONFIG_LIBOBJ_DIR([fig2dev/lib])

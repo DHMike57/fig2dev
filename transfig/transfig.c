@@ -8,14 +8,14 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
 
 /*
- * transfig: 	figure translation setup program
+ * transfig:	figure translation setup program
  *		creates TeX macro file and makefile
  *
  * usage: transfig <option> ... [[<flag> ... ] [<figure>] ... ] ...
@@ -27,6 +27,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "transfig.h"
+
+extern void sysmv(char *file);					/* sys.c */
+extern void texfile(FILE *tx, char *in, argument *arg_list);	/* txfile.c */
+extern void makefile(FILE *mk, int altfonts, argument *arg_list); /* mkfile.c */
 
 
 argument *parse_arg(), *arglist = NULL, *lastarg = NULL;
@@ -84,30 +88,28 @@ char *lname[] = {
 char *iname[] = {
 	"apg",
 	"fig",
-  	"pic",
+	"pic",
 	"ps",
 	"eps"};
- 
-main(argc, argv)
-int argc;
-char *argv[];
+
+int
+main(int argc, char *argv[])
 {
   FILE *mk, *tx;
   enum language tolang = epic;
   argument *a;
-  char *cp; 
+  char *cp;
   char *arg_f = NULL, *arg_s = NULL, *arg_m = NULL, *arg_o = NULL, *argbuf;
 
   for ( optind = 1; optind < argc; optind++ ) {
     cp = argv[optind];
     if (*cp == '-') {
-  	if (!cp[1]) {
+	if (!cp[1]) {
 		fprintf(stderr, "transfig: bad option format '-'\n");
 		exit(1);
 	}
 	if (cp[1] == 'V') {
-		fprintf(stderr, "TransFig Version %s Patchlevel %s\n",
-					FIG_FILEVERSION, FIG_PATCHLEVEL);
+		fprintf(stderr, "TransFig Version %s\n", PACKAGE_VERSION);
 		exit(0);
 	} else if (cp[1] == 'h') {
 		fprintf(stderr,"usage: transfig <option> ... [[<flag> ... ] [<figure>] ... ] ...\n");
@@ -128,19 +130,19 @@ char *argv[];
 		optarg = argv[optind];
 	    }
 	}
- 	switch (cp[1]) {
+	switch (cp[1]) {
 
 	    case 'I':
 		input = optarg;
 		break;
 
-  	    case 'L':
+	    case 'L':
 		tolang = str2lang(optarg);
 		break;
-  	    case 'M':
+	    case 'M':
 		mkfile = optarg;
 		break;
-  	    case 'T':
+	    case 'T':
 		txfile = optarg;
 		break;
 	    case 'a':
@@ -160,10 +162,10 @@ char *argv[];
 		arg_o = optarg;
 		break;
 
-  	default:
+	default:
 		fprintf(stderr, "transfig: illegal option -- '%c'\n", cp[1]);
 		exit(1);
-  	}
+	}
     } else
     {
 	a = parse_arg(tolang, arg_f, arg_s, arg_m, arg_o, argv[optind]);
@@ -171,7 +173,7 @@ char *argv[];
 	if ( !lastarg )
 		arglist = a;
 	else
-		lastarg->next = a; 
+		lastarg->next = a;
 	lastarg = a;
     }
   }
@@ -187,7 +189,7 @@ char *argv[];
 		if ( !lastarg )
 			arglist = a;
 		else
-			lastarg->next = a; 
+			lastarg->next = a;
 		lastarg = a;
 		argbuf = cp+1;
 	}
@@ -201,7 +203,8 @@ char *argv[];
 	fprintf(stderr,"transfig: can't open Texfile '%s'\n",txfile);
 	exit(1);
   }
-  texfile(tx, input, altfonts, arglist);
+  texfile(tx, input, arglist);	/* altfonts? */
+  /* was: texfile(tx, input, altfonts, arglist); ?? */
 
   /* remove any backup and move existing makefile to makefile~ */
   sysmv(mkfile);
@@ -215,8 +218,7 @@ char *argv[];
   exit(0);
 }
 
-enum language str2lang(s)
-char *s;
+enum language str2lang(char *s)
 {
   int i;
 
@@ -235,9 +237,9 @@ char *s;
   exit(1);
 }
 
-argument *parse_arg(tolang, arg_f, arg_s, arg_m, arg_o, arg)
-enum language tolang;
-char *arg_f, *arg_s, *arg_m, *arg_o, *arg;
+argument *
+parse_arg(enum language tolang, char *arg_f, char *arg_s,
+		char *arg_m, char *arg_o, char *arg)
 {
   argument *a;
 
@@ -250,13 +252,14 @@ char *arg_f, *arg_s, *arg_m, *arg_o, *arg;
   a->tofig = NULL;
   a->topic = NULL;
   a->tops = NULL;
+  a->topdf = NULL;
   a->tolang = tolang;
-  
+
   /* PIC */
   if (strip(arg, ".pic"))
   {
-  	a->name = mksuff(arg, "");
-  	a->type = i_pic;
+	a->name = mksuff(arg, "");
+	a->type = i_pic;
 	a->tofig = PIC2FIG;
 	return a;
   }
@@ -264,26 +267,34 @@ char *arg_f, *arg_s, *arg_m, *arg_o, *arg;
   /* PS format */
   if (strip(arg, ".ps"))
   {
-  	a->name = mksuff(arg, "");
-  	a->type = i_ps;
- 	return a;
+	a->name = mksuff(arg, "");
+	a->type = i_ps;
+	return a;
+  }
+
+  /* PDF format */
+  if (strip(arg, ".pdf"))
+  {
+	a->name = mksuff(arg, "");
+	a->type = i_pdf;
+	return a;
   }
 
   /* EPS format */
   if (strip(arg, ".eps"))
   {
-  	a->name = mksuff(arg, "");
-  	a->type = i_eps;
- 	return a;
+	a->name = mksuff(arg, "");
+	a->type = i_eps;
+	return a;
   }
 
   /* ApGraph format */
   if (strip(arg, ".apg"))
   {
-  	a->name = mksuff(arg, "");
-  	a->type = i_apg;
+	a->name = mksuff(arg, "");
+	a->type = i_apg;
 	a->tofig = APG2FIG;
- 	return a;
+	return a;
   }
 
   /* Fig format */

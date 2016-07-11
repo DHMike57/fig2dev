@@ -17,3 +17,4 @@ dnl Test picture box - create one!
 dnl Check distortion logic
 m4_include(pict2e.at)
 m4_include(arrows_eps.at)
+m4_include(lookup_X_color.at)

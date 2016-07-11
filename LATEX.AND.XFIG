@@ -55,7 +55,7 @@ So your preamble could look like:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LaTeX Preamble %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
-\documentstyle[12pt,bezier,amstex]{article}  % include bezier curves
+\documentclass[12pt,bezier,amstex]{article}  % include bezier curves
 \renewcommand\baselinestretch{1.0}           % single space
 \pagestyle{empty}                            % no headers and page numbers
 \oddsidemargin -10 true pt      % Left margin on odd-numbered pages.
@@ -72,7 +72,9 @@ So your preamble could look like:
 \usepackage{epsfig}
 
 \usepackage{graphicx}           % Graphics package
- 
+
+\usepackage{type1cm}            % Necessary for fonts bigger than 42pt
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Document Beginning %%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

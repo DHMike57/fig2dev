@@ -303,15 +303,15 @@ typedef		struct f_compound {
 
 /**********************  object codes  **********************/
 
-#define		O_COLOR_DEF		0
-#define		O_ELLIPSE		1
-#define		O_POLYLINE		2
-#define		O_SPLINE		3
-#define		O_TEXT			4
-#define		O_ARC			5
-#define		O_COMPOUND		6
-#define		O_END_COMPOUND		(-O_COMPOUND)
-#define		O_ALL_OBJECT		99
+#define		OBJ_COLOR_DEF		0
+#define		OBJ_ELLIPSE		1
+#define		OBJ_POLYLINE		2
+#define		OBJ_SPLINE		3
+#define		OBJ_TEXT		4
+#define		OBJ_ARC			5
+#define		OBJ_COMPOUND		6
+#define		OBJ_END_COMPOUND	(-OBJ_COMPOUND)
+#define		OBJ_ALL_OBJECT		99
 
 /************  object styles (except for f_text)  ************/
 

@@ -236,7 +236,7 @@ arc_bound(F_arc *arc, int *xmin, int *ymin, int *xmax, int *ymax)
 	*ymax = by;
 
 	/* now add in the arrow (if any) boundaries */
-	arrow_bound(O_ARC, (F_line *)arc, xmin, ymin, xmax, ymax);
+	arrow_bound(OBJ_ARC, (F_line *)arc, xmin, ymin, xmax, ymax);
 }
 
 void
@@ -437,7 +437,7 @@ line_bound(F_line *l, int *xmin, int *ymin, int *xmax, int *ymax)
 	/* now add in the arrow (if any) boundaries but
 	   only if the line has two or more points */
 	if (l->points->next)
-	    arrow_bound(O_POLYLINE, l, xmin, ymin, xmax, ymax);
+	    arrow_bound(OBJ_POLYLINE, l, xmin, ymin, xmax, ymax);
 }
 
 static void
@@ -542,7 +542,7 @@ spline_bound(F_spline *s, int *xmin, int *ymin, int *xmax, int *ymax)
 	    normal_spline_bound(s, xmin, ymin, xmax, ymax);
 	    }
 	/* now do any arrows */
-	arrow_bound(O_SPLINE, (F_line *)s, xmin, ymin, xmax, ymax);
+	arrow_bound(OBJ_SPLINE, (F_line *)s, xmin, ymin, xmax, ymax);
 }
 
 double
@@ -705,7 +705,7 @@ arrow_bound(int objtype, F_line *obj, int *xmin, int *ymin, int *xmax,
 	F_pos	arrowpts[50], arrowdumpts[50];
 
 	if (obj->for_arrow) {
-	    if (objtype == O_ARC) {
+	    if (objtype == OBJ_ARC) {
 		a = (F_arc *) obj;
 		compute_arcarrow_angle(a->center.x, a->center.y,
 			    (double)a->point[2].x, (double)a->point[2].y,
@@ -739,7 +739,7 @@ arrow_bound(int objtype, F_line *obj, int *xmin, int *ymin, int *xmax,
 	    *ymax = MAX(*ymax, fymax);
 	}
 	if (obj->back_arrow) {
-	    if (objtype == O_ARC) {
+	    if (objtype == OBJ_ARC) {
 		a = (F_arc *) obj;
 		compute_arcarrow_angle(a->center.x, a->center.y,
 			    (double) a->point[0].x, (double) a->point[0].y,
@@ -940,11 +940,13 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 	    clippts[i].x = ROTXC(0,             miny);
 	    clippts[i].y = ROTYC(0,             miny);
 	    ++i;
-	    clippts[i].x = ROTXC(radius+thk/2.0, miny);
-	    clippts[i].y = ROTYC(radius+thk/2.0, miny);
+	    /* add halfthick in case the line cap style is Round or Projecting */
+	    clippts[i].x = ROTXC(radius+thk/2.0+halfthick, miny);
+	    clippts[i].y = ROTYC(radius+thk/2.0+halfthick, miny);
 	    ++i;
-	    clippts[i].x = ROTXC(radius+thk/2.0, maxy);
-	    clippts[i].y = ROTYC(radius+thk/2.0, maxy);
+	    /* add halfthick in case the line cap style is Round or Projecting */
+	    clippts[i].x = ROTXC(radius+thk/2.0+halfthick, maxy);
+	    clippts[i].y = ROTYC(radius+thk/2.0+halfthick, maxy);
 	    ++i;
 	    clippts[i].x = ROTXC(0,             maxy);
 	    clippts[i].y = ROTYC(0,             maxy);
@@ -1015,17 +1017,19 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 		    ++i;
 		    /* x tip, same y (note different offset in ROTX/Y2
 		     * rotation) */
+		    /* add halfthick in case the line cap style is Round or Projecting */
 		    clippts[i].x = ROTX2(arrow_shapes[indx].points[tip].x*len
-			    + THICK_SCALE, miny);
+			     + halfthick + THICK_SCALE, miny);
 		    clippts[i].y = ROTY2(arrow_shapes[indx].points[tip].x*len
-			    + THICK_SCALE, miny);
+			     + halfthick + THICK_SCALE, miny);
 		    ++i;
 		    /* x tip, upper y (note different offset in ROTX/Y2
 		     * rotation) */
+		    /* add halfthick in case the line cap style is Round or Projecting */
 		    clippts[i].x = ROTX2(arrow_shapes[indx].points[tip].x*len
-			    + THICK_SCALE, maxy);
+			    + halfthick + THICK_SCALE, maxy);
 		    clippts[i].y = ROTY2(arrow_shapes[indx].points[tip].x*len
-			    + THICK_SCALE, maxy);
+			    + halfthick + THICK_SCALE, maxy);
 		    ++i;
 		    /* first x of arrowhead, upper y */
 		    clippts[i].x = ROTX(arrow_shapes[indx].points[0].x*len,

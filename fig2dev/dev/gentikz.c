@@ -1392,7 +1392,7 @@ assign_settings(struct settings *s, struct options *o)
 	    o->ht = s->ht;
 	if (s->setflags)
 	    o->flags = s->flags | (o->flags & ~s->setflags);
-};
+}
 
 #define	NOARROW	    -1
 

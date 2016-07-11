@@ -292,8 +292,8 @@ genmp_start(F_compound *objects)
 {
     FILE *in;
     fprintf(tfp,
-	    "%%\n%% fig2dev (version %s.%s) -L (m)mp version %.2lf --- Preamble\n%%\n",
-	    FIG_FILEVERSION, FIG_PATCHLEVEL, GENMP_VERSION);
+	    "%%\n%% fig2dev (version %s) -L (m)mp version %.2lf --- Preamble\n%%\n",
+	    PACKAGE_VERSION, GENMP_VERSION);
 	fprintf(tfp,"\n");
 
     fprintf(tfp,"%%\n%% mp output driver options:\n%% %s\n%%\n\n", options);
@@ -535,7 +535,7 @@ genmp_arrowheads(F_line *obj, int objtype)
 
 	switch(objtype) {
 
-	  case O_ARC:
+	  case OBJ_ARC:
 	      /* find arrowhead direction for arcs */
 	      a = (F_arc *) obj;
 	      /* last point */
@@ -547,7 +547,7 @@ genmp_arrowheads(F_line *obj, int objtype)
 				     &from_x, &from_y);
 	      break;
 
-	  case O_SPLINE:
+	  case OBJ_SPLINE:
 	      /* find arrowhead direction for splines.
 		 UNTESTED!! Not used by current implementation*/
 	      s = (F_spline *) obj;
@@ -602,7 +602,7 @@ genmp_arrowheads(F_line *obj, int objtype)
 	      }
 	      break;
 
-	  case O_POLYLINE:
+	  case OBJ_POLYLINE:
 	  default:
 	      /* the two last points of the polyline determine the direction of the arrow */
 	      p = obj->points;
@@ -625,7 +625,7 @@ genmp_arrowheads(F_line *obj, int objtype)
 
 	switch(objtype) {
 
-	  case O_ARC:
+	  case OBJ_ARC:
 	    a = (F_arc *) obj;
 	    /* first point */
 	    to_x = a->point[0].x;
@@ -636,7 +636,7 @@ genmp_arrowheads(F_line *obj, int objtype)
 				   &from_x, &from_y);
 	    break;
 
-	  case O_SPLINE:
+	  case OBJ_SPLINE:
 	      /* find arrowhead direction for splines.
 		UNTESTED!! Not used by current implementation*/
 	      s = (F_spline *) obj;
@@ -659,7 +659,7 @@ genmp_arrowheads(F_line *obj, int objtype)
 	      }
 	      break;
 
-	  case O_POLYLINE:
+	  case OBJ_POLYLINE:
 	  default:
 	      p=obj->points;
 	      to_x = p->x;
@@ -722,7 +722,7 @@ genmp_line(F_line *l)
 		    fprintf(tfp,";\n");
 
 		 if ((l->for_arrow != NULL) || (l->back_arrow != NULL))
-		     genmp_arrowheads(l, O_POLYLINE);
+		     genmp_arrowheads(l, OBJ_POLYLINE);
 	      }
 	      break;
 	   case 4:	      /* arc box */
@@ -855,7 +855,7 @@ genmp_spline(F_spline *s)
 		    fprintf(tfp,";\n");
 
 		 if ((s->for_arrow != NULL) || (s->back_arrow != NULL))
-		     genmp_arrowheads((F_line *)s, O_SPLINE);
+		     genmp_arrowheads((F_line *)s, OBJ_SPLINE);
 	      }
 	      break;
 	   case 2:	   /* interpolated spline (open) */
@@ -894,7 +894,7 @@ genmp_spline(F_spline *s)
 		    fprintf(tfp,";\n");
 
 		 if ((s->for_arrow != NULL) || (s->back_arrow != NULL))
-		     genmp_arrowheads((F_line *)s, O_SPLINE);
+		     genmp_arrowheads((F_line *)s, OBJ_SPLINE);
 	      }
 	      break;
 	   default:
@@ -1005,7 +1005,7 @@ genmp_arc(F_arc *a)
 		    fprintf(tfp,";\n");
 
 		 if ((a->for_arrow != NULL) || (a->back_arrow != NULL))
-		     genmp_arrowheads((F_line *)a, O_ARC);
+		     genmp_arrowheads((F_line *)a, OBJ_ARC);
 	      }
 	      break;
 	   default:

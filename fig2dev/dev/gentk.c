@@ -24,6 +24,7 @@
 
 #include "fig2dev.h"
 #include "object.h"
+#include "colors.h"	/* lookup_X_color() */
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
@@ -118,8 +119,8 @@ gentk_start(F_compound *objects)
 	struct paperdef	*pd;
 	char		bkgnd[20];
 
-	sprintf(stfp, "# Produced by fig2dev Version %s Patchlevel %s\n",
-		FIG_FILEVERSION, FIG_PATCHLEVEL);
+	sprintf(stfp, "# Produced by fig2dev Version %s\n",
+		PACKAGE_VERSION);
 	niceLine(stfp);
 	ppi = ppi / mag * 80/72.0;
 
@@ -1373,7 +1374,7 @@ tk_setstyle(int style, double v)
 static unsigned int
 rgbColorVal(int colorIndex)
 {
-	extern User_color	user_colors[];
+	/* extern User_color	user_colors[];	declared in fig2dev.h	*/
 	unsigned int	rgb;
 	static unsigned int	rgbColors[NUM_STD_COLS] = {
 		0x000000, 0x0000ff, 0x00ff00, 0x00ffff, 0xff0000, 0xff00ff,

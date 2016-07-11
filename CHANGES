@@ -2,6 +2,53 @@ Changes to Transfig/fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
+Patchlevel 6-rc (July 2016)
+
+CHANGE OF THE PACKAGE NAME TO FIG2DEV
+The package is now called fig2dev, because this is the main component
+of the package. Transfig is considered obsolete.
+
+BUGS FIXED:
+	o Compiles on darwin.
+
+	From Brian V. Smith:
+	o Changed object defs from O_ to OBJ_ because O_TEXT conflicts
+	  with system typedef (debian 37_OBJ_typedef.patch)
+	o Remove unused charset variables cs and ca from genibmgl.c
+	  (debian 38_unusedcharset.patch)
+	o Build with make CFLAGS="-Werror -Wpedantic -Wformat -Wformat-security'
+	o On lines with Round or Projecting cap style and arrowheads, the line
+	  endpoint stuck out beyond the arrowhead (this was fixed in
+	  xfig 3.2.5c, but not here until now; debian 41_arrowhead.patch)
+	o Changed .ce (center lines) to .RS (right-justify) in fig2ps2tex man
+	  page file because of issues when generating HTML (From Eric Raymond)
+	  (debian 36_manpage_ce2RS.patch)
+	o Quotes added to output file name for several formats in case there
+	  are blanks in the name (debian 39_gs_quote.patch)
+	o For PDF output, changed -dColorImageFilter from /FlateEncode to
+	  /DCTEncode for lossy compression (smaller pdf files)
+	  (debian 40_ColorImageFilter.patch)
+	o Update help for PDF options (debian 42_PDF_help.patch)
+
+	From Roland Rosenfeld. Bug numers refer to https://bugs.debian.org/#.
+	o Remove bashisms in fig2ps2tex script. Reported from
+	  Chris Lamb <chris@chris-lamb.co.uk>. Fixes debian bug 480615.
+	o Include sys/stat.h in genps.c. Reported from Steven Chamberlain
+	  <steven@pyro.eu.org>. Debian bug 654767. (28_fix_chmod...patch)
+	o Distribute the man page transig.1. (34_transfig.1.patch)
+	o Do not report user information in ps files. Debian bug 316382
+	  (04_displaywho.patch)
+	o Set locale to C. Debian bug 45378 (05_locale_patch).
+	o Support pdftex in transfig (20_transfig_pdftex.patch). Reported by
+	  Jindrich Makovicka <makovick@gmail.com>.
+	o Fix some typos (22_typos.patch, 35_manpage_typos.patch).
+	o Honor environment variable SOURCE_DATE_EPOCH, for reproducible
+	  builds. Debian bug 819911. From Alexis Bienvenüe <pado@passoire.fr>.
+	  (33_honour_SOURCE_DATE_EPOCH.patch).
+	o Enable fonts >= 42 pt, needs \usepackage{type1cm}. Bug 343139,
+	  (09_maxfontsize.patch).
+
+-------------------------------------
 Patchlevel 6-beta (April 2016)
 
 NEW FEATURES:
@@ -36,7 +83,7 @@ Patchlevel 5d (July 23, 2010)
 
 BUGS FIXED:
 	o reduces some compilation warnings (fix from Debian)
-	o made PostScript output DSC 3.0 compliant to work with CUPS 
+	o made PostScript output DSC 3.0 compliant to work with CUPS
 	  patch from Ian Dall (see https://bugzilla.redhat.com/558380)
 	o Changed STOCK_LAST from 17 to 19 in fig2dev/dev/genemf.c
 	o Questionable copy of one data type to another in genemf.c
@@ -110,7 +157,7 @@ BUGS FIXED:
 	o Renamed the macro \SetFigFont to \SetFigFontNFSS if NFSS is #defined to alleviate
 	  some problems. From Roland Rosenfeld.
 	o Grid in metric mode was incorrectly scaled
-	o Removes any %EOF or %%EOF from imported EPS pictures before exporting.  
+	o Removes any %EOF or %%EOF from imported EPS pictures before exporting.
 	  Also doesn't add %EOF when importing JPEG file now.
 	o Missing call to get local time before converting to string in genpictex.c
 
@@ -139,7 +186,7 @@ NEW FEATURES
 	o Another SVG update: Use a font-family list of "Times,Symbol" for symbol
 	  characters - the Times fontface does not contain all elements of the
 	  Symbol font on all platforms
-	
+
 BUGS FIXED:
 	o Typo in font name (was cmit10, should be cmti10) in MetaPost driver
 	  This bug fix was omitted from alpha6
@@ -170,7 +217,7 @@ Patchlevel 5-alpha5 (April, 26, 2004)
 
 NEW FEATURES:
 	o Raster picture support added to SVG driver. (In SVG, this translates
-	  to a link to the image file plus rotation/scaling information. 
+	  to a link to the image file plus rotation/scaling information.
 	  While 'conformant' SVG viewers need only support PNG and JPEG, there
 	  is no a filetype test, as there is no limit on supported formats
 	  in the standard, and e.g. Batik is able to display XBM and GIF in
@@ -187,7 +234,7 @@ NEW FEATURES:
 	  From Justus Piater
 
 BUGS FIXED:
-	o Typo in LATEX_AND_XFIG file. Text should be: 
+	o Typo in LATEX_AND_XFIG file. Text should be:
 	  \convertMPtoPDF{foo.0}{1}{1}
 	  It was missing parameters {1}{1}
 	o Depth filter option -D was parsing range (e.g. 40:80) incorrectly
@@ -288,21 +335,21 @@ BUGS FIXED
 	  "don't draw anything".  This fix adds 0.01 degrees to the end angle
 	  if it is identical to the start angle.
 	o Exporting a file with a picture containing a path with blanks failed
-	o Incorrect ISO translation was: 
+	o Incorrect ISO translation was:
 	      "\\.S", /* latin capital letter S with dot above */
 	  Should be:
 	      "\\.Z", /* latin capital letter Z with dot above */
 	o LaTeX: Correction to the ISO-8859-2 ogonek diacritic mark now uses \k
 	  instead of cedilla (\c).  If the macro \k isn't defined in your
 	  situation or you don't see the ogonek then define the macro: \def\k#1{\c{#1}}
-	  before the \begin{document}.  
+	  before the \begin{document}.
 	  From Jerzy Sobczyk
 	o Bug in user-defined colors when exporting to CGM. If color numbers
 	  weren't contiguous, e.g. 32, 34, then it couldn't find color 34.
 	o glyphs in the Symbol font that have descenders weren't taken into
 	  account when calculating text bounds
 	o missing blue and extra brown color in LaTeX driver
-	o \smash directive added back to text objects in eepic driver (was removed 
+	o \smash directive added back to text objects in eepic driver (was removed
 	  in 3.2.4)
 	o Quotes in FIG2DEV_LIBDIR definition (fig2dev/Imakefile) interferred when
 	  using $DESTDIR
@@ -368,7 +415,7 @@ NEW FEATURES
 	  information.  From Morten S. Nielsen <msn@ipt.dtu.dk>
 	o New PostScript DSC directives to specify page size.  Doesn't select
 	  tray, which is device dependent, but works better with ghostscript,
-	  ghostview and other PostScript interpreters.  
+	  ghostview and other PostScript interpreters.
 	o fig2dev now includes all "special" (LaTeX) texts that don't have any
 	  backslashes ("\") in them in the bounding box.
 	o genepic and genpictex drivers updated for I18N (internationalization)
@@ -481,7 +528,7 @@ NEW FEATURES
 	o MetaPost driver (-L mp or -L mmp) ported from fig2MP by Klaus
 	  Guntermann (guntermann@iti.informatik.tu-darmstadt.de).  fig2MP was
 	  written by Dane Dwyer (dwyer@geisel.csl.uiuc.edu)
-	o Support for importing PNG image files added 
+	o Support for importing PNG image files added
 	o Transparent color in imported GIF files now honored
 	o You may use "-M -" to send the Makefile output to standard output from
 	  TransFig, and "-T -" to send the Texfile to standard output.
@@ -534,7 +581,7 @@ Patchlevel 3c  (July 25, 2000)
 BUGS FIXED
 	o TransFig manual Makefile now calls ../../fig2dev/fig2dev preventing
 	  the Catch-22 problem of having to install TransFig before you can
-	  compile it 
+	  compile it
 	o fig2dev/dev/genpdf.c needs "#include <signal.h>" for some systems
 	o Added -m 644 to "install" directives in Imakefile to make updates
 	  easier in future (no read-only files)
@@ -955,8 +1002,8 @@ o cleared up confusion about -DNFSS and -DEPSF.  Here is the final word:
   Add -DNFSS to DEFINES list to use NFSS2 font selection for LaTeX texts
   Add -DEPSF to DEFINES list to use epsfig macros as distributed w/ LaTeX2e
 
- 	Hint: Users of LaTeX2e will probably want to include both of these
- 	options; users of LaTeX 2.09 will probably want to include neither.
+	Hint: Users of LaTeX2e will probably want to include both of these
+	options; users of LaTeX 2.09 will probably want to include neither.
 
 o new tints added (fill values 21-40) and arrowhead types for epic driver
      from Andre Eickler (eickler@db.fmi.uni-passau.de)

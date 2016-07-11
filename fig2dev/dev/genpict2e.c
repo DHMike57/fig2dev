@@ -494,7 +494,7 @@ set_fillcolor(int col, int shade, int *pen_color)
 	 */
 
 	if (shade < 0)
-	    fprintf(stderr,"A color error occured. Please report this bug.\n");
+	    fprintf(stderr,"A color error occurred. Please report this bug.\n");
 
 	/* pure colors */
 	if (shade == NUMSHADES - 1) {

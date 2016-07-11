@@ -29,6 +29,7 @@
 
 #include "fig2dev.h"
 #include <sys/file.h>
+#include <locale.h>
 #include "alloc.h"
 #include "object.h"
 #include "drivers.h"
@@ -36,7 +37,7 @@
 #include "read.h"
 /* setmode() exists on DOS/Windows. It sets file mode to text or binary.
  * setmode() is declared in <io.h>, O_BINARY is declared in <fcntl.h>. */
-#ifdef HAVE_SETMODE
+#ifdef HAVE__SETMODE
 #include <io.h>
 #include <fcntl.h>
 #endif
@@ -214,8 +215,7 @@ get_args(int argc, char *argv[])
 
 		case 'h':	/* print version message for -h too */
 		case 'V':
-		    printf("fig2dev Version %s Patchlevel %s\n",
-			   FIG_FILEVERSION, FIG_PATCHLEVEL);
+		    printf("fig2dev Version %s\n", PACKAGE_VERSION);
 		    if (c == 'h')
 			help_msg();
 		    exit(0);
@@ -390,8 +390,9 @@ main(int argc, char *argv[])
 	F_compound	objects;
 	int		status;
 
-#ifdef HAVE_SETMODE
-	setmode(1,O_BINARY); /* stdout is binary */
+	setlocale(LC_CTYPE, "");
+#ifdef HAVE__SETMODE
+	_setmode(1,O_BINARY); /* stdout is binary */
 #endif
 
 	/* get the options */
@@ -641,6 +642,7 @@ help_msg(void)
     puts("  -z papersize	set the papersize (see man pages for available sizes)");
 
     puts("PDF Options:");
+    puts("   All of the EPS options plus:\n");
     puts("  -a		don't output user's login name (anonymous)");
     puts("  -b width	specify width of blank border around figure (1/72 inch)");
     puts("  -F		use correct font sizes (points instead of 1/80inch)");

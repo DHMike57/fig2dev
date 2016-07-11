@@ -15,6 +15,7 @@
 
 #include "fig2dev.h"
 #include "object.h"
+#include "colors.h"	/* rgb2luminance() */
 #include <png.h>
 
 /* return codes:  1 : success

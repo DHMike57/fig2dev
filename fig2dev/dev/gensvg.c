@@ -355,8 +355,8 @@ gensvg_start(F_compound *objects)
     char    stime[80];
 
     fprintf(tfp, "%s\n", PREAMBLE);
-    fprintf(tfp, "<!-- Creator: %s Version %s Patchlevel %s -->\n",
-		  prog, FIG_FILEVERSION, FIG_PATCHLEVEL);
+    fprintf(tfp, "<!-- Creator: %s Version %s -->\n",
+		  prog, PACKAGE_VERSION);
 
     (void) time (&when);
     strcpy(stime, ctime(&when));

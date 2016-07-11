@@ -326,7 +326,7 @@ read_objects(FILE *fp, F_compound *obj)
 		return -1;
 		}
 	    switch (object) {
-		case O_COLOR_DEF:
+		case OBJ_COLOR_DEF:
 		    read_colordef(fp);
 		    if (num_object) {
 			put_msg("Color definitions must come before other objects (line %d).",
@@ -335,7 +335,7 @@ read_objects(FILE *fp, F_compound *obj)
 		    }
 		    num_usr_cols++;
 		    break;
-		case O_POLYLINE :
+		case OBJ_POLYLINE :
 		    if ((l = read_lineobject(fp)) == NULL)
 			return -1;
 #ifdef V4_0
@@ -362,7 +362,7 @@ read_objects(FILE *fp, F_compound *obj)
 		    num_object++;
 		    break;
 #endif /* V4_0 */
-		case O_SPLINE :
+		case OBJ_SPLINE :
 		    if ((s = read_splineobject(fp)) == NULL) {
 			return -1;
 			}
@@ -380,7 +380,7 @@ read_objects(FILE *fp, F_compound *obj)
 			ls = obj->splines = s;
 		    num_object++;
 		    break;
-		case O_ELLIPSE :
+		case OBJ_ELLIPSE :
 		    if ((e = read_ellipseobject()) == NULL)
 			return -1;
 		    if (le)
@@ -389,7 +389,7 @@ read_objects(FILE *fp, F_compound *obj)
 			le = obj->ellipses = e;
 		    num_object++;
 		    break;
-		case O_ARC :
+		case OBJ_ARC :
 		    if ((a = read_arcobject(fp)) == NULL)
 			return -1;
 		    if (la)
@@ -398,7 +398,7 @@ read_objects(FILE *fp, F_compound *obj)
 			la = obj->arcs = a;
 		    num_object++;
 		    break;
-		case O_TEXT :
+		case OBJ_TEXT :
 		    if ((t = read_textobject(fp)) == NULL)
 			return -1;
 		    if (lt)
@@ -407,7 +407,7 @@ read_objects(FILE *fp, F_compound *obj)
 			lt = obj->texts = t;
 		    num_object++;
 		    break;
-		case O_COMPOUND :
+		case OBJ_COMPOUND :
 		    if ((c = read_compoundobject(fp)) == NULL)
 			return -1;
 		    if (lc)
@@ -444,9 +444,10 @@ read_objects(FILE *fp, F_compound *obj)
 static void
 read_colordef(FILE *fp)
 {
-    int		    c,r,g,b;
+    int			c;
+    unsigned int	r,g,b;
 
-    if ((sscanf(buf, "%*d %d #%02x%02x%02x", &c, &r, &g, &b) != 4) ||
+    if ((sscanf(buf, "%*d %d #%2x%2x%2x", &c, &r, &g, &b) != 4) ||
 		(c < NUM_STD_COLS)) {
 	buf[strlen(buf)-1]='\0';	/* remove the newline */
 	put_msg("Invalid color definition: %s, setting to black (#00000).",buf);
@@ -591,7 +592,7 @@ read_compoundobject(FILE *fp)
 		return NULL;
 		}
 	    switch (object) {
-		case O_POLYLINE :
+		case OBJ_POLYLINE :
 		    if ((l = read_lineobject(fp)) == NULL) {
 			return NULL;
 			}
@@ -612,7 +613,7 @@ read_compoundobject(FILE *fp)
 		    }
 #endif /* V4_0 */
 		    break;
-		case O_SPLINE :
+		case OBJ_SPLINE :
 		    if ((s = read_splineobject(fp)) == NULL) {
 			return NULL;
 			}
@@ -628,7 +629,7 @@ read_compoundobject(FILE *fp)
 		    else
 			ls = com->splines = s;
 		    break;
-		case O_ELLIPSE :
+		case OBJ_ELLIPSE :
 		    if ((e = read_ellipseobject()) == NULL) {
 			return NULL;
 			}
@@ -637,7 +638,7 @@ read_compoundobject(FILE *fp)
 		    else
 			le = com->ellipses = e;
 		    break;
-		case O_ARC :
+		case OBJ_ARC :
 		    if ((a = read_arcobject(fp)) == NULL) {
 			return NULL;
 			}
@@ -646,7 +647,7 @@ read_compoundobject(FILE *fp)
 		    else
 			la = com->arcs = a;
 		    break;
-		case O_TEXT :
+		case OBJ_TEXT :
 		    if ((t = read_textobject(fp)) == NULL) {
 			return NULL;
 			}
@@ -655,7 +656,7 @@ read_compoundobject(FILE *fp)
 		    else
 			lt = com->texts = t;
 		    break;
-		case O_COMPOUND :
+		case OBJ_COMPOUND :
 		    if ((c = read_compoundobject(fp)) == NULL) {
 			return NULL;
 			}
@@ -664,7 +665,7 @@ read_compoundobject(FILE *fp)
 		    else
 			lc = com->compounds = c;
 		    break;
-		case O_END_COMPOUND :
+		case OBJ_END_COMPOUND :
 		    return com;
 		default :
 		    put_msg("Wrong object code at line %d", line_no);
@@ -1247,7 +1248,7 @@ read_textobject(FILE *fp)
 
 	if (v30_flag) {		/* now convert any \xxx to ascii characters */
 	    if (strchr(s,'\\')) {
-		int num;
+		unsigned int num;
 		len = strlen(s);
 		for (l=0,n=0; l < len; l++) {
 		    if (s[l]=='\\') {

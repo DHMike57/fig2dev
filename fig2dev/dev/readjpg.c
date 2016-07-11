@@ -28,7 +28,8 @@
 #include "fig2dev.h"
 #include "object.h"
 #include "psimage.h"
-#ifdef HAVE_SETMODE	/* see fig2dev.c */
+#include "creationdate.h"
+#ifdef HAVE__SETMODE	/* see fig2dev.c */
 #include <io.h>
 #include <fcntl.h>
 #endif
@@ -88,22 +89,21 @@ void
 JPEGtoPS(char *jpegfile, FILE *PSfile) {
   imagedata	*JPEG;
   size_t	 n;
-  time_t	 t;
   int		 i, filtype;
   char		 realname[PATH_MAX];
+  char		 date_buf[CREATION_TIME_LEN];
 
   JPEG = &image;
 
   /* reopen the file */
   JPEG->fp = open_picfile(jpegfile, &filtype, true, realname);
 
-  time(&t);
-
   /* produce EPS header comments */
   fprintf(PSfile, "%%!PS-Adobe-3.0 EPSF-3.0\n");
   fprintf(PSfile, "%%%%Creator: jpeg2ps %s by Thomas Merz\n", VERSION);
   fprintf(PSfile, "%%%%Title: %s\n", JPEG->filename);
-  fprintf(PSfile, "%%%%CreationDate: %s", ctime(&t));
+  if (creation_date(date_buf))
+    fprintf(PSfile, "%%%%CreationDate: %s\n", date_buf);
   fprintf(PSfile, "%%%%BoundingBox: %d %d %d %d\n",
 		   0, 0, JPEG->width, JPEG->height);
   fprintf(PSfile, "%%%%DocumentData: %s\n",
@@ -172,16 +172,16 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
 	case BINARY:
 	    /* important: ONE blank and NO newline */
 	    fprintf(PSfile, " ");
-	#ifdef HAVE_SETMODE	/* equivalent to #ifdef DOS */
+	#ifdef HAVE__SETMODE	/* equivalent to #ifdef DOS */
 	    fflush(PSfile);		  /* up to now we have CR/NL mapping */
-	    setmode(fileno(PSfile), O_BINARY);	  /* continue in binary mode */
+	    _setmode(fileno(PSfile), O_BINARY);	  /* continue in binary mode */
 	#endif
 	    /* copy data without change */
 	    while ((n = fread(buffer, 1, sizeof(buffer), JPEG->fp)) != 0)
 	      fwrite(buffer, 1, n, PSfile);
-	#ifdef HAVE_SETMODE
+	#ifdef HAVE__SETMODE
 	    fflush(PSfile);			/* binary yet */
-	    setmode(fileno(PSfile), O_TEXT);	/* text mode */
+	    _setmode(fileno(PSfile), O_TEXT);	/* text mode */
 	#endif
 	    break;
 

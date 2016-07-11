@@ -22,10 +22,7 @@
  * create appropriate .tex file
  */
 void
-texfile(tx, in, arg_list)
-    FILE	*tx;
-    char	*in;
-    argument	*arg_list;
+texfile(FILE *tx, char *in, argument *arg_list)
 {
   enum language to;
   argument *a, *arg_l;
@@ -114,6 +111,11 @@ texfile(tx, in, arg_list)
 	  case pstex: 
 		fprintf(tx, "\\typeout{TransFig: figure text in LaTeX.}\n");
 		fprintf(tx, "\\typeout{TransFig: figures in PostScript.}\n");
+		break;
+
+	  case pdftex:
+		fprintf(tx, "\\typeout{TransFig: figure text in LaTeX.}\n");
+		fprintf(tx, "\\typeout{TransFig: figures in PDF.}\n");
 		break;
 
 	  case psfig:

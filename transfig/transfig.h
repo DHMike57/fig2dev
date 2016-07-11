@@ -1,3 +1,19 @@
+/*
+ * TransFig: Facility for Translating Fig code
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ *
+ * Any party obtaining a copy of these files is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and
+ * documentation files (the "Software"), including without limitation the
+ * rights to use, copy, modify, merge, publish and/or distribute copies of
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
+ * notice remain intact.
+ *
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -34,11 +50,11 @@ enum language  {box, cgm, eepic, eepicemu, emf, epic, eps, gbx, gif,
 	textyl, tiff, tikz, tk, tpic, xbm, xpm};
 #define MAXLANG xpm
 
-enum input {i_apg, i_fig, i_pic, i_ps, i_eps};
+enum input {i_apg, i_fig, i_pic, i_ps, i_eps, i_pdf};
 #define MAXINPUT xps
 
 typedef struct argument{
-	char *name, *interm, *f, *s, *m, *o, *tofig, *topic, *tops;
+	char *name, *interm, *f, *s, *m, *o, *tofig, *topic, *tops, *topdf;
 	enum language tolang;
 	enum input type;
 	struct argument *next;
@@ -54,4 +70,3 @@ extern char *txfile, *mkfile;
 
 extern char *optarg;
 extern int optind;
-

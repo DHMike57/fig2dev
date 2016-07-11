@@ -1,8 +1,7 @@
-#!/bin/sh -f
+#!/bin/csh -f
 #
 # Fig2ps2tex - generate a TeX file for including a PostScript file
 #		 involves calculating the bounding box from fig2ps output
-# version for systems without csh -- uses bc and awk
 #
 # Copyright 1994 Micah Beck
 #
@@ -23,15 +22,10 @@
 # 2016-07-07  Thomas Loimer
 #	* use here-document, instead of echo
 
-bbox=`grep "^%%BoundingBox:" $1`
+set bbox = `grep "^%%BoundingBox:" $1`
 
-bbox2=`echo $bbox | awk '{print $2}'`
-bbox3=`echo $bbox | awk '{print $3}'`
-bbox4=`echo $bbox | awk '{print $4}'`
-bbox5=`echo $bbox | awk '{print $5}'`
-
-xsp=`echo "scale=3; ( $bbox4 - $bbox2 ) / 72" | bc`
-ysp=`echo "scale=3; ( $bbox5 - $bbox3 ) / 72" | bc`
+set xsp = `echo "3k $bbox[4] $bbox[2] - 72 / p" | dc`
+set ysp = `echo "3k $bbox[5] $bbox[3] - 72 / p" | dc`
 
 cat <<EOF
 \\makebox[${xsp}in][l]{

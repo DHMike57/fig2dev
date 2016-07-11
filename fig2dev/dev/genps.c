@@ -37,14 +37,17 @@
 */
 
 #include "fig2dev.h"
-#include <sys/stat.h>
 #include "object.h"
 #include "bound.h"
+#include "colors.h"	/* lookup_X_color(), rgb2luminance() */
 #include "psencode.h"
 #include "psfonts.h"
+#include "creationdate.h"
+#include <sys/stat.h>	/* struct stat */
 #ifdef HAVE_GETPWUID
 #include <pwd.h>
 #endif
+#include <locale.h>
 
 /* for the xpm package */
 #ifdef HAVE_X11_XPM_H
@@ -80,7 +83,7 @@ bool		tiffcolor = false;	/* color or b/w TIFF preview */
 static char	tmpeps[PATH_MAX];	/* temp filename for eps when adding tiff preview */
 static char	tmpprev[PATH_MAX];	/* temp filename for ASCII or tiff preview */
 
-static bool	anonymous = false;
+static bool	anonymous = true;
 static bool	correct_font_size = false;
 int		pagewidth = -1;
 int		pageheight = -1;
@@ -423,8 +426,8 @@ void
 genps_start(F_compound *objects)
 {
 	char		 host[256];
+	char		 date_buf[CREATION_TIME_LEN];
 	struct passwd	*who;
-	time_t		 when;
 	int		 itmp, jtmp;
 	int		 i;
 	int		 cliplx, cliply, clipux, clipuy;
@@ -598,10 +601,10 @@ genps_start(F_compound *objects)
 	    (void)strcpy(host, "unknown-host!?!?");
 	fprintf(tfp, "%%%%Title: %s\n",
 	    (name? name: ((from) ? from : "stdin")));
-	fprintf(tfp, "%%%%Creator: %s Version %s Patchlevel %s\n",
-		prog, FIG_FILEVERSION, FIG_PATCHLEVEL);
-	(void) time(&when);
-	fprintf(tfp, "%%%%CreationDate: %s", ctime(&when));
+	fprintf(tfp, "%%%%Creator: %s Version %s\n",
+		prog, PACKAGE_VERSION);
+	if (creation_date(date_buf))
+	    fprintf(tfp, "%%%%CreationDate: %s\n", date_buf);
 #ifdef HAVE_GETPWUID
 	if ( !anonymous) {
 	    who = getpwuid(getuid());
@@ -792,7 +795,7 @@ genps_start(F_compound *objects)
 	    if (libdir == NULL)
 		libdir = I18N_DATADIR;
 #endif
-	    locale = getenv("LANG");
+	    locale = setlocale(LC_CTYPE, NULL);
 	    if (locale == NULL) {
 		fprintf(stderr, "fig2dev: LANG not defined; assuming C locale\n");
 		locale = "C";
@@ -1048,7 +1051,7 @@ genps_end(void)
 	sprintf(tmpprev, "%s/xfig%06d.tmpprev", TMPDIR, getpid());
 	/* make the ghostscript command to generate the ASCII or TIFF file from the temp eps file */
 	sprintf(gscom,
-	    "gs -q -dBATCH -dSAFER -sDEVICE=%s -r72 -g%dx%d -sOutputFile=%s %s > /dev/null < /dev/null",
+	    "gs -q -dBATCH -dSAFER -sDEVICE=%s -r72 -g%dx%d -sOutputFile=\'%s\' %s > /dev/null < /dev/null",
 		   asciipreview? "bit" : (tiffcolor? "tiff24nc": "tifflzw"),
 		   width, height, tmpprev, tmpeps);
 	if ((status=system(gscom)) != 0) {
@@ -1698,7 +1701,7 @@ genps_line(F_line *l)
 		/* set clipping for any arrowheads */
 		if (l->for_arrow || l->back_arrow) {
 		    fprintf(tfp, "gs ");
-		    clip_arrows(l, O_POLYLINE);
+		    clip_arrows(l, OBJ_POLYLINE);
 		}
 
 		/* now output the points */
@@ -1806,7 +1809,7 @@ genps_itp_spline(F_spline *s)
 	/* set clipping for any arrowheads */
 	fprintf(tfp, "gs ");
 	if (s->for_arrow || s->back_arrow)
-	    clip_arrows((F_line *)s, O_SPLINE);
+	    clip_arrows((F_line *)s, OBJ_SPLINE);
 
 	a = s->controls;
 	p = s->points;
@@ -1891,7 +1894,7 @@ genps_ctl_spline(F_spline *s)
 	/* set clipping for any arrowheads */
 	fprintf(tfp, "gs ");
 	if (s->for_arrow || s->back_arrow)
-	    clip_arrows((F_line *)s, O_SPLINE);
+	    clip_arrows((F_line *)s, OBJ_SPLINE);
 
 	/* now output the points */
 	set_style(s->style, s->style_val);
@@ -1998,7 +2001,7 @@ genps_arc(F_arc *a)
 	    /* set clipping for any arrowheads */
 	    fprintf(tfp, "gs ");
 	    if (a->for_arrow || a->back_arrow)
-		clip_arrows((F_line *)a, O_ARC);
+		clip_arrows((F_line *)a, OBJ_ARC);
 	}
 
 	set_style(a->style, a->style_val);
@@ -2297,7 +2300,7 @@ clip_arrows(F_line *obj, int objtype)
     fprintf(tfp," clippath\n");
     /* get points for any forward arrowhead */
     if (obj->for_arrow) {
-	if (objtype == O_ARC) {
+	if (objtype == OBJ_ARC) {
 	    F_arc  *a = (F_arc *) obj;
 	    /* last point */
 	    lpntx1 = a->point[2].x;
@@ -2318,7 +2321,7 @@ clip_arrows(F_line *obj, int objtype)
 
     /* get points for any backward arrowhead */
     if (obj->back_arrow) {
-	if (objtype == O_ARC) {
+	if (objtype == OBJ_ARC) {
 	    F_arc  *a = (F_arc *) obj;
 	    /* first point */
 	    fpntx1 = a->point[0].x;

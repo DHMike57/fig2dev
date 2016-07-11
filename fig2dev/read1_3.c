@@ -81,7 +81,7 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 	obj->nwcorner.y = coord_sys;
 	while (fscanf(fp, "%d", &object) == 1) {
 	    switch (object) {
-		case O_POLYLINE :
+		case OBJ_POLYLINE :
 		    if ((l = read_lineobject(fp)) == NULL) return(-1);
 		    if (ll)
 			ll = (ll->next = l);
@@ -89,7 +89,7 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			ll = obj->lines = l;
 		    num_object++;
 		    break;
-		case O_SPLINE :
+		case OBJ_SPLINE :
 		    if ((s = read_splineobject(fp)) == NULL) return(-1);
 		    if (ls)
 			ls = (ls->next = s);
@@ -97,7 +97,7 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			ls = obj->splines = s;
 		    num_object++;
 		    break;
-		case O_ELLIPSE :
+		case OBJ_ELLIPSE :
 		    if ((e = read_ellipseobject(fp)) == NULL) return(-1);
 		    if (le)
 			le = (le->next = e);
@@ -105,7 +105,7 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			le = obj->ellipses = e;
 		    num_object++;
 		    break;
-		case O_ARC :
+		case OBJ_ARC :
 		    if ((a = read_arcobject(fp)) == NULL) return(-1);
 		    if (la)
 			la = (la->next = a);
@@ -113,7 +113,7 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			la = obj->arcs = a;
 		    num_object++;
 		    break;
-		case O_TEXT :
+		case OBJ_TEXT :
 		    if ((t = read_textobject(fp)) == NULL) return(-1);
 		    if (lt)
 			lt = (lt->next = t);
@@ -121,7 +121,7 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			lt = obj->texts = t;
 		    num_object++;
 		    break;
-		case O_COMPOUND :
+		case OBJ_COMPOUND :
 		    if ((c = read_compoundobject(fp)) == NULL) return(-1);
 		    if (lc)
 			lc = (lc->next = c);
@@ -206,7 +206,7 @@ read_compoundobject(FILE *fp)
 	    }
 	while (fscanf(fp, "%d", &object) == 1) {
 	    switch (object) {
-		case O_POLYLINE :
+		case OBJ_POLYLINE :
 		    if ((l = read_lineobject(fp)) == NULL) {
 			free_line(&l);
 			return(NULL);
@@ -216,7 +216,7 @@ read_compoundobject(FILE *fp)
 		    else
 			ll = com->lines = l;
 		    break;
-		case O_SPLINE :
+		case OBJ_SPLINE :
 		    if ((s = read_splineobject(fp)) == NULL) {
 			free_spline(&s);
 			return(NULL);
@@ -226,7 +226,7 @@ read_compoundobject(FILE *fp)
 		    else
 			ls = com->splines = s;
 		    break;
-		case O_ELLIPSE :
+		case OBJ_ELLIPSE :
 		    if ((e = read_ellipseobject(fp)) == NULL) {
 			free_ellipse(&e);
 			return(NULL);
@@ -236,7 +236,7 @@ read_compoundobject(FILE *fp)
 		    else
 			le = com->ellipses = e;
 		    break;
-		case O_ARC :
+		case OBJ_ARC :
 		    if ((a = read_arcobject(fp)) == NULL) {
 			free_arc(&a);
 			return(NULL);
@@ -246,7 +246,7 @@ read_compoundobject(FILE *fp)
 		    else
 			la = com->arcs = a;
 		    break;
-		case O_TEXT :
+		case OBJ_TEXT :
 		    if ((t = read_textobject(fp)) == NULL) {
 			free_text(&t);
 			return(NULL);
@@ -256,7 +256,7 @@ read_compoundobject(FILE *fp)
 		    else
 			lt = com->texts = t;
 		    break;
-		case O_COMPOUND :
+		case OBJ_COMPOUND :
 		    if ((c = read_compoundobject(fp)) == NULL) {
 			free_compound(&c);
 			return(NULL);
@@ -266,7 +266,7 @@ read_compoundobject(FILE *fp)
 		    else
 			lc = com->compounds = c;
 		    break;
-		case O_END_COMPOUND :
+		case OBJ_END_COMPOUND :
 		    return(com);
 		} /*  switch */
 	    }

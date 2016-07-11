@@ -26,15 +26,12 @@ void putclean();
  */
 
 void
-makefile(mk, altfonts, arg_list)
-    FILE	*mk;
-    int		 altfonts;
-    argument	*arg_list;
+makefile(FILE *mk, int altfonts, argument *arg_list)
 {
   argument *a;
   char *i;
   enum language to;
-  int needps, needeps, needpic, needfig;
+  int needps, needeps, needpic, needfig, needpdf;
   
   fprintf(mk, "#\n# TransFig makefile\n#\n");
 
@@ -48,7 +45,7 @@ makefile(mk, altfonts, arg_list)
 	i = a->name;
 	to = a->tolang;
 
-	needps = needeps = needpic = needfig = 0;
+	needps = needeps = needpic = needfig = needpdf =0;
 
 	fprintf(mk, "\n# translation into %s\n\n", lname[(int)to]);
 
@@ -59,8 +56,10 @@ makefile(mk, altfonts, arg_list)
 		break;
 
 	  case cgm:
+	  case dxf:
 	  case emf:
 	  case gif:
+	  case gbx:
 	  case ibmgl:
 	  case jpeg:
 	  case map:
@@ -87,6 +86,8 @@ makefile(mk, altfonts, arg_list)
 	  case eepicemu:
 	  case epic:
 	  case eepic:
+	  case pict2e:	/* TODO really here? */
+	  case tikz:	/* TODO really here? */
 		putfig(mk, to, altfonts, a->f, a->s, a->m, a->o, i, "tex");
 		needfig = 1;
 		break;
@@ -108,6 +109,7 @@ makefile(mk, altfonts, arg_list)
 		puttarget(mk, i, "tex", "pdf");
 		fprintf(mk, "\tfig2dev -L pdftex_t -p %s.pdf ", i);
 		putoptions(mk, altfonts, a->f, a->s, a->m, a->o, i, "tex");
+		needpdf = 1;
 		break;
 
 	  case pictex:
@@ -177,6 +179,21 @@ makefile(mk, altfonts, arg_list)
 		putclean(mk, i, "ps" );
 	}
 
+	/* conversion to PDF */
+	if (needpdf && a->type != i_pdf) {
+		if ( a->topdf ) {
+		    puttarget(mk, i, "pdf", iname[(int)a->type]);
+		    fprintf(mk, "\t%s %s.%s > %s.pdf\n", a->topdf, i, iname[(int)a->type], i);
+		}
+		else {
+                    putfig(mk, (to == pdftex ? pdftex : pdf),
+			   altfonts, a->f, a->s, a->m, a->o, i, "pdf");
+                    a->interm = mksuff(i, ".pdf");
+		    needfig = 1;
+		}
+		putclean(mk, i, "pdf" );
+	}
+
 	/* conversion to eps */
 	if (needeps && a->type != i_eps) {
 		if ( a->tops ) {
@@ -222,19 +239,14 @@ makefile(mk, altfonts, arg_list)
 }
 
 void
-puttarget(mk, i, suf1, suf2)
-    FILE	*mk;
-    char	*i, *suf1, *suf2;
+puttarget(FILE *mk, char *i, char *suf1, char *suf2)
 {
     fprintf(mk, "%s.%s: %s.%s %s\n", i, suf1, i, suf2, mkfile);
 }
 
 void
-putfig(mk, to, altfonts, f, s, m, o, i, suf)
-    FILE	*mk;
-    enum	 language to;
-    int		 altfonts;
-    char	 *f, *s, *m, *o, *i, *suf;
+putfig(FILE *mk, enum language to, int altfonts,
+	char *f, char *s, char *m, char *o, char *i, char *suf)
 {
   fprintf(mk, "%s%s%s: %s.fig %s\n",
 	       i, (suf ? "." : ""), (suf ? suf : ""), i, mkfile);
@@ -248,10 +260,8 @@ putfig(mk, to, altfonts, f, s, m, o, i, suf)
 }
 
 void
-putoptions(mk, altfonts, f, s, m, o, i, suf)
-    FILE	*mk;
-    int		 altfonts;
-    char	*f, *s, *m, *o, *i, *suf;
+putoptions(FILE *mk, int altfonts, char *f, char *s, char *m, char *o,
+	char *i, char *suf)
 {
   if (altfonts==1) fprintf(mk, "-a ");
   if (f && *f) fprintf(mk, "-f %s ", f);
@@ -263,9 +273,7 @@ putoptions(mk, altfonts, f, s, m, o, i, suf)
 }
 
 void
-putclean(mk, i, suf)
-    FILE	*mk;
-    char	*i, *suf;
+putclean(FILE *mk, char *i, char *suf)
 {
    fprintf(mk, "clean::\n");
    fprintf(mk, "\trm -f %s.%s\n", i, suf);

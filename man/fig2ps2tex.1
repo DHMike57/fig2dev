@@ -1,4 +1,6 @@
-.TH FIG2PS2TEX 1 "14 Mar 1991"
+./" This file is part of fig2dev.
+./" Copyright notice at the end of the file.
+.TH FIG2PS2TEX 1 "2016"
 .SH NAME
 fig2ps2tex - generate a TeX file for including a PostScript file
 
@@ -14,8 +16,8 @@ This involves calculating the bounding box from the Postscript document.
 The TeX inclusion file is written to stdout.
 .PP
 There is also
-.I Fig2ps2tex.sh
-for those systems without csh and/or dc (Linux for example).
+.I Fig2ps2tex.csh
+for those systems with csh and dc.
 .PP
 Note that the
 .I psfig
@@ -30,14 +32,16 @@ Assume the Postscript file is called
 .I foo.ps .
 The command
 
-.ce
+.RS
 % fig2ps2tex foo.ps >foo.tex
+.RE
 
 will create the inclusion file with bounding information.
 Then include this file in your TeX document with the command
 
-.ce
+.RS
 \einput{foo}
+.RE
 
 .SH "SEE ALSO"
 psfig(1),
@@ -66,3 +70,8 @@ copies from any such party to do so, with the only requirement being
 that this copyright notice remain intact.  This license includes without
 limitation a license to do the foregoing actions under any patents of
 the party supplying this software to the X Consortium.
+
+./" Changes:
+./" July 2016 Thomas Loimer
+./"	* Describe the sh-version, refer to the csh-version as
+./"	  the alternate version.

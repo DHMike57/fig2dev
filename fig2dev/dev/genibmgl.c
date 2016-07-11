@@ -1045,8 +1045,6 @@ genibmgl_text(F_text *t)
 {
 static	int	font	 = DEFAULT;	/* font				*/
 static	int	size	 = DEFAULT;	/* font size	    in points	*/
-static	int	cs	 = 0;		/* standard  character set	*/
-static	int	ca	 = 0;		/* alternate character set	*/
 static	double	theta	 = 0.0;		/* character slant  in degrees	*/
 static	double	angle	 = 0.0;		/* label direction  in radians	*/
 	double	width;			/* character width  in centimeters */

@@ -16,6 +16,7 @@
 
 #include "fig2dev.h"
 #include "object.h"
+#include "colors.h"	/* rgb2luminance() */
 
 extern int _read_pcx(FILE *pcxfile, F_pic *pic);
 
