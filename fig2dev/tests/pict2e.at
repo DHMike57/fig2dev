@@ -22,6 +22,7 @@ AT_DATA(black+red.fig, [FIG_FILE_TOP
 	 0 9900 600 9900
 ])
 
+dnl do not count on grep to support -q, or -s
 AT_CHECK([fig2dev -L pict2e -P -C -1 black.fig | $FGREP $FIG_WCOLOR && \
 	fig2dev -L pict2e -P -C 0 black.fig | $FGREP $FIG_NCOLOR && \
 	fig2dev -L pict2e -P black.fig | $FGREP $FIG_NCOLOR
@@ -41,6 +42,6 @@ AT_DATA(default.fig, [FIG_FILE_TOP
 2 1 0 2 -1 7 50 -1 -1 0.000 0 0 -1 0 0 2
 	 0 10200 1200 10200
 ])
-AT_CHECK([fig2dev -L pict2e -G 1cm:2mm default.fig /dev/null
+AT_CHECK([fig2dev -L pict2e -G0.2:1cm default.fig /dev/null
 ], 0)
 AT_CLEANUP

@@ -26,11 +26,11 @@ static char		*texfontfamily[] = {
 		};
 
 static char		*texfontseries[] = {
-			"\\mddefault", 		/* default */
+			"\\mddefault",		/* default */
 			"\\mddefault",		/* roman */
 			"\\bfdefault",		/* bold */
 			"\\mddefault",		/* italic */
-			"\\mddefault", 		/* sans serif */
+			"\\mddefault",		/* sans serif */
 			"\\mddefault"		/* typewriter */
 		};
 
@@ -45,11 +45,11 @@ static char		*texfontshape[] = {
 #endif
 
 static char		*texfontnames[] = {
-  			"rm",			/* default */
+			"rm",			/* default */
 			"rm",			/* roman */
 			"bf",			/* bold */
 			"it",			/* italic */
-			"sf", 			/* sans serif */
+			"sf",			/* sans serif */
 			"tt"			/* typewriter */
 		};
 
@@ -72,9 +72,9 @@ static char		texfontsizes[] = {
                        34, 34, 34, 34,
                        34, 34, 34, 41,
                        41, 41
-  			};
+			};
 
-#define MAXFONTSIZE 	42
+#define MAXFONTSIZE	42
 
 #ifdef NFSS
 #define TEXFAMILY(F)	(texfontfamily[((F) <= MAX_FONT) ? (F) : (MAX_FONT-1)])
@@ -85,7 +85,7 @@ static char		texfontsizes[] = {
 
 /*
 #define TEXFONTSIZE(S)	(texfontsizes[((S) <= MAXFONTSIZE) ? (int)(round(S))\
-				      				: (MAXFONTSIZE-1)])
+							: (MAXFONTSIZE-1)])
 */
 #define TEXFONTSIZE(S)	(((S) <= MAXFONTSIZE) ? texfontsizes[(int)(round(S))] : (S))
 #define TEXFONTMAG(T)	TEXFONTSIZE(T->size*(rigid_text(T) ? 1.0 : fontmag))

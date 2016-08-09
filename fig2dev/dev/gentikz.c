@@ -155,7 +155,7 @@ static const char   *arrowflag[3] = {
  * The backend could be computed from the minimum coordinate of
  * the hullpoints - but not for the circle or half circle.
  */
-struct pgfarrow {
+static struct pgfarrow {
 	int props;	/* property flags */
 			/* \pgfarrowsset */
 	double backl;	/*  -backend, arrow length factor */
@@ -254,8 +254,13 @@ static struct options	alt_options;
 /* Macros */
 #define	PREC1(f)	floor(f) == f ? 0 : 1
 #define	MINLINELENGTH	75
-#define XCOORD(x)	((x) - llx)
-#define YCOORD(y)	(ury - (y))
+/* coordinates relative to the lower left corner of the bounding box */
+/* #define XCOORD(x)	((x) - llx) */
+/* #define YCOORD(y)	(ury - (y)) */
+/* coordinates relative to the origin on the xfig canvas, which is top left */
+/* The origin must be kept if a grid should be drawn */
+#define XCOORD(x)	(x)
+#define YCOORD(y)	(-(y))
 #define XDIR(x)		x
 #define YDIR(y)		-(y)
 #define THICKNESS(T)	(T <= THICK_SCALE ? 0.5*T : T - THICK_SCALE)
@@ -448,7 +453,6 @@ static void
 define_arrow(int ttype, int indx)
 {
 	int	i;
-	double	dtmp;
 	/* Information for	obtained from
 	 * \pgfarrowsset-
 	 *  -tipend		arrow_shapes.tipmv
@@ -656,7 +660,7 @@ gentikz_start(F_compound *objects)
 
 	unitlength = mag/ppi;
 	border_margin /= unitlength*72.0;
-	splength = 4736286.72*unitlength;
+	splength = 4736286.72*unitlength;	/* 1 in = 72.27 x 65536 sp */
 
 	/* adjust for any border margin */
 	llx -= border_margin;
@@ -711,8 +715,10 @@ gentikz_start(F_compound *objects)
 	    fputs("  \\else\\dimen1\\dimen3\\fi", tfp);
 	    fputs("\\else\\ifdim\\dimen3=0pt\\dimen3\\dimen1\\fi\\fi\n", tfp);
 	    fputs("\\tikzpicture[x=+\\dimen1, y=+\\dimen3]\n", tfp);
-	    fputs("\\newdimen\\XFigu\\pgfextractx\\XFigu{\\pgfqpointxy{1}{1}}\n",
-		  tfp);
+	    fprintf(tfp, "\\newdimen\\XFigu\\XFigu%lisp\n", (long) splength);
+	    fputs("% Uncomment to scale line thicknesses with the same\n", tfp);
+	    fputs("% factor as width of the drawing.\n", tfp);
+	    fputs("%\\pgfextractx\\XFigu{\\pgfqpointxy{1}{1}}\n", tfp);
 	    fputs("\\ifdim\\XFigu<0pt\\XFigu-\\XFigu\\fi\n", tfp);
 	}
 
@@ -767,9 +773,38 @@ gentikz_start(F_compound *objects)
 	    fprintf(tfp, "\\definecolor{xfigc%d}{rgb}{%.3f,%.3f,%.3f}\n",
 		    i+NUM_STD_COLS, user_colors[i].r/255.,
 		    user_colors[i].g/255., user_colors[i].b/255.);
-	fprintf(tfp, "\\clip (0,0) rectangle (%d,%d);\n", urx-llx, ury-lly);
+	/* fprintf(tfp, "\\clip (0,0) rectangle (%d,%d);\n", urx-llx, ury-lly); */
+	fprintf(tfp, "\\clip(%d,%d) rectangle (%d,%d);\n",
+		XCOORD(llx), YCOORD(ury), XCOORD(urx), YCOORD(lly));
 
 	fputs("\\tikzset{inner sep=+0pt, outer sep=+0pt}\n", tfp);
+}
+
+void
+gentikz_grid(float major, float minor)
+{
+	if (minor == 0.0 && major == 0.0)
+	    return;
+
+	if (metric) {
+	    /* Cancel out the factor by which the figure is multiplied,
+	       if metric. 3.81/4 = 450 * 2.54 / 1200	*/
+/* TODO: Search for 80/76.2, and 76.2/80, replace */
+	    minor *= 3.81/4.;
+	    major *= 3.81/4.;
+	}
+/* TODO: repair the precision, precision(3,minor) and (1,T) below */
+#define	GRIDLINE	\
+	"\\draw[black!30, line width=%.*f\\XFigu] (%d,%d) grid[step=%.2f\\XFigu] (%d,%d);\n"
+
+	/* first the minor grid */
+	if (minor != 0.0)
+	    fprintf(tfp, GRIDLINE, PREC1(0.5*THICK_SCALE), 0.5*THICK_SCALE,
+		    XCOORD(llx), YCOORD(ury), minor, XCOORD(urx), YCOORD(lly));
+
+	if (major != 0.0)
+	    fprintf(tfp, GRIDLINE, PREC1(1.25*THICK_SCALE), 1.25*THICK_SCALE,
+		    XCOORD(llx), YCOORD(ury), major, XCOORD(urx), YCOORD(lly));
 }
 
 int
@@ -1652,7 +1687,7 @@ gentikz_ellipse(F_ellipse *e)
 static void
 put_font(F_text *t)
 {
-	int texsize, bprec, font;
+	int texsize, bprec;
 	double baselineskip;
 
 	/* tex-drivers by default use the correct font size, a bit different
@@ -1692,13 +1727,13 @@ put_font(F_text *t)
 
 /*
  * Put the text, e.g.,
- *   \pgfsetfillcolor{blue}   % \pgftext obeys \pgfsetcolor or \pgfsetfillcolor
+ *   \pgfsetfillcolor{blue}   % \pgftext obeys \pgfsetfillcolor
  *   \pgftext[base,left,at=\pgfqpointxy{3}{2},rotate=45] {Text here!};
- * Order ist important! First at=..., then rotate=... !   */
+ * Order ist important! First at=..., then rotate=... !
+ */
 void
 gentikz_text(F_text *t)
 {
-	int		x, y;
 	unsigned char	*cp;
 
 	if (verbose)
@@ -1729,13 +1764,6 @@ gentikz_text(F_text *t)
 	    fprintf(tfp, ",rotate=+%.*f", aprec, a);
 	}
 	fputs("] {", tfp);
-
-	/* put the text color */
-	if (t->color != DEFAULT) {
-	    fputs("\\color{", tfp);
-	    put_colorname(t->color);
-	    fputc('}', tfp);
-	}
 
 	put_font(t);
 
@@ -1851,7 +1879,7 @@ gentikz_arc(F_arc *a)
 	fprintf(tfp,
 		"(%d,%d) arc[start angle=+%.*f, end angle=+%.*f, radius=+%.*f]",
 		XCOORD(a->point[0].x), YCOORD(a->point[0].y), preca, angle1,
-		preca, angle2, (int)rad == rad ? 0 : 1, rad);
+		preca, angle2, round(rad) == round(10.*rad)/10. ? 0 : 1, rad);
 	if (a->type == T_PIE_WEDGE_ARC)
 	    fprintf(tfp, "--(%.0f,%.0f)--cycle;\n",
 		    XCOORD(a->center.x), YCOORD(a->center.y));
@@ -1862,7 +1890,7 @@ gentikz_arc(F_arc *a)
 struct driver dev_tikz = {
 	gentikz_option,
 	gentikz_start,
-	gendev_nogrid,
+	gentikz_grid,
 	gentikz_arc,
 	gentikz_ellipse,
 	gentikz_line,

@@ -104,7 +104,7 @@ gentpic_option(char opt, char *optarg)
 		    if ( i > MAX_FONT)
 			    vfont = 1; /* assume a virtual font */
 		}
-		
+
 		texfontnames[0] = optarg;
 		break;
 

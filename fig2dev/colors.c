@@ -34,16 +34,6 @@ lookup_X_color(char *name, RGB *rgb)
 	unsigned short	r, g, b;
 	struct color_db *col;
 
-	/* read the X color database file if we haven't done that yet */
-	if (!have_read_X_colors) {
-	    if (read_colordb() != 0) {
-		/* error reading color database, return black */
-		rgb->red = rgb->green = rgb->blue = 0u;
-		return -1;
-	    }
-	    have_read_X_colors = true;
-	}
-
 	if (name[0] == '#') {			/* hex color parse it now */
 	    if (strlen(name) == 4) {		/* #rgb */
 		    n = sscanf(name,"#%1hx%1hx%1hx",&r,&g,&b);
@@ -71,6 +61,16 @@ lookup_X_color(char *name, RGB *rgb)
 		return 0;
 	    }
 	} else {
+	    /* read the X color database file if we haven't done that yet */
+	    if (!have_read_X_colors) {
+		if (read_colordb() != 0) {
+		    /* error reading color database, return black */
+		    rgb->red = rgb->green = rgb->blue = 0u;
+		    return -1;
+		}
+		have_read_X_colors = true;
+	    }
+
 	    /* named color, look in the database we read in */
 	    for (col = Xcolors, i=0; i<numXcolors; ++col, ++i) {
 		if (strcasecmp(col->name, name) == 0) {
@@ -138,7 +138,7 @@ read_colordb(void)
     fclose(fp);
     return 0;
 }
-	
+
 /* convert rgb to gray scale using the classic luminance conversion factors */
 
 float

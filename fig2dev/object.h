@@ -190,7 +190,7 @@ typedef		struct f_text {
 			int			depth;
 			double			angle;	/* in radian */
 			int			flags;
-#define					RIGID_TEXT	1	
+#define					RIGID_TEXT	1
 #define					SPECIAL_TEXT	2
 #define					PSFONT_TEXT	4
 #define					HIDDEN_TEXT	8

@@ -1,8 +1,8 @@
-TransFig is a set of tools for creating TeX documents with graphics
+Fig2dev is a set of tools for creating TeX documents with graphics
 which are portable, in the sense that they can be printed in a wide
 variety of environments.
 
-TransFig consists of the fig2dev and the transfig commands.  The fig2dev
+Fig2dev consists of the fig2dev and the transfig commands.  The fig2dev
 command translates Fig code to other graphic description languages.  The
 transfig command generates transfig.tex, a macro file for \input in a
 TeX document, and a Makefile which translates Fig code to various
@@ -26,15 +26,8 @@ The man directory contains man pages for fig2dev and for the transfig
 command. The doc directory contains a manual for using TransFig to
 create documents with portable graphics.
 
-The file LATEX.AND.XFIG contains a useful tutorial on using xfig with LaTex.
-It was written by Eric Masson (McGill University)
-
-TransFig and its companion xfig are available from:
-	ftp://epb.lbl.gov/xfig
-	http://www.xfig.org/xfigdist
-	ftp://ftp.x.org/contrib/applications/drawing_tools
-	ftp://ftp.cdrom.com/pub/X11/contrib/applications/drawing_tools
-	from any CTAN machine e.g. ftp://ftp.tex.ac.uk/pub/archive/graphics.
+Fig2dev and its companion xfig are available from
+	https://sourceforge.net/projects/mcj
 
 
 Runtime Requirements
@@ -63,4 +56,4 @@ o To use the -b (binary) option for CGM export, the ralcgm program is
 
 *************************************************************************
 Please send email about any questions/bug fixes/contributions etc. about
-TransFig or xfig to thomas.loimer@tuwien.ac.at.
+Fig2dev or xfig to thomas.loimer@tuwien.ac.at.

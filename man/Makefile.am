@@ -17,6 +17,9 @@ dist_man1_MANS = fig2ps2tex.1 pic2tpic.1
 man1_MANS = fig2dev.1
 EXTRA_DIST = i18n.man nfss.man transfig.1
 
+# fig2dev.1 depends on PACKAGE_VERSION - pick up new version, if it changes
+fig2dev.1.in: $(CONFIG_HEADER)
+
 if ENABLE_TRANSFIG
 man1_MANS += transfig.1
 endif

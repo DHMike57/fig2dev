@@ -653,7 +653,7 @@ gensvg_arc(F_arc *a)
 
 	if (angle <0.0) angle += 2.*M_PI;
 
-	angle *= 180./M_PI;	
+	angle *= 180./M_PI;
 
 	if (a->direction==1) angle = 360.-angle;
 

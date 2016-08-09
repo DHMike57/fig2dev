@@ -11,9 +11,9 @@ AT_SKIP_IF([! ppmhist --version])
 # The original must be saved as eps, not converted to pdf.
 # Conversion to pdf introduces a few pixel errors.
 gs -sDEVICE=pgmraw -dEPSCrop -r1200 -dNOPAUSE -dBATCH -dQUIET \
-	-sOutputFile=a.pgm $abs_srcdir/data/arrows.eps
+	-sOutputFile=a.pgm $srcdir/data/arrows.eps
 
-fig2dev -L eps $abs_srcdir/data/arrows.fig | \
+fig2dev -L eps $srcdir/data/arrows.fig | \
 	gs -sDEVICE=pgmraw -dEPSCrop -r1200 -dNOPAUSE -dBATCH -dQUIET \
 	   -sOutputFile=b.pgm -
 

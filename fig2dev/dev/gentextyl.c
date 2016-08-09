@@ -352,7 +352,7 @@ gentextyl_arc(F_arc *a)
 	cy = a->center.y;
 	sy = a->point[0].y;
 	ey = a->point[2].y;
-	
+
 	rtop(dx1, dy1, &r1, &th1);
 	rtop(dx2, dy2, &r2, &th2);
 

@@ -162,7 +162,7 @@ gentk_start(F_compound *objects)
 		    strcpy(papersize,pd->name);	/* use the "nice" form */
 		    break;
 		}
-	
+
 	    if (wid < 0 || ht < 0) {
 		(void) fprintf (stderr, "Unknown paper size `%s'\n", papersize);
 		exit (1);
@@ -390,8 +390,8 @@ drawBitmap(F_line *l)
 	    niceLine("\n");
 	} else {
 	    /* Try for an X Bitmap file format. */
+	    unsigned int dummy;		/* Thomas Loimer, 2015-12 */
 	    rewind(fd);
-	    unsigned int dummy;	/* Thomas Loimer, 2015-12 */
 	    if (ReadFromBitmapFile(fd, &dummy, &dummy, &p->bitmap)) {
 		sprintf(stfp, "%s create bitmap %fi %fi -anchor nw",
 			canvas, X(l->points->x), Y(l->points->y));
@@ -1146,7 +1146,7 @@ tkEllipse(void *shape, unsigned int outlineColor, unsigned int fillColor,
 		sprintf(stfp, " -width %d", thickness);
 		niceLine(stfp);
 	}
-	
+
 	niceLine("\n");
 }
 

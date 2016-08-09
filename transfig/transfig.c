@@ -152,10 +152,10 @@ main(int argc, char *argv[])
 		arg_f = optarg;
 		break;
 	    case 's':
-		arg_s = optarg;	
+		arg_s = optarg;
 		break;
 	    case 'm':
-		arg_m = optarg;	
+		arg_m = optarg;
 		break;
 
 	    case 'o':

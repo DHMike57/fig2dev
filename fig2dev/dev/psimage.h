@@ -22,7 +22,7 @@ typedef struct {
   FILE     *fp;			/* file pointer for jpeg file		*/
   char     *filename;		/* name of image file			*/
   int      width;		/* pixels per line			*/
-  int      height;		/* rows				 	*/
+  int      height;		/* rows					*/
   int      components;		/* number of color components		*/
   int      bits_per_component;	/* bits per color component		*/
   float    dpi;			/* image resolution in dots per inch	*/

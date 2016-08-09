@@ -8,8 +8,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  */
 
@@ -32,12 +32,12 @@ makefile(FILE *mk, int altfonts, argument *arg_list)
   char *i;
   enum language to;
   int needps, needeps, needpic, needfig, needpdf;
-  
+
   fprintf(mk, "#\n# TransFig makefile\n#\n");
 
   fprintf(mk, "\nall: ");
   for (a = arglist; a; a = a->next)
-    	fprintf(mk, "%s.%s ", a->name, lname[a->tolang]);
+	fprintf(mk, "%s.%s ", a->name, lname[a->tolang]);
   fprintf(mk, "\n");
 
   for (a = arglist; a; a = a->next)
@@ -73,6 +73,7 @@ makefile(FILE *mk, int altfonts, argument *arg_list)
 	  case ppm:
 	  case ptk:
 	  case sld:
+	  case svg:
 	  case textyl:
 	  case tiff:
 	  case tk:
@@ -104,7 +105,7 @@ makefile(FILE *mk, int altfonts, argument *arg_list)
 		 * file.pdf with is created using fig2dev -L pdftex file.fig
 		 * and
 		 * file.tex with fig2dev -L pdftex_t -p file.pdf file.fig
-		 * 
+		 *
 		 */
 		puttarget(mk, i, "tex", "pdf");
 		fprintf(mk, "\tfig2dev -L pdftex_t -p %s.pdf ", i);
@@ -143,7 +144,7 @@ makefile(FILE *mk, int altfonts, argument *arg_list)
 		 * file.eps with is created using fig2dev -L pstex file.fig
 		 * and
 		 * file.tex with fig2dev -L pstex_t -p file.eps file.fig
-		 * 
+		 *
 		 */
 		puttarget(mk, i, "tex", "eps");
 		fprintf(mk, "\tfig2dev -L pstex_t -p %s.eps ", i);
@@ -171,7 +172,7 @@ makefile(FILE *mk, int altfonts, argument *arg_list)
 		    fprintf(mk, "\t%s %s.%s > %s.ps\n", a->tops, i, iname[(int)a->type], i);
 		}
 		else {
-                    putfig(mk, (to == pstex ? pstex : ps), 
+                    putfig(mk, (to == pstex ? pstex : ps),
 			   altfonts, a->f, a->s, a->m, a->o, i, "ps");
                     a->interm = mksuff(i, ".ps");
 		    needfig = 1;
@@ -201,7 +202,7 @@ makefile(FILE *mk, int altfonts, argument *arg_list)
 		    fprintf(mk, "\t%s %s.%s > %s.eps\n", a->tops, i, iname[(int)a->type], i);
 		}
 		else {
-                    putfig(mk, (to == pstex ? pstex : eps), 
+                    putfig(mk, (to == pstex ? pstex : eps),
 			   altfonts, a->f, a->s, a->m, a->o, i, "eps");
                     a->interm = mksuff(i, ".eps");
 		    needfig = 1;

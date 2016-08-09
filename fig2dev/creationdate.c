@@ -14,6 +14,8 @@
  * notice remain intact.
  *
  *	creationdate.c - created 2016-06-28 by Thomas Loimer
+ *
+ *	* 2017-07-22	remove HAVE_LIMITS_H
  */
 
 #ifdef	HAVE_CONFIG_H
@@ -43,7 +45,6 @@ creation_date(char *buf)
     time_t now;
 
 #ifdef	HAVE_STRERROR
-#ifdef	HAVE_LIMITS_H
     char *source_date_epoch;
     unsigned long long epoch;
     char *endptr;
@@ -70,11 +71,11 @@ creation_date(char *buf)
 		"Environment variable $SOURCE_DATE_EPOCH: value must be smaller than or equal to: %lu but was found to be: %llu \n",
 		ULONG_MAX, epoch);
 	} else {
-	    now = epoch;
-	    strftime(buf, CREATION_TIME_LEN, "%c", gmtime(&now));
+	    /* no errors, epoch is valid */
+	    strftime(buf, CREATION_TIME_LEN, "%c", gmtime((time_t *)&epoch));
 	    return true;
+	}
     }
-#endif
 #endif
 
     /* fall trough on errors or !source_date_epoch */

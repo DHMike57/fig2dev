@@ -37,7 +37,7 @@ char		*PSfontnames[] = {
 		"Bookman-LightItalic",
 		"Bookman-Demi",
 		"Bookman-DemiItalic",
-		"Courier",	
+		"Courier",
 		"Courier-Oblique",
 		"Courier-Bold",
 		"Courier-BoldOblique",

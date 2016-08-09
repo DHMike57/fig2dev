@@ -10,6 +10,8 @@ bin_PROGRAMS = transfig
 
 transfig_SOURCES = transfig.c transfig.h txfile.c mkfile.c sys.c
 
-# transfig documentation not installed, but only distributed
+transfig.$(OBJEXT): $(CONFIG_HEADER)
+
+# transfig documentation is not installed, but only distributed
 # with the source tarball
 EXTRA_DIST = doc

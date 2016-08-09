@@ -24,7 +24,7 @@ binaries are put into /usr/local/man/man1.  Furthermore, files which may
 be needed at runtime are put under /usr/local/share/fig2dev.
 The runtime files are (i) bitmap files, which are stored in
 /usr/local/share/fig2dev/bitmaps, (ii) internationalization files, put
-into /usr/local/share/fig2dev/i18n, and the X-color definition file
+into /usr/local/share/fig2dev/i18n, and the color definition file
 /usr/local/share/fig2dev/rgb.txt.  The bitmap-files are used by the tk
 (tcl/tk) and ptk (perl/tk) output language.  The internationalization
 files may be used by the PostScript and all bitmap output languages.

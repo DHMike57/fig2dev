@@ -59,7 +59,7 @@ AC_SUBST([PATH_CPPFLAGS])
 AC_SUBST([PATH_LDFLAGS])
 
 # Check whether ./configure resides in the correct directory
-AC_CONFIG_SRCDIR([LATEX.AND.XFIG])
+AC_CONFIG_SRCDIR([CHANGES])
 
 # Write the variables determined by ./configure into config.h.
 # Therefore, make sure to #include "config.h" in each source file.
@@ -76,6 +76,8 @@ dnl	AC_CONFIG_SUBDIRS([ftk flaim sql xflaim])
 # Checks for programs.
 #
 AC_PROG_CC
+# Use ISO Standard C, currently C99.
+AC_PROG_CC_STDC
 # Needed to pack the convenience library fig2dev/dev/fig2dev.a
 AC_PROG_RANLIB
 AM_PROG_AR
@@ -126,6 +128,12 @@ AC_CHECK_HEADER([sys/param.h], [], [headers_missing=yes
 #
 # Check user options.
 #
+AC_ARG_ENABLE(versioning, [AS_HELP_STRING([--enable-versioning],
+	[enable changing the version number, only useful for \
+	 hacking (default: disable)])],
+    [],[enableval=no])dnl
+AM_CONDITIONAL([ENABLE_VERSIONING], [test "x$enableval" = xyes])dnl
+
 AC_ARG_ENABLE(transfig, [AS_HELP_STRING([--enable-transfig],
 	[build the transfig program (default: do not build)])],
     [],[enableval=no])dnl
@@ -240,6 +248,8 @@ AM_CONDITIONAL([WITH_PNG], [test "$tl_cv_header_path_png_h" = yes])
 # then search for libXpm, then search for X11/xpm.h. If all are found,
 # regardless whether --x-includes and --x-libraries are set on the
 # commandline or not, use xpm.
+# Note: Under cygwin, xpm may be provided by /lib/noX/libXpm,
+# /usr/include/noX/xpm.h and /usr/include/noX/X11/xpm.h
 # AC_PATH_X finds the location of the X header files and libraries. Sets
 # x_libraries and x_includes to NONE, not the empty string, if none are
 # found. Otherwise, sets x_includes to the parent of the X11 header

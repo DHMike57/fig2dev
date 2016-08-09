@@ -141,7 +141,7 @@ gencgm_start(F_compound *objects)
 	p = strrchr(figname, '/');
 	if (p)
 	    figname = p+1;	/* remove path from name for comment in file */
-	p = strchr(figname, '.');	
+	p = strchr(figname, '.');
 	if (p)
 	    *p = '\0';		/* and extension */
   } else {
@@ -379,7 +379,7 @@ static int
 conv_color(int color)
 {
   if (color < 0)			/* default color = black */
-    color = 0;	
+    color = 0;
   else if (color == FILL_COLOR_INDEX)	/* special index used for solid */
     color = NUM_STD_COLS + num_usr_cols;  /* fill color, see fillshade() */
 

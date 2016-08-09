@@ -1,0 +1,30 @@
+AT_BANNER([Parse color specifications (test lookup_X_color() in colors.c)])
+
+AT_SETUP([accept correct hexadecimal rgb-values])
+AT_KEYWORDS(colors hex)
+AT_CHECK([fig2dev -Leps -g'#1e9' $srcdir/data/line.fig /dev/null
+], 0)
+AT_CHECK([fig2dev -Leps -g'#11e090' $srcdir/data/line.fig /dev/null
+], 0)
+AT_CHECK([fig2dev -Leps -g'#114ea090c' $srcdir/data/line.fig /dev/null
+], 0)
+AT_CHECK([fig2dev -Leps -g'#1144ea0f90c0' $srcdir/data/line.fig /dev/null
+], 0)
+AT_CLEANUP
+
+AT_SETUP([fail on malformed hexadecimal rgb-values])
+AT_KEYWORDS(colors hex)
+AT_CHECK([fig2dev -Leps -g'#144ea0f90c0' $srcdir/data/line.fig /dev/null
+], 0, [], [Can't parse color '#144ea0f90c0', ignoring background option
+])
+AT_CHECK([fig2dev -Leps -g'#30g' $srcdir/data/line.fig /dev/null
+], 0, [], [Can't parse color '#30g', ignoring background option
+])
+AT_CLEANUP
+
+AT_SETUP([read color database .../rgb.txt])
+AT_KEYWORDS(colors names)
+AT_SKIP_IF([test "x$INSTALLCHECK" = xno])
+AT_CHECK([fig2dev -Leps -g'mistyrose' $srcdir/data/line.fig /dev/null
+], 0)
+AT_CLEANUP

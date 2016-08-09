@@ -2,7 +2,8 @@
 # written into the source tree
 TESTSUITE = $(srcdir)/testsuite
 EXTRA_DIST = testsuite package.m4 $(TESTSUITE_AT) atlocal.in data
-TESTSUITE_AT = testsuite.at read_sanitize.at pict2e.at arrows_eps.at
+TESTSUITE_AT = testsuite.at arrows_eps.at lookup_X_color.at read_sanitize.at \
+	pict2e.at
 # ??
 DISTCLEANFILES = atconfig
 MAINTAINERCLEANFILES = Makefile.in $(TESTSUITE) $(srcdir)/package.m4
@@ -17,8 +18,11 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	  echo 'm4_define([AT_PACKAGE_URL], [@PACKAGE_URL@])'; \
 	} >'$(srcdir)/package.m4'
 
+#  echo 'm4_define([RGB_FILE], [$(pkgdatadir)/rgb.txt])';
+
+# was:	$(SHELL) '$(TESTSUITE)' RGB_FILE='$(pkgdatadir)/rbg.txt' ...
 check-local: atconfig $(TESTSUITE) atlocal
-	$(SHELL) '$(TESTSUITE)' $(TESTSUITEFLAGS)
+	$(SHELL) '$(TESTSUITE)' INSTALLCHECK=no $(TESTSUITEFLAGS)
 
 installcheck-local: atconfig $(TESTSUITE) atlocal
 	$(SHELL) '$(TESTSUITE)' AUTOTEST_PATH='$(bindir)' $(TESTSUITEFLAGS)

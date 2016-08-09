@@ -8,8 +8,8 @@
  * nonexclusive right and license to deal in this software and
  * documentation files (the "Software"), including without limitation the
  * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such 
- * party to do so, with the only requirement being that this copyright 
+ * the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  *
  */
@@ -34,7 +34,7 @@ texfile(FILE *tx, char *in, argument *arg_list)
      /* see if we already have this language */
      for (arg_l = arglist; arg_l != a; arg_l = arg_l->next)
 	if ( arg_l->tolang == to ) break;
-	
+
      if ( arg_l == a )
 	switch (to) {
 	  case box:
@@ -108,7 +108,7 @@ texfile(FILE *tx, char *in, argument *arg_list)
 		texfonts = 0;
 		break;
 
-	  case pstex: 
+	  case pstex:
 		fprintf(tx, "\\typeout{TransFig: figure text in LaTeX.}\n");
 		fprintf(tx, "\\typeout{TransFig: figures in PostScript.}\n");
 		break;

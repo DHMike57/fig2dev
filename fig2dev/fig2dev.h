@@ -68,9 +68,7 @@ typedef bool	_Bool;
  * supported any more:
  * #include <sys/param.h>
  * #define PATH_MAX MAXPATHLEN */
-#ifdef HAVE_LIMITS_H
 #include <limits.h>
-#endif
 #ifndef PATH_MAX
 #define PATH_MAX 1024
 #endif

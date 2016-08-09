@@ -56,7 +56,7 @@ static int	GE_COLORS[] = {	 1, /* black	black		*/
 				14, /* blue4	blueviolet	*/
 				21, /* blue3	unnamed 21	*/
 				20, /* blue2	slateblue	*/
-				12, /* lightblue skyblue	*/	
+				12, /* lightblue skyblue	*/
 				22, /* green4	unnamed 22	*/
 				16, /* green3	mediumseagreen	*/
 				13, /* green2	limegreen	*/
@@ -115,7 +115,7 @@ genge_line(F_line *l)
 {
 	F_point		*p, *q;
 	int		i;
-	
+
 	/* ge has no picture object yet */
 	if (l->type == T_PIC_BOX) {
 		fprintf(stderr,"Warning: Pictures not supported in GE language\n");
@@ -168,7 +168,7 @@ genge_line(F_line *l)
 		    p = q;
 		    q = q->next;
 		    fprintf(tfp, "(%d,%d) ", SCALE(p->x), SCALE(p->y));
- 	    	    if (!((++i)%5))
+		    if (!((++i)%5))
 			fprintf(tfp, "\n  ");
 		}
 	}
@@ -293,7 +293,7 @@ genge_ctl_spline(F_spline *s)
 	    fprintf(tfp, "n %.1f %.1f m\n", a, b);
 	else
 	    fprintf(tfp, "n %.1f %.1f m %.1f %.1f l\n", x1, y1, x3, y3);
-	
+
 	for (q = p->next; q != NULL; p = q, q = q->next) {
 	    xmin = min(xmin, p->x);
 	    ymin = min(ymin, p->y);
@@ -436,7 +436,7 @@ set_fill(int style, int color)
 	if (style != UNFILLED)
 	    fprintf(tfp,"C%02d ",GE_COLORS[color]);
 }
-	
+
 static void
 set_stip(int stip)
 {
@@ -471,7 +471,7 @@ set_linewidth(int w)
 
 struct
 driver dev_ge = {
-     	genge_option,
+	genge_option,
 	genge_start,
 	gendev_nogrid,
 	genge_arc,

@@ -27,7 +27,7 @@ static char		*psfontnames[] = {
 extern int v2_flag, v21_flag, v30_flag;
 
 #define PS_FONTNAMES(T)	\
-  	(((v2_flag&&!(v21_flag||v30_flag)) || \
+	(((v2_flag&&!(v21_flag||v30_flag)) || \
 		psfont_text(T)) ? PSfontnames : psfontnames)
 
 #define PSFONT(T) \

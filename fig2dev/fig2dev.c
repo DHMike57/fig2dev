@@ -858,7 +858,7 @@ void
 depth_option(char *s)
 {
 	struct depth_opts *d;
-	
+
 	switch (depth_op = *s++) {
 	case '+':
 	case '-':
@@ -866,7 +866,7 @@ depth_option(char *s)
 	default:
 		depth_usage();
 	}
-	
+
 	for (d = depth_opt; depth_index < NUMDEPTHS && *s; ++depth_index, d++) {
 	    if (*s == ',') ++s;
 	    d->d1 = d->d2 = -1;

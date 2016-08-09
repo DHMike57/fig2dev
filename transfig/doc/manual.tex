@@ -208,7 +208,7 @@ Thus, to create a {\tt Makefile} which will translate all figures in a
 	{\tt transfig -L latex -f cmb *.fig}
 \end{center}
 
-After running {\tt transfig}, simply run {\tt make} to create the 
+After running {\tt transfig}, simply run {\tt make} to create the
 	appropriate \LaTeX\ files.
 {\tt Make} should be rerun whenever a Fig file is changed to recreate
 	the corresponding \LaTeX\ file.
@@ -236,7 +236,7 @@ In particular, some graphics languages support more sophisticated processing
 
 The standard way to use text in TransFig figures is to use only
 	straight text with no \LaTeX\ commands.
-However, if a text object is flagged as ``special,'' 
+However, if a text object is flagged as ``special,''
 	then it is understood to include formatting commands which are
 	interpreted by the graphics language.
 A document with special text will not be portable to all output languages.
@@ -267,7 +267,7 @@ The reference guide in appendix~\ref{s:guide} describes Fig code in more
 
 \subsection{Translations From Fig}
 TransFig currently translates Fig code into these graphics languages:
-	{\sc (e)}\EPIC, \LaTeX\  picture environment, \PicTeX, PostScript, 
+	{\sc (e)}\EPIC, \LaTeX\  picture environment, \PicTeX, PostScript,
 	\PIC, and \textyl specials.
 The program which accomplishes these translations is {\tt fig2dev},
 	which replaces the now-obsolete programs
@@ -299,7 +299,7 @@ A short description of each language is given below:
 		acceptance as a standard.
 	In an environment where \DVI\ code is translated into \PS\ before
 		being printed, it is usually possible to insert a
-		separately generated PostScript file into a 
+		separately generated PostScript file into a
 		document, using the \TeX\ {\verb|\special|} command.
 	However, the resulting \PS\ file can only be previewed using a
 		\PS\ previewer, and must be printed on a \PS\ printer,
@@ -331,7 +331,7 @@ A short description of each language is given below:
 \item[\EPIC]
 	is an enhanced version of the \LaTeX\ picture environment which
 		removes many restrictions.
-	It uses no facilities outside 	of those needed for the
+	It uses no facilities outside of those needed for the
 		\LaTeX\ picture environment.
 
 \item[\EEPIC]
@@ -340,15 +340,15 @@ A short description of each language is given below:
 	It is subject to the same software requirements as \tpic.
 
 \item[\textyl]
-	specials are a set of \verb|\special| commands which 
+	specials are a set of \verb|\special| commands which
 		produce graphics instructions in the \DVI\ file
 		produced by \TeX.
 The resulting \DVI\ file must be postprocessed using the \textyl\ program,
-	which transforms it into a standard \DVI\ file which uses its own 
+	which transforms it into a standard \DVI\ file which uses its own
 	line drawing fonts.
-	
+
 \item[\tpic]
-	specials are a set of \verb|\special| commands which 
+	specials are a set of \verb|\special| commands which
 		produce graphics instructions in the \DVI\ file
 		produced by \TeX.
 	However, the graphics in the resulting \DVI\ file can only be
@@ -369,9 +369,9 @@ When \LaTeX\ processes the file {\tt transfig.tex}, it will print the message
 
 \subsection{The Fig Graphics Editor}
 \label{s:fig}
-The interpretation of Fig code was originally defined by 
+The interpretation of Fig code was originally defined by
 	the Fig graphics editor and the program {\tt f2p},
-	which translates Fig code into the \PIC\ graphics language. 
+	which translates Fig code into the \PIC\ graphics language.
 The most recent version is V2.1; it is implemented by Version 2.1 of the
 	Fig graphics editor, which runs under SunView, and by Version 2.1
 	of XFig.
@@ -391,7 +391,7 @@ The following programs use Fig code as a graphics description format,
 %
 \begin{itemize}
 
-\item The numerical plotting program {\tt gnuplot} can optionally produce 
+\item The numerical plotting program {\tt gnuplot} can optionally produce
 	output in Fig code format.
 
 \item The \PIC-to-Fig translator {\tt pic2fig} translates \PIC,
@@ -401,7 +401,7 @@ This allows users to create figures without employing a	graphics editor.
 
 \end{itemize}
 %
-The Fig code produced by these programs can be viewed and edited 
+The Fig code produced by these programs can be viewed and edited
 	using the Fig graphics editor.
 
 \vfill
@@ -476,7 +476,7 @@ Gnuplot is available via anonymous \FTP\ from {\tt DUKE}.
 	is a standard macro package used for describing documents in \TeX.
 Part of this package is the \LaTeX\ picture environment, a restricted
 	graphics facility.
-The capabilities of this facility are described in section~5.5 of 
+The capabilities of this facility are described in section~5.5 of
 	{\em \LaTeX, A Document Preparation System} by Leslie Lamport.
 
 \item[Pic2fig]
@@ -484,7 +484,7 @@ The capabilities of this facility are described in section~5.5 of
 	for Troff.
 Pic2fig, which is a modified form of \tpic\ (see below), has been altered
 	to produce Fig code.
-	
+
 \item[\PicTeX]
 	is a set of macros for describing graphics in \TeX\ documents.
 	\PicTeX\ is implemented entirely within standard \TeX, and requires no
@@ -532,7 +532,7 @@ For information about distribution of \tpic, contact Tim Morgan of
 	is a version of the Fig graphics editor which can be compiled for
 	either the Suntools or X Windows Version 11 windowing systems.
 Xfig is part of the contributed software distributed with the X Windowing
-	System, and can be obtained by anonymous FTP from 
+	System, and can be obtained by anonymous FTP from
 	{\tt EXPO.LCS.MIT.EDU}.
 
 \item[Xpic]
@@ -561,9 +561,9 @@ A Fig code version V2.1 file has the following structure:
 \begin{quote}
 \begin{tabbing}
 \verb|#FIG 2.1|			\\
-\it global parameters	  	\\
-\it object description	 	\\
-\it object \= \it description 	\\
+\it global parameters		\\
+\it object description		\\
+\it object \= \it description	\\
 \> $\vdots$
 \end{tabbing}
 \end{quote}
@@ -594,15 +594,15 @@ The fields must appear in the order given in the table.
 \begin{center}
 \begin{tabular}{|l|l|l|}
 \hline
-Type 	& Field				& Units (values)		\\
+Type	& Field				& Units (values)		\\
 \hline
 \hline
-int 	& {\tt fig\_resolution}		& pixels/inch			\\
+int	& {\tt fig\_resolution}		& pixels/inch			\\
 	&				& Fig value: 80			\\
 \hline
 int	& {\tt coordinate\_system}	& 1: origin at lower left corner\\
 	&				& 2: origin at upper left corner\\
-	&				& Fig value: 2			\\ 
+	&				& Fig value: 2			\\
 \hline
 \end{tabular}
 \end{center}
@@ -659,21 +659,21 @@ int	& {\tt line\_style}	& {\tt SOLID\_LINE}	& 0	\\
 %
 int	& {\tt line\_thickness}	& pixels		&	\\ \hline
 %
-int +	& {\tt color}		& {\tt DEFAULT}		& 	\\
- 	&		        & {\tt BLACK\_COLOR}	& 0	\\
- 	&              		& {\tt BLUE\_COLOR}	& 1	\\
- 	&              		& {\tt GREEN\_COLOR}	& 2	\\ 
- 	&              		& {\tt CYAN\_COLOR}	& 3	\\ 
- 	&              		& {\tt RED\_COLOR}	& 4	\\ 
- 	&              		& {\tt MAGENTA\_COLOR}	& 5	\\ 
- 	&              		& {\tt YELLOW\_COLOR}	& 6	\\ 
- 	&              		& {\tt WHITE\_COLOR}	& 7	\\ \hline
+int +	& {\tt color}		& {\tt DEFAULT}		&	\\
+	&		        & {\tt BLACK\_COLOR}	& 0	\\
+	&			& {\tt BLUE\_COLOR}	& 1	\\
+	&			& {\tt GREEN\_COLOR}	& 2	\\
+	&			& {\tt CYAN\_COLOR}	& 3	\\
+	&			& {\tt RED\_COLOR}	& 4	\\
+	&			& {\tt MAGENTA\_COLOR}	& 5	\\
+	&			& {\tt YELLOW\_COLOR}	& 6	\\
+	&			& {\tt WHITE\_COLOR}	& 7	\\ \hline
 %
-int  	& {\tt depth}		& no units		&	\\ \hline
+int	& {\tt depth}		& no units		&	\\ \hline
 %
 int +	& {\tt pen}		& {\tt DEFAULT}		&	\\ \hline
 %
-int +	& {\tt fill\_style}	& {\tt DEFAULT}		& 	\\
+int +	& {\tt fill\_style}	& {\tt DEFAULT}		&	\\
 	&			& {\tt WHITE\_FILL}	&   1	\\
 	&			& {\tt BLACK\_FILL}	&   21	\\ \hline
 %
@@ -684,7 +684,7 @@ float	& {\tt style\_val}	& pixels		&	\\ \hline
 
 \begin{itemize}
 \item For the dashed line style, the {\tt style\_val}	specifies the length of a dash.
-For dotted lines it indicates the gap between consecutive dots. 
+For dotted lines it indicates the gap between consecutive dots.
 
 \item Depth determines which filled objects will obscure other objects,
 	with the objects of greater depth being obscured.
@@ -744,7 +744,7 @@ The default pen is a circular pen with black filling.
 Type	& Field			& Units (values)	&	\\ \hline
 \hline
 %
-int	& {\tt object\_code} 	& {\tt O\_ELLIPSE}	&     1	\\ \hline
+int	& {\tt object\_code}	& {\tt O\_ELLIPSE}	&     1	\\ \hline
 %
 int	& {\tt sub\_type}	& {\tt T\_ELLIPSE\_BY\_RAD} & 1	\\
 	&			& {\tt T\_ELLIPSE\_BY\_DIA} & 2	\\
@@ -796,17 +796,17 @@ If the ellipse is specified by diameter, then $({\tt start\_x}, {\tt start\_y})$
 Type	& Field			& Units (values)	&	\\ \hline
 \hline
 %
-int	& {\tt object\_code} 	& {\tt O\_POLYLINE}	& 2	 \\ \hline
+int	& {\tt object\_code}	& {\tt O\_POLYLINE}	& 2	 \\ \hline
 %
 int	& {\tt sub\_type}	& {\tt T\_POLYLINE}	& 1	\\
 	&			& {\tt T\_BOX}		& 2	\\
 	&			& {\tt T\_POLYGON}	& 3	\\
-	&                       & {\tt T\_ARC\_BOX}   	& 4	\\
-	&                       & {\tt T\_EPS\_BOX}   	& 5	\\ \hline
+	&                       & {\tt T\_ARC\_BOX}	& 4	\\
+	&                       & {\tt T\_EPS\_BOX}	& 5	\\ \hline
 %
 \multicolumn{4}{c}{\it common fields}				\\ \hline
 %
-int	& {\tt radius}		& no units		& 	\\
+int	& {\tt radius}		& no units		&	\\
 int	& {\tt forward\_arrow},	& 0: no arrow		&	\\
 	& {\tt backward\_arrow}	& 1: arrow		&	\\ \hline
 \end{tabular}
@@ -835,9 +835,9 @@ int	& ${\tt x}_i, {\tt y}_i$& pixels		&	\\ \hline
 \end{center}
 
 The Polyline object describes a piecewise linear curve starting at
-	the point $({\tt x}_1, {\tt y}_1)$ and passing through 
+	the point $({\tt x}_1, {\tt y}_1)$ and passing through
 	each point ${(\tt x}_i, {\tt y}_i)$ for $i = 2 \ldots n$.
-If {\tt sub\_type} is {\tt T\_BOX} or {\tt T\_POLYGON} then 
+If {\tt sub\_type} is {\tt T\_BOX} or {\tt T\_POLYGON} then
 	$({\tt x}_1, {\tt y}_1)$ and $({\tt x}_n, {\tt y}_n)$ must
 	be identical.
 If {\tt sub\_type} is {\tt T\_BOX}, then the line segments must all be
@@ -861,9 +861,9 @@ Following any arrow lines (which are ignored) is an EPS
 Type	& Field			& Units (values)	&	\\ \hline
 \hline
 %
-int	& flipped		& 0: normal orientation	&	\\ 
-	& 			& 1: flipped 		&	\\ \hline
-string	& filename		& 			& 	\\ \hline
+int	& flipped		& 0: normal orientation	&	\\
+	&			& 1: flipped		&	\\ \hline
+string	& filename		&			&	\\ \hline
 \end{tabular}
 \end{center}
 
@@ -879,7 +879,7 @@ Type	& Field			& Units (values)		&	\\ \hline
 int	& {\tt object\_code}	& {\tt O\_SPLINE}		& 3	\\ \hline
 %
 int	& {\tt sub\_type}	& {\tt T\_OPEN\_NORMAL}		& 0	\\
-	&			& {\tt T\_CLOSED\_NORMAL} 	& 1	\\
+	&			& {\tt T\_CLOSED\_NORMAL}	& 1	\\
 	&			& {\tt T\_OPEN\_INTERPOLATED}	& 2	\\
 	&			& {\tt T\_CLOSED\_INTERPOLATED}	& 3	\\ \hline
 %
@@ -929,7 +929,7 @@ The interpretation of Spline objects is more complex than of other
 \begin{center}
 \begin{tabular}{|l|l|ll|}
 \hline
-Type 	& Field			& Units (values) 		&	\\ \hline
+Type	& Field			& Units (values)		&	\\ \hline
 \hline
 \tt
 int	& {\tt object\_type}	& {\tt O\_TEXT}			& 4	\\ \hline
@@ -939,7 +939,7 @@ int	& {\tt sub\_type}	& {\tt T\_LEFT\_JUSTIFIED}	& 0	\\
 	&			& {\tt T\_RIGHT\_JUSTIFIED}	& 2	\\
 									\hline
 %
-int +	& {\tt font}		& {\tt DEFAULT}		& 	\\
+int +	& {\tt font}		& {\tt DEFAULT}		&	\\
 	&			& {\tt ROMAN}		& 1	\\
 	&			& {\tt BOLD}		& 2	\\
 	&			& {\tt ITALICS}		& 3	\\
@@ -952,7 +952,7 @@ int +	& {\tt pen}		& {\tt DEFAULT}		&	\\ \hline
 %
 int +	& {\tt color}		& {\tt DEFAULT}		&	\\ \hline
 %
-int  	& {\tt depth}		& no units		&	\\ \hline
+int	& {\tt depth}		& no units		&	\\ \hline
 %
 float	& {\tt angle}		& radians		&	\\ \hline
 %
@@ -962,13 +962,13 @@ float +	& {\tt height, length}	& pixels		&	\\ \hline
 %
 int	& {\tt x, y}		& pixels		&	\\ \hline
 %
-string	& string		& 			&	\\ \hline
+string	& string		&			&	\\ \hline
 \end{tabular}
 \end{center}
 %
 The positioning of the string is specified by the {\tt sub\_type}.
 The values {\tt T\_LEFT\_JUSTIFIED}, {\tt T\_CENTER\_JUSTIFIED},
-	and {\tt T\_RIGHT\_JUSTIFIED} specify that 
+	and {\tt T\_RIGHT\_JUSTIFIED} specify that
 	$({\tt x}, {\tt y})$ is the left end, center and right end
 	 of the baseline, respectively.
 The {\tt height} and {\tt length} fields specify the box that the
@@ -994,7 +994,7 @@ Flag			& Bit mask	& Description		\\
 			& (in binary)	&			\\ \hline
 \hline
 %
-{\tt RIGID\_TEXT}	& 0001 	&
+{\tt RIGID\_TEXT}	& 0001	&
 			Font size doesn't scale inside compound\\ \hline
 %
 {\tt SPECIAL\_TEXT}	& 0010	&  Text includes formatting commands \\ \hline
@@ -1015,7 +1015,7 @@ The {\tt PSFONT\_TEXT} flag changes the interpretation of the font
 Rather than selecting from the limited set of generic fonts shown in the table
 	above, the field is interpreted as selecting from the following table
 	of PostScript fonts.
-A text object with the {\tt PSFONT\_TEXT} flag set may not be fully 
+A text object with the {\tt PSFONT\_TEXT} flag set may not be fully
 	translatable into output forms other than PostScript.
 Finally, the {\tt HIDDEN\_TEXT} field is meaningful only to graphics editors,
 	and specifies that the full text should not displayed on the screen.
@@ -1027,9 +1027,9 @@ This is most useful for special text objects which may include very long
 \hline
 PS Font				& Value		\\ \hline
 \hline
-Times-Roman			& 1 		\\ \hline
-Times-Italic			& 2 		\\ \hline
-Times-Bold			& 3 		\\ \hline
+Times-Roman			& 1		\\ \hline
+Times-Italic			& 2		\\ \hline
+Times-Bold			& 3		\\ \hline
 Times-BoldItalic		& 4		\\ \hline
 AvantGarde			& 5		\\ \hline
 AvantGarde-BookOblique		& 6		\\ \hline
@@ -1039,7 +1039,7 @@ Bookman-Light			& 9		\\ \hline
 Bookman-LightItalic		& 10		\\ \hline
 Bookman-Demi			& 11		\\ \hline
 Bookman-DemiItalic		& 12		\\ \hline
-Courier				& 13		\\ \hline	
+Courier				& 13		\\ \hline
 Courier-Oblique			& 14		\\ \hline
 Courier-Bold			& 15		\\ \hline
 Courier-BoldItalic		& 16		\\ \hline
@@ -1060,7 +1060,7 @@ Palatino-Italic			& 30		\\ \hline
 Palatino-Bold			& 31		\\ \hline
 Palatino-BoldItalic		& 32		\\ \hline
 Symbol				& 33		\\ \hline
-ZapfChancery-MediumItalic 	& 34		\\ \hline
+ZapfChancery-MediumItalic	& 34		\\ \hline
 ZapfDingbats			& 35		\\ \hline
 \end{tabular}
 \end{center}
@@ -1073,7 +1073,7 @@ ZapfDingbats			& 35		\\ \hline
 Type	& Field			& Units (values)	&	\\ \hline
 \hline
 %
-int	& {\tt object\_code} 	& {\tt O\_ARC}		& 5	\\ \hline
+int	& {\tt object\_code}	& {\tt O\_ARC}		& 5	\\ \hline
 %
 int	& {\tt sub\_type}	& {\tt T\_3\_POINT\_ARC}& 1	\\ \hline
 %
@@ -1088,36 +1088,36 @@ int	& {\tt forward\_arrow},	& 0: no arrow		&	\\
 float	& {\tt center\_x},
 	  {\tt center\_y}	& pixels		&	\\ \hline
 %
-int   	& ${\tt x}_1, {\tt y}_1,
+int	& ${\tt x}_1, {\tt y}_1,
 	   {\tt x}_2, {\tt y}_2,
 	   {\tt x}_3, {\tt y}_3$& pixels		&	\\ \hline
 \end{tabular}
 \end{center}
 %
 The Arc object describes a circular arc centered at the point
-	\linebreak $({\tt center\_x}, {\tt center\_y})$, starting at 
+	\linebreak $({\tt center\_x}, {\tt center\_y})$, starting at
 	$({\tt x}_1, {\tt y}_1)$, passing through $({\tt x}_2, {\tt y}_2)$,
 	and ending at $({\tt x}_3, {\tt y}_3)$.
 It is drawn either clockwise of counter-clockwise as specified by
 	{\tt direction}.
 Note that this description is quite overdetermined, as the center and
 	direction of the arc can be deduced from the three points
- 	of the arc which are specified.
-	 
+	of the arc which are specified.
+
 \subsubsection{Compound Objects}
 
 \begin{center}
 \begin{tabular}{|l|l|ll|}
 \hline
-Type 	& Field			& Units (values) 		&	\\ \hline
+Type	& Field			& Units (values)		&	\\ \hline
 \hline
 \tt
 int	& {\tt object\_type}	& {\tt O\_COMPOUND}		& 6	\\ \hline
 %
 int	& {\tt upperright\_corner\_x}	& pixels		&	\\
-int	& {\tt upperright\_corner\_y}	& 			&	\\
-int	& {\tt lowerleft\_corner\_x}	& 			&	\\
-int	& {\tt lowerleft\_corner\_y}	& 			&	\\ \hline
+int	& {\tt upperright\_corner\_y}	&			&	\\
+int	& {\tt lowerleft\_corner\_x}	&			&	\\
+int	& {\tt lowerleft\_corner\_y}	&			&	\\ \hline
 \end{tabular}
 \end{center}
 
@@ -1131,7 +1131,7 @@ The Compound object description describes a compound object
 \end{array} \]
 \end{quote}
 %
-It consists of all the objects following it until an object whose 
+It consists of all the objects following it until an object whose
 	{\tt object\_type} field is {\tt O\_END\_COMPOUND} (-6) is encountered.
 Compound objects may be nested.
 
@@ -1141,7 +1141,7 @@ Compound objects may be nested.
 Specifying the interpretation of a Spline object description is more problematic
 	than other graphics objects.
 A graphics object description can be viewed as having two parts:
-	an abstract description of the locus of points which 
+	an abstract description of the locus of points which
 	make up the object; and a set of appearance parameters
 	which specify how the abstract object is to be represented.
 For example, a circular arc has a very precise and well understood abstract
@@ -1149,7 +1149,7 @@ For example, a circular arc has a very precise and well understood abstract
 	draw it.
 Unfortunately, the abstract specification of splines is more complex.
 The following descriptions come at second hand; the author of this
-	guide is not versed in spline algorithms, and so 
+	guide is not versed in spline algorithms, and so
 	may have garbled them.
 Hopefully, they will give the knowledgeable reader some idea of the
 	intended meaning of Spline objects.
@@ -1175,7 +1175,7 @@ In addition, a {\em control points} line follows the points line,
 	$({\tt rx}_i, {\tt ry}_i)$ for each interpolation point.
 The {\tt i}'th section of the interpolated spline is drawn using the
 	Bezier cubic with the four points
-	$({\tt x}_i, {\tt y}_i)$,  \linebreak $({\tt rx}_i, {\tt rx}_i)$,  
+	$({\tt x}_i, {\tt y}_i)$,  \linebreak $({\tt rx}_i, {\tt rx}_i)$,
 	$({\tt lx}_{i+1}, {\tt ly}_{i+1})$,
 	and $({\tt x}_{i+1}, {\tt y}_{i+1})$.
 Interpolated splines are not as smooth as B-splines.

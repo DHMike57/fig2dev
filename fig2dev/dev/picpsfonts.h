@@ -23,7 +23,7 @@
 					((F)->font)+1 : DEFAULT_PICFONT]])
 extern int v2_flag, v21_flag;
 #define ROMAN_DEFAULT 0
-#define ROMAN 	1
+#define ROMAN	1
 #define ITALIC	2
 #define BOLD	3
 #define ITABOL	4

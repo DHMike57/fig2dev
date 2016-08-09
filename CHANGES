@@ -2,6 +2,20 @@ Changes to Transfig/fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
+Patchlevel 6 (July 2016)
+
+BUGS FIXED:
+	o Add compile switch --enable-versioning and script update-version_m4,
+	  to create version string from source control system
+	o tikz output: Support -G (grid) option. Make \XFigwidth and \XFigheight
+	  only scale coordinates, not line widths; Do not set unnecessarily
+	  \color{black} on text.
+
+	From Roland Rosenfeld <roland@spinnaker.de>
+	o Correct comment string in man page fig2ps2tex.1
+	o Distribute autotest file lookup_X_color.at - only useful for hacking
+
+-------------------------------------
 Patchlevel 6-rc (July 2016)
 
 CHANGE OF THE PACKAGE NAME TO FIG2DEV

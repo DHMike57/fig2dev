@@ -866,6 +866,8 @@ get_lineslope(F_point *p, F_point *q, int *sx, int *sy, int *precl, double *lx)
 	    *sx = *sx > 0 ? 16383 : -16383;
 	    *sy = round(*sy * fac);
 	} else {
+	    int digits;
+
 	    fac = 16383. / ay;
 	    *sy = *sy > 0 ? 16383 : -16383;
 	    *sx = round(*sx * fac);
@@ -875,7 +877,6 @@ get_lineslope(F_point *p, F_point *q, int *sx, int *sy, int *precl, double *lx)
 		*sx = 0;
 	    }
 
-	    int digits;
 	    /* for a steep line, small lx, the length in y-direction shall stay
 	     * the same, the length in x-direction may be modified by rounding */
 	    fac  = fabs((double) *sy/ *sx);
@@ -1223,7 +1224,7 @@ put_oval(
 	fprintf(tfp,"\\circlearc{%d}{%d}{%d}{%d}{%d}",
 		    x2, y2, rad, a*90, (a+dir)*90);
 	a += dir;
-	fprintf(tfp,"\\circlearc{%d}{%d}{%d}{%d}{%d}\\closepath\\%s%%heer\n",
+	fprintf(tfp,"\\circlearc{%d}{%d}{%d}{%d}{%d}\\closepath\\%s\n",
 		    x1, y2, rad, a*90, (a+dir)*90, c);
 }
 
