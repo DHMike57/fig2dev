@@ -91,8 +91,31 @@
 ====================================================================*/
 
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+//#include <stdarg.h>
+#include <string.h>
+#include <strings.h>
+//#include <sys/file.h>
+//#include <sys/types.h>
+//#include <unistd.h>
+//#include <signal.h>
+//#ifdef	HAVE_STRERROR
+//#include <errno.h>
+//#endif
+//#include <time.h>
+#include <math.h>
+//#include <ctype.h>
+//#include <limits.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "setfigfont.h"
 #include "texfonts.h"
 #include "localmath.h"

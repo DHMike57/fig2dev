@@ -27,20 +27,29 @@
  *
  */
 
-#include "fig2dev.h"
-#include <sys/file.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include "bool.h"
 #include <locale.h>
-#include "alloc.h"
-#include "object.h"
-#include "drivers.h"
-#include "bound.h"
-#include "read.h"
 /* setmode() exists on DOS/Windows. It sets file mode to text or binary.
  * setmode() is declared in <io.h>, O_BINARY is declared in <fcntl.h>. */
 #ifdef HAVE__SETMODE
 #include <io.h>
 #include <fcntl.h>
 #endif
+
+#include "fig2dev.h"
+#include "alloc.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
+#include "drivers.h"
+#include "bound.h"
+#include "read.h"
 
 extern int	 fig_getopt(int nargc, char **nargv, char *ostr);
 extern char	*optarg;
@@ -79,7 +88,7 @@ char	Usage[] =
 char	Err_badarg[] = "Argument -%c unknown to %s driver.";
 char	Err_mem[] = "Running out of memory.";
 
-char	*prog;
+const char	prog[] = PACKAGE_NAME;
 char	*from = NULL, *to = NULL;
 char	*name = NULL;
 double	font_size = 0.0;
@@ -204,7 +213,6 @@ get_args(int argc, char *argv[])
 	char	*grid, *p;
 	float	 numer, denom;
 
-	prog = *argv;
 	if (argc == 1)
 	    fprintf(stderr,Usage,prog,prog);
 	/* sum of all arguments */
@@ -253,7 +261,7 @@ get_args(int argc, char *argv[])
 			p = optarg-1;
 		    }
 		    /* now parse any units after grid spacing */
-		    if (nchars < strlen(p+1)) {
+		    if ((size_t)nchars < strlen(p+1)) {
 			grid = p+nchars+1;
 			if ((strcmp(grid,"i") && strcmp(grid,"in") && strcmp(grid,"inch") &&
 				 strcmp(grid,"f") && strcmp(grid,"ft") && strcmp(grid,"feet") &&
@@ -502,7 +510,7 @@ help_msg(void)
     puts("EPIC Options:");
     puts("  -A scale	scale arrowheads by dividing their size by scale");
     puts("  -E num	set encoding for text translation (0 = no translation,");
-    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2)");
+    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2; default 1)");
 #ifdef NFSS
     puts("  -F		don't set font family/series/shape, so you can set it from latex");
     puts("  -f font	set default font");
@@ -567,7 +575,7 @@ help_msg(void)
     puts("LaTeX Options:");
     puts("  -d dmag	set separate magnification for length of line dashes to dmag");
     puts("  -E num	set encoding for text translation (0 = no translation,");
-    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2)");
+    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2; default 1)");
     puts("  -f font	set default font");
     puts("  -l lwidth	set threshold between thin and thick lines to lwidth");
     puts("  -v		verbose mode");
@@ -597,7 +605,7 @@ help_msg(void)
     puts("PICTeX Options:");
     puts("  -a		don't output user's login name (anonymous)");
     puts("  -E num	set encoding for text translation (0 = no translation,");
-    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2)");
+    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2; default 1)");
     puts("  -f font	set default font");
 
     puts("PICT2E Options:");
@@ -606,7 +614,7 @@ help_msg(void)
     puts("\t\t  (0 = black, 1 = red, etc.)");
     puts("  -e		do not try to be compatible with epic/eepic");
     puts("  -E num	set encoding for text translation (0 = no translation,");
-    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2)");
+    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2; default 1)");
     puts("  -F		do not set font family/series/shape");
     puts("  -f font	set default font");
     puts("  -i dir	prepend the string \"dir\" to included graphics files");
@@ -676,7 +684,7 @@ help_msg(void)
     puts("PSTEX_T Options:");
     puts("  -b width	specify width of blank border around figure (1/72 inch)");
     puts("  -E num	set encoding for text translation (0 = no translation,");
-    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2)");
+    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2; default 1)");
 #ifdef NFSS
     puts("  -F		don't set font family/series/shape, so you can");
     puts("		  set it from latex");
@@ -698,7 +706,7 @@ help_msg(void)
     puts("		  (0 = black, 1 = red, etc.)");
     puts("  -e		do not try to be compatible with epic/eepic");
     puts("  -E num	set encoding for text translation (0 = no translation,");
-    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2)");
+    puts("		  1 = ISO-8859-1, 2 = ISO-8859-2; default 1)");
     puts("  -F		do not set font family/series/shape");
     puts("  -i dir	prepend the string \"dir\" to included graphics files");
     puts("  -o		do not set the font size");

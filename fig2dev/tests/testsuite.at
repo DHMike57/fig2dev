@@ -16,6 +16,9 @@ m4_include(read_sanitize.at)
 dnl Test picture box - create one!
 dnl Check distortion logic
 m4_include(pict2e.at)
+m4_include(tikz.at)
+m4_include(svg.at)
 m4_include(arrows_eps.at)
 m4_include(lookup_X_color.at)
 m4_include(creationdate.at)
+m4_include(bitmaps.at)

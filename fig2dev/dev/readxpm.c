@@ -13,8 +13,15 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 
 /* return codes:  1 : success
 		  0 : invalid file
@@ -23,10 +30,8 @@
 int
 read_xpm(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 {
-	int	    status;
-
 	*llx = *lly = 0;
-	status = XpmReadFileToXpmImage(filename, &pic->xpmimage, NULL);
+	XpmReadFileToXpmImage(filename, &pic->xpmimage, NULL);
 	pic->subtype = P_XPM;
 	pic->numcols = pic->xpmimage.ncolors;
 	pic->bit_size.x = pic->xpmimage.width;

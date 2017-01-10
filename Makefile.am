@@ -1,12 +1,24 @@
 ## Run automake on this file to produce Makefile.in
-# This file is part of fig2dev - Translate Fig code to various devices.
+
 #
-# Copyright (c) 2016 Thomas Loimer <thomas.loimer@tuwien.ac.at>
+# Fig2dev: Translate fig code to various devices.
+# Parts Copyright (c) 2016 by Thomas Loimer
 #
-# Copying and distribution of this file, with or without modification,
-# are permitted in any medium without royalty provided the copyright
-# notice and this notice are preserved. This file is offered as-is,
-# without any warranty.
+# Any party obtaining a copy of these files is granted, free of charge, a
+# full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+# nonexclusive right and license to deal in this software and
+# documentation files (the "Software"), including without limitation the
+# rights to use, copy, modify, merge, publish and/or distribute copies of
+# the Software, and to permit persons who receive copies from any such
+# party to do so, with the only requirement being that this copyright
+# notice remain intact.
+#
+
+#
+#	Makefile.am: Automake makefile
+#	Author: Thomas Loimer <thomas.loimer@tuwien.ac.at>, 2016
+#
+
 
 ACLOCAL_AMFLAGS = -I m4
 
@@ -15,7 +27,7 @@ if ENABLE_TRANSFIG
 SUBDIRS += transfig
 endif
 
-EXTRA_DIST = CHANGES NOTES
+EXTRA_DIST = CHANGES NOTES update-version_m4
 
 MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.h.in configure
 

@@ -21,16 +21,33 @@
  *	Author: Thomas Loimer, Wien, Austria, 2014-2015
  *	Based on the latex picture driver, genlatex.c
  *
- * Last modified: 2016-04-29
+ * Last modified: 2016-12-06
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <limits.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "texfonts.h"		/* texfontnames[] */
 #include "bound.h"
 #include "trans_spline.h"	/* create_line_with_spline() */
 #include "free.h"		/* free_linestorage() */
+
+#undef M_PI_2
+#undef M_PI_4
+#define	M_PI_2	1.57079632679489661923
+#define	M_PI_4	0.78539816339744830962
 
 /* String arrays */
 extern char	*ISO1toTeX[];	/* iso2tex.c */
@@ -177,12 +194,6 @@ struct pict2earrow {
 };
 
 /* Macros */
-#if defined HAVE_DECL_M_PI_2 && !HAVE_DECL_M_PI_2
-#define	M_PI_2	(M_PI / 2.)
-#endif
-#if defined HAVE_DECL_M_PI_4 && !HAVE_DECL_M_PI_4
-#define	M_PI_4	(M_PI / 4.)
-#endif
 #define XCOORD(x)	((x) - llx)
 #define YCOORD(y)	(ury - (y))
 #define XDIR(x)		x
@@ -243,7 +254,8 @@ genpict2e_option(char opt, char *optarg)
 	    for (i = 1; i <= MAX_PSFONT; ++i )
 		if (!strcmp(optarg, PSfontnames[i])) break;
 	    if (i > MAX_PSFONT)
-		fprintf(stderr, "warning: non-standard font name %s ignored\n", optarg);
+		fprintf(stderr, "warning: non-standard font name %s ignored\n",
+			optarg);
 	    else
 		texpsfonts[0] = optarg;
 	}
@@ -312,13 +324,13 @@ set_linejoin(int j)
 	    cur_joinstyle = j;
 	    switch (j) {
 	    case MITERJOIN:
-		fprintf(tfp, "\\miterjoin%%\n");
+		fputs("\\miterjoin%\n", tfp);
 		break;
 	    case 1:
-		fprintf(tfp, "\\roundjoin%%\n");
+		fputs("\\roundjoin%\n", tfp);
 		break;
 	    case 2:
-		fprintf(tfp, "\\beveljoin%%\n");
+		fputs("\\beveljoin%\n", tfp);
 		break;
 	    default:
 		fprintf(stderr,"Undefined line join style %d.\n", j);
@@ -333,16 +345,16 @@ set_linecap(int j)
 	    cur_capstyle = j;
 	    switch (j) {
 	    case BUTTCAP:
-		fprintf(tfp, "\\buttcap%%\n");
+		fputs("\\buttcap%\n", tfp);
 		break;
 	    case ROUNDCAP:
-		fprintf(tfp, "\\roundcap%%\n");
+		fputs("\\roundcap%\n", tfp);
 		break;
 	    case SQUARECAP:
-		fprintf(tfp, "\\squarecap%%\n");
+		fputs("\\squarecap%\n", tfp);
 		break;
 	    default:
-		fprintf(stderr,"Undefined line cap style %d.\n", j);
+		fprintf(stderr, "Undefined line cap style %d.\n", j);
 	    }
 	}
 }
@@ -359,17 +371,18 @@ set_linewidth(int w)
 	     * LaTex
 	     *   \thinlines		0.4 pt
 	     */
-	    fprintf(tfp,"\\linethickness{%g\\unitlength}",
+	    fprintf(tfp, "\\linethickness{%g\\unitlength}",
 		    THICKNESS(cur_thickness));
 	    if (epiccompatible)
 		fprintf(tfp, "\\XFigeepicthickness{%g\\unitlength}",
 			THICKNESS(cur_thickness));
 	    if (cur_thickness == THICK_SCALE)
-		fprintf(tfp, "%%\\thinlines\n");
+		fputs("%\\thinlines\n", tfp);
 	    else if (cur_thickness == 2*THICK_SCALE)
-		fprintf(tfp, "%%\\thicklines\n");
-	    else fprintf(tfp, "%%\n");
-	    /* the % at the end is necessary, otherwise objects are shifted by a space */
+		fputs("%\\thicklines\n", tfp);
+	    /* the % at the end is necessary, otherwise objects are shifted
+	       by a space */
+	    else fputs("%\n", tfp);
 	}
 }
 
@@ -377,7 +390,7 @@ static void
 get_rgbcolor(int *c, RGB *rgb)
 {
 	if (*c < NUM_STD_COLS)
-	    sscanf(Fig_color_names[*c],"#%2hx%2hx%2hx",
+	    sscanf(Fig_color_names[*c], "#%2hx%2hx%2hx",
 		   &(rgb->red), &(rgb->green), &(rgb->blue));
 	else {
 	    rgb->red = user_colors[*c - NUM_STD_COLS].r;
@@ -399,9 +412,10 @@ static void
 close_scope(void)
 {
 	if (verbose)
-	    fprintf(tfp,"}%% close color scope, return to color of surrounding text\n");
+	    fputs("}% close color scope, return to color of surrounding text\n",
+		tfp);
 	else
-	    fprintf(tfp,"}%%\n"); /* put a %, otherwise pict2e puts a space */
+	    fputs("}%\n", tfp); /* put a %, otherwise pict2e puts a space */
 	cur_thickness = saved_thickness;
 }
 
@@ -409,9 +423,9 @@ static void
 open_scope(void)
 {
 	if (verbose)
-	    fprintf(tfp, "%% open color scope\n{");
+	    fputs("% open color scope\n{", tfp);
 	else
-	    fprintf(tfp,"{");
+	    fputs("{", tfp);
 	saved_thickness = cur_thickness;
 }
 
@@ -450,28 +464,28 @@ set_color(int col)
 
 	switch (c) {
 	case BLACK_COLOR:
-	    fprintf(tfp, "\\color{black}\n");
+	    fputs("\\color{black}\n", tfp);
 	    break;
 	case 1:
-	    fprintf(tfp, "\\color{blue}\n");
+	    fputs("\\color{blue}\n", tfp);
 	    break;
 	case 2:
-	    fprintf(tfp, "\\color{green}\n");
+	    fputs("\\color{green}\n", tfp);
 	    break;
 	case 3:
-	    fprintf(tfp, "\\color{cyan}\n");
+	    fputs("\\color{cyan}\n", tfp);
 	    break;
 	case 4:
-	    fprintf(tfp, "\\color{red}\n");
+	    fputs("\\color{red}\n", tfp);
 	    break;
 	case 5:
-	    fprintf(tfp, "\\color{magenta}\n");
+	    fputs("\\color{magenta}\n", tfp);
 	    break;
 	case 6:
-	    fprintf(tfp, "\\color{yellow}\n");
+	    fputs("\\color{yellow}\n", tfp);
 	    break;
 	case WHITE_COLOR:
-	    fprintf(tfp, "\\color{white}\n");
+	    fputs("\\color{white}\n", tfp);
 	    break;
 	default:
 	    get_rgbcolor(&c,&rgb);
@@ -483,9 +497,8 @@ set_color(int col)
 static void
 set_fillcolor(int col, int shade, int *pen_color)
 {
-	double red, green, blue;
+	double	red, green, blue;
 	RGB	rgb;
-	int	c;
 	/* A shade between 0 and NUMSHADES - 1 mixes the color with black,
 	 * 0 = black, NUMSHADES - 1 = color at full saturation. Shades >
 	 * NUMSHADE - 1 mix the color with white, i.e., tint the color.
@@ -494,20 +507,25 @@ set_fillcolor(int col, int shade, int *pen_color)
 	 */
 
 	if (shade < 0)
-	    fprintf(stderr,"A color error occurred. Please report this bug.\n");
+	    fprintf(stderr,
+		    "A color error occurred. Please report this bug.\n");
+
+	if (shade >= NUMSHADES + NUMTINTS) {
+	    if (col == *pen_color) {	/* solid fill */
+		shade = NUMSHADES - 1;
+	    } else {
+		fputs("Patterns not supported. Filling with 25% pen color instead.\n",
+			stderr);
+		col = *pen_color;
+		shade = NUMSHADES - 1 + 3 * NUMTINTS / 4;
+	    }
+	}
 
 	/* pure colors */
 	if (shade == NUMSHADES - 1) {
 	    set_color(col);
 	    cur_shade = shade;
 	    return;
-	}
-
-	if (shade >= NUMSHADES + NUMTINTS) {
-	    fprintf(stderr,
-		"Patterns not supported. Filling with 25%% pen color instead.\n");
-	    col = *pen_color;
-	    shade = NUMSHADES - 1 + 3 * NUMTINTS / 4;
 	}
 
 	/* an unknown color can not be shaded or tinted */
@@ -610,9 +628,9 @@ genpict2e_start(F_compound *objects)
 
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {
-	    fprintf(tfp,"%%\n");
+	    fputs("%\n", tfp);
 	    print_comments("% ",objects->comments, "");
-	    fprintf(tfp,"%%\n");
+	    fputs("%\n", tfp);
 	}
 	if (pagemode) {
 	    double	width, height;
@@ -627,37 +645,47 @@ genpict2e_start(F_compound *objects)
 	    }
 
 	    fputs("\\documentclass{minimal}\n", tfp);
-	    fprintf(tfp,"\\usepackage[papersize={%.4g%s,%.4g%s},margin=0pt]{geometry}\n",
-		    width, unit, height, unit);
-	    fputs("\\usepackage{pict2e,graphics", tfp);
-	    if (num_usr_cols > 0 || colors_used())
+	    fprintf(tfp,
+		"\\usepackage[papersize={%.4g%s,%.4g%s},margin=0pt]{geometry}\n",
+		width, unit, height, unit);
+	    fputs("\\usepackage{pict2e,graphics,color}\n", tfp);
+	    /* Unconditionally include color.sty, because shaded black or
+	     * tinted white needs it.
+		if (num_usr_cols > 0 || colors_used())
 		fputs(",color", tfp);
-	    fputs("}\n\\parindent0pt\n\\begin{document}\n", tfp);
+	     */
+	    fputs("\\parindent0pt\n\\begin{document}\n", tfp);
 	}
 
 	/* round() is a macro that maps to int, see fig2dev.h */
 	fprintf(tfp, "\\unitlength%lisp", (long) (4736286.72*unitlength + 0.5));
 	if (metric)
-	    fprintf(tfp, "%% 4143.7 sp = (1/472.44) cm\n");
+	    fputs("% 4143.7 sp = (1/472.44) cm\n", tfp);
 	else
-	    fprintf(tfp, "%% 3946.9 sp = (1/1200) in\n");
+	    fputs("% 3946.9 sp = (1/1200) in\n", tfp);
 
 #ifdef SCALE_PICT2E
-	if (!pagemode)
-	    fprintf(tfp,"\\ifx\\XFigheight\\undefined\\else\\ifdim\\XFigheight>0pt\n"
-			"\\unitlength\\XFigheight\\divide\\unitlength by %d\\fi\\fi\n"
-			"\\ifx\\XFigwidth\\undefined\\else\\ifdim\\XFigwidth>0pt\n"
-			"\\unitlength\\XFigwidth\\divide\\unitlength by %d\\fi\\fi\n",
-			ury-lly, urx-llx);
+	if (!pagemode) {
+	    fputs("\\ifx\\XFigheight\\undefined\\else\\ifdim\\XFigheight>0pt\n",
+		tfp);
+	    fprintf(tfp,
+		"\\unitlength\\XFigheight\\divide\\unitlength by %d\\fi\\fi\n",
+		ury - lly);
+	    fputs("\\ifx\\XFigwidth\\undefined\\else\\ifdim\\XFigwidth>0pt\n",
+		tfp);
+	    fprintf(tfp,
+		"\\unitlength\\XFigwidth\\divide\\unitlength by %d\\fi\\fi\n",
+		 urx-llx);
+	}
 #endif
 
 	fprintf(tfp, "\\begin{picture}(%d,%d)%%(0,0)\n",
 					 urx-llx, ury-lly);/*, llx, lly); */
 	if (epiccompatible)
 	    /* \allinethickness is only defined in eepic.sty, not epic.sty. */
-	    fprintf(tfp,"\\ifx\\allinethickness\\undefined\n"
-			"  \\def\\XFigeepicthickness#1{\\relax}\n\\else\n"
-			"  \\let\\XFigeepicthickness\\allinethickness\n\\fi\n");
+	    fputs("\\ifx\\allinethickness\\undefined\n"
+		  "  \\def\\XFigeepicthickness#1{\\relax}\n\\else\n"
+		  "  \\let\\XFigeepicthickness\\allinethickness\n\\fi\n", tfp);
 }
 
 int
@@ -668,9 +696,9 @@ genpict2e_end(void)
 	/* linecaps and -join run over } and \end{picture}, reset to default */
 	set_linecap(BUTTCAP);
 	set_linejoin(MITERJOIN);
-	fprintf(tfp, "\\end{picture}%%\n");
+	fputs("\\end{picture}%\n", tfp);
 	if (pagemode)
-	    fprintf(tfp, "\\end{document}");
+	    fputs("\\end{document}", tfp);
 
 	return 0;
 }
@@ -690,8 +718,8 @@ set_linestyle(
 
 	*v /= 80.0 / ppi;
 	if (*v <= 0.) {
-	    fprintf(stderr,"Error: Set_linestyle with zero frequency called. "
-			   "Please report this bug\n");
+	    fputs("Error: Set_linestyle with zero frequency called. "
+		  "Please report this bug\n", tfp);
 	    return;
 	}
 
@@ -767,11 +795,11 @@ put_polyline(F_point *p)
 	F_point	*q;
 
 	if (p->next == NULL) {
-	    fprintf(stderr,"Not enough points in the line, strange...\n");
+	    fputs("Not enough points in the line, strange...\n", stderr);
 	    return p;
 	}
 
-	chars = fprintf(tfp,"\\polyline");
+	chars = fputs("\\polyline", tfp);
 	while (p->next != NULL) {
 	    if (chars >= LINEBREAK) {
 		fprintf(tfp,"\n");
@@ -929,8 +957,8 @@ put_patternline(F_point *p, F_point *q, struct pattern *pattern, double h1,
 		int dstart)
 {
 	int	i, j, numpatterns, dadd, precx, precy, din;
-	int	sx, sy, precl, dpl[pattern->nd/2];
-	double	len, lenpq, dx, dy, lx, cosl, sinl, digits, dlx[pattern->nd/2];
+	int	dpl[pattern->nd/2];
+	double	len, lenpq, dx, dy, cosl, sinl, digits, dlx[pattern->nd/2];
 	F_pos	pstart, slope[pattern->nd/2];
 
 	/* put a remaining dash */
@@ -1108,21 +1136,21 @@ put_pointarray(F_pos pts[], int *npoints)
 
 	for (i=0; i < *npoints; ++i) {
 	    if (chars >= LINEBREAK) {
-		fprintf(tfp,"\n");
+		fputc('\n', tfp);
 		chars = 0;
 	    }
 	    chars += fprintf(tfp, "(%d,%d)", XCOORD(pts[i].x),YCOORD(pts[i].y));
 	}
-	fprintf(tfp, "\n");
+	fputc('\n', tfp);
 }
 
 /* Put an arrow, from p to q. */
 static void
 put_arrow(F_point *p, F_point *q, F_arrow *a, int linethick)
 {
-	int i, chars, sx, sy, lx;
-	F_pos points[50], fillpoints[50], clippts[50];
-	int npoints, nfillpoints, nclippts;
+	int	sx, sy, lx;
+	F_pos	points[50], fillpoints[50], clippts[50];
+	int	npoints, nfillpoints, nclippts;
 
 #define	ISLTXARROW(a)	(allarrowsltx || ltxarrow == 2*a->type + a->style)
 	if (ISLTXARROW(a)) {
@@ -1136,25 +1164,13 @@ put_arrow(F_point *p, F_point *q, F_arrow *a, int linethick)
 	}
 
 	/* all other arrows */
-	/* The linethickness must be modified; this is a bit involved. For
-	 * arrow->thickness, calc_arrow() in bound.c uses (thickness <=
-	 * THICK_SCALE ? 0.5 * thickness : thickness - THICK_SCALE) to make the
-	 * thickness of the lines in the arrowhead a bit smaller.
-	 * (arrow->thickness is double, by the way). The linethickness is not
-	 * modified by calc_arrow() in this way, but by a number of drivers,
-	 * e.g., genps.c, genepic.c and others. They probably expect this to
-	 * happen and pass line->thickness to calc_arrow(). This seems a bug,
-	 * e.g., in genps.c. To do it right, pass a modified linethick, but
-	 * leave arrow->thickness alone.
-	 */
-	linethick = (int) THICKNESS(linethick);
 	calc_arrow(p->x, p->y, q->x, q->y, linethick, a, points, &npoints,
 		   fillpoints, &nfillpoints, clippts, &nclippts);
 	/* reset line-style outside of put_arrow */
 
 	/* fill filled arrows */
 	if ((a->style || nfillpoints) && a->type < 13) {
-	    fprintf(tfp,"\\polygon*");
+	    fputs("\\polygon*", tfp);
 	    if (nfillpoints == 0) {
 		/* for a simple fill, the first and the last point coincide */
 		/* ... except for a half circle */
@@ -1172,9 +1188,9 @@ put_arrow(F_point *p, F_point *q, F_arrow *a, int linethick)
 
 	if (points[0].x == points[npoints-1].x && points[0].y == points[npoints-1].y) {
 	    npoints -= 1;
-	    fprintf(tfp, "\\polygon");
+	    fputs("\\polygon", tfp);
 	} else {
-	    fprintf(tfp, "\\polyline");
+	    fputs("\\polyline", tfp);
 	}
 	put_pointarray(points, &npoints);
 }
@@ -1533,12 +1549,12 @@ put_poly_or_patternline(F_point *p, F_point *q, F_line *l)
 	}
 
 	if (l->for_arrow) {
-	    if (verbose) fprintf(tfp,"%% Forward Arrow\n");
+	    if (verbose) fputs("% Forward Arrow\n", tfp);
 	    put_arrow(f[0], f[1], l->for_arrow, l->thickness);
 	}
 
 	if (l->back_arrow) {
-	    if (verbose) fprintf(tfp,"%% Backward Arrow\n");
+	    if (verbose) fputs("% Backward Arrow\n", tfp);
 	    put_arrow(q, p, l->back_arrow, l->thickness);
 	}
 }
@@ -1553,7 +1569,7 @@ put_line_or_vector(F_point *p, F_point *q, F_line *l)
 
 	if (l->for_arrow && ISLTXARROW(l->for_arrow)
 			&& l->thickness == round(l->for_arrow->thickness)) {
-	    /* at least an arrow is drawn; However, the linecap might be set uselessly */
+	    /* At least an arrow is drawn. The linecap might be set uselessly */
 	    set_linewidth(l->thickness);
 	    set_linecap(l->cap_style);
 	    if (put_vector(p, q, l->back_arrow, &(l->thickness),
@@ -1613,7 +1629,6 @@ put_picture(F_point *p, F_point *q, F_point *r, F_point *s, F_line *l)
 	 *	                                       |      |
 	 *	                                     2 +------+ 3
 	 */
-	double	angle;
 	int	n, dx, dy, rot;
 	char	*c;
 	F_point	*ll;
@@ -1653,25 +1668,28 @@ put_picture(F_point *p, F_point *q, F_point *r, F_point *s, F_line *l)
 #define PREPEND prepend ? prepend : "\0"
 	if (!l->pic->flipped) {
 	    if (rot == 0)
-		fprintf(tfp,"\\put(%d,%d){\\resizebox{%d\\unitlength}{%d\\unitlength}"
-			    "{\\includegraphics{%s%.*s}}}\n",
-			XCOORD(ll->x), YCOORD(ll->y), dx, dy, PREPEND, n, l->pic->file);
+		fprintf(tfp,
+			"\\put(%d,%d){\\resizebox{%d\\unitlength}{%d\\unitlength}"
+			"{\\includegraphics{%s%.*s}}}\n", XCOORD(ll->x),
+			YCOORD(ll->y), dx, dy, PREPEND, n, l->pic->file);
 	    else
-		fprintf(tfp,"\\put(%d,%d){\\rotatebox{%d}{\\smash{\\rlap{"
-			    "\\resizebox*{%d\\unitlength}{%d\\unitlength}{"
-			    "\\includegraphics{%s%.*s}}}}}}\n",
-			XCOORD(ll->x), YCOORD(ll->y), rot, dx, dy, PREPEND, n, l->pic->file);
+		fprintf(tfp, "\\put(%d,%d){\\rotatebox{%d}{\\smash{\\rlap{"
+			"\\resizebox*{%d\\unitlength}{%d\\unitlength}{"
+			"\\includegraphics{%s%.*s}}}}}}\n", XCOORD(ll->x),
+			YCOORD(ll->y), rot, dx, dy, PREPEND, n, l->pic->file);
 	    return;
 	}
 	/* flipped */
 	rot += 90;
 	if (rot == 360)
-	    fprintf(tfp,"\\put(%d,%d){\\resizebox*{-%d\\unitlength}{%d\\unitlength}"
-			"{\\includegraphics{%s%.*s}}}\n",
+	    fprintf(tfp,
+		    "\\put(%d,%d){\\resizebox*{-%d\\unitlength}{%d\\unitlength}"
+		    "{\\includegraphics{%s%.*s}}}\n",
 		    XCOORD(r->x), YCOORD(r->y), dy, dx, PREPEND, n, l->pic->file);
 	else
-	    fprintf(tfp,"\\put(%d,%d){\\rotatebox{%d}{\\smash{\\rlap{\\resizebox*"
-			"{-%d\\unitlength}{%d\\unitlength}{\\includegraphics{%s%.*s}}}}}}\n",
+	    fprintf(tfp,
+		    "\\put(%d,%d){\\rotatebox{%d}{\\smash{\\rlap{\\resizebox*"
+		    "{-%d\\unitlength}{%d\\unitlength}{\\includegraphics{%s%.*s}}}}}}\n",
 		    XCOORD(r->x), YCOORD(r->y), rot, dy, dx, PREPEND, n, l->pic->file);
 	return;
 }
@@ -1680,15 +1698,13 @@ put_picture(F_point *p, F_point *q, F_point *r, F_point *s, F_line *l)
 void
 genpict2e_line(F_line *l)
 {
-	F_point		*q, *r;
 	F_point		*p[5];		/* the first non-coincident points */
 	struct pattern	pattern;
 	int		npts = 0;	/* number of unique points */
-	int		i, precx, precy, precl;
 	double		h1;
 
 	if (verbose)
-	    fprintf(tfp, "%%\n%% Fig POLYLINE object\n%%\n");
+	    fputs("%\n% Fig POLYLINE object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ", l->comments, "");
@@ -1703,8 +1719,9 @@ genpict2e_line(F_line *l)
 
 	if (l->type == T_PIC_BOX) {
 	    if (npts < 4)
-		fprintf(stderr, "A picture box with less than four unique points."
-				" Omitting.\n");
+		fputs(
+		    "A picture box with less than four unique points. Omitting.\n",
+		    stderr);
 	    else
 		put_picture(p[0], p[1], p[2], p[3], l);
 	    return;
@@ -1712,16 +1729,16 @@ genpict2e_line(F_line *l)
 
 	/* fill */
 	if (l->fill_style != UNFILLED && npts > 2) {
-	    if (verbose) fprintf(tfp,"%% Fill\n");
+	    if (verbose) fputs("% Fill\n", tfp);
 	    set_fillcolor(l->fill_color, l->fill_style, &(l->pen_color));
 	    if (l->type == T_POLYLINE) {
-		p[4] = put_points("\\polygon*",p[0]);
-		if (!(EQUAL(p[0],p[4]))) /* put_point() returns the last point */
+		p[4] = put_points("\\polygon*", p[0]);
+		if (!(EQUAL(p[0], p[4])))
 		    PUTPOINT(p[4]);
 		fprintf(tfp,"\n");
 	    } else if (l->type == T_POLYGON || l->type == T_BOX) {
-		put_points("\\polygon*",p[0]);
-		fprintf(tfp,"\n");
+		put_points("\\polygon*", p[0]);
+		fputc('\n', tfp);
 	    /* else { .. would be sufficient, no other possibilities remain */
 	    } else if (l->type == T_ARC_BOX) {
 		put_oval(p[0], p[2], l->radius, "fillpath");
@@ -1735,8 +1752,7 @@ genpict2e_line(F_line *l)
 	if (npts == 1) {
 	    F_pos	o;
 	    if (l->thickness == 0)
-		return; /* malicious users might get here, by drawing first a line
-			 * with two points and then pulling one point into the other */
+		return;
 	    set_color(l->pen_color);
 	    set_linewidth(l->thickness);
 	    o.x = XCOORD(p[0]->x);
@@ -1745,7 +1761,7 @@ genpict2e_line(F_line *l)
 		set_linecap(ROUNDCAP);
 		fprintf(tfp, "\\Line(%d,%d)(%d,%d)%%\n", o.x, o.y, o.x, o.y);
 	    } else {
-		set_linecap(BUTTCAP); /* butt cap, line cleanly cut off */
+		set_linecap(BUTTCAP);
 		h1 = l->thickness <= THICK_SCALE ?
 		    l->thickness/4.0 : (l->thickness-THICK_SCALE)/2.0;
 		fprintf(tfp, "\\Line(%d,%d)(%d,%d)%%\n",
@@ -1763,8 +1779,8 @@ genpict2e_line(F_line *l)
 	    set_linewidth(l->thickness);
 	    if (l->style == SOLID_LINE || l->style_val <= 0.) {
 		set_linejoin(l->join_style);
-		put_points("\\polygon",p[0]);
-		fprintf(tfp,"\n");
+		put_points("\\polygon", p[0]);
+		fputc('\n', tfp);
 	    } else {
 		set_linestyle(&(l->style), &(l->style_val), &pattern, &h1);
 		set_linecap(l->cap_style);
@@ -1793,7 +1809,6 @@ genpict2e_line(F_line *l)
 	}
 
 	if (npts > 2 || l->style != SOLID_LINE)
-	    /* a polyline, either not solid or with more than two points */
 	    put_poly_or_patternline(p[0], p[1], l);
 	else	/* two points, solid line */
 	    put_line_or_vector(p[0], p[1], l);
@@ -1802,7 +1817,7 @@ genpict2e_line(F_line *l)
 void
 genpict2e_spline(F_spline *s)
 {
-	fprintf(stderr, "Can't generate spline; omitting object\n");
+	fputs("Can't generate spline; omitting object\n", stderr);
 }
 
 /*
@@ -2095,22 +2110,21 @@ put_ellipse(F_ellipse *e)
 		XCOORD(round(e->center.x - sina * e->radiuses.y * exi[0].y)),
 		YCOORD(round(e->center.y + cosa * e->radiuses.y * exi[0].y)));
 	for (i = 1; i < 13; i = j) {
-	    fprintf(tfp,"\\curveto");
+	    fputs("\\curveto", tfp);
 	    for (j = i; j < i + 3; ++j)
 		   fprintf(tfp,"(%d,%d)",
 			XCOORD(round(e->center.x + cosa * e->radiuses.x * exi[j].x
 					   - sina * e->radiuses.y * exi[j].y)),
 			YCOORD(round(e->center.y + sina * e->radiuses.x * exi[j].x
 					   + cosa * e->radiuses.y * exi[j].y)));
-	    if (j == 7) fprintf(tfp,"\n");
+	    if (j == 7) fputc('\n', tfp);
 	}
-	fprintf(tfp,"\\closepath");
+	fputs("\\closepath", tfp);
 }
 
 void
 genpict2e_ellipse(F_ellipse *e)
 {
-	int  x, y, d, dx, dy;
 	/*
 	 * For compatibility with eepic, viz., \usepackage{pict2e,epic,eepic},
 	 * avoid \circle*. Pict2e ignores the line-thickness and just fills the
@@ -2120,7 +2134,7 @@ genpict2e_ellipse(F_ellipse *e)
 	 */
 
 	if (verbose)
-	    fprintf(tfp, "%%\n%% Fig ELLIPSE object\n%%\n");
+	    fputs("%\n% Fig ELLIPSE object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ",e->comments, "");
@@ -2131,15 +2145,16 @@ genpict2e_ellipse(F_ellipse *e)
 	    /* fill the ellipse */
 	    if (e->radiuses.x == e->radiuses.y) { /* filled circle */
 		if (epiccompatible)
-		    fprintf(tfp, "\\circlearc[1]{%d}{%d}{%d}{0}{360}"
-				 "\\closepath\\fillpath\n",
-			    XCOORD(e->center.x), YCOORD(e->center.y), e->radiuses.x);
+		    fprintf(tfp,
+			"\\circlearc[1]{%d}{%d}{%d}{0}{360}\\closepath\\fillpath\n",
+			XCOORD(e->center.x), YCOORD(e->center.y), e->radiuses.x);
 		else
 		    fprintf(tfp, "\\put(%d,%d){\\circle*{%d}}\n",
-			    XCOORD(e->center.x), YCOORD(e->center.y), 2*e->radiuses.x);
+			    XCOORD(e->center.x), YCOORD(e->center.y),
+			    2*e->radiuses.x);
 	    } else {
 		put_ellipse(e);
-		fprintf(tfp,"\\fillpath\n");
+		fputs("\\fillpath\n", tfp);
 	    }
 	}
 
@@ -2151,15 +2166,16 @@ genpict2e_ellipse(F_ellipse *e)
 	if (e->style == SOLID_LINE) {
 	    if (e->radiuses.x == e->radiuses.y) { /* circle outline */
 		if (epiccompatible)
-		    fprintf(tfp, "\\circlearc[1]{%d}{%d}{%d}{0}{360}"
-				 "\\closepath\\strokepath\n",
-			    XCOORD(e->center.x), YCOORD(e->center.y), e->radiuses.x);
+		    fprintf(tfp,
+			"\\circlearc[1]{%d}{%d}{%d}{0}{360}\\closepath\\strokepath\n",
+			XCOORD(e->center.x), YCOORD(e->center.y), e->radiuses.x);
 		else
 		    fprintf(tfp, "\\put(%d,%d){\\circle{%d}}\n",
-			    XCOORD(e->center.x), YCOORD(e->center.y), 2*e->radiuses.x);
+			    XCOORD(e->center.x), YCOORD(e->center.y),
+			    2*e->radiuses.x);
 	    } else {
 		put_ellipse(e);
-		fprintf(tfp, "\\strokepath\n");
+		fputs("\\strokepath\n", tfp);
 	    }
 	} else {
 	    put_patternellipse(e);
@@ -2172,7 +2188,7 @@ genpict2e_ellipse(F_ellipse *e)
 static void
 put_font(F_text *t)
 {
-	int texsize, bprec, font;
+	int texsize, bprec;
 	double baselineskip;
 
 	/* tex-drivers by default use the correct font size, a bit different
@@ -2192,7 +2208,7 @@ put_font(F_text *t)
 	    fprintf(tfp, "\\fontsize{%d}{%.*f}", texsize, bprec, baselineskip);
 
 	    if (nofontname) {
-		fprintf(tfp, "\\selectfont ");
+		fputs("\\selectfont ", tfp);
 		return;
 	    }
 	}
@@ -2218,7 +2234,7 @@ genpict2e_text(F_text *t)
 	unsigned char	*cp;
 
 	if (verbose)
-	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
+	    fputs("%\n% Fig TEXT object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ",t->comments, "");
@@ -2242,7 +2258,7 @@ genpict2e_text(F_text *t)
 		break;
 
 	    default:
-		fprintf(stderr, "Text incorrectly positioned\n");
+		fputs("Text incorrectly positioned\n", stderr);
 		tpos = "[lb]";	/* make left in this case */
 	    }
 
@@ -2271,7 +2287,7 @@ genpict2e_text(F_text *t)
 		    fputc('\\', tfp);
 		if (c = strchr("~^\\", *cp)) {
 		    if (*c == '\\')
-			fprintf(tfp,"\\textbackslash ");
+			fputs("\\textbackslash ", tfp);
 		    else
 			fprintf(tfp,"\\%c{}", *c);
 		} else
@@ -2301,8 +2317,8 @@ genpict2e_text(F_text *t)
 	}
 
         if(t->angle)
-             fprintf(tfp, "}");
-	fprintf(tfp, "}}}\n");
+             fputc('}', tfp);
+	fputs("}}}\n", tfp);
 }
 
 /*
@@ -2463,7 +2479,7 @@ genpict2e_arc(F_arc *a)
 	double	rad, angle1, angle2, offa1 = 0., offa2 = 0.;
 
 	if (verbose)
-	    fprintf(tfp, "%%\n%% Fig ARC object\n%%\n");
+	    fputs("%\n% Fig ARC object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ",a->comments, "");
@@ -2508,17 +2524,17 @@ genpict2e_arc(F_arc *a)
 	/* Fill the arc */
 	if (a->fill_style != UNFILLED && da > 0.) {
 	    set_fillcolor(a->fill_color, a->fill_style, &(a->pen_color));
-	    fprintf(tfp,"\\circlearc[1]{%d}{%d}{%g}{%.*f}{%.*f}",
-		    XCOORD(c.x), YCOORD(c.y), rad, preca, angle1, preca, angle2);
+	    fprintf(tfp, "\\circlearc[1]{%d}{%d}{%g}{%.*f}{%.*f}", XCOORD(c.x),
+		    YCOORD(c.y), rad, preca, angle1, preca, angle2);
 	    switch (a->type) {
 		case T_PIE_WEDGE_ARC:
 		    fprintf(tfp,"\\lineto(%d,%d)\\closepath\\fillpath\n",
 			    XCOORD(c.x), YCOORD(c.y) );
 		    break;
 		default:
-		    fprintf(stderr,"Unknown arc type - please report this bug.");
+		    fputs("Unknown arc type - please report this bug.", stderr);
 		case T_OPEN_ARC:
-		    fprintf(tfp,"\\closepath\\fillpath\n");
+		    fputs("\\closepath\\fillpath\n", tfp);
 	    }
 	}
 
@@ -2533,8 +2549,8 @@ genpict2e_arc(F_arc *a)
 	if (a->back_arrow) {
 	    p.x = a->point[0].x;
 	    p.y = a->point[0].y;
-	    compute_arcarrow_angle((double)c.x, (double)c.y, (double)p.x, (double)p.y,
-				   !a->direction, a->back_arrow, &(q.x), &(q.y));
+	    compute_arcarrow_angle((double)c.x, (double)c.y, (double)p.x,
+		    (double)p.y, !a->direction, a->back_arrow, &(q.x), &(q.y));
 	    put_arrow(&q, &p, a->back_arrow, a->thickness);
 	    d = get_offset(a->back_arrow, round(a->thickness), a->cap_style);
 	    if (d) {
@@ -2548,8 +2564,8 @@ genpict2e_arc(F_arc *a)
 	if (a->for_arrow) {
 	    p.x = a->point[2].x;
 	    p.y = a->point[2].y;
-	    compute_arcarrow_angle((double)c.x, (double)c.y, (double)p.x, (double)p.y,
-				   a->direction, a->for_arrow, &(q.x), &(q.y));
+	    compute_arcarrow_angle((double)c.x, (double)c.y, (double)p.x,
+		    (double)p.y, a->direction, a->for_arrow, &(q.x), &(q.y));
 	    put_arrow(&q, &p, a->for_arrow, a->thickness);
 	    d = get_offset(a->for_arrow, round(a->thickness), a->cap_style);
 	    if (d) {
@@ -2569,19 +2585,19 @@ genpict2e_arc(F_arc *a)
 
 	/* Arcs do not have a join_style, but pie-wedge arcs should have one. */
 	/* set_linejoin(a->join_style) */
-	fprintf(tfp,"\\circlearc[1]{%d}{%d}{%g}{%.*f}{%.*f}",
+	fprintf(tfp, "\\circlearc[1]{%d}{%d}{%g}{%.*f}{%.*f}",
 		XCOORD(c.x), YCOORD(c.y), rad, preca, angle1, preca, angle2);
 	switch (a->type) {
 	    case T_PIE_WEDGE_ARC:
-		fprintf(tfp,"\\lineto(%d,%d)\\closepath\\strokepath\n",
+		fprintf(tfp, "\\lineto(%d,%d)\\closepath\\strokepath\n",
 			XCOORD(c.x), YCOORD(c.y) );
 		break;
 	    case T_OPEN_ARC:
-		fprintf(tfp,"\\strokepath\n");
+		fputs("\\strokepath\n", tfp);
 		break;
 	    default:
-		fprintf(tfp,"\\strokepath\n");
-		fprintf(stderr,"Unknown arc type - please report this bug.");
+		fputs("\\strokepath\n", tfp);
+		fputs("Unknown arc type - please report this bug.", stderr);
 	}
 }
 

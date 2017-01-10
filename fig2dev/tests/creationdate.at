@@ -1,0 +1,16 @@
+AT_BANNER([Test time stamp in PostScript output])
+
+AT_SETUP([honor SOURCE_DATE_EPOCH environment variable])
+AT_KEYWORDS(eps creationdate SOURCE_DATE_EPOCH)
+AT_CHECK([SOURCE_DATE_EPOCH=123456789 fig2dev -L eps $srcdir/data/line.fig | \
+	$FGREP 'CreationDate'], 0, [%%CreationDate: 1973-11-29 21:33:09
+])
+AT_CLEANUP
+
+AT_SETUP([fail on text in SOURCE_DATE_EPOCH])
+AT_KEYWORDS(eps creationdate SOURCE_DATE_EPOCH)
+AT_CHECK([SOURCE_DATE_EPOCH=7here fig2dev -L eps $srcdir/data/line.fig
+], 0, ignore-nolog,
+[Environment variable $SOURCE_DATE_EPOCH: Trailing garbage: here
+])
+AT_CLEANUP

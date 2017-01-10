@@ -1,40 +1,43 @@
 AT_BANNER([Test pict2e output language.])
-AT_SETUP([include color.sty, but only if necessary])
-AT_KEYWORDS(pict2e)
-
-FIG_WCOLOR='usepackage{pict2e,graphics,color}'
-FIG_NCOLOR='usepackage{pict2e,graphics}'
-
-AT_DATA(black.fig, [FIG_FILE_TOP
-2 1 0 2 0 7 50 -1 -1 0.000 0 0 -1 0 0 2
-	 0 10200 1200 10200
-])
-
-AT_DATA(default.fig, [FIG_FILE_TOP
-2 1 0 2 -1 7 50 -1 -1 0.000 0 0 -1 0 0 2
-	 0 10200 1200 10200
-])
-
-AT_DATA(black+red.fig, [FIG_FILE_TOP
-2 1 0 2 0 7 50 -1 -1 0.000 0 0 -1 0 0 2
-	 0 10200 1200 10200
-2 1 0 2 4 7 50 -1 -1 0.000 0 0 -1 0 0 2
-	 0 9900 600 9900
-])
-
-dnl do not count on grep to support -q, or -s
-AT_CHECK([fig2dev -L pict2e -P -C -1 black.fig | $FGREP $FIG_WCOLOR && \
-	fig2dev -L pict2e -P -C 0 black.fig | $FGREP $FIG_NCOLOR && \
-	fig2dev -L pict2e -P black.fig | $FGREP $FIG_NCOLOR
-],0,ignore)
-
-AT_CHECK([fig2dev -L pict2e -P -C -1 default.fig | $FGREP $FIG_NCOLOR
-],0,ignore)
-
-AT_CHECK([fig2dev -L pict2e -P black+red.fig | $FGREP $FIG_WCOLOR
-],0,ignore)
-
-AT_CLEANUP
+dnl AT_SETUP([include color.sty, but only if necessary])
+dnl AT_KEYWORDS(pict2e)
+dnl
+dnl # Currently, color.sty must be unconditionally included.
+dnl AT_XFAIL_IF([true])
+dnl
+dnl FIG_WCOLOR='usepackage{pict2e,graphics,color}'
+dnl FIG_NCOLOR='usepackage{pict2e,graphics}'
+dnl
+dnl AT_DATA(black.fig, [FIG_FILE_TOP
+dnl 2 1 0 2 0 7 50 -1 -1 0.000 0 0 -1 0 0 2
+dnl	0 10200 1200 10200
+dnl ])
+dnl
+dnl AT_DATA(default.fig, [FIG_FILE_TOP
+dnl 2 1 0 2 -1 7 50 -1 -1 0.000 0 0 -1 0 0 2
+dnl	 0 10200 1200 10200
+dnl ])
+dnl
+dnl AT_DATA(black+red.fig, [FIG_FILE_TOP
+dnl 2 1 0 2 0 7 50 -1 -1 0.000 0 0 -1 0 0 2
+dnl	 0 10200 1200 10200
+dnl 2 1 0 2 4 7 50 -1 -1 0.000 0 0 -1 0 0 2
+dnl	 0 9900 600 9900
+dnl ])
+dnl
+dnl dnl do not count on grep to support -q, or -s
+dnl AT_CHECK([fig2dev -L pict2e -P -C -1 black.fig | $FGREP $FIG_WCOLOR && \
+dnl	fig2dev -L pict2e -P -C 0 black.fig | $FGREP $FIG_NCOLOR && \
+dnl	fig2dev -L pict2e -P black.fig | $FGREP $FIG_NCOLOR
+dnl ],0,ignore)
+dnl
+dnl AT_CHECK([fig2dev -L pict2e -P -C -1 default.fig | $FGREP $FIG_NCOLOR
+dnl ],0,ignore)
+dnl
+dnl AT_CHECK([fig2dev -L pict2e -P black+red.fig | $FGREP $FIG_WCOLOR
+dnl ],0,ignore)
+dnl
+dnl AT_CLEANUP
 
 AT_SETUP([ignore -G option])
 AT_KEYWORDS(pict2e options)
@@ -42,6 +45,6 @@ AT_DATA(default.fig, [FIG_FILE_TOP
 2 1 0 2 -1 7 50 -1 -1 0.000 0 0 -1 0 0 2
 	 0 10200 1200 10200
 ])
-AT_CHECK([fig2dev -L pict2e -G0.2:1cm default.fig /dev/null
-], 0)
+AT_CHECK([fig2dev -L pict2e -G0.2:1cm default.fig
+], 0, ignore-nolog)
 AT_CLEANUP

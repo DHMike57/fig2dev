@@ -14,8 +14,8 @@
  *
  */
 
-#include "fig2dev.h"
-#include "psimage.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 typedef unsigned char byte;
 

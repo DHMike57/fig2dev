@@ -14,8 +14,17 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "colors.h"	/* rgb2luminance() */
 
 extern int _read_pcx(FILE *pcxfile, F_pic *pic);
@@ -71,8 +80,8 @@ _read_pcx(FILE *pcxfile, F_pic *pic)
 {
 	int		 w,h,bytepp,x,y,yy,byteline,plane,pmask;
 	struct pcxhed	 header;
-	int		 count,waste;
-	long		 bytemax,bytesdone;
+	int		 count;
+	/* long		 bytemax,bytesdone; obviously not used */
 	byte		 inbyte,inbyte2;
 	int		 real_bpp;		/* how many bpp file really is */
 
@@ -124,9 +133,9 @@ _read_pcx(FILE *pcxfile, F_pic *pic)
 	    return 0;
 
 	x=0; y=0;
-	bytemax=w*h;
+	/* bytemax=w*h;
 	if (real_bpp==1 || real_bpp==4)
-	    bytemax=(1<<30);	/* we use a 'y<h' test instead for these files */
+	    bytemax=(1<<30); */	/* we use a 'y<h' test instead for these files */
 
 	if ((pic->bitmap=malloc(w*(h+2)*bytepp))==NULL)
 	    return 0;
@@ -134,7 +143,7 @@ _read_pcx(FILE *pcxfile, F_pic *pic)
 	/* need this if more than one bitplane */
 	memset(pic->bitmap,0,w*h*bytepp);
 
-	bytesdone=0;
+	/* bytesdone=0;	*/
 
 	/* start reading image */
 	for (yy=0; yy<h; yy++) {
@@ -148,14 +157,14 @@ _read_pcx(FILE *pcxfile, F_pic *pic)
 	    if (inbyte<192) {
 	      dispbyte(pic->bitmap,&x,&y,inbyte,w,h,real_bpp,
 		byteline,&plane,&pmask);
-	      bytesdone++;
+	      /* bytesdone++;	*/
 	    } else {
 	      inbyte2=fgetc(pcxfile);
 	      inbyte&=63;
 	      for (count=0; count<inbyte; count++)
 		dispbyte(pic->bitmap,&x,&y,inbyte2,w,h,real_bpp,
 			byteline,&plane,&pmask);
-	      bytesdone+=inbyte;
+	      /* bytesdone+=inbyte; */
 	    }
 	  }
 	}
@@ -188,7 +197,7 @@ _read_pcx(FILE *pcxfile, F_pic *pic)
 
 	    case 8:
 		/* 8-bit */
-		waste=fgetc(pcxfile);                    /* ditch splitter byte */
+		(void) fgetc(pcxfile);		/* ditch splitter byte */
 		for (x=0; x<256; x++) {
 		    pic->cmap[RED][x] = fgetc(pcxfile);
 		    pic->cmap[GREEN][x] = fgetc(pcxfile);

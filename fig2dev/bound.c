@@ -1,8 +1,9 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
+ * Copyright (c) 1985 Supoj Sutanthavibul
  * Copyright (c) 1991 Micah Beck
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2010 by Brian V. Smith
+ * Parts Copyright (c) 2015,2016 Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -13,42 +14,57 @@
  * party to do so, with the only requirement being that this copyright
  * notice remain intact.
  */
+
 /*
  * Changes:
  *
- * 2015-12-25 - Convert function definitions and declarations to prototype form.
+ * by Thomas Loimer <thomas.loimer@tuwien.ac.at>
  *
- * 2015-12-01 - Round rotated endpoint of arrow, do not add 0.5 (line 890).
- *		Modify to build with autoconf.	(Thomas Loimer)
- *
+ * 2016-12-10
+ *	- Make clip area contain the entire arrow head. Then, output drivers
+ *	  capable of clipping, e.g., gensvg.c, can produce real hollow
+ *	  arrowheads, instead of filling them with white.
+ *	- Compute arrow points in floating point numbers, rounding only
+ *	  when assigning to the integer arrays. Round halfway cases for both
+ *	  positive and negative numbers towards positive infinity.
+ *	  This effectively reverts the change from 2015-12-01.
+ * 2015-12-25
+ *	- Convert function definitions and declarations to prototype form.
+ * 2015-12-01
+ *	- Round rotated endpoint of arrow, do not add 0.5 (line 890).
+ *	- Modify to build with autoconf.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "bound.h"
 #include "localmath.h"
 
 extern bool	adjust_boundingbox;		/* fig2dev.c */
 
-#if defined HAVE_DECL_M_PI_2 && !HAVE_DECL_M_PI_2
-#define	M_PI_2	(M_PI / 2.)
-#endif
-#define	M_2PI	(M_PI * 2.)
+#undef M_PI_2
+#undef M_2PI
+#define	M_PI_2	1.57079632679489661923
+#define	M_2PI	6.28318530717958647692
 
-#define		Ninety_deg		M_PI_2
-#define		One_eighty_deg		M_PI
 #define		Two_seventy_deg		(M_PI + M_PI_2)
-#define		Three_sixty_deg		(M_PI + M_PI)
 #define		half(z1 ,z2)		((z1+z2)/2.0)
 #define		max(a, b)		(((a) > (b)) ? (a) : (b))
 #define		min(a, b)		(((a) < (b)) ? (a) : (b))
 
-static double	compute_angle(double dx, double dy);
 static void	arrow_bound(int objtype, F_line *obj,
 			int *xmin, int *ymin, int *xmax, int *ymax);
 static void	points_bound(F_point *points,
-			int *xmin, int *ymin, int *xmax, int *ymax);
-static void	control_points_bound(F_control *cps,
 			int *xmin, int *ymin, int *xmax, int *ymax);
 
 /************** ARRAY FOR ARROW SHAPES **************/
@@ -56,10 +72,9 @@ static void	control_points_bound(F_control *cps,
 /* numpts	*/	/* number of points in arrowhead */
 /* tipno	*/	/* which point contains the tip */
 /* numfillpts	*/	/* number of points to fill */
+/* startclip	*/	/* point at which clip region starts */
 /* simplefill	*/	/* if true, use points array to fill otherwise
 			   use fill_points array */
-/* clip		*/	/* if false, no clip area needed
-			   (e.g. for reverse triangle arrowhead) */
 /* half		*/	/* if true, arrowhead is half-wide and must be
 			   shifted to cover the line */
 /* tipmv	*/	/* acuteness of tip (smaller angle, larger tipmv) */
@@ -67,89 +82,89 @@ static void	control_points_bound(F_control *cps,
 /* fillpoints[6]*/	/* points to fill if not "simple" */
 struct _arrow_shape arrow_shapes[NUMARROWS] = {	/* NUMARROWS def'd in fig2dev.h */
 	/* number of points, index of tip, {datapairs} */
-	/* first point must be upper-left point of tail, then tip */
+	/* last point must be upper-left point of tail */
 	/* type 0 */
-	{ 3, 1, 0, true, true, false, 2.15, {{-1,0.5}, {0,0}, {-1,-0.5}}},
+	{ 3, 1, 0, 0, true, false, 2.15, {{-1,-0.5}, {0,0}, {-1,0.5}}},
 	/* place holder for what would be type 0 filled */
 	{ 0 },
 	/* type 1a simple triangle */
-	{ 4, 1, 0, true, true, false, 2.1,
+	{ 4, 1, 0, 2, true, false, 2.1,
 		{{-1.0,0.5}, {0,0}, {-1.0,-0.5}, {-1.0,0.5}}},
 	/* type 1b filled simple triangle*/
-	{ 4, 1, 0, true, true, false, 2.1,
+	{ 4, 1, 0, 2, true, false, 2.1,
 		{{-1.0,0.5}, {0,0}, {-1.0,-0.5}, {-1.0,0.5}}},
 	/* type 2a concave spearhead */
-	{ 5, 1, 0, true, true, false, 2.6,
+	{ 5, 1, 0, 2, true, false, 2.6,
 		{{-1.25,0.5},{0,0},{-1.25,-0.5},{-1.0,0},{-1.25,0.5}}},
 	/* type 2b filled concave spearhead */
-	{ 5, 1, 0, true, true, false, 2.6,
+	{ 5, 1, 0, 2, true, false, 2.6,
 		{{-1.25,0.5},{0,0},{-1.25,-0.5},{-1.0,0},{-1.25,0.5}}},
 	/* type 3a convex spearhead */
-	{ 5, 1, 0, true, true, false, 1.5,
+	{ 5, 1, 0, 2, true, false, 1.5,
 		{{-0.75,0.5},{0,0},{-0.75,-0.5},{-1.0,0},{-0.75,0.5}}},
 	/* type 3b filled convex spearhead */
-	{ 5, 1, 0, true, true, false, 1.5,
+	{ 5, 1, 0, 2, true, false, 1.5,
 		{{-0.75,0.5},{0,0},{-0.75,-0.5},{-1.0,0},{-0.75,0.5}}},
 	/* type 4a diamond */
-	{ 5, 1, 0, true, true, false, 1.15,
+	{ 5, 1, 0, 2, true, false, 1.15,
 		{{-0.5,0.5},{0,0},{-0.5,-0.5},{-1.0,0},{-0.5,0.5}}},
 	/* type 4b filled diamond */
-	{ 5, 1, 0, true, true, false, 1.15,
+	{ 5, 1, 0, 2, true, false, 1.15,
 		{{-0.5,0.5},{0,0},{-0.5,-0.5},{-1.0,0},{-0.5,0.5}}},
 	/* type 5a/b circle - handled in code */
-	{ 0, 0, 0, true, true, false, 0.0 },
-	{ 0, 0, 0, true, true, false, 0.0 },
+	{ 0, 0, 0, 0, true, false, 0.0 },
+	{ 0, 0, 0, 0, true, false, 0.0 },
 	/* type 6a/b half circle - handled in code */
-	{ 0, 0, 0, true, true, false, -1.0 },
-	{ 0, 0, 0, true, true, false, -1.0 },
+	{ 0, 0, 0, 0, true, false, -1.0 },
+	{ 0, 0, 0, 0, true, false, -1.0 },
 	/* type 7a square */
-	{ 5, 1, 0, true, true, false, 0.0,
+	{ 5, 1, 0, 3, true, false, 0.0,
 		{{-1.0,0.5},{0,0.5},{0,-0.5},{-1.0,-0.5},{-1.0,0.5}}},
 	/* type 7b filled square */
-	{ 5, 1, 0, true, true, false, 0.0,
+	{ 5, 1, 0, 3, true, false, 0.0,
 		{{-1.0,0.5},{0,0.5},{0,-0.5},{-1.0,-0.5},{-1.0,0.5}}},
 	/* type 8a reverse triangle */
-	{ 4, 1, 0, true, false, false, 0.0,
-		{{-1.0,0},{0,0.5},{0,-0.5},{-1.0,0}}},
+	{ 4, 1, 0, 1, true, false, 0.0,
+		{{0,0.5},{0,-0.5},{-1.0,0},{0,0.5}}},
 	/* type 8b filled reverse triangle */
-	{ 4, 1, 0, true, false, false, 0.0,
-		{{-1.0,0},{0,0.5},{0,-0.5},{-1.0,0}}},
+	{ 4, 1, 0, 1, true, false, 0.0,
+		{{0,0.5},{0,-0.5},{-1.0,0},{0,0.5}}},
 	/* type 9a top-half filled concave spearhead */
-	{ 5, 1, 3, false, true, false, 2.6,
+	{ 5, 1, 3, 2, false, false, 2.6,
 		{{-1.25,0.5},{0,0},{-1.25,-0.5},{-1.0,0},{-1.25,0.5}},
 		{{-1.25,-0.5},{0,0},{-1,0}}},
 	/* type 9b bottom-half filled concave spearhead */
-	{ 5, 1, 3, false, true, false, 2.6,
+	{ 5, 1, 3, 2, false, false, 2.6,
 		{{-1.25,0.5},{0,0},{-1.25,-0.5},{-1.0,0},{-1.25,0.5}},
 		{{-1.25,0.5},{0,0},{-1,0}}},
 	/* type 10o top-half simple triangle */
-	{ 4, 1, 0, true, true, true, 2.5,
+	{ 4, 1, 0, 2, true, true, 2.5,
 		{{-1.0,0.5}, {0,0}, {-1,0.0}, {-1.0,0.5}}},
 	/* type 10f top-half filled simple triangle*/
-	{ 4, 1, 0, true, true, true, 2.5,
+	{ 4, 1, 0, 2, true, true, 2.5,
 		{{-1.0,0.5}, {0,0}, {-1,0.0}, {-1.0,0.5}}},
 	/* type 11o top-half concave spearhead */
-	{ 4, 1, 0, true, true, true, 3.5,
+	{ 4, 1, 0, 2, true, true, 3.5,
 		{{-1.25,0.5}, {0,0}, {-1,0}, {-1.25,0.5}}},
 	/* type 11f top-half filled concave spearhead */
-	{ 4, 1, 0, true, true, true, 3.5,
+	{ 4, 1, 0, 2, true, true, 3.5,
 		{{-1.25,0.5}, {0,0}, {-1,0}, {-1.25,0.5}}},
 	/* type 12o top-half convex spearhead */
-	{ 4, 1, 0, true, true, true, 2.5,
+	{ 4, 1, 0, 2, true, true, 2.5,
 		{{-0.75,0.5}, {0,0}, {-1,0}, {-0.75,0.5}}},
 	/* type 12f top-half filled convex spearhead */
-	{ 4, 1, 0, true, true, true, 2.5,
+	{ 4, 1, 0, 2, true, true, 2.5,
 		{{-0.75,0.5}, {0,0}, {-1,0}, {-0.75,0.5}}},
 	/* type 13a "wye" */
-	{ 3, 0, 0, true, true, false, -1.0, {{0,0.5},{-1.0,0},{0,-0.5}}},
+	{ 3, 0, 0, 0, true, false, -1.0, {{0,-0.5},{-1.0,0},{0,0.5}}},
 	/* type 13b bar */
-	{ 2, 1, 0, true, true, false, 0.0, {{0,0.5},{0,-0.5}}},
+	{ 2, 1, 0, 0, true, false, 0.0, {{0,-0.5},{0,0.5}}},
 	/* type 14a two-prong fork */
-	{ 4, 0, 0, true, true, false, -1.0,
-		{{0,0.5},{-1.0,0.5},{-1.0,-0.5},{0,-0.5}}},
+	{ 4, 0, 0, 0, true, false, -1.0,
+		{{0,-0.5},{-1.0,-0.5},{-1.0,0.5},{0,0.5}}},
 	/* type 14b backward two-prong fork */
-	{ 4, 1, 0, true, true, false, 0.0,
-		{{-1.0,0.5,},{0,0.5},{0,-0.5},{-1.0,-0.5}}}
+	{ 4, 1, 0, 0, true, false, 0.0,
+		{{-1.0,-0.5,},{0,-0.5},{0,0.5},{-1.0,0.5}}}
 };
 
 void
@@ -162,15 +177,14 @@ arc_bound(F_arc *arc, int *xmin, int *ymin, int *xmax, int *ymax)
 	dx = arc->point[0].x - arc->center.x;
 	dy = arc->center.y - arc->point[0].y;
 	alpha = atan2(dy, dx);
-	if (alpha < 0.0) alpha += Three_sixty_deg;
-	/* compute_angle returns value between 0 to 2PI */
+	if (alpha < 0.0) alpha += M_2PI;
 
 	radius = sqrt(dx*dx + dy*dy);
 
 	dx = arc->point[2].x - arc->center.x;
 	dy = arc->center.y - arc->point[2].y;
 	beta = atan2(dy, dx);
-	if (beta < 0.0) beta += Three_sixty_deg;
+	if (beta < 0.0) beta += M_2PI;
 
 	bx = max(arc->point[0].x, arc->point[1].x);
 	bx = max(arc->point[2].x, bx);
@@ -185,18 +199,18 @@ arc_bound(F_arc *arc, int *xmin, int *ymin, int *xmax, int *ymax)
 	    if (alpha > beta) {
 		if (alpha <= 0 || 0 <= beta)
 		    bx = (int)(arc->center.x + radius + 1.0);
-		if (alpha <= Ninety_deg || Ninety_deg <= beta)
+		if (alpha <= M_PI_2 || M_PI_2 <= beta)
 		    sy = (int)(arc->center.y - radius - 1.0);
-		if (alpha <= One_eighty_deg || One_eighty_deg <= beta)
+		if (alpha <= M_PI || M_PI <= beta)
 		    sx = (int)(arc->center.x - radius - 1.0);
 		if (alpha <= Two_seventy_deg || Two_seventy_deg <= beta)
 		    by = (int)(arc->center.y + radius + 1.0);
 	    } else {
 		if (0 <= beta && alpha <= 0)
 		    bx = (int)(arc->center.x + radius + 1.0);
-		if (Ninety_deg <= beta && alpha <= Ninety_deg)
+		if (M_PI_2 <= beta && alpha <= M_PI_2)
 		    sy = (int)(arc->center.y - radius - 1.0);
-		if (One_eighty_deg <= beta && alpha <= One_eighty_deg)
+		if (M_PI <= beta && alpha <= M_PI)
 		    sx = (int)(arc->center.x - radius - 1.0);
 		if (Two_seventy_deg <= beta && alpha <= Two_seventy_deg)
 		    by = (int)(arc->center.y + radius + 1.0);
@@ -205,18 +219,18 @@ arc_bound(F_arc *arc, int *xmin, int *ymin, int *xmax, int *ymax)
 	    if (alpha > beta) {
 		if (beta <= 0 && 0 <= alpha)
 		    bx = (int)(arc->center.x + radius + 1.0);
-		if (beta <= Ninety_deg && Ninety_deg <= alpha)
+		if (beta <= M_PI_2 && M_PI_2 <= alpha)
 		    sy = (int)(arc->center.y - radius - 1.0);
-		if (beta <= One_eighty_deg && One_eighty_deg <= alpha)
+		if (beta <= M_PI && M_PI <= alpha)
 		    sx = (int)(arc->center.x - radius - 1.0);
 		if (beta <= Two_seventy_deg && Two_seventy_deg <= alpha)
 		    by = (int)(arc->center.y + radius + 1.0);
 	    } else {
 		if (0 <= alpha || beta <= 0)
 		    bx = (int)(arc->center.x + radius + 1.0);
-		if (Ninety_deg <= alpha || beta <= Ninety_deg)
+		if (M_PI_2 <= alpha || beta <= M_PI_2)
 		    sy = (int)(arc->center.y - radius - 1.0);
-		if (One_eighty_deg <= alpha || beta <= One_eighty_deg)
+		if (M_PI <= alpha || beta <= M_PI)
 		    sx = (int)(arc->center.x - radius - 1.0);
 		if (Two_seventy_deg <= alpha || beta <= Two_seventy_deg)
 		    by = (int)(arc->center.y + radius + 1.0);
@@ -669,6 +683,7 @@ points_bound(F_point *points, int *xmin, int *ymin, int *xmax, int *ymax)
 	*xmax = bx; *ymax = by;
 }
 
+/*
 static void
 control_points_bound(F_control *cps, int *xmin, int *ymin, int *xmax, int *ymax)
 {
@@ -688,6 +703,7 @@ control_points_bound(F_control *cps, int *xmin, int *ymin, int *xmax, int *ymax)
 	*xmin = round(sx); *ymin = round(sy);
 	*xmax = round(bx); *ymax = round(by);
 }
+*/
 
 /* extend xmin, ymin xmax, ymax by the arrow boundaries of obj (if any) */
 
@@ -796,38 +812,46 @@ arrow_bound(int objtype, F_line *obj, int *xmin, int *ymin, int *xmax,
 
 ****************************************************************/
 
-#define ROTX(x,y)  (x)*cosa + (y)*sina + xa
-#define ROTY(x,y) -(x)*sina + (y)*cosa + ya
+/* All ROT? macros operate on float numbers and their result is assigned
+ * to integers. Round both positive and negative values in positive
+ * direction.
+ */
+#define ROTX(x,y)	floor( (x)*cosa + (y)*sina + xa + 0.5)
+#define ROTY(x,y)	floor(-(x)*sina + (y)*cosa + ya + 0.5)
 
-#define ROTX2(x,y)  (x)*cosa + (y)*sina + x2
-#define ROTY2(x,y) -(x)*sina + (y)*cosa + y2
+#define ROTX2(x,y)	floor( (x)*cosa + (y)*sina + x2 + 0.5)
+#define ROTY2(x,y)	floor(-(x)*sina + (y)*cosa + y2 + 0.5)
 
-#define ROTXC(x,y)  (x)*cosa + (y)*sina + fix_x
-#define ROTYC(x,y) -(x)*sina + (y)*cosa + fix_y
+#define ROTXC(x,y)	floor( (x)*cosa + (y)*sina + fix_x + 0.5)
+#define ROTYC(x,y)	floor(-(x)*sina + (y)*cosa + fix_y + 0.5)
+
+#define		THICKNESS(T)	(T <= THICK_SCALE ? 0.5*T : T - THICK_SCALE)
 
 void
 calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 		F_pos points[], int *npoints, F_pos fillpoints[],
 		int *nfillpoints, F_pos clippts[], int *nclippts)
 {
-	double	    x, y, xb, yb, dx, dy, l, sina, cosa;
-	double	    mx, my;
-	double	    ddx, ddy, lpt, tipmv;
-	double	    alpha;
-	double	    miny, maxy;
-	int		    xa, ya, xs, ys;
-	double	    wd  = (double) arrow->wid;
-	double	    len = (double) arrow->ht;
-	double	    thk;
-	double	    radius;
-	double	    angle, init_angle, rads;
-	double	    fix_x, fix_y;
-	int		    type, style, indx, tip;
-	int		    i, np;
-	int		    offset, halfthick;
+	bool	thickline;
+	double	x, y, xb, yb, l, sina, cosa;
+	double	mx, my;
+	double	ddx, ddy, lpt, tipmv;
+	double	miny, maxy;
+	double	xa, ya;
+	double	wd  = (double) arrow->wid;
+	double	len = (double) arrow->ht;
+	double	line_thk, thk;
+	double	halfthick, clipthick;
+	int	dx, dy;
+	int	type, style, indx;
+	int	i, np;
 
+	line_thk = THICKNESS(linethick);
 	/* to enlarge the clip area in case the line is thick */
-	halfthick = linethick / 2 + 1;
+	halfthick = line_thk / 2.;
+	/* Make the clip area slightly larger than the line thickness.
+	   With less than 3, the ps-driver produces small shadows. */
+	clipthick = halfthick + 3.;
 
 	/* types = 0...10 */
 	type = arrow->type;
@@ -846,9 +870,7 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 	 * line because of the sharp point (miter join) */
 	tipmv = arrow_shapes[indx].tipmv;
 	lpt = 0.0;
-	thk = (arrow->thickness <= THICK_SCALE) ?
-		    0.5* arrow->thickness :
-		    arrow->thickness - THICK_SCALE;
+	thk = THICKNESS(arrow->thickness);
 	if (tipmv > 0.0)
 	    lpt = thk * sqrt(wd*wd + tipmv*tipmv*len*len) / 2. / wd;
 	else if (tipmv == 0.0)
@@ -856,26 +878,25 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 			    /* (Don't adjust those with tipmv < 0) */
 
 	/* alpha is the angle the line is relative to horizontal */
-	alpha = atan2(dy,-dx);
+	l = sqrt((double)dx * dx + dy * dy);
+	sina = dy / l;
+	cosa = dx / l;
 
 	/* ddx, ddy is amount to move end of line back so that arrowhead point
 	   ends where line used to */
-	ddx = lpt * cos(alpha);
-	ddy = lpt * sin(alpha);
+	ddx = lpt * (-cosa);
+	ddy = lpt * sina;
 
 	/* move endpoint of line back */
 	mx = x2 + ddx;
 	my = y2 + ddy;
 
-	l = sqrt(dx * dx + dy * dy);
-	sina = dy / l;
-	cosa = dx / l;
 	xb = mx * cosa - my * sina;
 	yb = mx * sina + my * cosa;
 
 	/* (xa,ya) is the rotated endpoint (used in ROTX and ROTY macros) */
-	xa = round(xb * cosa + yb * sina);
-	ya = round(-xb * sina + yb * cosa);
+	xa = xb * cosa + yb * sina;
+	ya = -xb * sina + yb * cosa;
 
 	miny =  100000.0;
 	maxy = -100000.0;
@@ -886,25 +907,37 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 	     *
 	     * We approximate circles with (40+zoom)/4 points
 	     */
+	    double	maxx;
+	    double	fix_x, fix_y, xs, ys;
+	    double	angle, init_angle, radius, rads;
+	    int		phase;
 
 	    /* use original dx, dy to get starting angle */
-	    init_angle = compute_angle(dx, dy);
+	    init_angle = atan2(dy, dx);
+	    if (init_angle < 0.0) init_angle += M_2PI;
+
+	    radius = len/2.0;
 
 	    /* (xs,ys) is a point the length of the arrowhead BACK from
 	     * the end of the shaft */
 	    /* for the half circle, use 0.0 */
-	    xs =  (xb-(type==5? len: 0.0)) * cosa + yb * sina + 0.5;
-	    ys = -(xb-(type==5? len: 0.0)) * sina + yb * cosa + 0.5;
+	    if (type == 5) {
+		l = len;
+		maxx = radius;
+	    } else {
+		l = 0.0;
+		maxx = 0.;
+	    }
+	    xs =  (xb - l) * cosa + yb * sina;
+	    ys = -(xb - l) * sina + yb * cosa;
 
 	    /* calc new (dx, dy) from moved endpoint to (xs, ys) */
 	    dx = mx - xs;
 	    dy = my - ys;
-	    /* radius */
-	    radius = len/2.0;
-	    fix_x = xs + (dx / (double) 2.0);
-	    fix_y = ys + (dy / (double) 2.0);
+	    fix_x = xs + (dx / 2.0);
+	    fix_y = ys + (dy / 2.0);
 	    /* choose number of points for circle - 40+mag/4 points */
-	    np = round(mag/4.0) + 40;
+	    *npoints = np = round(mag/4.0) + 40;
 
 	    if (type == 5) {
 		/* full circle */
@@ -917,46 +950,52 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 	    }
 
 	    /* draw the half or full circle */
-	    for (i = 0; i < np; i++) {
+	    for (i = 0; i < np; ++i) {
 		angle = init_angle - (rads * (double) i / (double) (np-1));
-		x = fix_x + round(radius * cos(angle));
-		points[*npoints].x = x;
-		y = fix_y + round(radius * sin(angle));
-		points[*npoints].y = y;
-		(*npoints)++;
+		x = fix_x + radius * cos(angle);
+		points[i].x = floor(x + 0.5);
+		y = fix_y + radius * sin(angle);
+		points[i].y = floor(y + 0.5);
 	    }
 
 	    /* set clipping to a box at least as large as the line thickness
 	     * or diameter of the circle, whichever is larger */
 	    /* 4 points in clip box */
-	    miny = MIN(-halfthick, -radius-thk/2.0);
-	    maxy = MAX( halfthick,  radius+thk/2.0);
+	    thickline = halfthick > radius;
 
-	    i=0;
-	    /* start at new endpoint of line */
-	    clippts[i].x = ROTXC(0,            -radius-thk/2.0);
-	    clippts[i].y = ROTYC(0,            -radius-thk/2.0);
+	    /* start at first point (half-circle), or half into the circle */
+	    if (type == 6)
+		i = 0;
+	    else
+		i =  np/2;
+	    for (phase = i; i < np; ++i) {
+		clippts[i - phase].x = points[i].x;
+		clippts[i - phase].y = points[i].y;
+	    }
+	    i -= phase;
+	    if (thickline) {
+		clippts[i].x = ROTXC(0, clipthick);
+		clippts[i].y = ROTYC(0, clipthick);
+		++i;
+	    }
+	    clippts[i].x = ROTXC(maxx + clipthick, clipthick);
+	    clippts[i].y = ROTYC(maxx + clipthick, clipthick);
 	    ++i;
-	    clippts[i].x = ROTXC(0,             miny);
-	    clippts[i].y = ROTYC(0,             miny);
+	    clippts[i].x = ROTXC(maxx + clipthick, -clipthick);
+	    clippts[i].y = ROTYC(maxx + clipthick, -clipthick);
 	    ++i;
-	    /* add halfthick in case the line cap style is Round or Projecting */
-	    clippts[i].x = ROTXC(radius+thk/2.0+halfthick, miny);
-	    clippts[i].y = ROTYC(radius+thk/2.0+halfthick, miny);
-	    ++i;
-	    /* add halfthick in case the line cap style is Round or Projecting */
-	    clippts[i].x = ROTXC(radius+thk/2.0+halfthick, maxy);
-	    clippts[i].y = ROTYC(radius+thk/2.0+halfthick, maxy);
-	    ++i;
-	    clippts[i].x = ROTXC(0,             maxy);
-	    clippts[i].y = ROTYC(0,             maxy);
-	    ++i;
+	    if (thickline) {
+		clippts[i].x = ROTXC(0, -clipthick);
+		clippts[i].y = ROTYC(0, -clipthick);
+		++i;
+	    }
 	    *nclippts = i;
 
 	} else {
 	    /*
 	     * ALL OTHER HEADS
 	     */
+	    double	offset;
 
 	    *npoints = arrow_shapes[indx].numpts;
 	    /* we'll shift the half arrowheads down by the difference of the
@@ -964,12 +1003,12 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 	     * with the main line */
 	    if (arrow_shapes[indx].half)
 		/* offset = (linethick - arrow->thickness)/2; */
-		offset = (linethick - thk)/2;
+		offset = (line_thk - thk) / 2.;
 	    else
-		offset = 0;
+		offset = 0.;
 
 	    /* fill the points array with the outline */
-	    for (i=0; i<*npoints; i++) {
+	    for (i = 0; i < *npoints; ++i) {
 		x = arrow_shapes[indx].points[i].x * len;
 		y = arrow_shapes[indx].points[i].y * wd - offset;
 		miny = MIN(y, miny);
@@ -981,7 +1020,7 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 	    /* and the fill points array if there are fill points different
 	     * from the outline */
 	    *nfillpoints = arrow_shapes[indx].numfillpts;
-	    for (i=0; i<*nfillpoints; i++) {
+	    for (i = 0; i < *nfillpoints; ++i) {
 		x = arrow_shapes[indx].fillpoints[i].x * len;
 		y = arrow_shapes[indx].fillpoints[i].y * wd - offset;
 		miny = MIN(y, miny);
@@ -990,91 +1029,51 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 		fillpoints[i].y = ROTY(x,y);
 	    }
 
-	    /* to include thick lines in clip area */
-	    miny = MIN(miny, -halfthick);
-	    maxy = MAX(maxy, halfthick);
-
-	    /* set clipping to the first three points of the arrowhead and
+	    /* set clipping to the last points of the arrowhead and
 	     * the (enlarged) box surrounding it */
 	    *nclippts = 0;
-	    if (arrow_shapes[indx].clip) {
-		    for (i=0; i < 3; i++) {
-			x = arrow_shapes[indx].points[i].x * len;
-			y = arrow_shapes[indx].points[i].y * wd - offset;
-			clippts[i].x = ROTX(x,y);
-			clippts[i].y = ROTY(x,y);
-		    }
-
-		    /* locate the tip of the head */
-		    tip = arrow_shapes[indx].tipno;
-
-		    /* now make the box around it at least as large as the line
-		     * thickness */
-		    /* start with last x, lower y */
-
-		    clippts[i].x = ROTX(x,miny);
-		    clippts[i].y = ROTY(x,miny);
-		    ++i;
-		    /* x tip, same y (note different offset in ROTX/Y2
-		     * rotation) */
-		    /* add halfthick in case the line cap style is Round or Projecting */
-		    clippts[i].x = ROTX2(arrow_shapes[indx].points[tip].x*len
-			     + halfthick + THICK_SCALE, miny);
-		    clippts[i].y = ROTY2(arrow_shapes[indx].points[tip].x*len
-			     + halfthick + THICK_SCALE, miny);
-		    ++i;
-		    /* x tip, upper y (note different offset in ROTX/Y2
-		     * rotation) */
-		    /* add halfthick in case the line cap style is Round or Projecting */
-		    clippts[i].x = ROTX2(arrow_shapes[indx].points[tip].x*len
-			    + halfthick + THICK_SCALE, maxy);
-		    clippts[i].y = ROTY2(arrow_shapes[indx].points[tip].x*len
-			    + halfthick + THICK_SCALE, maxy);
-		    ++i;
-		    /* first x of arrowhead, upper y */
-		    clippts[i].x = ROTX(arrow_shapes[indx].points[0].x*len,
-					maxy);
-		    clippts[i].y = ROTY(arrow_shapes[indx].points[0].x*len,
-					maxy);
-		    ++i;
+	    for (i = 0;
+		 i < arrow_shapes[indx].numpts - arrow_shapes[indx].startclip;
+		 ++i) {
+		clippts[i].x = points[i + arrow_shapes[indx].startclip].x;
+		clippts[i].y = points[i + arrow_shapes[indx].startclip].y;
 	    }
+
+	    /* now make the box around it at least as large as the line
+	     * thickness */
+	    /* start with last x, upper y */
+	    if (halfthick > maxy) {
+		x = arrow_shapes[indx].points[*npoints - 1].x * len;
+		clippts[i].x = ROTX(x, clipthick);
+		clippts[i].y = ROTY(x, clipthick);
+		++i;
+	    }
+
+	    /* x tip (always == 0), same y (note different offset in ROTX/Y2
+	     * rotation) */
+	    /* add halfthick in case the line cap style is Round or Projecting */
+	    clippts[i].x = ROTX2(clipthick, clipthick);
+	    clippts[i].y = ROTY2(clipthick, clipthick);
+	    ++i;
+
+	    /* x tip, upper y (note different offset in ROTX/Y2
+	     * rotation) */
+	    /* add halfthick in case the line cap style is Round or Projecting */
+	    clippts[i].x = ROTX2(clipthick, -clipthick);
+	    clippts[i].y = ROTY2(clipthick, -clipthick);
+	    ++i;
+
+	    if (-halfthick < miny) {
+		x = arrow_shapes[indx].points[arrow_shapes[indx].startclip].x *
+		    len;
+		clippts[i].x = ROTX(x, -clipthick);
+		clippts[i].y = ROTY(x, -clipthick);
+		++i;
+	    }
+
 	    /* set the number of points in the clip or bounds */
 	    *nclippts = i;
 	}
-}
-
-/********************* COMPUTE ANGLE ************************
-
-Input arguments :
-	(dx,dy) : the vector (0,0)(dx,dy)
-Output arguments : none
-Return value : the angle of the vector in the range [0, 2PI)
-
-*************************************************************/
-
-double
-compute_angle(double dx, double dy)
-{
-	double	    alpha;
-
-	if (dx == 0) {
-	    if (dy > 0)
-		alpha = M_PI_2;
-	    else
-		alpha = 3 * M_PI_2;
-	} else if (dy == 0) {
-	    if (dx > 0)
-		alpha = 0;
-	    else
-		alpha = M_PI;
-	} else {
-	    alpha = atan(dy / dx);	/* range = -PI/2 to PI/2 */
-	    if (dx < 0)
-		alpha += M_PI;
-	    else if (dy < 0)
-		alpha += M_2PI;
-	}
-	return (alpha);
 }
 
 /* Computes a point on a line which is a chord to the arc specified by */

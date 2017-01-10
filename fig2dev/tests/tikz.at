@@ -1,0 +1,41 @@
+AT_BANNER([Test tikz output language.])
+AT_SETUP([conditionally allocate \XFigu])
+AT_KEYWORDS(tikz newdimen)
+
+AT_DATA(tex.tex, [\input tikz
+\input line.tikz\immediate\write16{\meaning\XFigu}
+\input line.tikz\immediate\write16{\meaning\XFigu}\bye
+])
+
+AT_DATA(latex.tex, [\documentclass{minimal}\usepackage{tikz}\begin{document}
+\input line.tikz\immediate\write16{\meaning\XFigu}
+\input line.tikz\immediate\write16{\meaning\XFigu}\end{document}
+])
+
+fig2dev -L tikz $srcdir/data/line.fig line.tikz
+
+dnl do not count on grep to support -q, or -s
+AT_CHECK([tex tex.tex | $FGREP dimen | uniq | wc -l
+],0,[1
+],ignore-nolog)
+
+AT_CHECK([latex latex.tex | $FGREP dimen | uniq | wc -l
+],0,[1
+],ignore-nolog)
+
+AT_CLEANUP
+
+AT_SETUP([pattern with stroke color equal to fill color])
+AT_KEYWORDS(tikz pattern)
+
+AT_DATA(box.fig, [FIG_FILE_TOP
+2 2 0 0 1 1 50 -1 49 0.0 0 0 -1 0 0 4
+	 0 0 600 0 600 600 0 600
+])
+
+dnl do not count on grep to support -q, or -s
+AT_CHECK([fig2dev -L tikz -P box.fig | $FGREP '\pgfsetfillpattern{xfigp8}{blue}
+\pattern'
+],0,ignore,ignore)
+
+AT_CLEANUP

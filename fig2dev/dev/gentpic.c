@@ -74,8 +74,18 @@
  *		7) The default font size is (assumed to be) 10 points!
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "tpicfonts.h"
 
 #define			TOP	10.5	/* top of page is 10.5 inch */

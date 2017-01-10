@@ -39,8 +39,16 @@
  *  - ...
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 
 #define dofill(obj)	1.2-((double)obj->fill_style/(double)BLACK_FILL)
 #define DEF_PEN		0.5

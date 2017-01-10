@@ -23,8 +23,22 @@
  *      based on code by Mike Markowski (mm@udel.edu), U of Delaware, 4/98
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <math.h>
+#include <limits.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
+#include "pathmax.h"
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
@@ -108,7 +122,7 @@ void
 genptk_start(F_compound *objects)
 {
 	char		stfp[1024];
-	float		wid, ht, swap;
+	float		wid = -1. , ht = -1. , swap;
 	struct paperdef	*pd;
 
 	ppi = ppi / mag;

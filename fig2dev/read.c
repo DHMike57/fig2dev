@@ -24,21 +24,35 @@
  *
  */
 
-#include "fig2dev.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#ifdef	HAVE_STRERROR
+#include <errno.h>
+#endif
 #include <ctype.h>
-#include <sys/param.h>
+#include <limits.h>
+#include "bool.h"
+
+#include "fig2dev.h"
 #include "alloc.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "free.h"
 #include "read.h"
 #include "trans_spline.h"
+#include "pathmax.h"
 
 char		Err_incomp[] = "Incomplete %s object at line %d.";
 
 extern F_arrow	*make_arrow(int type, int style,
 				double thickness, double wid, double ht);
 
-static void		 read_colordef(FILE *fp);
+static void		 read_colordef(void);
 static F_ellipse	*read_ellipseobject(void);
 static F_line		*read_lineobject(FILE *fp);
 static F_text		*read_textobject(FILE *fp);
@@ -53,7 +67,7 @@ static int		 get_line(FILE *fp);
 static void		 note_pattern(int fill_style);
 static void		 skip_line(FILE *fp);
 static int		 backslash_count(char cp[], int start);
-static int		 save_comment(FILE *fp);
+static int		 save_comment(void);
 
 #define		FILL_CONVERT(f)	((v2_flag || (f) < WHITE_FILL) \
 					? (v30_flag? f: (f-1)) : 20 - ((f)-1)*5)
@@ -327,7 +341,7 @@ read_objects(FILE *fp, F_compound *obj)
 		}
 	    switch (object) {
 		case OBJ_COLOR_DEF:
-		    read_colordef(fp);
+		    read_colordef();
 		    if (num_object) {
 			put_msg("Color definitions must come before other objects (line %d).",
 				line_no);
@@ -442,7 +456,7 @@ read_objects(FILE *fp, F_compound *obj)
 } /*  read_objects */
 
 static void
-read_colordef(FILE *fp)
+read_colordef(void)
 {
     int			c;
     unsigned int	r,g,b;
@@ -725,10 +739,11 @@ read_ellipseobject(void)
  * Sanitize line objects. Return 0 on success, -1 otherwise.
  * On error, call free_linestorage(l) after sanitize_lineobject().
  * polylines: remove fill, if less than 3 points
+ *		remove arrows, if only one point
  * rectangles, polygons: last point must coincide with first point
  * rectangle: convert to polygon, if not 5 points
  * rectangle with rounded corners: error, if not 5 points
- * boxes: allowe only vertical and horizontal edges
+ * boxes: allow only vertical and horizontal edges
  */
 static int
 sanitize_lineobject(
@@ -745,9 +760,24 @@ sanitize_lineobject(
 				"picture box"
 	};
 
-	if (l->type == T_POLYLINE) {
-	    if (l->points->next == NULL || l->points->next->next == NULL)
-		l->fill_style = UNFILLED;
+	if (l->type == T_POLYLINE &&
+		(l->points->next == NULL || l->points->next->next == NULL)) {
+	    l->fill_style = UNFILLED;
+	    if (l->points->next == NULL) {
+		if (l->for_arrow) {
+		    /* tests/testsuite -k polyline,read.c */
+		    put_msg(
+			"A single point with a forward arrow - remove the arrow.");
+		    free((char*)l->for_arrow);
+		    l->for_arrow = NULL;
+		}
+		if (l->back_arrow) {
+		    put_msg(
+			"A single point with a backward arrow - remove the arrow.");
+		    free((char*)l->back_arrow);
+		    l->back_arrow = NULL;
+		}
+	    }
 	    return 0;
 	}
 
@@ -808,7 +838,7 @@ static F_line *
 read_lineobject(FILE *fp)
 {
 	F_line	*l;
-	F_point	*p, *q;
+	F_point	*o = NULL, *p, *q;
 	int	n, x, y, fa, ba;
 	int	type, style, radius_flag;
 	double	thickness, wid, ht;
@@ -958,7 +988,15 @@ read_lineobject(FILE *fp)
 	    q->y = y;
 	    q->next = NULL;
 	    p->next = q;
+	    o = p;
 	    p = q;
+	}
+
+	l->last[0].x = p->x;
+	l->last[0].y = p->y;
+	if (o) {
+	    l->last[1].x = o->x;
+	    l->last[1].y = o->y;
 	}
 
 	if (sanitize_lineobject(l, p)) {
@@ -1351,7 +1389,7 @@ get_line(FILE *fp)
 	}
 	++line_no;
 	if (*buf == '#') {			/* save any comments */
-	    if (save_comment(fp) < 0)
+	    if (save_comment() < 0)
 		return -1;
 	} else if (*buf != '\n') {		/* Skip empty lines */
 	    len = strlen(buf);
@@ -1366,7 +1404,7 @@ get_line(FILE *fp)
 /* save a comment line to be stored with the *subsequent* object */
 
 static int
-save_comment(FILE *fp)
+save_comment(void)
 {
     int		    i;
 

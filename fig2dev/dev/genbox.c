@@ -19,8 +19,16 @@
  *	genbox.c: Empty box driver for fig2dev translator
  *
 */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 
 void
 genbox_option(char opt, char *optarg)

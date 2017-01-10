@@ -24,6 +24,13 @@
  *    #5   font shape
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include "bool.h"
+
 #include "fig2dev.h"
 
 bool FontSizeOnly = false;

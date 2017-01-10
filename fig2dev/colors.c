@@ -15,6 +15,17 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
 
 struct color_db {
@@ -30,7 +41,7 @@ int
 lookup_X_color(char *name, RGB *rgb)
 {
 	static bool	have_read_X_colors = false;
-	int		i, n;
+	int		i, n = 0;
 	unsigned short	r, g, b;
 	struct color_db *col;
 

@@ -29,8 +29,20 @@
 
 #define PST_DRIVER_VERSION 1.2
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <ctype.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "texfonts.h"
 
 /**********************************************************************/
@@ -41,7 +53,7 @@
 #define STRINGIFY(S) _STRINGIFY(S)
 #define ARRAY_SIZE(A) ((int)(sizeof (A) / sizeof (A)[0]))
 #define bit(N) (1 << (N))
-#define PI (3.1415926535897932384626433832795)
+#define PI (M_PI) /* use the same pi as everywhere else */
 
 /* format used for double coordinates */
 #define DBL "%.4lf"
@@ -635,7 +647,8 @@ genpstrx_option(char opt, char *optarg)
     break;
 
   case 'S':
-    if (optarg && sscanf(optarg, "%d", &tmp_int) == 1 && (tmp_int < 8 || tmp_int > 12)) {
+    if (optarg && sscanf(optarg, "%d", &tmp_int) == 1
+	&& (tmp_int < 8 || tmp_int > 12)) {
       fprintf(stderr, "Scale must be between 8 and 12 inclusively\n");
       exit(1);
     }

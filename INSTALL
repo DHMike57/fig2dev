@@ -67,6 +67,6 @@ contained in the packages
 are needed. To read xpm images, in addition you will need
   libxpm-dev, libxt-dev, libX11-dev.
 
-At runtime, the packages
+At runtime and for the tests run by make check, the packages
   ghostscript and netpbm
 are needed to produce various bitmap output formats.

@@ -37,9 +37,17 @@
  * Jose Alberto.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
-#include "texfonts.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 
 extern double rad2deg;
 

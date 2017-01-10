@@ -13,8 +13,18 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <unistd.h>
+#include <limits.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
+#include "pathmax.h"
 
 extern	int	_read_pcx(FILE *pcxfile, F_pic *pic);	/* readpcx.c */
 

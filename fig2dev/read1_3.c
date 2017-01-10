@@ -18,12 +18,21 @@
 /*******************************************************************/
 /***************       Read version 1.3 format       ***************/
 /*******************************************************************/
-/* #include <sys/types.h>
- * #include <sys/stat.h>
- * #include <errno.h>	*/
-#include "alloc.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef	HAVE_STRERROR
+#include <errno.h>
+#endif
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "alloc.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "free.h"
 
 /*******    Fig 1.3 subtype of objects    *******/

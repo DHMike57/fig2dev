@@ -22,11 +22,23 @@
  *    Color, rotated text and ISO-chars added by Herbert Bauer 11/91
 */
 
-#include "fig2dev.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <math.h>
+#include "bool.h"
+#include "pi.h"
 #ifdef HAVE_GETPWUID
 #include <pwd.h>
 #endif
-#include "object.h"
+
+#include "fig2dev.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "genlatex.h"
 #include "setfigfont.h"
 #include "texfonts.h"
@@ -381,22 +393,22 @@ put_box(int llx, int lly, int urx, int ury, F_line *l)
 		    ((convy(lly/ppi)+convy(ury/ppi))/2)*CONVUNIT);
 	       fprintf(tfp,"\\linethickness=%dpt\n", l->thickness);
 	   }
-	   else if (l->fill_style != UNFILLED && l->fill_style > (int)(BLACK_FILL*3/4))
+	   else if (l->fill_style > BLACK_FILL*3/4)
 	   {
 	       fprintf(tfp,"\\setshadegrid span <1pt>\n");
 	       fprintf(tfp,"\\shaderectangleson\n");
 	   }
-	   else if (l->fill_style != UNFILLED && l->fill_style > (int)(BLACK_FILL*2/4))
+	   else if (l->fill_style > BLACK_FILL*2/4)
 	   {
 	       fprintf(tfp,"\\setshadegrid span <2pt>\n");
 	       fprintf(tfp,"\\shaderectangleson\n");
 	   }
-	   else if (l->fill_style != UNFILLED && l->fill_style > (int)(BLACK_FILL*1/4))
+	   else if (l->fill_style > BLACK_FILL*1/4)
 	   {
 	       fprintf(tfp,"\\setshadegrid span <4pt>\n");
 	       fprintf(tfp,"\\shaderectangleson\n");
 	   }
-	   else if (l->fill_style && l->fill_style == WHITE_FILL)
+	   else if (l->fill_style == WHITE_FILL)
 	   {
 	       fprintf(stderr,"WHITE_FILL not implemented for boxes\n");
 	   }

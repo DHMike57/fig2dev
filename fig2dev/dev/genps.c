@@ -36,23 +36,37 @@
  *	splitting into layers.
 */
 
-#include "fig2dev.h"
-#include "object.h"
-#include "bound.h"
-#include "colors.h"	/* lookup_X_color(), rgb2luminance() */
-#include "psencode.h"
-#include "psfonts.h"
-#include "creationdate.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <unistd.h>
+#ifdef	HAVE_STRERROR
+#include <errno.h>
+#endif
+#include <math.h>
+#include <ctype.h>
+#include <limits.h>
 #include <sys/stat.h>	/* struct stat */
 #ifdef HAVE_GETPWUID
 #include <pwd.h>
 #endif
 #include <locale.h>
+#include "bool.h"
+#include "pi.h"
 
-/* for the xpm package */
-#ifdef HAVE_X11_XPM_H
-#include <X11/xpm.h>
-#endif /* HAVE_X11_XPM_H */
+#include "fig2dev.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
+#include "bound.h"
+#include "colors.h"	/* lookup_X_color(), rgb2luminance() */
+#include "psencode.h"
+#include "psfonts.h"
+#include "creationdate.h"
+#include "pathmax.h"
 
 /* include the PostScript preamble, patterns etc */
 #include "psprolog.h"
@@ -1260,7 +1274,7 @@ static int
 removestr(char *buf, char *str, int *len)
 {
 	int	slen = strlen(str)-1;
-	int	i, found=0;
+	int	found=0;
 	char	*cp = buf;
 
 	while (cp=strstr(buf,str)) {
@@ -2309,9 +2323,9 @@ clip_arrows(F_line *obj, int objtype)
 				(double) lpntx1, (double) lpnty1,
 				a->direction, a->for_arrow, &lpntx2, &lpnty2);
 	}
-	calc_arrow(lpntx2, lpnty2, lpntx1, lpnty1, obj->thickness <= THICK_SCALE ?
-		   (obj->thickness+2)/2 : obj->thickness+1-(int)THICK_SCALE, obj->for_arrow,
-		   fpoints, &nfpoints, ffillpoints, &nffillpoints, clippoints, &nclippoints);
+	calc_arrow(lpntx2, lpnty2, lpntx1, lpnty1, obj->thickness,
+		   obj->for_arrow, fpoints, &nfpoints, ffillpoints,
+		   &nffillpoints, clippoints, &nclippoints);
 	/* set the clipping area */
 	for (i=nclippoints-1; i>=0; i--) {
 	    fprintf(tfp,"%d %d %c ",clippoints[i].x,clippoints[i].y, i==nclippoints-1? 'm': 'l');
@@ -2330,9 +2344,9 @@ clip_arrows(F_line *obj, int objtype)
 				(double) fpntx1, (double) fpnty1,
 				a->direction ^ 1, a->back_arrow, &fpntx2, &fpnty2);
 	}
-	calc_arrow(fpntx2, fpnty2, fpntx1, fpnty1, obj->thickness <= THICK_SCALE ?
-		   (obj->thickness+2)/2 : obj->thickness+1-(int)THICK_SCALE, obj->back_arrow,
-		   bpoints, &nbpoints, bfillpoints, &nbfillpoints, clippoints, &nclippoints);
+	calc_arrow(fpntx2, fpnty2, fpntx1, fpnty1, obj->thickness,
+		   obj->back_arrow, bpoints, &nbpoints, bfillpoints,
+		   &nbfillpoints, clippoints, &nclippoints);
 	/* set the clipping area */
 	for (i=nclippoints-1; i>=0; i--) {
 	    fprintf(tfp,"%d %d %c ",clippoints[i].x,clippoints[i].y, i==nclippoints-1? 'm': 'l');

@@ -26,7 +26,7 @@ texfile(FILE *tx, char *in, argument *arg_list)
 {
   enum language to;
   argument *a, *arg_l;
-  int texfonts = 1;  /* do we use TeX fonts for output? */
+  /* int texfonts = 1; */  /* do we use TeX fonts for output? */
 
   for (a = arglist; a; a = a->next) {
      to = a->tolang;
@@ -39,7 +39,7 @@ texfile(FILE *tx, char *in, argument *arg_list)
 	switch (to) {
 	  case box:
 		fprintf(tx, "\\typeout{TransFig: null figures.}\n");
-		texfonts = 0;
+		/* texfonts = 0; */
 		break;
 
 	  case cgm:
@@ -64,7 +64,7 @@ texfile(FILE *tx, char *in, argument *arg_list)
 	  case xbm:
 	  case xpm:
 		fprintf(tx, "\\typeout{TransFig: figures in %s.}\n", lname[(int)to]);
-		texfonts = 0;
+		/* texfonts = 0; */
 		break;
 
 	  case eepicemu:
@@ -100,12 +100,12 @@ texfile(FILE *tx, char *in, argument *arg_list)
 
 	  case ps:
 		fprintf(tx, "\\typeout{TransFig: figures in PostScript.}\n");
-		texfonts = 0;
+		/* texfonts = 0; */
 		break;
 
 	  case eps:
 		fprintf(tx, "\\typeout{TransFig: figures in EPS.}\n");
-		texfonts = 0;
+		/* texfonts = 0; */
 		break;
 
 	  case pstex:
@@ -121,12 +121,12 @@ texfile(FILE *tx, char *in, argument *arg_list)
 	  case psfig:
 		fprintf(tx, "\\typeout{TransFig: figures in PostScript w/psfig.}\n");
 		fprintf(tx, "\\%s{psfig}\n",INCLFIG);
-		texfonts = 0;
+		/* texfonts = 0; */
 		break;
 
 	  case tpic:
 		fprintf(tx, "\\typeout{TransFig: figures in tpic.}\n");
-		texfonts = 0;
+		/* texfonts = 0; */
 		break;
 
 	  default:

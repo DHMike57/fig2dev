@@ -25,8 +25,19 @@
 /* |   provided "as is" without express or implied warranty.           | */
 /* +-------------------------------------------------------------------+ */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <limits.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
+#include "pathmax.h"
 
 								/* readpics.c */
 extern	FILE	*open_picfile(char *name, int *type, bool pipeok,char *retname);

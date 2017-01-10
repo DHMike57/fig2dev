@@ -25,14 +25,25 @@
  *
  * ------------------------------------------------------------------*/
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "psimage.h"
 #include "creationdate.h"
 #ifdef HAVE__SETMODE	/* see fig2dev.c */
 #include <io.h>
 #include <fcntl.h>
 #endif
+#include "pathmax.h"
 
 extern void	 close_picfile(FILE *file, int type);
 extern FILE	*open_picfile(char *name, int *type, bool pipeok,char *retname);

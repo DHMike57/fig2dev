@@ -31,8 +31,18 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "alloc.h"
 #include "creationdate.h"
 
@@ -601,12 +611,6 @@ int define_aperture_for_arc(F_arc *a) {
 
 char   *cctype[] = { "none", "black", "white" };
 
-/* arrowhead arrays */
-F_pos   points[50];
-int     npoints;
-int     arrowx1, arrowy1;	/* first point of object */
-int     arrowx2, arrowy2;	/* second point of object */
-
 static F_point *p;
 
 /** Used to generate sequence numbers. */
@@ -701,11 +705,13 @@ gengbx_start(F_compound *objects)
 
   sprintf(outbuf, "Creator: %s",prog);   write_comment(outbuf);
   sprintf(outbuf, "Version: %s", PACKAGE_VERSION); write_comment(outbuf);
-  sprintf(outbuf, "Driver version: %s", GBX_DRIVER_VERSION); write_comment(outbuf);
+  sprintf(outbuf, "Driver version: %s", GBX_DRIVER_VERSION);
+  write_comment(outbuf);
   write_comment("Author: Edward Grace <edward.grace@gmail.com>");
 
-  if (creation_date(stime))
+  if (creation_date(stime)) {
     sprintf(outbuf, "Creation date: %s", stime); write_comment(outbuf);
+  }
 
   switch (gbx_dimensions) {
   case units_mm:
@@ -774,7 +780,7 @@ void gengbx_line (F_line *l) {
   if (! is_pen_colour_ok(l->pen_color) ) return;
 
   /* If line thickness is less than or equal to zero, warn and don't output. */
-  if ( ( ! l->thickness > 0.0 ) && l->fill_style == fill_style_none ) {
+  if ( l->thickness <= 0 && l->fill_style == fill_style_none ) {
     warn_once(warn_line_zero_width,"Unfilled line of zero width, ignoring.");
     return;
   }
@@ -1061,7 +1067,7 @@ gengbx_arc (F_arc *a) {
 
 
   /* If line thickness is less than or equal to zero, warn and don't output. */
-  if ( (! a->thickness > 0.0 ) && a->fill_style == fill_style_none ) {
+  if ( a->thickness <= 0 && a->fill_style == fill_style_none ) {
     warn_once(warn_line_zero_width,"Unfilled arc of zero width, ignoring.");
     return;
   }

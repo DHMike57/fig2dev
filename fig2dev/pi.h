@@ -2,7 +2,7 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2016 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -15,9 +15,9 @@
  *
  */
 
-#if !HAVE_DECL_M_PI
+/* use the same PI as xfig uses, see xfig/src/fig.h */
+#undef M_PI
 #define M_PI	3.14159265358979323846
-#endif
 
 /* In addition,
  * M_2PI is used in bound.c,

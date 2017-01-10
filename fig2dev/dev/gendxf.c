@@ -38,8 +38,18 @@
  *	  PCL job control option added Brian V. Smith 1/2001
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "localmath.h"
 
 static void set_style(int style, double length);
@@ -67,7 +77,6 @@ static bool	reflected = false;
 static int	fonts = FONTS;
 static int	colors = COLORS;
 static int	patterns = PATTERNS;
-static int	line_color = DEFAULT;
 static int	line_style = SOLID_LINE;
 static int	fill_pattern = DEFAULT;
 static double	dash_length = DEFAULT;		/* in pixels */
@@ -209,16 +218,15 @@ gendxf_option(char opt, char *optarg)
 
 static double	cpi;		/* cent/inch */
 static double	cpp;		/* cent/pixel */
-static double	wcmpp = CMPP;	/* centimeter/point */
 static double	hcmpp = CMPP;	/* centimeter/point */
 
 void
 gendxf_start(F_compound *objects)
 {
-	int	    P1x, P1y, P2x, P2y;
-	int	    Xll, Yll, Xur, Yur;
-	double	      Xmin,Xmax,Ymin,Ymax;
-	double	      height, length;
+/*	int	    P1x, P1y, P2x, P2y; */
+/*	int	    Xll, Yll, Xur, Yur; */
+/*	double	      Xmin,Xmax,Ymin,Ymax; */
+/*	double	      height, length; */
 
 	if (fabs(mag) < 1.0/2048.0){
 	    fprintf(stderr, "|mag| < 1/2048\n");
@@ -331,46 +339,16 @@ gendxf_start(F_compound *objects)
 	fprintf(tfp, "	0\nSECTION\n  2\nENTITIES\n");
 
 	if (!landscape) {			 /* portrait mode */
-	    Xll		= yl*UNITS_PER_INCH;
-	    Xur		= yu*UNITS_PER_INCH;
-	    Yll		= (pagelength - xu)*UNITS_PER_INCH;
-	    Yur		= (pagelength - xl)*UNITS_PER_INCH;
-	    length	= yu - yl;
-	    height	= xu - xl;
-	    P1x		= Xll;
-	    P2x		= Xur;
 	    if (reflected)			  /* upside-down text */
 		hcmpp	= -hcmpp;
-	    if (reflected) {			    /* reflected */
-		P1y	= Yll;
-		P2y	= Yur;
-	    } else {
-		P1y	= Yur;
-		P2y	= Yll;
-	    }
-	} else {					/* landscape mode */
-	    Xll		= xl*UNITS_PER_INCH;
-	    Yll		= yl*UNITS_PER_INCH;
-	    Yur		= yu*UNITS_PER_INCH;
-	    Xur		= xu*UNITS_PER_INCH;
-	    length	= xu - xl;
-	    height	= yu - yl;
-	    if (reflected) {			    /* flipped	 or not */
-		wcmpp	= -wcmpp;		       /* backward text */
-		P1x	= Xur;
-		P2x	= Xll;
-	    } else {				    /* normal */
-		P1x	= Xll;
-		P2x	= Xur;
-	    }
-	    P1y		= Yur;
-	    P2y		= Yll;
 	}
 
-	Xmin = xz;
-	Ymin = yz;
-	Xmax = xz + length/mag;
-	Ymax = yz + height/mag;
+/*
+ *	Xmin = xz;
+ *	Ymin = yz;
+ *	Xmax = xz + length/mag;
+ *	Ymax = yz + height/mag;
+ */
 
 /*
  *	   fprintf(tfp, "IP%d,%d,%d,%d;\n",
@@ -389,12 +367,12 @@ gendxf_start(F_compound *objects)
 static void
 draw_arrow_head(double x1, double y1, double x2, double y2, double arrowht, double arrowwid)
 {
-	double	      x, y, xb, yb, dx, dy, l, sina, cosa;
-	double	      xc, yc, xd, yd;
+/*	double	      x, y, xb, yb, dx, dy, l, sina, cosa; */
+/*	double	      xc, yc, xd, yd; */
 	int style;
 	double length;
 
-	dx = x2 - x1;
+/*	dx = x2 - x1;
 	dy = y1 - y2;
 	l = sqrt(dx*dx+dy*dy);
 	sina = dy/l;
@@ -407,7 +385,7 @@ draw_arrow_head(double x1, double y1, double x2, double y2, double arrowht, doub
 	yc = -x*sina + y*cosa;
 	y = yb + arrowwid/2.0;
 	xd =  x*cosa + y*sina;
-	yd = -x*sina + y*cosa;
+	yd = -x*sina + y*cosa; */
 
 	/* save line style and set to solid */
 	style = line_style;
@@ -487,30 +465,6 @@ set_width(int w)
 {
 }
 
-/*
- * set_color - issue line color commands as appropriate
- */
-static void
-set_color(int color)
-{
-	static int	number = 0;	 /* 1 <= number <= 8 */
-	static double	thickness = 0.3; /* pen thickness in millimeters */
-/*
- *	  if (line_color != color) {
- *	      line_color  = color;
- *	      color	   = (colors + color)%colors;
- *	      if (number != pen_number[color]) {
- *		  number  = pen_number[color];
- *		  fprintf(tfp, "SP%d;\n", pen_number[color]);
- *		  }
- *	      if (thickness != pen_thickness[color]) {
- *		  thickness  = pen_thickness[color];
- *		  fprintf(tfp, "PT%.4f;\n", pen_thickness[color]);
- *		  }
- *	      }
- */
-}
-
 static void
 fill_polygon(int pattern, int color)
 {
@@ -518,7 +472,6 @@ fill_polygon(int pattern, int color)
 	    int		       style;
 	    double	  length;
 
-	    set_color(color);
 	    if (fill_pattern != pattern) {
 		fill_pattern  = pattern;
 		fprintf(tfp, "FT%d,%.4f,%.4f;", fill_type[pattern],
@@ -581,7 +534,6 @@ gendxf_arc(F_arc *a)
 
 	    set_style(a->style, a->style_val);
 	    set_width(a->thickness);
-	    set_color(a->pen_color);
 
 	    cx = a->center.x/ppi;
 	    cy = a->center.y/ppi;
@@ -647,7 +599,6 @@ gendxf_ellipse(F_ellipse *e)
 
     set_style(e->style, e->style_val);
     set_width(e->thickness);
-    set_color(e->pen_color);
 
     a	  = e->radiuses.x/ppi;
     b	  = e->radiuses.y/ppi;
@@ -697,7 +648,6 @@ gendxf_line(F_line *l)
 
     set_style(l->style, l->style_val);
     set_width(l->thickness);
-    set_color(l->pen_color);
 
     p = l->points;
     q = p->next;
@@ -776,7 +726,7 @@ gendxf_line(F_line *l)
       case	  T_ARC_BOX: {
 	  int		     llx, lly, urx, ury;
 	  double	 x0,  y0,  x1,	y1;
-	  double	dx, dy, angle;
+	  double	dx, dy;
 
 	  llx	      = urx	   = p->x;
 	  lly	      = ury	   = p->y;
@@ -793,7 +743,6 @@ gendxf_line(F_line *l)
 	  y0 = ury/ppi;
 	  y1 = lly/ppi;
 	  dy = -dx;
-	  angle = -M_PI/2.0;
 
 	  fprintf(tfp, "999\n !! found arc-box\n");
 
@@ -1027,7 +976,6 @@ gendxf_spline(F_spline *s)
 	if (s->thickness != 0) {
 	    set_style(s->style, s->style_val);
 	    set_width(s->thickness);
-	    set_color(s->pen_color);
 
 	    if (int_spline(s))
 		gendxf_itp_spline(s);
@@ -1046,11 +994,6 @@ gendxf_text(F_text *t)
 {
   static int font = DEFAULT;	    /* font */
   static int size = DEFAULT;	    /* font size	in points */
-  static int cs   = 0;		    /* standard  character set */
-  static int ca   = 0;		    /* alternate character set */
-  static double theta = 0.0;	    /* character slant	in degrees */
-  static double angle = 0.0;	    /* label direction	in radians */
-  double width;			    /* character width	in centimeters */
   double height;		    /* character height in centimeters */
 
   fprintf(tfp, "999\n !! found text %s\n",t->cstring);
@@ -1070,7 +1013,6 @@ gendxf_text(F_text *t)
   fprintf(tfp, " 72\n%3i\n",t->type);
 
   size = t->size;
-  width = size*wcmpp*wide[font];
   height = size*hcmpp*high[font];
   fprintf(tfp, " 40\n%f\n",height);
 

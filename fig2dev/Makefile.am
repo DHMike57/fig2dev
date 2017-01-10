@@ -29,10 +29,10 @@ AM_LDFLAGS = $(PATH_LDFLAGS)
 
 bin_PROGRAMS = fig2dev
 
-fig2dev_SOURCES = alloc.h arrow.c bound.h bound.c colors.h colors.c \
+fig2dev_SOURCES = alloc.h arrow.c bool.h bound.h bound.c colors.h colors.c \
     creationdate.h creationdate.c drivers.h fig2dev.h fig2dev.c free.h free.c \
-    iso2tex.c localmath.h localmath.c object.h psfonts.c read1_3.c read.h \
-    read.c trans_spline.h trans_spline.c pi.h getopt.c
+    iso2tex.c localmath.h localmath.c object.h psfonts.c read1_3.c pathmax.h \
+    read.h read.c trans_spline.h trans_spline.c pi.h getopt.c
 
 # CONFIG_HEADER is config.h, which contains PACKAGE_VERSION. If that
 # changes, fig2dev should take up the new version string.

@@ -25,11 +25,24 @@
  *		the final XXX file.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <ctype.h>
+#include <limits.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "colors.h"	/* lookup_X_color(), rgb2luminance() */
 #include "genps.h"
-#include "texfonts.h"
+#include "pathmax.h"
 
 static	char	 *gsdev,tmpname[PATH_MAX];
 static	bool	 direct;

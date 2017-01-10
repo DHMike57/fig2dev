@@ -13,9 +13,20 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <math.h>
+#include "bool.h"
+
 #include "fig2dev.h"
 #include "alloc.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "free.h"
 #include "trans_spline.h"
 
@@ -46,35 +57,26 @@
       spline_segment_computing(step, K, P0, P1, P2, P3, S1, S2)
 
 
-static void		spline_segment_computing(float step, int k, F_point *p0,
-				F_point *p1, F_point *p2, F_point *p3,
-				double s1, double s2);
-static float		step_computing(int k, F_point *p0, F_point *p1,
-				F_point *p2, F_point *p3, double s1, double s2,
-				float precision);
-static inline void	point_adding(double *A_blend, F_point *p0, F_point *p1,
-				F_point *p2,F_point *p3);
-static inline void	point_computing(double *A_blend, F_point *p0,
-				F_point *p1, F_point *p2, F_point *p3, int *x,
-				int *y);
-static inline void	negative_s1_influence(double t, double s1, double *A0,
-				double *A2);
-static inline void	negative_s2_influence(double t, double s2, double *A1,
-				double *A3);
-static inline void	positive_s1_influence(int k, double t, double s1,
-				double *A0, double *A2);
-static inline void	positive_s2_influence(int k, double t, double s2,
-				double *A1, double *A3);
-/* static inline double	f_blend(double numerator, double denominator);
- * static inline double	g_blend(double u, double q);
- * static inline double	h_blend(double u, double q);
- * static void		free_point_array();
- * static int		num_points(F_point *points);
- * static void		too_many_points();
- */
-static F_line		*create_line(void);
-static F_point		*create_point(void);
-static F_control	*create_cpoint(void);
+static void	spline_segment_computing(float step, int k, F_point *p0,
+			F_point *p1, F_point *p2, F_point *p3,
+			double s1, double s2);
+static float	step_computing(int k, F_point *p0, F_point *p1, F_point *p2,
+			F_point *p3, double s1, double s2, float precision);
+static void	point_adding(double *A_blend, F_point *p0, F_point *p1,
+			F_point *p2,F_point *p3);
+static void	point_computing(double *A_blend, F_point *p0, F_point *p1,
+			F_point *p2, F_point *p3, int *x, int *y);
+static void	negative_s1_influence(double t, double s1, double *A0,
+			double *A2);
+static void	negative_s2_influence(double t, double s2, double *A1,
+			double *A3);
+static void	positive_s1_influence(int k, double t, double s1,
+			double *A0, double *A2);
+static void	positive_s2_influence(int k, double t, double s2,
+			double *A1, double *A3);
+static F_line	*create_line(void);
+static F_point	*create_point(void);
+static F_control *create_cpoint(void);
 
 /************** CURVE DRAWING FACILITIES ****************/
 
@@ -647,15 +649,4 @@ create_point(void)
     if ((p = (F_point *) malloc(POINT_SIZE)) == NULL)
 	put_msg(Err_mem);
     return p;
-}
-
-
-static int
-num_points(F_point *points)
-{
-    int		    n;
-    F_point	   *p;
-
-    for (p = points, n = 0; p != NULL; p = p->next, n++);
-    return n;
 }

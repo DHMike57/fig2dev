@@ -294,7 +294,8 @@ TeX arrowheads.
 
 .TP
 .B \-E num
-Set encoding for text translation (0 = none, 1 = ISO-8859-1, 2 = ISO-8859-2).
+Set encoding for text translation (0 = none, 1 = ISO-8859-1, 2 = ISO-8859-2;
+default 1).
 
 @nfssman@
 
@@ -483,7 +484,7 @@ Set a separate magnification for the length of line dashes to \fIdmag\fR.
 .TP
 .B \-E num
 Set encoding for latex text translation
-(0 = no translation, 1 = ISO-8859-1, 2 = ISO-8859-2).
+(0 = no translation, 1 = ISO-8859-1, 2 = ISO-8859-2; default 1).
 
 @nfssman@
 
@@ -705,13 +706,13 @@ set using "\\linethickness", but also with the eepic-command
 .TP
 .B \-E num
 Set encoding for text translation (0 = no translation, 1 = ISO-8859-1, 2 =
-ISO-8859-2).
+ISO-8859-2; default 1).
 For instance, to use utf8-encoded text, first \fIcreate\fR a text object, then
 \fIedit\fR
 the text using the edit-button in xfig. Convert the fig-file to pict2e with
 the option \fB\-E\ 0\fR and include "\fB\\usepackage[utf8]{inputenc}\fR"
 in the LaTeX file (not necessary when using xelatex).
-In  xfig, the text typed in may not be displayed correctly, but the document
+In xfig, the text typed in may not be displayed correctly, but the document
 produced from the LaTeX file will show the same text as was typed in.
 
 .TP
@@ -811,7 +812,7 @@ Anonymous mode. Do not write the user name into the output file.
 .TP
 .B \-E num
 Set encoding for latex text translation
-(0 = no translation, 1 = ISO-8859-1, 2 = ISO-8859-2).
+(0 = no translation, 1 = ISO-8859-1, 2 = ISO-8859-2; default 1).
 
 .TP
 .B \-f font
@@ -1150,7 +1151,8 @@ PostScript file generated using
 
 .TP
 .B \-E num
-Set encoding for latex text translation (0 no translation, 1 ISO-8859-1, 2 ISO-8859-2)
+Set encoding for latex text translation
+(0 no translation, 1 ISO-8859-1, 2 ISO-8859-2; default 1)
 
 .TP
 .B \-F
@@ -1393,7 +1395,7 @@ The color of these objects, as well as of those having the color set to
 .TP
 .B \-E num
 Set encoding for text translation (0 = no translation, 1 = ISO-8859-1, 2 =
-ISO-8859-2).
+ISO-8859-2; default 1).
 For instance, to use utf8-encoded text, first \fIcreate\fR a text object, then
 \fIedit\fR
 the text using the edit-button in xfig. Convert the fig-file to tikz with

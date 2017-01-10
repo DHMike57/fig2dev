@@ -1,0 +1,45 @@
+AT_BANNER([Test svg output language.])
+AT_SETUP([compare patterns with template])
+AT_KEYWORDS(svg pattern creationdate)
+
+dnl AT_TESTED(pnmarith) does not start the testsuite, if pnmarith does not exist
+
+AT_CHECK([SOURCE_DATE_EPOCH=1483528980 fig2dev -L svg $srcdir/data/patterns.fig | \
+	diff -q - $srcdir/data/patterns.svg])
+
+# Bitwise comparison failed because of the unreliable rendering provided
+# by, e.g., convert. Commented out.
+AS_IF([false],
+[
+# Skip this test, if the necessary programs are not found
+AT_SKIP_IF([! gs --version || ! pnmarith --version || ! ppmhist --version])
+
+convert -density 1200 $srcdir/data/patterns.svg a.pbm
+
+# It makes a difference, whether  convert... svg:-  or  convert... -  is used.
+fig2dev -L svg $srcdir/data/patterns.fig | convert -density 1200 - b.pbm
+
+# Was pamsumm -sum -brief, to expect 0\n on stdout - but pamsumm does not
+# exist on Debian stretch, so use ppmhist -noheader
+AT_CHECK([pnmarith -difference a.pbm b.pbm | ppmhist -noheader | tr -d ' 	'], 0,
+[00008207389
+],ignore, [pnmtopng -compression=9 -comp_mem_level=9 a.pbm > orig.png
+pnmtopng -compression=9 -comp_mem_level=9 b.pbm > current.png
+pnmarith -difference a.pbm b.pbm | pnmtopng -compression=9 -comp_mem_level=9 > diff.png
+rm a.pbm b.pbm
+])
+
+AT_CAPTURE_FILE(orig.png)
+AT_CAPTURE_FILE(current.png)
+AT_CAPTURE_FILE(diff.png)
+
+]) dnl AS_IF()
+
+AT_CLEANUP
+
+AT_SETUP([compare fills with arrows to template])
+AT_KEYWORDS(svg arrows pattern fill creationdate)
+AT_CHECK([SOURCE_DATE_EPOCH=1483564881 fig2dev -L svg $srcdir/data/fillswclip.fig | \
+	diff -q - $srcdir/data/fillswclip.svg])
+
+AT_CLEANUP

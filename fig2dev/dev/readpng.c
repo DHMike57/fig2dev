@@ -13,10 +13,19 @@
  *
  */
 
-#include "fig2dev.h"
-#include "object.h"
-#include "colors.h"	/* rgb2luminance() */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "bool.h"
 #include <png.h>
+
+#include "fig2dev.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
+#include "colors.h"	/* rgb2luminance() */
 
 /* return codes:  1 : success
 		  0 : invalid file

@@ -29,13 +29,25 @@
  * The special comments "center", "width" and "height" define
  * position and dimension.
  *
+ * 2016-08-17 Thomas Loimer <thomas.loimer@tuwien.ac.at>
+ *	* Ported to configure / autoconf and removed some compiler warnings.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <math.h>
 #include <ctype.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 
 static void die(const char * msg) {
  fprintf(stderr, "fig2dev(shape): %s\n", msg);
@@ -163,6 +175,7 @@ static void add_shapegroup(int shapestart, int shapeend) {
 }
 
 /** debugging stuff **/
+/*
 static void
 print_shapegroups(void) {
   int i;
@@ -171,6 +184,7 @@ print_shapegroups(void) {
       i, shapegroups[i].shapestart, shapegroups[i].shapeend,
       shapes[shapegroups[i].shapestart].groupname);
 }
+*/
 
 #define fscale 10
 
@@ -1007,7 +1021,6 @@ genshape_end(void)
   int	 num_above_borders, num_below_borders;
   int	 snr, aind, bind;
   bool	 equal;
-  char	*oldgroupname;
   int	 oldscanlines=0;
 
 
@@ -1029,8 +1042,6 @@ genshape_end(void)
       points[i].shapenr=shapenr;
   }
 
-
-  oldgroupname=shapes[0].groupname;
   /* now find the borders in between the shapegroups */
   shapestart=0;
   for (i=0; i<num_shapes; i++) {
@@ -1244,7 +1255,7 @@ genshape_end(void)
 	   else
 	     special_block(above_block_borders[aind],'j');
 
-	     aind+=2; /* skip both */
+	   aind+=2; /* skip both */
 	   continue;
 	 } else {
 	   /* difference more than a 0-gap */

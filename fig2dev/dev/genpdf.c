@@ -21,10 +21,19 @@
  *		calls ghostscript (device pdfwrite) to convert it to pdf.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include "bool.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "genps.h"
-#include "texfonts.h"
+/* #include "texfonts.h" */
 
 static	FILE	*saveofile;
 static	char	*ofile;

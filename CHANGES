@@ -2,7 +2,32 @@ Changes to Transfig/fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
-Patchlevel 6 (July 2016)
+Patchlevel 6a (January 2017)
+
+NEW FEATURES:
+	o Distribute transfig.pdf. No need to build it from the TeX sources.
+	o Enable reproducible build for svg output.
+	o Set the creator to fig2dev, not to the path by which fig2dev is
+	  invoked.
+
+BUGS FIXED:
+	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
+	o The svg output now produces correct patterns and pie-wege arcs.
+	  Property names instead of style attributes are used. Hollow arrow
+	  heads are really hollow, not filled with white. In the PostScript
+	  output, this might also clip a bit of the filling underneath an arrow.
+	o tikz output: Re-use \dimen \XFigu if it is already defined. Ticket #3.
+	o tikz output: A pattern in an object with line width zero and the
+	  stroke color equal to the fill color would produce a white fill.
+	  The tikz output now does not try to be smart and puts a pattern, even
+	  if the result is equal to a solid fill. Ticket #1.
+	0 pict2e output: Standalone tex-files always include color.sty. #2.
+	o pict2e output: A pattern with stroke color equal to fill color is
+	  rendered as a solid fill.
+	o Compiles when gnu iconv and standard iconv are present.
+
+-------------------------------------
+Patchlevel 6 (August 2016)
 
 BUGS FIXED:
 	o Add compile switch --enable-versioning and script update-version_m4,

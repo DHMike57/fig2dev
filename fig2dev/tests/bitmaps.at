@@ -1,0 +1,74 @@
+AT_BANNER([Create and embed bitmaps in fig-file.])
+
+AT_SETUP([gif])
+AT_KEYWORDS(bitmaps gif)
+
+AT_CHECK([fig2dev -L gif $srcdir/data/line.fig line.gif &&\
+	sed '11 s/xpm/gif/' $srcdir/data/boxwimg.fig | fig2dev -L eps
+],0,ignore)
+
+AT_CLEANUP
+
+AT_SETUP([jpeg])
+AT_KEYWORDS(bitmaps jpeg jpg)
+
+AT_CHECK([fig2dev -L jpeg $srcdir/data/line.fig line.jpg &&\
+	sed '11 s/xpm/jpg/' $srcdir/data/boxwimg.fig | fig2dev -L eps
+],0,ignore)
+
+AT_CLEANUP
+
+AT_SETUP([pcx])
+AT_KEYWORDS(bitmaps pcx)
+
+AT_CHECK([fig2dev -L pcx $srcdir/data/line.fig line.pcx &&\
+	sed '11 s/xpm/pcx/' $srcdir/data/boxwimg.fig | fig2dev -L eps
+],0,ignore)
+
+AT_CLEANUP
+
+AT_SETUP([png])
+AT_KEYWORDS(bitmaps png)
+
+AT_CHECK([fig2dev -L png $srcdir/data/line.fig line.png &&\
+	sed '11 s/xpm/png/' $srcdir/data/boxwimg.fig | fig2dev -L eps
+],0,ignore)
+
+AT_CLEANUP
+
+AT_SETUP([ppm])
+AT_KEYWORDS(bitmaps gif)
+
+AT_CHECK([fig2dev -L gif $srcdir/data/line.fig line.gif &&\
+	sed '11 s/xpm/gif/' $srcdir/data/boxwimg.fig | fig2dev -L eps
+],0,ignore)
+
+AT_CLEANUP
+
+AT_SETUP([tiff])
+AT_KEYWORDS(bitmaps tiff tif)
+
+AT_CHECK([fig2dev -L tiff $srcdir/data/line.fig line.tif &&\
+	sed '11 s/xpm/tif/' $srcdir/data/boxwimg.fig | fig2dev -L eps
+],0,ignore)
+
+AT_CLEANUP
+
+AT_SETUP([xbm])
+AT_KEYWORDS(bitmaps xbm)
+
+AT_CHECK([fig2dev -L xbm $srcdir/data/line.fig line.xbm &&\
+	sed '11 s/xpm/xbm/' $srcdir/data/boxwimg.fig | fig2dev -L eps
+],0,ignore)
+
+AT_CLEANUP
+
+AT_SETUP([xpm])
+AT_KEYWORDS(bitmaps xpm)
+
+AT_SKIP_IF([test "x$INSTALLCHECK" = xno])
+AT_CHECK([fig2dev -L xpm $srcdir/data/line.fig line.xpm &&\
+	fig2dev -L eps $srcdir/data/boxwimg.fig
+],0,ignore,ignore)
+
+AT_CLEANUP

@@ -1,8 +1,9 @@
 /*
  * TransFig: Facility for Translating Fig code
- * Copyright (c) 1985 Supoj Sutantavibul
+ * Copyright (c) 1985 Supoj Sutanthavibul
  * Copyright (c) 1991 Micah Beck
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2007 by Brian V. Smith
+ * Parts Copyright (c) 2016 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -12,6 +13,14 @@
  * the Software, and to permit persons who receive copies from any such
  * party to do so, with the only requirement being that this copyright
  * notice remain intact.
+ */
+
+/*
+ * Changes:
+ *
+ * 2016-12-09	Thomas Loimer <thomas.loimer@tuwien.ac.at>
+ *	- Add int startclip, remove bool clip in struct _arrow_shape.
+ *
  */
 
 extern void arc_bound(F_arc *arc, int *xmin, int *ymin, int *xmax, int *ymax);
@@ -38,10 +47,9 @@ extern struct _arrow_shape {
 	int	numpts;		/* number of points in arrowhead */
 	int	tipno;		/* which point contains the tip */
 	int	numfillpts;	/* number of points to fill */
+	int	startclip;	/* point at which clip region starts */
 	bool	simplefill;	/* if true, use points array to fill otherwise
 				   use fill_points array */
-	bool	clip;		/* if false, no clip area needed
-				   (e.g. for reverse triangle arrowhead) */
 	bool	half;		/* if true, arrowhead is half-wide and must be
 				   shifted to cover the line */
 	double	tipmv;		/* acuteness of tip (smaller angle, larger tipmv) */

@@ -22,9 +22,23 @@
  *	Author: Mike Markowski (mm@udel.edu), U of Delaware, 4/98
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <math.h>
+#include <limits.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "colors.h"	/* lookup_X_color() */
+#include "pathmax.h"
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
@@ -36,7 +50,6 @@ int ReadFromBitmapFile(FILE *file, unsigned int *width, unsigned int *height,
 
 static void
 	drawBitmap(F_line *),
-	drawLine(F_point *, int, int, int, int, int),
 	drawShape(void (*)(), void *, int, int, int, int, int, double),
 	niceLine(char *),
 	tkArc(void *, unsigned int, unsigned int, unsigned int, int),
@@ -115,7 +128,7 @@ void
 gentk_start(F_compound *objects)
 {
 	char		stfp[1024];
-	float		wid, ht, swap;
+	float		wid = -1., ht = -1., swap;
 	struct paperdef	*pd;
 	char		bkgnd[20];
 
@@ -154,7 +167,7 @@ gentk_start(F_compound *objects)
 
 	} else {
 	    /* full page, get the papersize as the width and height for the canvas */
-	    for (pd = paperdef; pd->name != NULL; pd++)
+	    for (pd = paperdef; pd->name != NULL; ++pd)
 		if (strcasecmp (papersize, pd->name) == 0) {
 		    /* width/height are in dpi, convert to inches */
 		    wid = pd->width/80.0;
@@ -335,7 +348,6 @@ drawBitmap(F_line *l)
 {
 	char	stfp[256];
 	double	dx, dy;
-	int	x, y;
 	F_pic	*p;
 	unsigned char	buf[16];
 	FILE	*fd;

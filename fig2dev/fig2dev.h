@@ -22,57 +22,6 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-/* #include <stddef.h> */	/* size_t, included by other headers */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <strings.h>
-#include <sys/file.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <signal.h>
-#ifdef	HAVE_STRERROR
-#include <errno.h>
-#endif
-#include <time.h>
-#include <math.h>
-#include <ctype.h>
-
-#if defined HAVE_DECL_M_PI && !HAVE_DECL_M_PI
-#include "pi.h"
-#endif
-
-/* proposed by info autoconf */
-#ifdef HAVE_STDBOOL_H
-#include <stdbool.h>
-#else
-#ifndef HAVE__BOOL
-#ifdef __cplusplus
-typedef bool	_Bool;
-#else
-#define	_Bool	signed char
-#endif
-#endif
-#define	bool	_Bool
-#define	false	0
-#define	true	1
-#define __bool_true_false_are_defined	1
-#endif
-
-/* Old BSD used to define MAXPATHLEN in <sys/param.h>. This is not
- * supported any more:
- * #include <sys/param.h>
- * #define PATH_MAX MAXPATHLEN */
-#include <limits.h>
-#ifndef PATH_MAX
-#define PATH_MAX 1024
-#endif
-
 #define DEFAULT_FONT_SIZE 11
 
 /* defined in <sys/param.h> */
@@ -92,6 +41,7 @@ typedef bool	_Bool;
 #define NUMSHADES	21
 #define NUMTINTS	20
 #define NUMPATTERNS	22
+#define	NUMFILLS	40	/* for convenience, NUMSHADES + NUMTINTS - 1 */
 
 #define NUMARROWS	30	/* Synchronize with arrow_shapes[] in bound.c */
 
@@ -133,7 +83,8 @@ extern char	Err_mem[];
 extern char	*PSfontnames[];
 extern int	PSisomap[];
 
-extern char	*prog, *from, *to;
+extern const char	prog[];
+extern char	*from, *to;
 extern char	*name;
 extern double	font_size;
 extern double	mag, fontmag;
@@ -193,6 +144,3 @@ extern bool		arrows_used, arrow_used[NUMARROWS];
 
 extern void	gs_broken_pipe(int sig);
 extern int	depth_filter(int obj_depth);
-
-/* for GIF files */
-#define	MAXCOLORMAPSIZE 256

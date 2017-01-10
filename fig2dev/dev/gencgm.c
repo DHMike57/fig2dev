@@ -63,8 +63,23 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <strings.h>	/* index(), replace by strchr() */
+#include <math.h>
+#include <limits.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
+#include "pathmax.h"
 
 #define	UNDEFVALUE	-100	/* undefined attribute value */
 #define	FILL_COLOR_INDEX 999	/* special color index for solid filled shapes.

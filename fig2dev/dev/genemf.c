@@ -61,12 +61,27 @@
  *
  */
 
-#include "fig2dev.h"
-#if defined(I18N) && defined(HAVE_ICONV_H)
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <math.h>
+#include <limits.h>
+#include "bool.h"
+#include "pi.h"
+#if defined(I18N) && defined(HAVE_ICONV)
 #include <iconv.h>
 #endif
-#include "object.h"
+
+#include "fig2dev.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "genemf.h"
+#include "pathmax.h"
 
 #define UNDEFVALUE	-100	/* UNDEFined attribute value */
 #define EPSILON		1e-4	/* small floating point value */
@@ -564,7 +579,7 @@ static uchar	lfPitchAndFamily[] = {
 	VARIABLE_PITCH | FF_ROMAN,	/* ZapfDingbats */
 		};
 
-#if defined(I18N) && defined(HAVE_ICONV_H)
+#if defined(I18N) && defined(HAVE_ICONV)
 extern bool support_i18n;  /* enable i18n support? */
 
 #define FONT_TIMES_ROMAN	0
@@ -625,7 +640,7 @@ static const struct localefnt {
     { "Gungsuh",
       FW_MEDIUM, false, HANGUL_CHARSET, FIXED_PITCH|FF_DONTCARE }
 } };
-#endif	/* defined(I18N) && defined(HAVE_ICONV_H) */
+#endif	/* defined(I18N) && defined(HAVE_ICONV) */
 
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -684,7 +699,7 @@ static void textunicode();
 static void text();
 static void textcolr();
 static void textalign();
-#if defined(I18N) && defined(HAVE_ICONV_H)
+#if defined(I18N) && defined(HAVE_ICONV)
 static void moveto();
 #endif
 
@@ -1496,7 +1511,7 @@ textfont(
     utext = (short *) em_fn.elfw.elfLogFont.lfFaceName;
     n_unicode = sizeof (em_fn.elfw.elfLogFont.lfFaceName);
     textunicode(
-#if defined(I18N) && defined(HAVE_ICONV_H)
+#if defined(I18N) && defined(HAVE_ICONV)
       (font < 0 /* locale font */)? localeFonts[-1-font][figLanguage].FaceName :
 #endif
 	    lfFaceName[font],
@@ -1505,7 +1520,7 @@ textfont(
     em_fn.elfw.elfLogFont.lfHeight = htofl(fontsz);
     em_fn.elfw.elfLogFont.lfEscapement = em_fn.elfw.elfLogFont.lfOrientation
 	= htofl(angle);
-#if defined(I18N) && defined(HAVE_ICONV_H)
+#if defined(I18N) && defined(HAVE_ICONV)
     if (font < 0 /* locale font */) {
 	const struct localefnt *lf = &localeFonts[-1-font][figLanguage];
 
@@ -1530,7 +1545,7 @@ textfont(
     fprintf(stderr,
 	"Textfont (%d): %s  Size: %d  Weight: %d  Italic: %d  Angle: %d\n",
 	handle,
-#  if defined(I18N) && defined(HAVE_ICONV_H)
+#  if defined(I18N) && defined(HAVE_ICONV)
       (font < 0 /* locale font */)? localeFonts[-1-font][figLanguage].FaceName :
 #  endif
 	lfFaceName[font], -ftohl(em_fn.elfw.elfLogFont.lfHeight),
@@ -2931,7 +2946,7 @@ textunicode(
 	short **utext,		/* If *utext is null, memory is allocated */
 	int *n_unicode)
 {
-#if defined(I18N) && defined(HAVE_ICONV_H)
+#if defined(I18N) && defined(HAVE_ICONV)
     iconv_t icd = (iconv_t) -1;
     char *src;
     char *dst, *p;
@@ -2984,7 +2999,7 @@ textunicode(
 		(*utext)[i] = htofs(str[i]);
 	}
     }
-#else	/* !(defined(I18N) && defined(HAVE_ICONV_H)) */
+#else	/* !(defined(I18N) && defined(HAVE_ICONV)) */
     int    i;
 
     *n_chars = strlen(str);
@@ -3090,7 +3105,7 @@ textalign(int align)
 }
 
 
-#if defined(I18N) && defined(HAVE_ICONV_H)
+#if defined(I18N) && defined(HAVE_ICONV)
 static void
 moveto(int x, int y)
 {
@@ -3107,7 +3122,7 @@ moveto(int x, int y)
 
     emh_write(&em_mv, sizeof(EMRMOVETOEX), (size_t) 1, EMH_RECORD);
 }
-#endif	/* defined(I18N) && defined(HAVE_ICONV_H) */
+#endif	/* defined(I18N) && defined(HAVE_ICONV) */
 
 
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -3155,7 +3170,7 @@ genemf_start(F_compound *objects)
     short *ud;
     char *figname;
 
-#if defined(I18N) && defined(HAVE_ICONV_H)
+#if defined(I18N) && defined(HAVE_ICONV)
     if (support_i18n) {
 	char *locale;
 
@@ -3408,7 +3423,7 @@ genemf_text(F_text *t)
     RECTL rclBounds;
     int x, y;
     double sin_theta, cos_theta;
-#if defined(I18N) && defined(HAVE_ICONV_H)
+#if defined(I18N) && defined(HAVE_ICONV)
     char *s, *s1, bak;
     int nascii, neuc;
 #endif
@@ -3443,7 +3458,7 @@ genemf_text(F_text *t)
     HTOFL(rclBounds.right,  round(x + t->length * cos_theta));
     HTOFL(rclBounds.bottom, round(y + t->length * sin_theta));
 
-#if defined(I18N) && defined(HAVE_ICONV_H)
+#if defined(I18N) && defined(HAVE_ICONV)
     if (figLanguage != LANG_DEFAULT && IS_LOCALE_FONT(font)) {
 	/* prescan text to decide if font switching is needed */
 	nascii = neuc = 0;
@@ -3498,7 +3513,7 @@ genemf_text(F_text *t)
 	    return;
 	}
     }
-#endif	/* defined(I18N) && defined(HAVE_ICONV_H) */
+#endif	/* defined(I18N) && defined(HAVE_ICONV) */
 
     /*
      * Use alignment of EMF, which shall be better than that of home grown.

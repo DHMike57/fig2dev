@@ -19,9 +19,10 @@
  *	psfont.c: PostScript font mappings
  *
  */
-#include "fig2dev.h"
-#include "stdio.h"
-#include "object.h"
+
+#include <stdio.h>
+#include "bool.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 
 char		*PSfontnames[] = {
 		"Times-Roman",			/* default */

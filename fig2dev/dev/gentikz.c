@@ -17,15 +17,26 @@
 
 /*
  * gentikz.c: TeX/LaTeX tikz driver for fig2dev
- * Copyright (c) 2015 by Thomas Loimer
+ * Copyright (c) 2015, 2016 by Thomas Loimer
  *
  * BUGS:	o shades or tints of the default color may be incorrect
  *		o arrows on arcs and on very short lines may be different
  *		  from arcs produced by the postscript driver
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include "bool.h"
+#include "pi.h"
+
 #include "fig2dev.h"
-#include "object.h"
+#include "object.h"	/* does #include <X11/xpm.h> */
 #include "texfonts.h"		/* texfontnames[] */
 #include "bound.h"
 #include "gentikz.h"
@@ -267,7 +278,6 @@ static struct options	alt_options;
 			/* THICK_SCALE is of type float, see fig2dev.h */
 /* #define round	(int)... see fig2dev.h */
 #define PUT_POINT(p)	fprintf(tfp,"(%d,%d)", XCOORD(p->x), YCOORD(p->y))
-#define	NOTEXISTS(obj)	obj->thickness <= 0 && obj->fill_style == UNFILLED
 
 #define	MITERJOIN	0
 #define	BUTTCAP		0
@@ -651,7 +661,6 @@ define_arrow(int ttype, int indx)
 void
 gentikz_start(F_compound *objects)
 {
-	char	buf[20];    /* when changing 20, change also the sprintf() below! */
 	int	i;
 	double	splength;   /* unitlength expressed in TeX scaled points */
 
@@ -715,7 +724,10 @@ gentikz_start(F_compound *objects)
 	    fputs("  \\else\\dimen1\\dimen3\\fi", tfp);
 	    fputs("\\else\\ifdim\\dimen3=0pt\\dimen3\\dimen1\\fi\\fi\n", tfp);
 	    fputs("\\tikzpicture[x=+\\dimen1, y=+\\dimen3]\n", tfp);
-	    fprintf(tfp, "\\newdimen\\XFigu\\XFigu%lisp\n", (long) splength);
+	    fputs("{\\ifx\\XFigu\\undefined\\catcode`\\@11\n", tfp);
+	    fputs("\\def\\temp{\\alloc@1\\dimen\\dimendef\\insc@unt}", tfp);
+	    fputs("\\temp\\XFigu\\catcode`\\@12\\fi}\n", tfp);
+	    fprintf(tfp, "\\XFigu%lisp\n", (long) splength);
 	    fputs("% Uncomment to scale line thicknesses with the same\n", tfp);
 	    fputs("% factor as width of the drawing.\n", tfp);
 	    fputs("%\\pgfextractx\\XFigu{\\pgfqpointxy{1}{1}}\n", tfp);
@@ -1151,8 +1163,6 @@ put_drawcmd(int style, int thickness, int pen_color, int fill_color,
 #define	FILLED	fill_style > UNFILLED && fill_style < NUMSHADES + NUMTINTS
 #define	PATTERN	fill_style >= NUMSHADES + NUMTINTS
 
-	int	n;
-
 	if (thickness > 0 ) {
 	    if (has_endcaps || (style != SOLID_LINE && style_val > 0.))
 		set_capstyle(cap_style);
@@ -1160,10 +1170,9 @@ put_drawcmd(int style, int thickness, int pen_color, int fill_color,
 	    set_width(thickness);
 	    set_stipple(style, style_val);
 
-	    if (FILLED || (PATTERN && fill_color == pen_color)) {
+	    if (FILLED) {
 		normalize(&fill_color, &fill_style);
-		if (fill_color == pen_color
-			&& (PATTERN || fill_style == NUMSHADES-1)) {
+		if (fill_color == pen_color && fill_style == NUMSHADES-1) {
 		    set_linefillcolor(pen_color);
 		} else {
 		    set_linecolor(pen_color);
@@ -1189,7 +1198,7 @@ put_drawcmd(int style, int thickness, int pen_color, int fill_color,
 
 	} else {	/* thickness <= 0 */
 
-	    if (FILLED || (PATTERN && fill_color == pen_color)) {
+	    if (FILLED) {
 		normalize(&fill_color, &fill_style);
 		set_fillcolor(fill_color, fill_style);
 		fputs("\\fill ", tfp);
@@ -1576,15 +1585,6 @@ gentikz_line(F_line *l)
 	/* print any comments prefixed with "%" */
 	print_comments("% ", l->comments, "");
 
-	/* all checks will be done in read.c */
-	/*	1 pt, 2pt && thickness > 0 - single point, line
-		> 3 pts, line, box, arc-box, polygon
-			PUT_DRAWCMD (eig PUT_DRAWORFILLCMD)
-			line - just put all points
-			box, arc-box, polygon - do not put the last point
-					      - verzögere um einen Punkt
-	*/
-
 	p = l->points;
 	q = p->next;
 
@@ -1625,7 +1625,8 @@ gentikz_line(F_line *l)
 	}
 
 	/* T_POLYLINE, T_BOX, T_POLYGON or T_ARC_BOX from here on below */
-	if (l->thickness <= 0 && l->fill_style == UNFILLED)
+	if (l->thickness <= 0 && l->fill_style == UNFILLED &&
+			!l->for_arrow && !l->back_arrow)
 	    return;
 
 	if (l->type == T_BOX || l->type == T_POLYGON || l->type == T_ARC_BOX) {
@@ -1664,7 +1665,7 @@ gentikz_ellipse(F_ellipse *e)
 
 	print_comments("% ",e->comments, "");
 
-	if (NOTEXISTS(e)) return;
+	if (e->thickness <= 0 && e->fill_style == UNFILLED) return;
 
 	PUT_DRAWCMD(e, false, ROUNDCAP);
 
@@ -1839,8 +1840,8 @@ gentikz_arc(F_arc *a)
 	/* print any comments prefixed with "%" */
 	print_comments("% ",a->comments, "");
 
-	/* nothing to do; return; */
-	if (NOTEXISTS(a) && !a->for_arrow && !a->back_arrow)
+	if (a->thickness <= 0 && a->fill_style == UNFILLED &&
+			!a->for_arrow && !a->back_arrow)
 	    return;
 
 	/* compute the angles in tikz-coordinate system */

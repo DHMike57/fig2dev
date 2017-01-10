@@ -49,6 +49,7 @@
  * Wednesday, 2 December 1998
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 

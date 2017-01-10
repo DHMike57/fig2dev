@@ -16,6 +16,14 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <string.h>
+#include "bool.h"
+
 #include "fig2dev.h"
 
 #define MAXWIDTH       16384

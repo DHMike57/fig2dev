@@ -3,7 +3,7 @@
 TESTSUITE = $(srcdir)/testsuite
 EXTRA_DIST = testsuite package.m4 $(TESTSUITE_AT) atlocal.in data
 TESTSUITE_AT = testsuite.at arrows_eps.at lookup_X_color.at read_sanitize.at \
-	pict2e.at
+	pict2e.at tikz.at svg.at creationdate.at bitmaps.at
 # ??
 DISTCLEANFILES = atconfig
 MAINTAINERCLEANFILES = Makefile.in $(TESTSUITE) $(srcdir)/package.m4

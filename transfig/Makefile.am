@@ -6,6 +6,9 @@ MAINTAINERCLEANFILES = Makefile.in
 # Brute force, but otherwise -L/path/to/libs must also be provided.
 LIBS =
 
+# Silence some warnings
+AM_CFLAGS = -Wno-parentheses
+
 bin_PROGRAMS = transfig
 
 transfig_SOURCES = transfig.c transfig.h txfile.c mkfile.c sys.c

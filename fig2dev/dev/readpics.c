@@ -14,9 +14,19 @@
  *
  */
 
-#include <sys/types.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <limits.h>
+#include "bool.h"
+
 #include "fig2dev.h"
+#include "pathmax.h"
 
 static char *xf_basename(char *filename);
 

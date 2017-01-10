@@ -30,11 +30,11 @@
  *		Create fig2dev/lib/strchr.c.	(Thomas Loimer)
 */
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
-#include <stdio.h>
-#ifdef HAVE_STRCHR
-#include <string.h>
 #endif
+#include <stdio.h>
+#include <string.h>
 
 #ifndef lint
 static	char	sccsfid[] = "@(#) getopt.c 5.0 (UTZoo) 1985";

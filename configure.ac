@@ -1,13 +1,24 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
-# This file is part of fig2dev - Translate Fig code to various devices.
+
 #
-# Copyright (c) 2016 Thomas Loimer <thomas.loimer@tuwien.ac.at>
+# Fig2dev: Translate fig code to various devices.
+# Parts Copyright (c) 2016 by Thomas Loimer
 #
-# Copying and distribution of this file, with or without modification,
-# are permitted in any medium without royalty provided the copyright
-# notice and this notice are preserved. This file is offered as-is,
-# without any warranty.
+# Any party obtaining a copy of these files is granted, free of charge, a
+# full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+# nonexclusive right and license to deal in this software and
+# documentation files (the "Software"), including without limitation the
+# rights to use, copy, modify, merge, publish and/or distribute copies of
+# the Software, and to permit persons who receive copies from any such
+# party to do so, with the only requirement being that this copyright
+# notice remain intact.
+#
+
+#
+#	configure.ac: Autoconf script
+#	Author: Thomas Loimer <thomas.loimer@tuwien.ac.at>, 2016
+#
 
 dnl TODO: Implement FST
 
@@ -91,14 +102,29 @@ AC_PROG_FGREP
 # Checks for libraries.
 #
 AC_SEARCH_LIBS([cos], [m])
-# Darwin needs -liconv, I suppose
-AC_SEARCH_LIBS([iconv], [iconv])
 
 #
 # Checks for header files.
 #
-# Check for header files, and define, e.g, HAVE_ICONV_H if found.
-AC_CHECK_HEADERS_ONCE([iconv.h])dnl
+
+# Check for iconv.h, if found, try to compile and link a custom-made
+# test program. Darwin needs -liconv, but <iconv> might typedef iconv()
+# to libiconv(), therefore one can not simply search for the iconv
+# symbol. Create a test program that #includes <iconv.h>, to provide the
+# typedef, or not.
+TL_CHECK_HEADER_PATH([iconv.h], [INCLUDEPATHS])
+AS_IF([test "$tl_cv_header_path_iconv_h" != no],
+    [fig2dev_save_LDFLAGS="$LDFLAGS"
+     fig2dev_save_CPPFLAGS="$CPPFLAGS"
+     CPPFLAGS="$CPPFLAGS $PATH_CPPFLAGS"
+     TL_SEARCH_LIBS_PATH([iconv], [iconv], [LIBPATHS], [],
+	[#include<iconv.h> int main(void)
+	 {char *a; return iconv(0, &a, (size_t*)a, &a, (size_t*)a);}])dnl
+     AS_IF([test "$tl_cv_libs_path_iconv" != no],
+	[AC_DEFINE([HAVE_ICONV], 1,
+	    [Define to 1 if you have the <iconv.h> header and libiconv.])])
+     CPPFLAGS="$fig2dev_save_CPPFLAGS"
+     LDFLAGS="$fig2dev_save_LDFLAGS"])dnl
 
 # Check for headers, but do not define preprocessor-variables in config.h.
 # If the headers below are missing, the program will not compile.
@@ -226,14 +252,14 @@ AS_IF([test "x$enableval" = xyes],dnl
 		in the tpic-driver.])])dnl
 
 fig2dev_save_LDFLAGS="$LDFLAGS"
-# fig2dev_save_CPPFLAGS=$CPPFLAGS # brauch ma net
+# fig2dev_save_CPPFLAGS=$CPPFLAGS # not needed
 AC_ARG_WITH(png,
     [AS_HELP_STRING([--without-png],
 		[disable reading png-images (default: enable)])],
     [],[with_png=try]dnl
 )
 AS_IF([test "x$with_png" != xno],
-    [# -lz does not seem to be necessary
+    [# -lz is not necessary for shared libraries
      # AC_SEARCH_LIBS([deflate], [z])dnl
      TL_SEARCH_LIBS_PATH([png_read_info], [png], [LIBPATHS])dnl
      AS_IF([test "$tl_cv_libs_path_png_read_info" != no],
@@ -263,10 +289,7 @@ AC_ARG_WITH(xpm, [AS_HELP_STRING([--without-xpm],
     [],[with_xpm=try])
 AS_IF([test "x$with_xpm" != xno],
     [fig2dev_save_CPPFLAGS="$CPPFLAGS"
-     # CPPFLAGS="$CPPFLAGS $PATH_CPPFLAGS"
-     AS_IF([test -n "$PATH_CPPFLAGS"], [AS_IF([test -n "$CPPFLAGS"],
-	    [CPPFLAGS="$CPPFLAGS $PATH_CPPFLAGS"],
-	    [CPPFLAGS="$PATH_CPPFLAGS"])])
+     CPPFLAGS="$CPPFLAGS $PATH_CPPFLAGS"
      AC_PATH_X
      AS_IF([test "x$no_x" != xyes],
 	[#LDFLAGS="-L$x_libraries $LDFLAGS"
@@ -306,12 +329,13 @@ dnl AC_C_RESTRICT
 #	[ACTION-IF-UNKNOWN], [ACTION-IF-UNIVERSAL])
 AC_C_BIGENDIAN
 
-# Check for declarations. In any case defines, e.g., HAVE_DECL_M_PI.
-# Sets it to 0 if not found, to 1 if found.
-AC_CHECK_DECLS([M_PI, M_PI_2, M_PI_4], [], [], [#include <math.h>])
-# Old BSD had MAXPATHLEN in sys/param.h. See fig2dev.h.
-# TODO: See xfig, PATHMAX.
-AC_CHECK_DECLS([PATH_MAX], [], [], [#include <limits.h>])
+dnl  Check for declarations. In any case defines, e.g., HAVE_DECL_M_PI.
+dnl  Sets it to 0 if not found, to 1 if found.
+dnl AC_CHECK_DECLS([M_PI, M_PI_2, M_PI_4], [], [], [#include <math.h>])
+dnl Just provide our own pi
+dnl Old BSD had MAXPATHLEN in sys/param.h. See fig2dev.h.
+dnl AC_CHECK_DECLS([PATH_MAX], [], [], [#include <limits.h>])
+dnl Trust limits.h to provide PATH_MAX
 
 # Check, whether sdtbool.h exists and whether the type _Bool is defined.
 # Defines HAVE_STDBOOL_H and HAVE__BOOL. See info autoconf for a usage
@@ -400,11 +424,11 @@ AS_IF([test "$headers_missing" = yes],dnl
 	*** Look for WARNING-messages above. ***])])
 AC_MSG_NOTICE([Results:
   preprocessor		CPP:		$CPP
-  preprocessor flags	CPPFLAGS:	${CPPFLAGS-<empty>}
+  preprocessor flags	CPPFLAGS:	${CPPFLAGS:-<empty>}
   compiler		CC:		$CC
-  compiler flags	CFLAGS:		${CFLAGS-<empty>}
-  linker flags		LDFLAGS:	${LDFLAGS-<empty>}
-  libraries		LIBS:		${LIBS-<empty>}
+  compiler flags	CFLAGS:		${CFLAGS:-<empty>}
+  linker flags		LDFLAGS:	${LDFLAGS:-<empty>}
+  libraries		LIBS:		${LIBS:-<empty>}
   install location	prefix:		$prefix
 
 Files will be installed under $prefix.])

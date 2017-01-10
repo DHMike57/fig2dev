@@ -2,7 +2,7 @@
  * TransFig: Facility for Translating Fig code
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2016 by Brian V. Smith
+ * Parts Copyright (c) 1989-2014 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -15,29 +15,26 @@
  *
  *	creationdate.c - created 2016-06-28 by Thomas Loimer
  *
- *	* 2017-07-22	remove HAVE_LIMITS_H
+ *	* 2016-07-22	remove HAVE_LIMITS_H
  */
 
-#ifdef	HAVE_CONFIG_H
+#ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include "creationdate.h"
 
-#include "fig2dev.h"
-/* fig2dev.h includes stdbool-gymnastics;
- * TODO: only include stdbool.h (etc) and the headers below.
- */
-/*
 #include <stdio.h>
-#include <stdlib.h>	strtoull, getenv
-#include <time.h>
+#include <stdlib.h>
+//#include <signal.h>
+#include <string.h>
 #ifdef	HAVE_STRERROR
 #include <errno.h>
 #endif
-#ifdef	HAVE_LIMITS_H
+#include <time.h>
 #include <limits.h>
-#endif
-*/
+#include "bool.h"
+
+#include "creationdate.h"
+
 
 int
 creation_date(char *buf)
@@ -72,7 +69,8 @@ creation_date(char *buf)
 		ULONG_MAX, epoch);
 	} else {
 	    /* no errors, epoch is valid */
-	    strftime(buf, CREATION_TIME_LEN, "%c", gmtime((time_t *)&epoch));
+	    now = epoch;
+	    strftime(buf, CREATION_TIME_LEN, "%F %H:%M:%S", gmtime(&now));
 	    return true;
 	}
     }
@@ -80,7 +78,7 @@ creation_date(char *buf)
 
     /* fall trough on errors or !source_date_epoch */
     time(&now);
-    if (strftime(buf, CREATION_TIME_LEN, "%c", localtime(&now)))
+    if (strftime(buf, CREATION_TIME_LEN, "%F %H:%M:%S", localtime(&now)))
 	return true;
     else
 	return false;
