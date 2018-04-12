@@ -1,17 +1,18 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
@@ -25,6 +26,11 @@
 #define		DEFAULT		(-1)
 /* for GIF files */
 #define		MAXCOLORMAPSIZE	256
+
+#define NUMSHADES	21
+#define NUMTINTS	20
+#define NUMPATTERNS	22
+#define	NUMFILLS	40	/* for convenience, NUMSHADES + NUMTINTS - 1 */
 
 typedef struct f_point {
 	int			x, y;
@@ -47,6 +53,13 @@ typedef struct f_comment {
 	char			*comment;
 	struct f_comment	*next;
 } F_comment;
+
+#define COMMON_PROPERTIES(o)						\
+	o->style < SOLID_LINE || o->style > DASH_3_DOTS_LINE ||		\
+	o->thickness < 0 || o->depth < 0 || o->depth > 999 || 		\
+	o->fill_style < UNFILLED ||					\
+	o->fill_style > NUMSHADES + NUMTINTS + NUMPATTERNS ||		\
+	o->style_val < 0.0
 
 typedef struct f_ellipse {
 	int			type;
@@ -75,6 +88,11 @@ typedef struct f_ellipse {
 	struct f_ellipse	*next;
 } F_ellipse;
 
+#define INVALID_ELLIPSE(e)	\
+	e->type < T_ELLIPSE_BY_RAD || e->type > T_CIRCLE_BY_DIA ||	\
+	COMMON_PROPERTIES(e) || e->direction != 1 ||			\
+	e->radiuses.x < 0 || e->radiuses.y < 0
+
 typedef struct f_arc {
 	int			type;
 #define		T_OPEN_ARC		1
@@ -98,6 +116,11 @@ typedef struct f_arc {
 	struct f_comment	*comments;
 	struct f_arc		*next;
 } F_arc;
+
+#define INVALID_ARC(a)	\
+	a->type < T_OPEN_ARC || a->type > T_PIE_WEDGE_ARC ||		\
+	COMMON_PROPERTIES(a) || a->cap_style < 0 || a->cap_style > 2 ||	\
+	a->direction < 0 || a->direction > 1
 
 typedef struct f_line {
 	int			type;
@@ -128,6 +151,12 @@ typedef struct f_line {
 	struct f_line		*next;
 } F_line;
 
+#define INVALID_LINE(l)	\
+	l->type < T_POLYLINE || l->type > T_PIC_BOX || COMMON_PROPERTIES(l) || \
+	l->cap_style < 0 || l->cap_style > 2 ||			\
+	l->join_style < 0 || l->join_style > 2 ||		\
+	(l->type == T_ARC_BOX && l->radius < 0)
+
 /* for colormap */
 
 #define		RED	0
@@ -145,7 +174,7 @@ typedef struct f_pic {
 #define		P_PPM	6		/* PPM picture type */
 #define		P_TIF	7		/* TIFF picture type */
 #define		P_PNG	8		/* PNG picture type */
-	char			file[256];
+	char			*file;
 	int			flipped;
 	unsigned char		*bitmap;
 #ifdef HAVE_X11_XPM_H
@@ -200,15 +229,18 @@ typedef struct f_text {
 
 #define		rigid_text(t) \
 			(t->flags == DEFAULT || (t->flags & RIGID_TEXT))
-
 #define		special_text(t) \
 			((t->flags != DEFAULT && (t->flags & SPECIAL_TEXT)))
-
 #define		psfont_text(t) \
 			(t->flags != DEFAULT && (t->flags & PSFONT_TEXT))
-
 #define		hidden_text(t) \
 			(t->flags != DEFAULT  && (t->flags & HIDDEN_TEXT))
+
+#define INVALID_TEXT(t)	\
+	t->type < T_LEFT_JUSTIFIED || t->type > T_RIGHT_JUSTIFIED ||	\
+	t->font < DEFAULT || t->font > MAX_PSFONT ||			\
+	t->flags < DEFAULT || t->flags >= 2 * HIDDEN_TEXT ||		\
+	t->height < 0 || t->length < 0
 
 typedef struct f_control {
 	double			lx, ly, rx, ry;	/* used by older versions*/
@@ -254,6 +286,10 @@ typedef struct f_spline {
 	struct f_comment	*comments;
 	struct f_spline		*next;
 } F_spline;
+
+#define INVALID_SPLINE(s)	\
+	s->type < T_OPEN_APPROX || s->type > T_CLOSED_XSPLINE ||	\
+	COMMON_PROPERTIES(s) || s->cap_style < 0 || s->cap_style > 2
 
 typedef struct f_compound {
 	struct f_pos		nwcorner;

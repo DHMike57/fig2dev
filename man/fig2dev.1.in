@@ -64,22 +64,15 @@ Set the output graphics language.
 Valid languages are
 \fBbox, cgm, dxf, epic, eepic, eepicemu, emf, eps, gbx (Gerber beta
 driver), gif, ibmgl, jpeg, latex, map (HTML image map), mf (MetaFont),
-mp (MetaPost), mmp (Multi-MetaPost), pcx, pdf, pdftex, pdftex_t, pic,
+mp (MetaPost), pcx, pdf, pdftex, pdftex_t, pic,
 pict2e, pictex, png, ppm, ps, pstex, pstex_t, pstricks, ptk (Perl/tk),
-shape (LaTeX shaped paragraphs), sld (AutoCad slide format), svg (beta
-driver), textyl, tiff, tikz, tk (tcl/tk), tpic, xbm and xpm\fR.
+shape (LaTeX shaped paragraphs), sld (AutoCad slide format), svg,
+textyl, tiff, tikz, tk (tcl/tk), tpic, xbm and xpm\fR.
 
 Notes:
 .br
-.I dvips
-and
-.I xdvi
-must be compiled with the tpic support (\-DTPIC)
-for epic, eepic and tpic to work.
-.br
-You must have ghostscript and ps2pdf, which comes with the ghostscript
-distribution to get the pdf output and the bitmap formats (png, jpeg, etc.),
-and the netpbm (pbmplus) package to get gif, xbm, xpm, and sld output.
+You must have ghostscript installed to get the pdf output, and ghostscript and
+the netpbm package to get the bitmap formats (png, jpeg, etc.).
 
 .TP
 .B \-h
@@ -115,13 +108,13 @@ Specify thin, or thin and thick line spacing in one of several units.
 For example, \fB\-G\ .25:1cm\fR draws a thin,
 gray line every .25 cm and a thicker gray line every 1 cm.
 Specifying \fB\-G\ 1in\fR draws a thin line every 1 inch.
-Fractions may be used, e.g. \fB\-G\ 1/16:1/2in\fR will draw a thin line every
-1/16 inch (0.0625 inch) and a thick line every 1/2 inch.
+Fractions may be used, e.g. \fB\-G\ :1/2in\fR will draw a
+thick line every 1/2 inch.
 .br
 Allowable units are: i, in, inch, f, ft, feet, c, cm, mm, and m.
 .br
-.B Only allowed for PostScript, EPS, PDF, and bitmap (GIF, JPEG, etc)
-.B drivers for now.
+.B Only allowed for PostScript, EPS, PDF, pstricks, tikz and
+.B bitmap (GIF, JPEG, etc) drivers.
 
 @i18nman@
 
@@ -159,7 +152,8 @@ as described below.
 .TP
 .B \-b borderwidth
 Make blank border around figure of width
-.I borderwidth.
+.I borderwidth
+(1/72 inch).
 
 .TP
 .B \-F
@@ -220,8 +214,8 @@ other products can import this format
 something that they won't do with EPS files that have an ASCII preview.
 
 .TP
-.B "\-b dummyarg"
-Generate binary output (dummy argument required after the \fB\-b\fR).
+.B \-a
+Generate binary output.
 
 .TP
 .B \-r
@@ -270,6 +264,18 @@ other products can import this format
 .I and display it on the screen,
 something that they won't do with EPS files that have an ASCII preview.
 
+.TP
+.B \-l lang
+Set the compatibility level to \fIlang\fR, where \fIlang\fR is one of
+.I win95, win98
+or
+.I winnt.
+The default is \fIwinnt\fR.
+
+.TP
+.B \-r
+Position arrowheads for EMF viewers that display rounded arrowheads.
+See the discussion of the \fB\-r\fR option for the CGM output driver above.
 
 .SH EPIC OPTIONS
 EPIC is an enhancement to LaTeX picture drawing environment.
@@ -283,7 +289,7 @@ Conrad Kwok has also written the EEPIC driver of fig2dev.
 EEPIC-EMU is an EEPIC emulation package which does not use tpic specials.
 
 .TP
-.B \-A factor
+.B \-d factor
 Scale arrowheads by
 .I factor.
 The width and height of arrowheads is
@@ -318,10 +324,11 @@ Generate a complete LaTeX file. In other words, the output file can be
 formatted without requiring any changes.
 
 .TP
-.B \-R
+.B \-R dummyarg
 Allow rotated text. Rotated text will be set using the \\rotatebox command.
 So, you will need to include "\fB\\usepackage{graphics}\fR" in the preamble
 of your LaTeX document.
+A dummy argument is required after the \fB\-R\fR.
 .IP
 If this option is not set, then rotated text will be set horizontally.
 
@@ -333,6 +340,8 @@ This option automatically sets the
 and \fIfsize\fR to \fIscale\fR/12 and
 .I scale
 respectively.
+.I Scale
+must be between 8 and 12, inclusively.
 
 .TP
 .B \-t stretch
@@ -434,12 +443,6 @@ Each entry consists of 5 numbers which specify the
 5.) fill angle (degrees).
 
 .TP
-.B \-m mag,x0,y0
-The magnification may appear as the first element in a comma separated list -
-.I mag,x0,y0
-- where the second and third parameters specify an offset in inches.
-
-.TP
 .B \-P
 Rotate the figure to portrait mode. The default is landscape mode.
 
@@ -466,6 +469,19 @@ Set the pen speed to
 Plot the figure upside-down in portrait mode or backwards in landscape mode.
 This allows you to write on the top surface of overhead transparencies without
 disturbing the plotter ink on the bottom surface.
+
+.TP
+.B \-x offset
+Shift figure left by
+.I offset
+inches.
+
+.TP
+.B \-y offset
+Shift figure up by
+.I offset
+inches.
+
 .LP
 Fig2dev may be installed with either ANSI A or ISO A4 default paper size.
 The \fB\-a\fR option selects the alternate paper size.
@@ -476,6 +492,12 @@ The \fB\-c\fR option selects the alternate instruction set.
 
 
 .SH LATEX OPTIONS
+
+.TP
+.B \-b borderwidth
+Make blank border around figure of width
+.I borderwidth
+(1/72 inch).
 
 .TP
 .B \-d dmag
@@ -509,7 +531,7 @@ The default is 1.
 
 .TP
 .B \-v
-Verbose mode.
+Verbose mode. Include comments in the otput file.
 
 .LP
 LaTeX cannot accurately represent all the graphics objects which can
@@ -525,7 +547,7 @@ Xfig version 3.2.3 and later saves and allows the user to edit comments
 for each Fig object.
 The fig2dev map output language will produce an HTML image map using Fig objects
 that have href="some_html_reference" in their comments.
-Any Fig object except compound objects may used for this.
+Any Fig object except compound objects may be used for this.
 Usually, besides generating the map file, you would also
 generate a PNG file, which is the image to which the map refers.
 .sp
@@ -542,12 +564,12 @@ you will need to edit it to fill out any additional information it may need.
 
 .TP
 .B \-b borderwidth
-Make blank border around figure of width \fIborderwidth\fR.
+Make blank border around figure of width \fIborderwidth\fR (1/72 inch).
 
 
 .SH METAFONT OPTIONS
 
-.I fig2dev
+.I Fig2dev
 scales the figure by 1/8 before generating METAFONT code.
 The magnification can be further changed with the
 .B \-m
@@ -561,52 +583,56 @@ under the subdirectory: graphics/mfpic
 
 .TP
 .B \-C code
-specifies the starting METAFONT font code. The default is 32.
+Specify the starting METAFONT font code. The default is 32.
 
 .TP
 .B \-n name
-specifies the name to use in the output file.
+Specify the name to use in the output file.
 
 .TP
 .B \-p pen_magnification
-specifies how much the line width should be magnified compared to the
+Specify how much the line width should be magnified compared to the
 original figure. The default is 1.
 
 .TP
 .B \-t top
-specifies the top of the whole coordinate system.
+Specify the top of the whole coordinate system.
 The default is \fBypos\fR.
 
 .TP
 .B \-x xmin
-specifies the minimum x coordinate value of the figure (inches). The
+Specify the minimum x coordinate value of the figure (inches). The
 default is 0.
 
 .TP
 .B \-y ymin
-specifies the minimum y coordinate value of the figure (inches). The
+Specify the minimum y coordinate value of the figure (inches). The
 default is 0.
 
 .TP
 .B \-X xmax
-specifies the maximum x coordinate value of the figure (inches). The
+Specify the maximum x coordinate value of the figure (inches). The
 default is 8.
 
 .TP
 .B \-Y ymax
-specifies the maximum y coordinate value of the figure (inches). The
+Specify the maximum y coordinate value of the figure (inches). The
 default is 8.
 
 
 .SH METAPOST OPTIONS
 
 .TP
+.B \-d file
+Include file content as additional header.
+
+.TP
 .B \-i file
 Include file content via \\input-command.
 
 .TP
-.B "\-I file"
-Include file content as additional header.
+.B \-M
+Multipage mode, generate one figure for each depth.
 
 .TP
 .B \-o
@@ -658,14 +684,12 @@ inserting "\fB\\usepackage{pict2e}\fR" in the document preamble. Depending on
 the content of the figure, it may be necessary to also include
 "\fB\\usepackage{color}\fR" and "\fB\\usepackage{graphics}\fR". Figures produced
 with the PICT2E driver can be processed with any LaTeX engine, e.g., LaTeX +
-dvips, LaTeX + dvipdfm, pdflatex, xelatex, or ConTeX.
+dvips, LaTeX + dvipdfm, pdflatex, xelatex, ConTeX, etc.
 Pattern fills are not supported by the PICT2E output language. The PICT2E driver
 renders patterns by filling the respective area with the pen-color at 25%
 intensity, i.e., a 75% tint of the pen-color.
 The PICT2E driver allows one to choose any font available to the LaTeX engine,
-including PostScript fonts. Apart from patterns and, possibly, text fonts,
-figures produced with PICT2E are identical to figures produced with the
-PostScript driver.
+including PostScript fonts.
 
 .TP
 .B \-b borderwidth
@@ -711,7 +735,7 @@ For instance, to use utf8-encoded text, first \fIcreate\fR a text object, then
 \fIedit\fR
 the text using the edit-button in xfig. Convert the fig-file to pict2e with
 the option \fB\-E\ 0\fR and include "\fB\\usepackage[utf8]{inputenc}\fR"
-in the LaTeX file (not necessary when using xelatex).
+in the LaTeX file 
 In xfig, the text typed in may not be displayed correctly, but the document
 produced from the LaTeX file will show the same text as was typed in.
 
@@ -871,20 +895,18 @@ The default is for 3 places before the decimal point and 5 after.
 This corresponds, to a range of 0 to 1m in 10 micron increments.
 
 .TP
-.B \-i [on|off]
-Controls the output of comments describing the type of objects being
-output.  The text appears as comments starting with ## on each line in
-the output file.  By default this is on.
+.B \-v
+Output comments describing the type of objects being output.
+The text appears as comments starting with ## on each line in the output file.
 
 
 .SH POSTSCRIPT, ENCAPSULATED POSTSCRIPT (EPS), and PDF OPTIONS
-With PostScript, xfig can be used to create multiple page figures
+With PostScript, xfig can be used to create multiple page figures.
 Specify the \fB\-M\fR option to produce a multi-page output.
 For posters, add \fB\-O\fR to overlap the pages slightly to get around the
 problem of the unprintable area in most printers, then cut and paste the pages
 together.
-Due to memory limitations of most laser printers, the figure should not
-have large imported images (bitmaps). Great for text with very big letters.
+Great for text with very big letters.
 .LP
 The EPS driver has the following differences from PostScript:
 .br
@@ -925,8 +947,21 @@ is relative to the lower left corner of the
 .B figure.
 Remember to put either quotes (") or apostrophes (') to group the arguments to
 \fB\-R\fR.
+
 .LP
-The PDF driver uses all the PostScript options.
+The PDF driver accepts all of the PostScript options, if the
+.B \-P
+(pagemode) option is given.
+In this case, the size of the PDF is the pagesize given
+in the file or set from the command line via the
+.B \-z
+option.
+Otherwise, if
+.B \-P
+is not given, the PDF is cropped to the bounding box of the figure
+(optionally with a blank border margin set by the \fB\-b\fR option),
+and all of the EPS options are supported.
+
 .LP
 Text can now include various ISO-character codes above 0x7f, which is
 useful for language specific characters to be printed directly.
@@ -951,29 +986,36 @@ crosshatch, etc.
 .TP
 .B \-A
 Add an ASCII (EPSI) preview.
+Not for PDF.
+
+.TP
+.B \-a
+Anonymous mode. Do not write the user's login name into the output file.
 
 .TP
 .B \-b borderwidth
 Make blank border around figure of width
-.I borderwidth.
-.br
-Not available in EPS.
+.I borderwidth
+(1/72 inch).
 
 .TP
 .B \-C dummy_arg
-Add a color *binary* TIFF preview for Microsoft products that need a binary preview.
-See also \-T (monochrome preview).  A dummy argument must be supplied for historical reasons.
+Add a color *binary* TIFF preview for Microsoft products that need a binary
+preview.
+See also \-T (monochrome preview).
+A dummy argument must be supplied for historical reasons.
+Not for PDF output.
 
 .TP
 .B \-c
-option centers the figure on the page.
+Center the figure on the page.
 The centering may not be accurate if there are texts in the
 .I fig_file
 that extends too far to the right of other objects.
 
 .TP
 .B \-e
-option puts the figure against the edge (not centered) of the page.
+Put the figure against the edge (not centered) of the page.
 Not available in EPS.
 
 .TP
@@ -1000,13 +1042,11 @@ Generate figure in landscape mode.  The dummy argument is ignored,
 but must appear on the command line for reasons of compatibility.
 This option will override the orientation specification in the
 file (for file versions 3.0 and higher).
-.br
 Not available in EPS.
 
 .TP
 .B \-M
 Generate multiple pages if figure exceeds paper size.
-.br
 Not available in EPS.
 
 .TP
@@ -1026,7 +1066,6 @@ comes from standard input.
 When used with \fB\-M\fR,
 overlaps the pages slightly to get around the problem of
 the unprintable area in most printers.
-.br
 Not available in EPS.
 
 .TP
@@ -1036,13 +1075,13 @@ but must appear on the command line for reasons of compatibility.
 This option will override the orientation specification in the
 file (for file versions 3.0 and higher).
 This is the default for Fig files of version 2.1 or lower.
-.br
 Not available in EPS.
 
 .TP
 .B \-T
 Add a monochrome *binary* TIFF preview for Microsoft products that need a binary preview.
 See also \fB\-C\fR (color preview).
+Not available for PDF output.
 
 .TP
 .B \-x offset
@@ -1050,7 +1089,6 @@ Shift the figure in the X direction by \fIoffset\fR
 PostScript points (1/72 inch).
 A negative value shifts the figure to the left and
 a positive value to the right.
-.br
 Not available in EPS.
 
 .TP
@@ -1058,7 +1096,6 @@ Not available in EPS.
 Shift the figure in the Y direction by \fIoffset\fR
 points (1/72 inch).
 A negative value shifts the figure up and a positive value down.
-.br
 Not available in EPS.
 
 .TP
@@ -1105,33 +1142,28 @@ ll.
 .in -.4i
 .br
 
-.SH PSTEX OPTIONS
+.SH PSTEX and PDFTEX OPTIONS
 The
 .B pstex
-language is a variant of
+and
+.B pdftex
+languages are a variant of
 .B ps
-which suppresses formatted (special) text.
+which suppress text that has the text flag "TeX Text" set.
 The
 .B pstex_t
-language has the complementary behavior: it generates only the LaTeX
-special text and the commands
-necessary to position special text, and to overlay the
-PostScript file generated using
-.B pstex.
+and
+.B pdftex_t
+languages have the complementary behavior: they generate only the
+text that has the "Tex Text" flag set and the commands
+necessary to position this text. They also generate the commands necessary
+to overlay the PostScript or PDF file generated using \fBpstex\fR/\fBpdftex\fR.
 These two drivers can be used to generate a figure which combines the
 flexibility of PostScript graphics with LaTeX text formatting of
-special text.
-
-.TP
-.B \-F
-Use correct font sizes (points) instead of the traditional size that xfig/fig2dev uses,
-which is 1/80 inch.  The corresponding xfig command-line option is \-correct_font_size.
-
-.TP
-.B \-g color
-Use
-.I color
-for the background.
+text flagged as "TeX Text".
+.LP
+The pstex and pdftex drivers accept the same options that the EPS driver
+accepts.
 
 .TP
 .B \-n name
@@ -1140,14 +1172,15 @@ Set the Title part of the PostScript output to
 This is useful when the input to
 .I fig2dev
 comes from standard input.
-.LP
 
-.SH PSTEX_T OPTIONS
-The pstex_t language produces only the LaTeX special text and the commands necessary
-to position special text, and to overlay the
-PostScript file generated using
-.B pstex.
-(see above)
+.SH PSTEX_T and PDFTEX_T OPTIONS
+The \fBpstex_t\fR and \fBpdftex_t\fR languages produce only the text flagged
+with the "TeX Text" flag, the commands necessary to position this text, and the
+commands necesary to overlay the PostScript or PDF file generated using
+.B pstex
+or
+.B pdftex
+(see above).
 
 .TP
 .B \-E num
@@ -1434,18 +1467,18 @@ For instance, having imported "image.jpg" in xfig, with
 will be generated.
 
 .TP
-.B \-o
-Do not set the font size or baselineskip. Text will be rendered at the size that
-is in force where the tikz-code is inserted into the document, e.g.,
-"\fB\\small\\input fig1.tikz\fR".
-See also \fB\-F\fR (no font properties).
-
-.TP
 .B \-O
 Do not quote characters special to TeX/LaTeX.
 Useful to get, e.g., an italic \fIx\fR, not $x$,
 because it was forgotten to set the text-flag "special-text" in xfig.
 This option effectively sets the "special-text" flag for all text.
+
+.TP
+.B \-o
+Do not set the font size or baselineskip. Text will be rendered at the size that
+is in force where the tikz-code is inserted into the document, e.g.,
+"\fB\\small\\input fig1.tikz\fR".
+See also \fB\-F\fR (no font properties).
 
 .TP
 .B \-P
@@ -1465,13 +1498,34 @@ Verbose mode. Write comment lines into the output file, usually naming the
 type of the object that is drawn.
 
 .TP
+.B \-W
+Do not emit code at the beginning of the file that allows to set the
+figure width or height from the including TeX document.
+Otherwise, e.g., "\fB\\newdimen\\XFigwidth\\XFigwidth=\\linewidth\fR"
+would scale the following figures to the line width.
+
+.TP
 .B \-w
 Remove the suffix from included graphics-files.
 With this option on, \fIfig2dev\fR generates code that contains, e.g.,
-"\fB\\pgfimage{fig1}\fR",
-instead of "\fB\\pgfimage{fig1.pdf}\fR".
+"\fB\\pgfimage{fig1}\fR" instead of "\fB\\pgfimage{fig1.pdf}\fR".
 
 .SH TK and PTK OPTIONS (tcl/tk and Perl/tk)
+
+Arc-boxes are not supported for the tk output language, and only X bitmap
+pictures are supported because of the canvas limitation in tk.
+.br
+Picture objects are not scaled with the magnification factor for tk output.
+.br
+Because tk scales canvas items according to the X display resolution,
+polygons, lines, etc. may be scaled differently than imported pictures (bitmaps)
+which aren't scaled at all.
+
+.TP
+.B \-g color
+Use
+.I color
+for the background.
 
 .TP
 .B \-l dummy_arg
@@ -1519,7 +1573,7 @@ The string \fIfont\fR can be one of
 
 
 .SH SEE ALSO
-.BR [x]fig (1),
+.BR xfig (1),
 .BR pic (1),
 .BR pic2fig (1),
 .BR transfig (1)
@@ -1530,24 +1584,15 @@ Please send bug reports, fixes, new features etc. to:
 .br
 \&@PACKAGE_BUGREPORT@
 .\"xfig-bugs@epb1.lbl.gov (Brian V. Smith)
-.PP
-Arc-boxes are not supported for the tk output language, and only X bitmap pictures
-are supported because of the canvas limitation in tk.
-.PP
-Picture objects are not scaled with the magnification factor for tk output.
-.PP
-Because tk scales canvas items according to the X display resolution,
-polygons, lines, etc. may be scaled differently than imported pictures (bitmaps)
-which aren't scaled at all.
-.PP
-Rotated text is only supported in the IBM-GL (HP/GL) and PostScript (including eps)
-languages.
+
 .SH COPYRIGHT
 Copyright (c) 1991 Micah Beck
 .br
-Parts Copyright (c) 1985 Supoj Sutantavibul
+Parts Copyright (c) 1985-1988 Supoj Sutantavibul
 .br
-Parts Copyright (c) 1989-1999 Brian V. Smith
+Parts Copyright (c) 1989-2015 Brian V. Smith
+.br
+Parts Copyright (c) 2015-2018 by Thomas Loimer
 .LP
 Permission to use, copy, modify, distribute, and sell this software and its
 documentation for any purpose is hereby granted without fee, provided that

@@ -1,25 +1,26 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1998 by Mike Markowski
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *	gentk : Tk driver for fig2dev
+ * gentk: convert fig to Tk
  *
- *	Author: Mike Markowski (mm@udel.edu), U of Delaware, 4/98
+ * Author: Mike Markowski <mm@udel.edu>, U of Delaware, 4/98
  */
 
 #ifdef HAVE_CONFIG_H
@@ -29,16 +30,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <math.h>
 #include <limits.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "colors.h"	/* lookup_X_color() */
-#include "pathmax.h"
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
@@ -52,10 +53,10 @@ static void
 	drawBitmap(F_line *),
 	drawShape(void (*)(), void *, int, int, int, int, int, double),
 	niceLine(char *),
-	tkArc(void *, unsigned int, unsigned int, unsigned int, int),
-	tkEllipse(void *, unsigned int, unsigned int, unsigned int, int),
-	tkLine(void *, unsigned int, unsigned int, unsigned int, int, int, double),
-	tkPolygon(void *, unsigned int, unsigned int, unsigned int, int, int, double),
+	tkArc(void *, int, int, int, int),
+	tkEllipse(void *, int, int, int, int),
+	tkLine(void *, int, int, int, int, int, double),
+	tkPolygon(void *, int, int, int, int, int, double),
 	tk_setstyle(int style, double v);
 
 static unsigned int
@@ -313,8 +314,10 @@ gentk_line(F_line *l)
     print_comments("# ",l->comments, "");
 
     switch (l->type) {
-	case T_ARC_BOX:	/* Fall through to T_BOX... */
+	case T_ARC_BOX:
 		fprintf(stderr, "gentk_line: arc box not supported.\n");
+		/* the comment below silences gcc's -Wimplicit-fallthrough */
+		/* intentionally fall through */
 	case T_BOX:
 	case T_POLYLINE:
 		/* Take care of filled regions first. */
@@ -353,9 +356,9 @@ drawBitmap(F_line *l)
 	FILE	*fd;
 	int	filtype;	/* file (0) or pipe (1) */
 	int	stat;
-	FILE	*open_picfile(char *name, int *type, bool pipeok,char *retname);
+	FILE	*open_picfile(char *name, int *type,bool pipeok,char **retname);
 	void	close_picfile(FILE *file, int type);
-	char	xname[PATH_MAX];
+	char	*xname;
 
 	p = l->pic;
 
@@ -366,13 +369,13 @@ drawBitmap(F_line *l)
 
 	/* see if GIF first */
 
-	if ((fd=open_picfile(p->file, &filtype, true, xname)) == NULL) {
+	if ((fd=open_picfile(p->file, &filtype, true, &xname)) == NULL) {
 	    fprintf(stderr,"Can't open image file %s\n",p->file);
 	    return;
 	}
+	free(xname);	/* not needed */
 
 	/* read header */
-
 	stat = ReadOK(fd,buf,7);
 	if (!stat) {
 		fprintf(stderr,"Image file %s too short\n",p->file);
@@ -385,14 +388,14 @@ drawBitmap(F_line *l)
 	    (strncmp((char *) buf,"P3\n",3) == 0) || (strncmp((char *) buf,"P6\n",3) == 0)) {
 	    /* GIF or PPM allright, create the image command */
 	    /* first make a name without the suffix */
-	    char pname[PATH_MAX], *dot;
+	    char	*pname, *dot;
 
 	    close_picfile(fd,filtype);
-	    strcpy(pname,p->file);
+	    pname = strdup(p->file);
 	    if ((dot=strchr(pname,'.')))
 		*dot='\0';
 	    /* image create */
-	    sprintf(stfp, "image create photo %s -file %s\n",pname, p->file);
+	    sprintf(stfp, "image create photo %s -file %s\n", pname, p->file);
 	    niceLine(stfp);
 	    niceLine("\n");
 	    /* now the canvas image */
@@ -400,6 +403,7 @@ drawBitmap(F_line *l)
 			canvas, X(l->points->x), Y(l->points->y), pname);
 	    niceLine(stfp);
 	    niceLine("\n");
+	    free(pname);
 	} else {
 	    /* Try for an X Bitmap file format. */
 	    unsigned int dummy;		/* Thomas Loimer, 2015-12 */
@@ -445,7 +449,7 @@ void
 gentk_text(F_text * t)
 {
 	char		stfp[2048];
-	int		i, j;
+	unsigned int	i, j;
 
 	/* I'm sure I'm just too dense to have seen a better way of doing this... */
 	static struct {
@@ -537,7 +541,7 @@ gentk_text(F_text * t)
 	niceLine(stfp);
 	strcpy(stfp, " -text \"");
 	j = strlen(stfp);
-	for (i = 0; i < strlen(t->cstring); i++) {
+	for (i = 0; i < strlen(t->cstring); ++i) {
 		if (t->cstring[i] == '"')
 			stfp[j++] = '\\';
 		stfp[j++] = t->cstring[i];
@@ -1032,8 +1036,8 @@ drawShape(void (*tkShape)(), void *p, int thickness, int penColor,
  */
 
 void
-tkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
-	unsigned int fillPattern, int thickness)
+tkArc(void *shape, int outlineColor, int fillColor,
+	int fillPattern, int thickness)
 {
 	char	stfp[256];
 	double	cx, cy,	/* Center of circle containing arc. */
@@ -1122,8 +1126,8 @@ tkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
  */
 
 void
-tkEllipse(void *shape, unsigned int outlineColor, unsigned int fillColor,
-	unsigned int fillPattern, int thickness)
+tkEllipse(void *shape, int outlineColor, int fillColor,
+	int fillPattern, int thickness)
 {
 	char		stfp[256];
 	F_ellipse	*e;
@@ -1167,9 +1171,11 @@ tkEllipse(void *shape, unsigned int outlineColor, unsigned int fillColor,
  */
 
 static void
-tkLine(void * shape, unsigned int penColor, unsigned int fillColor,
-	unsigned int fillPattern, int thickness, int style, double style_val)
+tkLine(void * shape, int penColor, int fillColor,
+	int fillPattern, int thickness, int style, double style_val)
 {
+	(void)		fillColor;
+	(void)		fillPattern;
 	char		dir[8], stfp[256];
 	extern char	*canvas;	/* Tk canvas name. */
 	F_arrow		*a;
@@ -1287,8 +1293,8 @@ tkLine(void * shape, unsigned int penColor, unsigned int fillColor,
  */
 
 static void
-tkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
-	unsigned int fillPattern, int thickness, int style, double style_val)
+tkPolygon(void * shape, int outlineColor, int fillColor,
+	int fillPattern, int thickness, int style, double style_val)
 {
 	char		stfp[256];
 	extern char	*canvas;	/* Tk canvas name. */
@@ -1490,7 +1496,7 @@ niceLine(char *s)
 struct driver	dev_tk = {
 	gentk_option,
 	gentk_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	gentk_arc,
 	gentk_ellipse,
 	gentk_line,

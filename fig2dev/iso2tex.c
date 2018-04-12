@@ -1,24 +1,27 @@
 /*
  * iso2tex.c: Map ISO-Font Symbols to appropriate sequences in TeX
- * Copyright (c) 1992 Herbert Bauer and  B. Raichle
+ * Copyright (c) 1992 Herbert Bauer and B. Raichle
+ * Parts Copyright (c) 1999, 2002, 2007 by Brian V. Smith
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
-/* map ISO-Font Symbols to appropriate sequences in TeX
+/*
+ * map ISO-Font Symbols to appropriate sequences in TeX
  * Herbert Bauer 22.11.1991
  *
  * B.Raichle 12.10.92, changed some of the definitions
  *
- * T.Kopal 22.3.02, added ISO-8859-2 table */
+ * T.Kopal 22.3.02, added ISO-8859-2 table
+ */
 
 /* ISO-8859-1 encoding table */
 char *ISO1toTeX[] =   /* starts at octal 240 */
@@ -45,7 +48,7 @@ char *ISO1toTeX[] =   /* starts at octal 240 */
 	"\\mbox{$\\mathsurround 0pt{}^2$}",	/* squared  - math mode */
 	"\\mbox{$\\mathsurround 0pt{}^3$}",	/* cubed  - math mode */
 	"\\'{}",				/* accent egue */
-	"\\mbox{$\\mu$}",		/* greek letter mu - math mode */
+	"\\mbox{$\\mu$}",			/* greek letter mu - math mode*/
 	"\\P{}",				/* paragraph */
 	"\\mbox{$\\cdot$}",			/* centered dot  - math mode */
 	"",

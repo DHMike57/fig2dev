@@ -1,38 +1,39 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2012 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *	genpic : PIC driver for fig2dev
+ * genpic: convert fig to PIC
  *
- *	Author: Conrad Kwok, UC Davis, 12/88
- *	Modified: Richard Auletta, George Mason Univ., 6/21/89
- *	Added code comments are marked with "rja".
- *	Added: Support for native pic arrowheads.
- *	Added: Support for arrowheads at both ends of lines, arc, splines.
+ * Author: Conrad Kwok, UC Davis, 12/88
+ * Modified: Richard Auletta, George Mason Univ., 6/21/89
+ * Added code comments are marked with "rja".
+ * Added: Support for native pic arrowheads.
+ * Added: Support for arrowheads at both ends of lines, arc, splines.
  *
- *	Modified: Stuart Kemp & Dave Bonnell, July, 1991
- *		  James Cook University,
- *		  Australia
- *	Changes:
- *		Added T_ARC_BOX to genpic_line()
- *		Added 'thickness' attribute all over
- *		Added 'fill' attribute to ellipse
- *		Cleaned up the code
+ * Modified: Stuart Kemp & Dave Bonnell, July, 1991
+ *	     James Cook University,
+ *	     Australia
+ * Changes:
+ *	Added T_ARC_BOX to genpic_line()
+ *	Added 'thickness' attribute all over
+ *	Added 'fill' attribute to ellipse
+ *	Cleaned up the code
  */
 
 #ifdef HAVE_CONFIG_H
@@ -43,12 +44,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "bool.h"
 
 #include "fig2dev.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "picfonts.h"
 #include "picpsfonts.h"
+#include "psfonts.h"
 
 static void genpic_ctl_spline(F_spline *s);
 static void genpic_itp_spline(F_spline *s);
@@ -649,7 +650,7 @@ genpic_itp_spline(F_spline *s)
 struct driver dev_pic = {
 	genpic_option,
 	genpic_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genpic_arc,
 	genpic_ellipse,
 	genpic_line,

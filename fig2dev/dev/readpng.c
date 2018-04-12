@@ -1,15 +1,16 @@
 /*
- * TransFig: Facility for Translating Fig code
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Fig2dev: Translate Fig code to various Devices
+ * Parts Copyright (c) 1989-2010 by Brian V. Smith
+ * Parts Copyright (c) 2015-2017 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
@@ -20,7 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "bool.h"
 #include <png.h>
 
 #include "fig2dev.h"
@@ -34,7 +34,8 @@
 int
 read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 {
-    register int    i, j;
+    (void)	    filetype;
+    unsigned int    i, j;
     png_structp	    png_ptr;
     png_infop	    info_ptr;
     png_infop	    end_info;
@@ -135,23 +136,26 @@ read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 
 	if (png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette)) {
 	    png_get_hIST(png_ptr, info_ptr, &histogram);
-#if (PNG_LIBPNG_VER_MAJOR > 1 || (PNG_LIBPNG_VER_MAJOR == 1 && (PNG_LIBPNG_VER_MINOR > 4))) || defined(png_set_quantize)
+#if (PNG_LIBPNG_VER_MAJOR > 1 || \
+		(PNG_LIBPNG_VER_MAJOR == 1 && (PNG_LIBPNG_VER_MINOR > 4))) \
+	|| defined(png_set_quantize)
 	    png_set_quantize(png_ptr, palette, num_palette, 256, histogram, 0);
 #else
 	    png_set_dither(png_ptr, palette, num_palette, 256, histogram, 0);
 #endif
 	}
     }
-    if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
+    if (color_type == PNG_COLOR_TYPE_GRAY ||
+		    color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
 	/* expand to full range */
 	png_set_expand(png_ptr);
 	/* make a gray colormap */
 	num_palette = 256;
-	for (i = 0; i < num_palette; i++)
+	for (i = 0; i < (unsigned) num_palette; ++i)
 	    pic->cmap[RED][i] = pic->cmap[GREEN][i] = pic->cmap[BLUE][i] = i;
     } else {
 	/* transfer the palette to the object's colormap */
-	for (i=0; i<num_palette; i++) {
+	for (i=0; i < (unsigned) num_palette; ++i) {
 	    pic->cmap[RED][i]   = palette[i].red;
 	    pic->cmap[GREEN][i] = palette[i].green;
 	    pic->cmap[BLUE][i]  = palette[i].blue;
@@ -170,9 +174,9 @@ read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 
     /* allocate the row pointers and rows */
     row_pointers = (png_bytep *) malloc(h*sizeof(png_bytep));
-    for (i=0; i<h; i++) {
+    for (i=0; i<h; ++i) {
 	if ((row_pointers[i] = malloc(rowsize)) == NULL) {
-	    for (j=0; j<i; j++)
+	    for (j=0; j<i; ++j)
 		free(row_pointers[j]);
 	    return 0;
 	}
@@ -187,15 +191,16 @@ read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 
     /* copy it to our bitmap */
     ptr = pic->bitmap;
-    for (i=0; i<h; i++) {
-	bcopy(row_pointers[i], ptr, rowsize);
+    for (i=0; i<h; ++i) {
+	memcpy(ptr, row_pointers[i], rowsize);
 	ptr += rowsize;
     }
     /* put in width, height */
     pic->bit_size.x = w;
     pic->bit_size.y = h;
 
-    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
+    if (color_type == PNG_COLOR_TYPE_RGB ||
+		    color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
 	/* no palette */
 	pic->numcols = 2<<16;
     } else {
@@ -205,7 +210,7 @@ read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
     /* clean up */
     png_read_end(png_ptr, end_info);
     png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-    for (i=0; i<h; i++)
+    for (i=0; i<h; ++i)
 	free(row_pointers[i]);
 
     pic->subtype = P_PNG;

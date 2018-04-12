@@ -1,10 +1,21 @@
 /*
+ * realloc.c: Provide a replacement function for realloc().
+ * Copyright (c) 2015 by Thomas Loimer
+ *
+ * Copying and distribution of this file, with or without modification,
+ * are permitted in any medium without royalty provided the copyright
+ * notice and this notice are preserved. This file is offered as-is,
+ * without any warranty.
+ *
+ */
+
+/*
  * Provide a replacement function for realloc, if ./configure finds
  * that the original realloc() is not portable.
  * See info autoconf, section "Particular Function Checks".
  *
- * Copied and modified from gnulib.
- * Here is the original copyright from realloc:
+ * Copied and modified from gnulib by Thomas Loimer, 2015.
+ * Below is the original copyright from realloc.
  */
 
 /*
@@ -33,10 +44,14 @@
 #include <stddef.h>
 
 void *realloc();
+void free();
+void *malloc();
 
 void *
 rpl_realloc(void *p, size_t n)
 {
+	void *result;
+
 	if (n == 0) {
 		n = 1;
 		free(p);
@@ -49,6 +64,7 @@ rpl_realloc(void *p, size_t n)
 		result = malloc(n);
 	} else {
 		result = realloc(p, n);
+	}
 
 	return result;
 }

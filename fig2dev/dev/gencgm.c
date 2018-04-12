@@ -1,20 +1,28 @@
 /*
- * gencgm.c: convert fig to clear text version-1 Computer Graphics Metafile
- * Copyright (c) 1999 by Philippe Bekaert
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Fig2dev: Translate Fig code to various Devices
+ * Parts Copyright (c) 1999 by Philippe Bekaert
+ * Parts Copyright (c) 1999-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
+ * gencgm.c: convert fig to clear text version-1 Computer Graphics Metafile
+ *
+ * Copyright (c) 1999 by Philippe Bekaert
+ *	Computer Graphics Research Group, K.U.Leuven, Leuven, Belgium
+ *	e-mail: Philippe.Bekaert@cs.kuleuven.ac.be
+ *	www: http://www.cs.kuleuven.ac.be/~graphics/
+ *
  * Limitations:
  *
  * - old style splines are not supported by this driver. New style (X) splines
@@ -39,8 +47,8 @@
  *
  * - parts of objects close to arrows on wide curves might sometimes be hidden.
  * (They disappear together with part of the polyline covered by the arrow
- * that has to be erased in order to get a clean arrow tip). This problem requires
- * a different arrow drawing strategy.
+ * that has to be erased in order to get a clean arrow tip). This problem
+ * requires a different arrow drawing strategy.
  *
  * Notes:
  *
@@ -49,13 +57,6 @@
  * The RALCGM program, distributed in C source code form
  * at http://www.agocg.ac.uk:8080/CGM.html, will enable such conversion
  * as well as viewing under UNIX/X.
- *
- * Author:
- *
- *  Philippe Bekaert
- *  Computer Graphics Research Group, K.U.Leuven, Leuven, Belgium
- *  e-mail: Philippe.Bekaert@cs.kuleuven.ac.be
- *  www: http://www.cs.kuleuven.ac.be/~graphics/
  *
  * History:
  *
@@ -71,15 +72,12 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <strings.h>	/* index(), replace by strchr() */
 #include <math.h>
 #include <limits.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
-#include "pathmax.h"
 
 #define	UNDEFVALUE	-100	/* undefined attribute value */
 #define	FILL_COLOR_INDEX 999	/* special color index for solid filled shapes.
@@ -95,7 +93,7 @@ static	int rounded_arrows;	/* If rounded_arrows is false, the position
 
 static	bool	 binary_output = false;	/* default is ASCII output */
 static	FILE	*saveofile;	/* used when piping to ralcgm for binary output */
-static	char	 cgmcom[PATH_MAX];
+static	char	 *cgmcom;
 
 static struct	_rgb {
   float r, g, b;
@@ -168,13 +166,22 @@ gencgm_start(F_compound *objects)
     saveofile = tfp;
     if (tfp != stdout)
 	fclose(tfp);
-    sprintf(cgmcom, "ralcgm -b - %s", to? to: "-");
+    if (to) {
+	cgmcom = malloc(strlen(to) + 13);
+	strcpy(cgmcom, "ralcgm -b - ");
+	strcat(cgmcom, to);
+    } else {
+	cgmcom = malloc((size_t) 14);
+	strcpy(cgmcom, "ralcgm -b - -");
+    }
     /* open pipe to ralcgm */
-    if ((tfp = popen(cgmcom,"w" )) == 0) {
-	fprintf(stderr,"fig2dev: Can't open pipe to ralcgm, producing ASCII CGM instead.\n");
-	fprintf(stderr,"Command was: %s\n", cgmcom);
+    if ((tfp = popen(cgmcom,"w")) == 0) {
+	fprintf(stderr,
+		"fig2dev: Can't open pipe to ralcgm, producing ASCII CGM instead.\n");
+	fprintf(stderr, "Command was: %s\n", cgmcom);
 	/* failed, revert back to ASCII */
 	tfp = saveofile;
+	free(cgmcom);
 	binary_output = false;
     }
   }
@@ -259,8 +266,10 @@ gencgm_end(void)
 	if (pclose(tfp) != 0) {
 	    fprintf(stderr,"Error in ralcgm command\n");
 	    fprintf(stderr,"command was: %s\n", cgmcom);
+	    free(cgmcom);
 	    return -1;
 	}
+	free(cgmcom);
     }
     /* we've already closed the original output file */
     tfp = 0;
@@ -272,30 +281,32 @@ gencgm_end(void)
 void
 gencgm_option(char opt, char *optarg)
 {
-    rounded_arrows = false;
-    switch (opt) {
-	case 'b':
-	    binary_output = true;	/* call ralcgm to convert output to binary cgm */
-	    break;
+	(void)	optarg;
+
+	rounded_arrows = false;
+	switch (opt) {
+	case 'a':
+		binary_output = true;	/* call ralcgm to convert output to
+					   binary cgm */
+		break;
 
 	case 'r':
-	    rounded_arrows = true;
-	    break;
+		rounded_arrows = true;
+		break;
 
 	case 'G':
 	case 'L':
-	    break;
+		break;
 
 	default:
-	    /* other CGM driver options to consider are:
-	     * faithful reproduction of FIG linestyles and fill patterns
-	     * (linetyles e.g. by drawing multiple short lines), other
-	     * CGM encodings beside clear text, non-white (e.g. black)
-	     * background with corresponding change of foreground color, ... */
-
-	    put_msg(Err_badarg, opt, "cgm");
-	    exit(1);
-    }
+		/* other CGM driver options to consider are:
+		 * faithful reproduction of FIG linestyles and fill patterns
+		 * (linetyles e.g. by drawing multiple short lines), other
+		 * CGM encodings beside clear text, non-white (e.g. black)
+		 * background with corresponding change of foreground color...*/
+		put_msg(Err_badarg, opt, "cgm");
+		exit(1);
+	}
 }
 
 /* Coordinates are translated such that the lower left corner has
@@ -1052,11 +1063,12 @@ void
 gencgm_spline(F_spline *s)
 {
   static int wgiv = 0;
+
+  print_comments("% ", s->comments, "");
   if (!wgiv) {
-    fprintf(stderr, "\
-Warning: the CGM driver doesn't support (old style) FIG splines.\n\
-Suggestion: convert your (old?) FIG image by loading it into xfig v3.2 or\n\
-or higher and saving again.\n");
+    fputs("Warning: the CGM driver doesn't support (old style) FIG splines.\n"
+    "Suggestion: convert your (old?) FIG image by loading it into xfig v3.2\n"
+    "or higher and saving again.\n", stderr);
     wgiv = 1;
   }
 }
@@ -1194,17 +1206,18 @@ distance(double x1, double y1, double x2, double y2)
 static double
 arc_radius(F_arc *a)
 {
-  return (distance((double)a->point[0].x, (double)a->point[0].y, a->center.x, a->center.y) +
-	  distance((double)a->point[1].x, (double)a->point[1].y, a->center.x, a->center.y) +
-	  distance((double)a->point[2].x, (double)a->point[2].y, a->center.x, a->center.y)) / 3.;
+  return (distance((double)a->point[0].x, (double)a->point[0].y,
+		a->center.x, a->center.y) +
+	  distance((double)a->point[1].x, (double)a->point[1].y,
+		a->center.x, a->center.y) +
+	  distance((double)a->point[2].x, (double)a->point[2].y,
+		a->center.x, a->center.y)) / 3.;
 }
 
 /* copies coordinates of pos p to point P */
 
 static void
-pos2point(P, p)
-    F_point *P;
-    F_pos *p;
+pos2point(F_point *P, F_pos *p)
 {
   P->x = p->x; P->y = p->y;
 }
@@ -1219,9 +1232,7 @@ translate(double *x, double *y, double tx, double ty)
  * radius R. */
 
 static void
-arc_rotate(P, cx, cy, R, angle)
-    F_point *P;
-    double cx, cy, R, angle;
+arc_rotate(F_point *P, double cx, double cy, double angle)
 {
   double x = P->x, y = P->y;
   translate(&x, &y, -cx, -cy);
@@ -1233,42 +1244,32 @@ arc_rotate(P, cx, cy, R, angle)
 /* Replaces p by the starting point of the arc arrow ending at p. */
 
 static void
-arc_arrow_adjust(p, cx, cy, R, arw, dir)
-    F_point *p;
-    double cx, cy, R;
-    F_arrow *arw;
-    double dir;
+arc_arrow_adjust(F_point *p, double cx, double cy, double R,
+		F_arrow *arw, double dir)
 {
   double L;
   if (!arw) return;
 
   L = arw->type != 0 ? arrow_length(arw) : arw->ht;
-  arc_rotate(p, cx, cy, R, dir * M_PI * L / (2. * R + L));
+  arc_rotate(p, cx, cy, dir * M_PI * L / (2. * R + L));
 }
 
 /* computes midpoint of p1 and p2 on arc. */
 
 static void
-arc_midpoint(mid, p1, p2, cx, cy, R)
-    F_point *mid;
-    F_point *p1;
-    F_point *p2;
-    double cx, cy, R;
+arc_midpoint(F_point *mid, F_point *p1, F_point *p2,
+		double cx, double cy, double R)
 {
   Dir dir; double d;
   direction(p1, p2, &dir, &d);
   *mid = *p1;
-  arc_rotate(mid, cx, cy, R, M_PI * d / (2. * R + d) / 2.);
+  arc_rotate(mid, cx, cy, M_PI * d / (2. * R + d) / 2.);
 }
 
 /* draws arc arrow ending at p and starting at q. */
 
 static void
-arc_arrow(p, q, arw, arc)
-    F_pos	*p;
-    F_point	*q;
-    F_arrow	*arw;
-    F_arc	*arc;
+arc_arrow(F_pos *p, F_point *q, F_arrow *arw, F_arc *arc)
 {
   F_point P;
   Dir dir; double d;
@@ -1474,7 +1475,7 @@ gencgm_text(F_text *t)
 struct driver dev_cgm = {
 	gencgm_option,
 	gencgm_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	gencgm_arc,
 	gencgm_ellipse,
 	gencgm_line,

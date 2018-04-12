@@ -1,31 +1,30 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
-
 /*
- *	genibmgl.c :	IBMGL driver for fig2dev
- *			IBM 6180 Color Plotter with
- *			IBM Graphics Enhancement Cartridge
- *	Author E. Robert Tisdale, University of California, 1/92
- *	(edwin@cs.ucla.edu)
+ * genibmgl.c: convert fig to IBMGL
+ *		IBM 6180 Color Plotter with
+ *		IBM Graphics Enhancement Cartridge
+ * Author E. Robert Tisdale, University of California, 1/92 (edwin@cs.ucla.edu)
  *
- *		adapted from:
+ *	adapted from:
  *
- *	genpictex.c :	PiCTeX driver for fig2dev
+ *genpictex.c: PiCTeX driver for fig2dev
  *
  *	Author Micah Beck, Cornell University, 4/88
  *	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
@@ -54,12 +53,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <math.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 
 static void set_style();
@@ -197,8 +197,7 @@ genibmgl_option(char opt, char *optarg)
 	int	 pattern;
 
 	switch (opt) {
-
-	    case 'a':				/* paper size		*/
+	case 'a':				/* paper size		*/
 #ifdef A4
 		pageheight	 = ANSI_A_HEIGHT;
 		pagewidth	 = ANSI_A_WIDTH;
@@ -208,95 +207,97 @@ genibmgl_option(char opt, char *optarg)
 #endif
 		break;
 
-	    case 'c':				/* Graphics Enhancement	*/
+	case 'c':				/* Graphics Enhancement	*/
 		ibmgec		 = !ibmgec;	/* Cartridge emulation	*/
 		break;
 
-	    case 'd':				/* position and window	*/
+	case 'd':				/* position and window	*/
 		sscanf(optarg, "%lf,%lf,%lf,%lf", &xl,&yl,&xu,&yu);
-						/* inches		*/
+		/* inches		*/
 		break;
 
-	    case 'f':				/* user's characters	*/
+	case 'f':				/* user's characters	*/
 		if ((ffp = fopen(optarg, "r")) == NULL)
-		    fprintf(stderr, "Couldn't open %s\n", optarg);
+			fprintf(stderr, "Couldn't open %s\n", optarg);
 		else
-		    for (font = 0; font <= fonts; font++)
-			fscanf(ffp, "%d%d%lf%lf%lf",
-				&standard[font],	/* 0-4 6-9 30-39*/
-				&alternate[font],	/* 0-4 6-9 30-39*/
-				&slant[font],		/*   degrees	*/
-				&wide[font],		/*	~1.0	*/
-				&high[font]);		/*	~1.0	*/
+			for (font = 0; font <= fonts; ++font)
+				fscanf(ffp, "%d%d%lf%lf%lf",
+					&standard[font],  /* 0-4 6-9 30-39 */
+					&alternate[font], /* 0-4 6-9 30-39 */
+					&slant[font],	  /*   degrees	*/
+					&wide[font],	  /*	~1.0	*/
+					&high[font]);	  /*	~1.0	*/
 		fclose(ffp);
 		break;
 
-	    case 'k':				/* precede output with PCL job control */
+	case 'k':		/* precede output with PCL job control */
 		pcljcl = true;
 		break;
 
-	    case 'l':				/* user's fill patterns	*/
+	case 'l':				/* user's fill patterns	*/
 		if ((ffp = fopen(optarg, "r")) == NULL)
-		    fprintf(stderr, "Couldn't open %s\n", optarg);
+			fprintf(stderr, "Couldn't open %s\n", optarg);
 		else
-		    for (pattern = 0; pattern < patterns; pattern++)
-			fscanf(ffp, "%d%lf%d%lf%lf",
-				&line_type[pattern],	/*    -1-6	*/
-				&line_space[pattern],	/*   inches	*/
-				&fill_type[pattern],	/*     1-5	*/
-				&fill_space[pattern],	/*   inches	*/
-				&fill_angle[pattern]);	/*   degrees	*/
+			for (pattern = 0; pattern < patterns; pattern++)
+				fscanf(ffp, "%d%lf%d%lf%lf",
+					&line_type[pattern],	/*    -1-6   */
+					&line_space[pattern],	/*   inches  */
+					&fill_type[pattern],	/*    1-5    */
+					&fill_space[pattern],	/*   inches  */
+					&fill_angle[pattern]);	/*   degrees */
 		fclose(ffp);
 		break;
 
-	    case 'F':				/* use specified font,
-						   i.e., SD command */
+	case 'F':		/* use specified font, i.e., SD command */
 		correct_font_size = true;
 		break;
 
-	    case 'G':
-	    case 'L':				/* language		*/
+	case 'G':
+	case 'L':				/* language		*/
 		break;
 
-	    case 'm':				/* magnify and offset	*/
-		sscanf(optarg, "%lf,%lf,%lf", &mag,&xz,&yz);
-						/* inches		*/
-		break;
-
-	    case 'p':				/* user's colors	*/
+	case 'p':				/* user's colors	*/
 		{
-		    FILE	*ffp;
-		    int		color;
-		    if ((ffp = fopen(optarg, "r")) == NULL)
-			fprintf(stderr, "Couldn't open %s\n", optarg);
-		    else
-			for (color = 0; color <= colors; color++)
-			    fscanf(ffp, "%d%lf",
-				&pen_number[color],	/*     1-8	*/
-				&pen_thickness[color]);	/* millimeters	*/
-		    fclose(ffp);
+			FILE	*ffp;
+			int		color;
+			if ((ffp = fopen(optarg, "r")) == NULL)
+				fprintf(stderr, "Couldn't open %s\n", optarg);
+			else
+				for (color = 0; color <= colors; ++color)
+					fscanf(ffp, "%d%lf",
+						&pen_number[color], /* 1-8 */
+						&pen_thickness[color]);	/* mm */
+			fclose(ffp);
 		}
 		break;
 
-	    case 'P':				/* portrait mode	*/
+	case 'P':				/* portrait mode	*/
 		landscape	 = false;
 		orientspec	 = true;	/* user-specified	*/
 		break;
 
-	    case 'S':				/* select pen velocity	*/
+	case 'S':				/* select pen velocity	*/
 		pen_speed	 = atof(optarg);
 		break;
 
-	    case 'v':
+	case 'v':
 		reflected	 = true;	/* mirror image		*/
 		break;
 
-	    case 'z':			/* papersize */
-		(void) strcpy (papersize, optarg);
-		paperspec = true;	/* user-specified */
+	case 'x':
+		xz = atof(optarg);		/* x offset, inches */
 		break;
 
-	    default:
+	case 'y':
+		yz = atof(optarg);		/* y offset, inches */
+		break;
+
+	case 'z':				/* papersize */
+		(void) strcpy (papersize, optarg);
+		paperspec = true;		/* user-specified */
+		break;
+
+	default:
 		put_msg(Err_badarg, opt, "ibmgl");
 		exit(1);
 	}
@@ -310,10 +311,11 @@ static double		hcmpp;			/* centimeter/point	*/
 void
 genibmgl_start(F_compound *objects)
 {
-	int	 P1x, P1y, P2x, P2y;
-	int	 Xll, Yll, Xur, Yur;
-	double	Xmin,Xmax,Ymin,Ymax,xoff=0,yoff=0;
-	double	height, width, points_per_inch;
+	(void)		objects;
+	int		P1x, P1y, P2x, P2y;
+	int		Xll, Yll, Xur, Yur;
+	double		Xmin,Xmax,Ymin,Ymax,xoff=0,yoff=0;
+	double		height, width, points_per_inch;
 	struct paperdef	*pd;
 
 	if (fabs(mag) < 1.0/2048.0){
@@ -1136,7 +1138,7 @@ genibmgl_end(void)
 struct driver dev_ibmgl = {
 	genibmgl_option,
 	genibmgl_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genibmgl_arc,
 	genibmgl_ellipse,
 	genibmgl_line,

@@ -1,23 +1,24 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2010 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- * genepic.c: (E)EPIC driver for fig2dev
+ * genepic.c: convert fig to (E)EPIC
  *
  * Converted from fig2epic 5/89 by Micah Beck
  */
@@ -97,27 +98,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-//#include <stdarg.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
-//#include <sys/file.h>
-//#include <sys/types.h>
-//#include <unistd.h>
-//#include <signal.h>
-//#ifdef	HAVE_STRERROR
-//#include <errno.h>
-//#endif
-//#include <time.h>
+#endif
 #include <math.h>
-//#include <ctype.h>
-//#include <limits.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "setfigfont.h"
 #include "texfonts.h"
+#include "psfonts.h"
 #include "localmath.h"
 
 extern float	THICK_SCALE;	/* ratio of dpi/80 */
@@ -267,92 +259,94 @@ genepic_option(char opt, char *optarg)
 
 	switch (opt) {
 
-	  case 'G':	/* processed in fig2dev.c */
-	    break;
+	case 'G':	/* processed in fig2dev.c */
+		break;
 
-	  case 'A':
-	    ArrowScale = atof(optarg);
-	    break;
+	case 'd':
+		ArrowScale = atof(optarg);
+		break;
 
-	  case 'a':
-	    fprintf(stderr, "warning: genepic option -a obsolete\n");
-	    break;
+	case 'a':
+		fprintf(stderr, "warning: genepic option -a obsolete\n");
+		break;
 
-	  case 'E':
-	    encoding = atoi(optarg);
-	    if (encoding < 0 || encoding > 2)
-	      encoding = 1;
-	    break;
+	case 'E':
+		encoding = atoi(optarg);
+		if (encoding < 0 || encoding > 2)
+			encoding = 1;
+		break;
 
-	  case 'f':
-	    for ( i = 1; i <= MAX_FONT; i++ )
-		if ( !strcmp(optarg, texfontnames[i]) ) break;
+	case 'f':
+		for ( i = 1; i <= MAX_FONT; i++ )
+			if ( !strcmp(optarg, texfontnames[i]) ) break;
 
-	    if ( i > MAX_FONT) {
-		fprintf(stderr, "warning: non-standard font name %s ignored\n", optarg);
-	    } else {
-		texfontnames[0] = texfontnames[i];
+		if ( i > MAX_FONT) {
+			fprintf(stderr,
+				"warning: non-standard font name %s ignored\n",
+				optarg);
+		} else {
+			texfontnames[0] = texfontnames[i];
 #ifdef NFSS
-		texfontfamily[0] = texfontfamily[i];
-		texfontseries[0] = texfontseries[i];
-		texfontshape[0] = texfontshape[i];
+			texfontfamily[0] = texfontfamily[i];
+			texfontseries[0] = texfontseries[i];
+			texfontshape[0] = texfontshape[i];
 #endif
-	    }
-	    break;
+		}
+		break;
 
-	  case 'l':
-	    linew_spec = true;
-	    LineThick = atoi(optarg);	/* save user's argument here */
-	    break;
+	case 'l':
+		linew_spec = true;
+		LineThick = atoi(optarg);	/* save user's argument here */
+		break;
 
-	  case 'L':
-	    for (loop=0; loop < 3; loop++) {
-		if (strcasecmp(optarg, Tlangkw[loop]) == 0) break;
-	    }
-	    TeXLang = loop;
-	    break;
+	case 'L':
+		for (loop=0; loop < 3; loop++) {
+			if (strcasecmp(optarg, Tlangkw[loop]) == 0) break;
+		}
+		TeXLang = loop;
+		break;
 
-	  case 'P':
-	    PageMode = 1;
-	    break;
+	case 'P':
+		PageMode = 1;
+		break;
 
-	  case 'S':
-	    loop = atoi(optarg);
-	    if (loop < 8 || loop > 12) {
-		put_msg("Scale must be between 8 and 12 inclusively\n");
+	case 'S':
+		loop = atoi(optarg);
+		if (loop < 8 || loop > 12) {
+			put_msg("Scale must be between 8 and 12 inclusively\n");
+			exit(1);
+		}
+		loop -= 8;
+		mag = ScaleTbl[loop].mag;
+		font_size = (double) ScaleTbl[loop].size;
+		break;
+
+	case 'v':
+		Verbose = true;
+		break;
+
+	case 'W':
+	case 'w':
+		VarWidth = opt == 'W';
+		break;
+
+	case 't':
+		DashStretch= atoi(optarg);
+		if (DashStretch < -100)
+			DashStretch = -100;
+		break;
+
+	case 'F':
+		FontSizeOnly = true;
+		break;
+
+	case 'R':
+		AllowRotatedText = 1;
+		break;
+
+	default:
+		put_msg(Err_badarg, opt, "epic");
 		exit(1);
-	    }
-	    loop -= 8;
-	    mag = ScaleTbl[loop].mag;
-	    font_size = (double) ScaleTbl[loop].size;
-	    break;
-
-	  case 'v':
-	    Verbose = true;
-	    break;
-
-	  case 'W':
-	  case 'w':
-	    VarWidth = opt=='W';
-	    break;
-
-	  case 't':
-	    DashStretch= atoi(optarg);
-	    if (DashStretch < -100)
-	      DashStretch = -100;
-	    break;
-
-	  case 'F':
-	    FontSizeOnly = true;
-	    break;
-
-	  case 'R':
-	    AllowRotatedText = 1;
-	    break;
-
-	  default:
-	    put_msg(Err_badarg, opt, "epic");
-	    exit(1);
 	}
 }
 
@@ -1349,7 +1343,6 @@ genepic_text(F_text *text)
 
 	    } else {
 #ifdef I18N
-		extern bool support_i18n;
 		if (support_i18n && (text->font <= 2))
 			fputc(*cp, tfp);
 	    else
@@ -1672,7 +1665,7 @@ FillCommands(int style, int color)
 struct driver dev_epic = {
 	genepic_option,
 	genepic_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genepic_arc,
 	genepic_ellipse,
 	genepic_line,

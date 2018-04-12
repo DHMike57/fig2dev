@@ -1,17 +1,18 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2012 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
@@ -25,10 +26,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef	HAVE_STRERROR
+#ifdef HAVE_STRERROR
 #include <errno.h>
 #endif
-#include "bool.h"
 
 #include "fig2dev.h"
 #include "alloc.h"
@@ -36,21 +36,23 @@
 #include "free.h"
 
 /*******    Fig 1.3 subtype of objects    *******/
-#define			DRAW_ELLIPSE_BY_RAD	1
-#define			DRAW_ELLIPSE_BY_DIA	2
-#define			DRAW_CIRCLE_BY_RAD	3
-#define			DRAW_CIRCLE_BY_DIA	4
-#define			DRAW_CIRCULAR_ARC	5
-#define			DRAW_POLYLINE		6
-#define			DRAW_BOX		7
-#define			DRAW_POLYGON		8
-#define			DRAW_TEXT		9
-#define			DRAW_SPLINE		10
-#define			DRAW_CLOSEDSPLINE	11
-#define			DRAW_COMPOUND		13
+#define DRAW_ELLIPSE_BY_RAD	1
+#define DRAW_ELLIPSE_BY_DIA	2
+#define DRAW_CIRCLE_BY_RAD	3
+#define DRAW_CIRCLE_BY_DIA	4
+#define DRAW_CIRCULAR_ARC	5
+#define DRAW_POLYLINE		6
+#define DRAW_BOX		7
+#define DRAW_POLYGON		8
+#define DRAW_TEXT		9
+#define DRAW_SPLINE		10
+#define DRAW_CLOSEDSPLINE	11
+#define DRAW_COMPOUND		13
 
 extern F_arrow		*forward_arrow(void), *backward_arrow(void);
 extern int		figure_modified;
+//extern int		line_no;
+extern int		num_object;
 
 static F_ellipse	*read_ellipseobject(FILE *fp);
 static F_line		*read_lineobject(FILE *fp);
@@ -59,8 +61,7 @@ static F_spline		*read_splineobject(FILE *fp);
 static F_arc		*read_arcobject(FILE *fp);
 static F_compound	*read_compoundobject(FILE *fp);
 
-extern int		line_no;
-extern int		num_object;
+static char		Err_invalid[] = "Invalid %s object.";
 
 #ifdef V4_0
 extern int              suppress_error;/*ggstemme*/
@@ -78,13 +79,18 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 	int		 n;
 	int		 object, pixperinch, canvaswid, canvasht, coord_sys;
 
-	n = fscanf(fp,"%d%d%d%d\n", &pixperinch, &coord_sys, &canvaswid, &canvasht);
+	n = fscanf(fp,"%d%d%d%d\n",
+			&pixperinch, &coord_sys, &canvaswid, &canvasht);
 	if (n != 4){
 #ifdef V4_0
 	  if (!suppress_error)
 #endif /* V4_0 */
 	     put_msg("Incorrect format in the first line in input file");
 	  return(-1);
+	}
+	if (pixperinch <= 0) {
+		put_msg("Invalid resolution information (%d).", pixperinch);
+		return -1;
 	}
 	obj->nwcorner.x = pixperinch;
 	obj->nwcorner.y = coord_sys;
@@ -144,10 +150,14 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 		} /*  switch */
 	    } /*  while */
 	if (feof(fp))
-	    return(0);
+	    return 0;
 	else
-	    return(errno);
-	}
+#ifdef HAVE_STRERROR
+	    return errno;
+#else
+	    return -1;
+#endif
+}
 
 static F_arc *
 read_arcobject(FILE *fp)
@@ -162,7 +172,8 @@ read_arcobject(FILE *fp)
 	a->for_arrow = NULL;
 	a->back_arrow = NULL;
 	a->next = NULL;
-	n = fscanf(fp, " %d %d %d %lf %d %d %d %d %d %lf %lf %d %d %d %d %d %d\n",
+	n = fscanf(fp,
+		" %d %d %d %lf %d %d %d %d %d %lf %lf %d %d %d %d %d %d\n",
 		&a->type, &a->style, &a->thickness,
 		&a->style_val, &a->direction, &f, &b,
 		&h, &w, &a->center.x, &a->center.y,
@@ -171,22 +182,27 @@ read_arcobject(FILE *fp)
 		&a->point[2].x, &a->point[2].y);
 	a->type = T_OPEN_ARC;
 	if (n != 17) {
-	    put_msg("incomplete arc data");
-	    free((char*)a);
-	    return(NULL);
-	    }
-	if (f) {
-	    a->for_arrow = forward_arrow();
-	    a->for_arrow->wid = w;
-	    a->for_arrow->ht = h;
-	    }
-	if (b) {
-	    a->back_arrow = backward_arrow();
-	    a->back_arrow->wid = w;
-	    a->back_arrow->ht = h;
-	    }
-	return(a);
+		put_msg("incomplete arc data");
+		free(a);
+		return NULL;
 	}
+	if (INVALID_ARC(a)) {
+		put_msg(Err_invalid, "arc");
+		free(a);
+		return NULL;
+	}
+	if (f) {
+		a->for_arrow = forward_arrow();
+		a->for_arrow->wid = w;
+		a->for_arrow->ht = h;
+	}
+	if (b) {
+		a->back_arrow = backward_arrow();
+		a->back_arrow->wid = w;
+		a->back_arrow->ht = h;
+	}
+	return a;
+}
 
 static F_compound *
 read_compoundobject(FILE *fp)
@@ -206,6 +222,7 @@ read_compoundobject(FILE *fp)
 	com->splines = NULL;
 	com->texts = NULL;
 	com->compounds = NULL;
+	com->comments = NULL;
 	com->next = NULL;
 	n = fscanf(fp, " %d %d %d %d\n", &com->nwcorner.x, &com->nwcorner.y,
 		&com->secorner.x, &com->secorner.y);
@@ -282,7 +299,7 @@ read_compoundobject(FILE *fp)
 	if (feof(fp))
 	    return(com);
 	else {
-#ifdef	HAVE_STRERROR
+#ifdef HAVE_STRERROR
 	    put_msg("Format error: %s", strerror(errno));
 #else
 	    put_msg("Format error.");
@@ -303,29 +320,35 @@ read_ellipseobject(FILE *fp)
 	e->depth = 0;
 	e->pen = 0;
 	e->fill_style = UNFILLED;
+	e->comments = NULL;
 	e->next = NULL;
 	n = fscanf(fp," %d %d %d %lf %d %d %d %d %d %d %d %d %d\n",
-		&t, &e->style,
-		&e->thickness, &e->style_val, &e->direction,
-		&e->center.x, &e->center.y,
-		&e->radiuses.x, &e->radiuses.y,
-		&e->start.x, &e->start.y,
-		&e->end.x, &e->end.y);
+			&t, &e->style,
+			&e->thickness, &e->style_val, &e->direction,
+			&e->center.x, &e->center.y,
+			&e->radiuses.x, &e->radiuses.y,
+			&e->start.x, &e->start.y,
+			&e->end.x, &e->end.y);
 	if (n != 13) {
-	    put_msg("incomplete ellipse data");
-	    free((char*)e);
-	    return(NULL);
-	    }
-	if (t == DRAW_ELLIPSE_BY_RAD)
-	    e->type = T_ELLIPSE_BY_RAD;
-	else if (t == DRAW_ELLIPSE_BY_DIA)
-	    e->type = T_ELLIPSE_BY_DIA;
-	else if (t == DRAW_CIRCLE_BY_RAD)
-	    e->type = T_CIRCLE_BY_RAD;
-	else
-	    e->type = T_CIRCLE_BY_DIA;
-	return(e);
+		put_msg("incomplete ellipse data");
+		free(e);
+		return NULL;
 	}
+	if (t == DRAW_ELLIPSE_BY_RAD)
+		e->type = T_ELLIPSE_BY_RAD;
+	else if (t == DRAW_ELLIPSE_BY_DIA)
+		e->type = T_ELLIPSE_BY_DIA;
+	else if (t == DRAW_CIRCLE_BY_RAD)
+		e->type = T_CIRCLE_BY_RAD;
+	else
+		e->type = T_CIRCLE_BY_DIA;
+	if (INVALID_ELLIPSE(e)) {
+		put_msg(Err_invalid, "ellipse");
+		free(e);
+		return NULL;
+	}
+	return e;
+}
 
 static F_line *
 read_lineobject(FILE *fp)
@@ -339,50 +362,59 @@ read_lineobject(FILE *fp)
 	l->depth = 0;
 	l->pen = 0;
 	l->fill_style = UNFILLED;
+	l->cap_style = 0;
+	l->join_style = 0;
 	l->for_arrow = NULL;
 	l->back_arrow = NULL;
 	l->next = NULL;
 	l->points = Point_malloc(p);
+	l->points->next = NULL;
+	l->comments = NULL;
 	n = fscanf(fp, " %d %d %d %lf %d %d %d %d %d %d", &t,
-		&l->style, &l->thickness, &l->style_val,
-		&f, &b, &h, &w, &p->x, &p->y);
+			&l->style, &l->thickness, &l->style_val,
+			&f, &b, &h, &w, &p->x, &p->y);
 	if (n != 10) {
-	    put_msg("incomplete line data");
-	    free((char*)l);
-	    return(NULL);
-	    }
-	if (t == DRAW_POLYLINE)
-	    l->type = T_POLYLINE;
-	else if (t == DRAW_POLYGON)
-	    l->type = T_POLYGON;
-	else
-	    l->type = T_BOX;
-	if (f) {
-	    l->for_arrow = forward_arrow();
-	    l->for_arrow->wid = w;
-	    l->for_arrow->ht = h;
-	    }
-	if (b) {
-	    l->back_arrow = backward_arrow();
-	    l->back_arrow->wid = w;
-	    l->back_arrow->ht = h;
-	    }
-	for (;;) {
-	    if (fscanf(fp, " %d %d", &x, &y) != 2) {
-		put_msg("incomplete line object");
+		put_msg("incomplete line data");
 		free_linestorage(l);
-		return(NULL);
-		}
-	    if (x == 9999) break;
-	    Point_malloc(q);
-	    q->x = x;
-	    q->y = y;
-	    q->next = NULL;
-	    p->next = q;
-	    p = q;
-	    }
-	return(l);
+		return NULL;
 	}
+	if (t == DRAW_POLYLINE)
+		l->type = T_POLYLINE;
+	else if (t == DRAW_POLYGON)
+		l->type = T_POLYGON;
+	else
+		l->type = T_BOX;
+	if (INVALID_LINE(l)) {
+		put_msg(Err_invalid, "line");
+		free_linestorage(l);
+		return NULL;
+	}
+	if (f) {
+		l->for_arrow = forward_arrow();
+		l->for_arrow->wid = w;
+		l->for_arrow->ht = h;
+	}
+	if (b) {
+		l->back_arrow = backward_arrow();
+		l->back_arrow->wid = w;
+		l->back_arrow->ht = h;
+	}
+	for (;;) {
+		if (fscanf(fp, " %d %d", &x, &y) != 2) {
+			put_msg("incomplete line object");
+			free_linestorage(l);
+			return(NULL);
+		}
+		if (x == 9999) break;
+		Point_malloc(q);
+		q->x = x;
+		q->y = y;
+		q->next = NULL;
+		p->next = q;
+		p = q;
+	}
+	return l;
+}
 
 static F_spline *
 read_splineobject(FILE *fp)
@@ -396,50 +428,58 @@ read_splineobject(FILE *fp)
 	s->depth = 0;
 	s->pen = 0;
 	s->fill_style = UNFILLED;
+	s->cap_style = 0;
 	s->for_arrow = NULL;
 	s->back_arrow = NULL;
 	s->controls = NULL;
+	s->comments = NULL;
 	s->next = NULL;
 	s->points = Point_malloc(p);
+	s->points->next = NULL;
 	n = fscanf(fp, " %d %d %d %lf %d %d %d %d %d %d",
-		&t, &s->style, &s->thickness, &s->style_val,
-		&f, &b,
-		&h, &w, &p->x, &p->y);
+			&t, &s->style, &s->thickness, &s->style_val,
+			&f, &b,
+			&h, &w, &p->x, &p->y);
 	if (n != 10) {
-	    put_msg("incomplete spline data");
-	    free((char*)s);
-	    return(NULL);
-	    }
-	if (t == DRAW_CLOSEDSPLINE)
-	    s->type = T_CLOSED_APPROX;
-	else
-	    s->type = T_OPEN_APPROX;
-	if (f) {
-	    s->for_arrow = forward_arrow();
-	    s->for_arrow->wid = w;
-	    s->for_arrow->ht = h;
-	    }
-	if (b) {
-	    s->back_arrow = backward_arrow();
-	    s->back_arrow->wid = w;
-	    s->back_arrow->ht = h;
-	    }
-	for (;;) {
-	    if (fscanf(fp, " %d %d", &x, &y) != 2) {
-		put_msg("incomplete spline object");
+		put_msg("incomplete spline data");
 		free_splinestorage(s);
-		return(NULL);
-		};
-	    if (x == 9999) break;
-	    Point_malloc(q);
-	    q->x = x;
-	    q->y = y;
-	    q->next = NULL;
-	    p->next = q;
-	    p = q;
-	    }
-	return(s);
+		return NULL;
 	}
+	if (t == DRAW_CLOSEDSPLINE)
+		s->type = T_CLOSED_APPROX;
+	else
+		s->type = T_OPEN_APPROX;
+	if (INVALID_SPLINE(s)) {
+		put_msg(Err_invalid, "spline");
+		free_splinestorage(s);
+		return NULL;
+	}
+	if (f) {
+		s->for_arrow = forward_arrow();
+		s->for_arrow->wid = w;
+		s->for_arrow->ht = h;
+	}
+	if (b) {
+		s->back_arrow = backward_arrow();
+		s->back_arrow->wid = w;
+		s->back_arrow->ht = h;
+	}
+	for (;;) {
+		if (fscanf(fp, " %d %d", &x, &y) != 2) {
+			put_msg("incomplete spline object");
+			free_splinestorage(s);
+			return(NULL);
+		};
+		if (x == 9999) break;
+		Point_malloc(q);
+		q->x = x;
+		q->y = y;
+		q->next = NULL;
+		p->next = q;
+		p = q;
+	}
+	return(s);
+}
 
 static F_text *
 read_textobject(FILE *fp)
@@ -455,22 +495,29 @@ read_textobject(FILE *fp)
 	t->depth = 0;
 	t->pen = 0;
 	t->angle = 0.0;
+	t->comments = NULL;
 	t->next = NULL;
 	n = fscanf(fp," %d %lf %d %lf %lf %d %d %127[^\n]", &t->font,
 		&t->size, &t->flags, &t->height, &t->length,
 		&t->base_x, &t->base_y, buf);
 	if (n != 8) {
-	    put_msg("incomplete text data");
-	    free((char*)t);
-	    return(NULL);
-	    }
+		put_msg("incomplete text data");
+		free((char*)t);
+		return(NULL);
+	}
+	if (INVALID_TEXT(t)) {
+		put_msg(Err_invalid, "text");
+		free(t);
+		return NULL;
+	}
 	t->cstring = (char *) calloc((unsigned)(strlen(buf)+1), sizeof(char));
 	if (t->cstring == NULL) {
-	    put_msg(Err_mem);
-	    free((char*) t);
-	    return(NULL);
-	    }
-	(void)strcpy(t->cstring, buf);
-	if (t->size == 0) t->size = 18;
-	return(t);
+		put_msg(Err_mem);
+		free(t);
+		return NULL;
 	}
+	(void)strcpy(t->cstring, buf);
+	if (t->size == 0)
+		t->size = 18;
+	return t;
+}

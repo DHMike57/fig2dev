@@ -1,27 +1,26 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *	genpict2e.c: LaTeX pict2e driver for fig2dev
+ * genpict2e.c: convert fig to pict2e macro language for LaTeX
  *
- *	Author: Thomas Loimer, Wien, Austria, 2014-2015
- *	Based on the latex picture driver, genlatex.c
- *
- * Last modified: 2016-12-06
+ * Author: Thomas Loimer, Wien, Austria, 2014-2015
+ * Based on the latex picture driver, genlatex.c
  *
  */
 
@@ -34,12 +33,12 @@
 #include <string.h>
 #include <math.h>
 #include <limits.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "texfonts.h"		/* texfontnames[] */
+#include "psfonts.h"
 #include "bound.h"
 #include "trans_spline.h"	/* create_line_with_spline() */
 #include "free.h"		/* free_linestorage() */
@@ -124,9 +123,10 @@ static int	border_margin = 0;
 
 /* Definitions */
 struct pattern {		/* the dash pattern of non-solid lines */
-	int	d[16];	/* length of dashes[even] and spaces[odd] */
-	int	nd;	/* last element in d[] */
-	int	length;	/* length of the entire dash-pattern */
+#define PAT_ND_2 8
+	int	d[2*PAT_ND_2];	/* length of dashes[even] and spaces[odd] */
+	int	nd;		/* last element in d[] */
+	int	length;		/* length of the entire dash-pattern */
 };
 
 struct pict2earrow {
@@ -601,7 +601,7 @@ set_fillcolor(int col, int shade, int *pen_color)
 	fprintf(tfp,"\\color[rgb]{%.3g,%.3g,%.3g}\n", red, green, blue);
 }
 
-static bool
+/* static bool
 colors_used(void)
 {
 	int i;
@@ -610,6 +610,7 @@ colors_used(void)
 		return true;
 	return false;
 }
+*/
 
 void
 genpict2e_start(F_compound *objects)
@@ -629,7 +630,7 @@ genpict2e_start(F_compound *objects)
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {
 	    fputs("%\n", tfp);
-	    print_comments("% ",objects->comments, "");
+	    print_comments("% ", objects->comments, "");
 	    fputs("%\n", tfp);
 	}
 	if (pagemode) {
@@ -957,9 +958,9 @@ put_patternline(F_point *p, F_point *q, struct pattern *pattern, double h1,
 		int dstart)
 {
 	int	i, j, numpatterns, dadd, precx, precy, din;
-	int	dpl[pattern->nd/2];
-	double	len, lenpq, dx, dy, cosl, sinl, digits, dlx[pattern->nd/2];
-	F_pos	pstart, slope[pattern->nd/2];
+	int	dpl[PAT_ND_2];
+	double	len, lenpq, dx, dy, cosl, sinl, digits, dlx[PAT_ND_2];
+	F_pos	pstart, slope[PAT_ND_2];
 
 	/* put a remaining dash */
 	if (h1 < 0) {
@@ -1635,7 +1636,7 @@ put_picture(F_point *p, F_point *q, F_point *r, F_point *s, F_line *l)
 
 	if (removesuffix) {
 	    c = strrchr(l->pic->file,'.');
-	    n =  c == NULL ? strlen(l->pic->file) : c - l->pic->file;
+	    n =  c == NULL ? (int) strlen(l->pic->file) : c - l->pic->file;
 	} else {
 	    n = strlen(l->pic->file);
 	}
@@ -1817,6 +1818,7 @@ genpict2e_line(F_line *l)
 void
 genpict2e_spline(F_spline *s)
 {
+	print_comments("% ", s->comments, "");
 	fputs("Can't generate spline; omitting object\n", stderr);
 }
 
@@ -2137,7 +2139,7 @@ genpict2e_ellipse(F_ellipse *e)
 	    fputs("%\n% Fig ELLIPSE object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
-	print_comments("% ",e->comments, "");
+	print_comments("% ", e->comments, "");
 
 	if (e->fill_style != UNFILLED) {
 	    set_fillcolor(e->fill_color, e->fill_style, &(e->pen_color));
@@ -2237,7 +2239,7 @@ genpict2e_text(F_text *t)
 	    fputs("%\n% Fig TEXT object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
-	print_comments("% ",t->comments, "");
+	print_comments("% ", t->comments, "");
 
 	x = XCOORD(t->base_x);
 	y = YCOORD(t->base_y);
@@ -2482,7 +2484,7 @@ genpict2e_arc(F_arc *a)
 	    fputs("%\n% Fig ARC object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
-	print_comments("% ",a->comments, "");
+	print_comments("% ", a->comments, "");
 
 	/* nothing to do; return; */
 	if (a->fill_style == UNFILLED && a->thickness == 0
@@ -2533,6 +2535,9 @@ genpict2e_arc(F_arc *a)
 		    break;
 		default:
 		    fputs("Unknown arc type - please report this bug.", stderr);
+		    /* the comment below silences gcc's warning
+		       -Wimplicit-fallthrough */
+		    /* intentionally fall through */
 		case T_OPEN_ARC:
 		    fputs("\\closepath\\fillpath\n", tfp);
 	    }
@@ -2604,7 +2609,7 @@ genpict2e_arc(F_arc *a)
 struct driver dev_pict2e = {
 	genpict2e_option,
 	genpict2e_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genpict2e_arc,
 	genpict2e_ellipse,
 	genpict2e_line,

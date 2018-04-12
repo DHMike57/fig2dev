@@ -1,26 +1,26 @@
 /*
- * TransFig: Facility for Translating Fig code
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Fig2dev: Translate Fig code to various Devices
+ * Parts Copyright (c) 1989-2010 by Brian V. Smith
+ * Parts Copyright (c) 2015-2017 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *	genge.c: Graphical Editor driver for fig2dev
+ * genge.c: convert fig to Graphical Editor format
  *
- *		This driver is probably not useful for users outside
- *		the SPARK (Simulation Problem Analysis Research Kernel)
- *		user community
+ *	This driver is probably not useful for users outside the SPARK
+ *	(Simulation Problem Analysis Research Kernel) user community
  *
-*/
+ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -28,7 +28,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "bool.h"
 
 #include "fig2dev.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
@@ -42,9 +41,9 @@ static float	scale;
 
 static void	set_color(int col);
 static void	set_linewidth(int w);
-static void	set_stip(int stip);
+/* static void	set_stip(int stip);	*/
 static void	set_fill(int style, int color);
-static void	set_style(int s, double v);
+static void	set_style(int s);
 static void	for_arrow(F_line *l);
 static void	back_arrow(F_line *l);
 static void	genge_itp_spline(F_spline *s);
@@ -90,15 +89,17 @@ static int	GE_COLORS[] = {	 1, /* black	black		*/
 void
 genge_option(char opt, char *optarg)
 {
-    switch (opt) {
+	(void)	optarg;
+
+	switch (opt) {
 	case 'G':
 	case 'L':
-	    break;
+		break;
 
 	default:
-	    put_msg(Err_badarg, opt, "ge");
-	    exit(1);
-    }
+		put_msg(Err_badarg, opt, "ge");
+		exit(1);
+	}
 }
 
 void
@@ -136,9 +137,9 @@ genge_line(F_line *l)
 	fprintf(tfp,"p ");
 
 	set_linewidth(l->thickness);
-	set_style(l->style, l->style_val);
+	set_style(l->style);
 	set_color(l->pen_color);
-	set_stip(l->pen_color);
+/*	set_stip(l->pen_color);	*/
 	set_fill(l->fill_style, l->fill_color);
 
 	/* backward arrowhead, if any */
@@ -196,9 +197,9 @@ genge_spline(F_spline *s)
 
 	/* set the line thickness */
 	set_linewidth(s->thickness);
-	set_style(s->style, s->style_val);
+	set_style(s->style);
 	set_color(s->pen_color);
-	set_stip(s->pen_color);
+/*	set_stip(s->pen_color);	*/
 	set_fill(s->fill_style, s->fill_color);
 
 	/* backward arrowhead, if any */
@@ -283,7 +284,7 @@ genge_ctl_spline(F_spline *s)
 	}
 
 	/* now output the points */
-	set_style(s->style, s->style_val);
+	set_style(s->style);
 	xmin = 999999;
 	ymin = 999999;
 
@@ -340,9 +341,9 @@ genge_arc(F_arc *a)
 	fprintf(tfp,"A ");
 
 	set_linewidth(a->thickness);
-	set_style(a->style, a->style_val);
+	set_style(a->style);
 	set_color(a->pen_color);
-	set_stip(a->pen_color);
+/*	set_stip(a->pen_color);	*/
 	set_fill(a->fill_style, a->fill_color);
 
 	/* backward arrowhead, if any */
@@ -368,9 +369,9 @@ genge_ellipse(F_ellipse *e)
 	fprintf(tfp, "E ");
 
 	set_linewidth(e->thickness);
-	set_style(e->style, e->style_val);
+	set_style(e->style);
 	set_color(e->pen_color);
-	set_stip(e->pen_color);
+/*	set_stip(e->pen_color);	*/
 	set_fill(e->fill_style, e->fill_color);
 
 	fprintf(tfp, "(%d,%d) (%d,%d)\n",
@@ -391,7 +392,7 @@ genge_text(F_text *t)
 	fprintf(tfp,"\"%s\" ",t->cstring);
 
 	set_color(t->color);
-	set_stip(t->color);
+/*	set_stip(t->color);	*/
 	switch (t->font %4) {
 	    case 0: style = 1;	/* normal text */
 		    break;
@@ -445,16 +446,18 @@ set_fill(int style, int color)
 	    fprintf(tfp,"C%02d ",GE_COLORS[color]);
 }
 
+/*
 static void
 set_stip(int stip)
 {
 	return;
 }
+*/
 
 /* the dash length, v, is not used in GE */
 
 static void
-set_style(int s, double v)
+set_style(int s)
 {
 	if (s == DASH_LINE) {
 		fprintf(tfp,"y02 ");
@@ -481,7 +484,7 @@ struct
 driver dev_ge = {
 	genge_option,
 	genge_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genge_arc,
 	genge_ellipse,
 	genge_line,

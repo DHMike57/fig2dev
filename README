@@ -50,7 +50,7 @@ o As of version 3.2.0 (final), fig2dev has taken over the translating of Fig
     /ghost/aladdin, *AND* it must be compiled with the pcx256, jpeg, png256,
     ppmraw and tiff24nc drivers.
 
-o To use the -b (binary) option for CGM export, the ralcgm program is
+o To use the -a (binary) option for CGM export, the ralcgm program is
   required. This is available from ftp://ftp.cc.rl.ac.uk/pub/graphics/ralcgm/
 
 

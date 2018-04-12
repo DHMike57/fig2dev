@@ -1,16 +1,21 @@
 /*
- * TransFig: Facility for Translating Fig code
- * Various copyrights in this file follow
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Fig2dev: Translate Fig code to various Devices
+ * Parts Copyright (c) 1989-2007 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
+ *
+ */
+
+/*
+ * readpics.c: read image files
  *
  */
 
@@ -23,118 +28,120 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <limits.h>
-#include "bool.h"
 
-#include "fig2dev.h"
-#include "pathmax.h"
-
-static char *xf_basename(char *filename);
+#include "fig2dev.h"	/* includes "bool.h" */
 
 /*
-   Open the file 'name' and return its type (real file=0, pipe=1) in 'type'.
-   Return the full name in 'retname'.  This will have a .gz or .Z if the file is
-   zipped/compressed.
-   The return value is the FILE stream.
-*/
+ * Open the file 'name' and return its type (real file=0, pipe=1) in 'type'.
+ * Return the full name in the buffer pointed to by 'retname'.
+ * The caller must free(*retname) after calling open_picfile()!
+ * 'retname' will have a .gz, .z or .Z if the file is zipped/compressed. If the
+ * caller cannot take a pipe (pipeok=false), and the file is compressed,
+ * uncompress and return name with .z, .Z or .gz stripped.
+ * The return value is the FILE stream.
+ */
 
 FILE *
-open_picfile(char *name, int *type, bool pipeok, char *retname)
+open_picfile(char *name, int *type, bool pipeok, char **retname)
 {
-    char	 unc[PATH_MAX+20];	/* temp buffer for gunzip command */
+    char	*unc;			/* temp buffer for gunzip command */
     FILE	*fstream;		/* handle on file  */
     struct stat	 status;
-    char	*gzoption;
+    size_t	len;
+    size_t	pos;
 
     *type = 0;
-    *retname = '\0';
-    if (pipeok)
-	gzoption = "-c";		/* tell gunzip to output to stdout */
-    else
-	gzoption = "";
-
-    /* see if the filename ends with .Z or .z or .gz */
-    if ((strlen(name) > 3 && !strcmp(".gz", name + (strlen(name)-3))) ||
-	      ((strlen(name) > 2 && !strcmp(".z", name + (strlen(name)-2))))) {
-	/* yes, make command to uncompress it */
-	sprintf(unc,"gunzip -q %s %s", gzoption, name);
-	*type = 1;
-    /* no, see if the file with .gz, .z or .Z appended exists */
-    /* failing that, if there is an absolute path, strip it and look in current directory */
+    len = strlen(name);
+    *retname = malloc(len + 4);
+//  *retname[0] = '\0';
+    if (pipeok) {
+	unc = malloc(len + 17);		/* "gunzip -q -c " name ".gz" */
+	strcpy(unc, "gunzip -q -c ");	/* tell gunzip to output to stdout */
     } else {
-	/* check for straight name first */
-	if (!stat(name, &status)) {
-	    /* found it, skip other checks */
-	    *type = 0;
+	unc = malloc(len + 14);		/* "gunzip -q " name ".gz" */
+	strcpy(unc, "gunzip -q ");
+    }
+    pos = strlen(unc);
+
+    if (!stat(name, &status)) {
+	/* see if the filename ends with .Z or .z or .gz */
+	if (len > 3 && !strcmp(".gz", name + (len-3)) ||
+		    (len > 2 && (!strcmp(".z", name + (len-2)) ||
+				 !strcmp(".Z", name + (len-2))))) {
+	/* yes, make command to uncompress it */
+	memcpy(unc + pos, name, len + 1);	/* strcat(unc, name) */
+	*type = 1;
 	} else {
-	    /* no, check for .gz */
-	    strcpy(retname, name);
-	    strcat(retname, ".gz");
-	    if (!stat(retname, &status)) {
-		/* yes, found with .gz */
-		sprintf(unc, "gunzip %s %s", gzoption, retname);
+	    /* use straight name */
+	    *type = 0;
+	}
+	memcpy(*retname, name, len + 1);    /* strcpy(*retname, name) */
+    } else {
+	/* no, see if the file with .gz, .z or .Z appended exists */
+	/* failing that, if there is an absolute path, strip it and
+	   look in current directory */
+	/* check for .gz */
+	memcpy(*retname, name, len);
+	memcpy(*retname + len, ".gz", (size_t) 4); /* retname = name".gz" */
+	if (!stat(*retname, &status)) {
+	    /* yes, found with .gz */
+	    memcpy(unc + pos, *retname, len + 4);
+	    *type = 1;
+	} else {
+	    /* no, check for .z */
+	    memcpy(*retname + len, ".z", (size_t) 3);
+	    if (!stat(*retname, &status)) {
+		/* yes, found with .z */
+		memcpy(unc + pos, *retname, len + 3);
 		*type = 1;
-		name = retname;
 	    } else {
-		/* no, check for .z */
-		strcpy(retname, name);
-		strcat(retname, ".z");
-		if (!stat(retname, &status)) {
-		    /* yes, found with .z */
-		    sprintf(unc, "gunzip %s %s", gzoption, retname);
+		/* no, check for .Z */
+		memcpy(*retname + len, ".Z", (size_t) 3);
+		if (!stat(*retname, &status)) {
+		    /* yes, found with .Z */
+		    memcpy(unc + pos, *retname, len + 3);
 		    *type = 1;
-		    name = retname;
 		} else {
-		    /* no, check for .Z */
-		    strcpy(retname, name);
-		    strcat(retname, ".Z");
-		    if (!stat(retname, &status)) {
-			/* yes, found with .Z */
-			sprintf(unc, "gunzip %s %s", gzoption, retname);
-			*type = 1;
-			name = retname;
-		    } else {
-			/* can't find it, if there is an absolute path, strip it and look in
-			   current directory */
-			if (strchr(name,'/')) {
-			    /* yes, strip it off */
-			    strcpy(retname, xf_basename(name));
-			    if (!stat(retname, &status)) {
-				*type = 0;
-				strcpy(name, retname);
-			    }
+		    char *p;
+		    /* can't find it, if there is a path,
+		       strip it and look in current directory */
+		    if (p = strrchr(name,'/')) {
+			/* yes, strip it off */
+			/* strcpy(*retname, p + 1); */
+			memcpy(*retname, p + 1, len -= (p - name));
+			if (!stat(*retname, &status)) {
+			    *type = 0;
+			    memcpy(name, *retname, len);
+			} else {
+			    /* All is lost */
+			    free(*retname);
+			    free(unc);
+			    return NULL;
 			}
 		    }
 		}
 	    }
 	}
     }
+
     /* if a pipe, but the caller needs a file, uncompress the file now */
     if (*type == 1 && !pipeok) {
 	char *p;
 	system(unc);
-	if (p=strrchr(name,'.')) {
+	if (p = strrchr(*retname,'.')) {
 	    *p = '\0';		/* terminate name before last .gz, .z or .Z */
 	}
-	strcpy(retname, name);
+	strcpy(name, *retname);
 	/* force to plain file now */
 	*type = 0;
     }
 
-    /* no appendages, just see if it exists */
-    /* and restore the original name */
-    strcpy(retname, name);
-    if (stat(name, &status) != 0) {
-	fstream = NULL;
-    } else {
-	switch (*type) {
-	  case 0:
-	    fstream = fopen(name, "rb");
-	    break;
-	  case 1:
-	    fstream = popen(unc,"r");
-	    break;
-	}
-    }
+    if (*type == 0)
+	fstream = fopen(name, "rb");
+    else  /* *type == 1 */
+	fstream = popen(unc, "r");
+
+    free(unc);
     return fstream;
 }
 
@@ -145,20 +152,4 @@ close_picfile(FILE *file, int type)
 	fclose(file);
     else
 	pclose(file);
-}
-
-/* for systems without basename() (e.g. SunOS 4.1.3) */
-/* strip any path from filename */
-
-static char *
-xf_basename(char *filename)
-{
-    char	   *p;
-    if (filename == NULL || *filename == '\0')
-	return filename;
-    if (p=strrchr(filename,'/')) {
-	return ++p;
-    } else {
-	return filename;
-    }
 }

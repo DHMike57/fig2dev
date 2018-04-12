@@ -1,30 +1,35 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2007 by Brian V. Smith
+ * Parts Copyright (c) 2015,2016 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *	psfont.c: PostScript font mappings
+ * psfont.c: PostScript font mappings
  *
  */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdio.h>
 #include "bool.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
 
-char		*PSfontnames[] = {
+char	*PSfontnames[] = {
 		"Times-Roman",			/* default */
 		"Times-Roman",
 		"Times-Italic",			/* italic */
@@ -61,9 +66,9 @@ char		*PSfontnames[] = {
 		"Symbol",
 		"ZapfChancery-MediumItalic",
 		"ZapfDingbats"
-		};
+};
 
-static int	PSfontmap[] = {
+int	PSfontmap[] = {
 		ROMAN_FONT, ROMAN_FONT,	/* Times-Roman */
 		ITALIC_FONT,		/* Times-Italic */
 		BOLD_FONT,		/* Times-Bold */
@@ -99,7 +104,7 @@ static int	PSfontmap[] = {
 		ROMAN_FONT,		/* Symbol */
 		ROMAN_FONT,		/* ZapfChancery-MediumItalic */
 		ROMAN_FONT		/* ZapfDingbats */
-		};
+};
 
 static int	PSmapwarn[] = {
 		false, false,		/* Times-Roman */
@@ -137,9 +142,9 @@ static int	PSmapwarn[] = {
 		true,			/* Symbol */
 		true,			/* ZapfChancery-MediumItalic */
 		true			/* ZapfDingbats */
-		};
+};
 
-int	        PSisomap[] = {
+int	PSisomap[] = {
 		false, false,		/* Times-Roman */
 		false,			/* Times-Italic */
 		false,			/* Times-Bold */
@@ -176,7 +181,7 @@ int	        PSisomap[] = {
 		NO,			/* Symbol */
 		false,			/* ZapfChancery-MediumItalic */
 		NO			/* ZapfDingbats */
-		};
+};
 
 static char *figfontnames[] = {
 		"Roman", "Roman",
@@ -185,7 +190,7 @@ static char *figfontnames[] = {
 		"Italic",
 		"Modern",
 		"Typewriter"
-		};
+};
 
 void unpsfont(F_text *t)
 {

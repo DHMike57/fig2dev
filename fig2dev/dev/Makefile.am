@@ -1,12 +1,20 @@
 ## Run automake on this file to produce Makefile.in
-# This file is part of fig2dev - Translate Fig code to various devices.
+
+# Fig2dev: Translate Fig code to various Devices
+# Parts Copyright (c) 2015-2018 by Thomas Loimer
 #
-# Copyright (c) 2016 Thomas Loimer <thomas.loimer@tuwien.ac.at>
-#
-# Copying and distribution of this file, with or without modification,
-# are permitted in any medium without royalty provided the copyright
-# notice and this notice are preserved. This file is offered as-is,
-# without any warranty.
+# Any party obtaining a copy of these files is granted, free of charge, a
+# full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+# nonexclusive right and license to deal in this software and documentation
+# files (the "Software"), including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense and/or sell copies
+# of the Software, and to permit persons who receive copies from any such
+# party to do so, with the only requirement being that the above copyright
+# and this permission notice remain intact.
+
+# fig2dev/dev/Makefile.am
+# Author: Thomas Loimer, 2015-2018.
+
 
 MAINTAINERCLEANFILES = Makefile.in
 
@@ -26,24 +34,22 @@ noinst_LIBRARIES = libdrivers.a
 ##   libdrivers_a_CPPFLAGS = -I..
 ## objects like libdrivers_a-as85ec.o etc. are created
 # i18ndir and bitmapsdir are defined and AC_SUBST'd in configure.ac
-AM_CPPFLAGS = -I$(top_srcdir)/fig2dev $(PATH_CPPFLAGS) \
-	      -DBITMAPDIR=\"$(bitmapsdir)\"
+AM_CPPFLAGS = -I"$(top_srcdir)/fig2dev" -DBITMAPDIR="\"$(bitmapsdir)\""
 if ENABLE_I18N
-AM_CPPFLAGS += -DI18N_DATADIR=\"$(i18ndir)\"
+AM_CPPFLAGS += -DI18N_DATADIR="\"$(i18ndir)\""
 endif
-AM_CFLAGS = -Wno-parentheses
-## libraries ignore LDFLAGS - they need not to be linked
-## AM_LDFLAGS = $(PATH_LDFLAGS)
+## libraries do not need LDFLAGS - they need not be linked
 ## libdrivers_a_LIBADD is appended to the link-command
 
 libdrivers_a_SOURCES = asc85ec.c genbitmaps.c genbox.c gencgm.c gendxf.c \
     genemf.h genemf.c genepic.c gengbx.c genge.c genibmgl.c genlatex.h \
     genlatex.c genmap.c genmf.c genmp.c genpdf.c genpic.c genpict2e.c \
     genpictex.c genps.c genps.h genpstex.c genpstricks.c genptk.c genshape.c \
-    gensvg.c gentextyl.c gentikz.h gentikz.c gentk.c tpicfonts.h gentpic.c \
-    picfonts.h picpsfonts.h psencode.h psencode.c psfonts.h psimage.h \
+    gensvg.c gentextyl.c gentikz.h gentikz.c gentk.c gentpic.c picfonts.h \
+    picpsfonts.h psencode.h psencode.c psfonts.c psfonts.h psimage.h \
     psprolog.h readeps.c readgif.c readjpg.c readpcx.c readpics.c readppm.c \
-    readtif.c readxbm.c texfonts.h setfigfont.h setfigfont.c
+    readtif.c readxbm.c texfonts.h texfonts.c setfigfont.h setfigfont.c \
+    xtmpfile.c xtmpfile.h
 
 # These contain PACKAGE_VERSION, hence depend on $(CONFIG_HEADER) = config.h.
 genps.o gensvg.o genemf.o gengbx.o genmp.o genpictex.o gentk.o: $(CONFIG_HEADER)
@@ -54,4 +60,5 @@ endif
 
 if WITH_XPM
 libdrivers_a_SOURCES += readxpm.c
+AM_CPPFLAGS += $(XCPPFLAGS)
 endif

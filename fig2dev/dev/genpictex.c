@@ -1,26 +1,27 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *	genpictex.C : PiCTeX driver for fig2dev
+ * genpictex.C: convert fig to PiCTeX
  *
- *	Author Micah Beck, Cornell University, 4/88
- *    Color, rotated text and ISO-chars added by Herbert Bauer 11/91
-*/
+ * Author Micah Beck, Cornell University, 4/88
+ *	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
+ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -29,19 +30,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <math.h>
-#include "bool.h"
-#include "pi.h"
 #ifdef HAVE_GETPWUID
 #include <pwd.h>
 #endif
 
-#include "fig2dev.h"
+#include "pi.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "genlatex.h"
 #include "setfigfont.h"
 #include "texfonts.h"
+#include "psfonts.h"
 #include "localmath.h"
 #include "creationdate.h"
 
@@ -676,7 +679,6 @@ genpictex_text(F_text *t)
 	else
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
 #ifdef I18N
-		    extern bool support_i18n;
 		    if (support_i18n && (t->font <= 2))
 			    fputc(*cp, tfp);
 		    else
@@ -979,7 +981,7 @@ bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2,
 struct driver dev_pictex = {
 	genpictex_option,
 	genpictex_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genpictex_arc,
 	genpictex_ellipse,
 	genpictex_line,

@@ -1,7 +1,53 @@
-Changes to Transfig/fig2dev
+Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
+Patchlevel 7 (April 2018)
+
+OPTION LETTER CHANGES:
+	o  Language         previous option         current option
+	  ------------------------------------------------------------
+	   cgm              -b dummy                -a
+	   epic             -A scale                -d scale
+	   eepic            -A scale                -d scale
+	   eepicemu         -A scale                -d scale
+	   gbx              -i on|off               -v
+	   ibmgl            -m mag,xoff,yoff        -m mag -x xoff -y yoff
+	   mp               -I file                 -d file
+	   ps               -S dummy                -o
+
+NEW FEATURES:
+	o Print language-specific help text by using fig2dev -L lang -h.
+	o Add option -M, multipage, for MetaPost output language.
+	o Add option -P, pagemode, and -z to choose a pagesize for pdf output.
+	o Add option -W (scaling of figures not possible) for tikz.
+	o Add option -b, border width, for LaTeX output language.
+	o Add option -f for pstex_t and pdftex_t output language.
+	o Add uk_UA and ru_RU encodings for PostScript output. Ticket #12.
+
+BUGS FIXED:
+	o Update help text: Output help for dxf and textyl output language,
+	  add description of -g option for Tk/Tcl and Perl/Tk output, allow -f
+	  option for pstex_t and pdftex_t output language.
+
+	Debian bug numbers refer to https://bugs.debian.org/#.
+	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
+	o Sanitize input. Do not segfault on malformed input files. Fixes debian
+	  bugs 881143, 881144, 881396, 890015, 890016, 882021 and also 882022.
+	o Do not put an %%Orientation: comment into PostScript output. Some
+	  viewers would rotate the resulting file, others not.
+	o Fix build on NetBSD, which has a _setmode() function different from
+	  _setmode() on Windows. Ticket #17. Also, avoid alloca(). Ticket #16.
+	o tikz output: Omit the semicolon after \pgftext[..]{...};.
+	o Define PostScript patterns with larger tiles, may render better. #13
+	o Fix build in case libXpm is missing. Ticket #15.
+	o Use netpbm programs instead of ghostscript, to produce smaller files.
+	o Correctly embed eps files with binary preview (epsi, typically
+	  found on Microsoft systems). Also, allow to embed ps-files. Fixes
+	  debian bug 248807, ticket #8.
+	o For compilation, do not depend on PATH_MAX being defined.
+
+-------------------------------------
 Patchlevel 6a (January 2017)
 
 NEW FEATURES:
@@ -69,7 +115,7 @@ BUGS FIXED:
 	  (debian 40_ColorImageFilter.patch)
 	o Update help for PDF options (debian 42_PDF_help.patch)
 
-	From Roland Rosenfeld. Bug numers refer to https://bugs.debian.org/#.
+	From Roland Rosenfeld. Bug numbers refer to https://bugs.debian.org/#.
 	o Remove bashisms in fig2ps2tex script. Reported from
 	  Chris Lamb <chris@chris-lamb.co.uk>. Fixes debian bug 480615.
 	o Include sys/stat.h in genps.c. Reported from Steven Chamberlain

@@ -5,12 +5,12 @@
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
@@ -29,8 +29,8 @@
 #include "transfig.h"
 
 extern void sysmv(char *file);					/* sys.c */
-extern void texfile(FILE *tx, char *in, argument *arg_list);	/* txfile.c */
-extern void makefile(FILE *mk, int altfonts, argument *arg_list); /* mkfile.c */
+extern void texfile(FILE *tx, char *in);	/* txfile.c */
+extern void makefile(FILE *mk, int altfonts); /* mkfile.c */
 
 
 argument *parse_arg(), *arglist = NULL, *lastarg = NULL;
@@ -203,7 +203,7 @@ main(int argc, char *argv[])
 	fprintf(stderr,"transfig: can't open Texfile '%s'\n",txfile);
 	exit(1);
   }
-  texfile(tx, input, arglist);	/* altfonts? */
+  texfile(tx, input);	/* altfonts? */
   /* was: texfile(tx, input, altfonts, arglist); ?? */
 
   /* remove any backup and move existing makefile to makefile~ */
@@ -214,7 +214,7 @@ main(int argc, char *argv[])
 	fprintf(stderr,"transfig: can't open Makefile '%s'\n",mkfile);
 	exit(1);
   }
-  makefile(mk, altfonts, arglist);
+  makefile(mk, altfonts);
   exit(0);
 }
 

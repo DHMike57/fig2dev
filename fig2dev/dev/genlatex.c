@@ -1,37 +1,38 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1988 by Frank Schmuck
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *	genlatex.c : LaTeX driver for fig2dev
+ * genlatex.c: convert fig to LaTeX
  *
- *	Author: Frank Schmuck, Cornell University 6/88
- *	Converted from fig2latex 5/89 by Micah Beck
- *	Color, rotated text and ISO-chars added by Herbert Bauer 11/91
- *	Arc boxes added by C. Scott Ananian 6/99
+ * Author: Frank Schmuck, Cornell University 6/88
+ * Converted from fig2latex 5/89 by Micah Beck
+ * Color, rotated text and ISO-chars added by Herbert Bauer 11/91
+ * Arc boxes added by C. Scott Ananian 6/99
  *
- *	Gabriel Zachmann <Gabriel.Zachmann@gmx.net>:
- *	- add option -F (for the PSTEX output language; it is not really an option
- *	  for latex output language!);
- *	  this allows you to define the font in the latex file before you \input the
- *	  eepic file (except the font size).  You must not mix eepic files generated
- *	  with and without the -F option.  However, I think this could be improved
- *	  easily, I just don't speak TeX well enough to feel confident enough to
- *	  change the way \SetFigFont is defined.
+ * Gabriel Zachmann <Gabriel.Zachmann@gmx.net>:
+ *	- add option -F (for the PSTEX output language; it is not really an
+ *	  option for latex output language!); this allows you to define the
+ *	  font in the latex file before you \input the eepic file (except
+ *	  the font size).  You must not mix eepic files generated with and
+ *	  without the -F option.  However, I think this could be improved
+ *	  easily, I just don't speak TeX well enough to feel confident
+ *	  enough to change the way \SetFigFont is defined.
  *
  */
 #ifdef HAVE_CONFIG_H
@@ -41,18 +42,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <math.h>
-#include "bool.h"
-#include "pi.h"
 
-#include "fig2dev.h"
+#include "pi.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "genlatex.h"
 #include "setfigfont.h"
 #include "texfonts.h"
+#include "psfonts.h"
 
-extern void unpsfont(F_text *t);	/* psfonts.c */
 extern bool	FontSizeOnly;	/* defined in setfigfont.c */
 
 /*
@@ -372,9 +374,9 @@ set_linewidth(int w)
  * draw a solid line given latex slope
  */
 static void
-put_solidline(int x, int y, int sx, int sy, double l, int arrow,
-		double val /* unused */)
+put_solidline(int x, int y, int sx, int sy, double l, int arrow, double val)
 {
+	(void)	val;
 	double	cosine;		/* cosine of line angle */
 	double	dx, dy;
 	int	x2, y2, n;
@@ -771,8 +773,10 @@ genlatex_line(F_line *l)
 void
 genlatex_spline(F_spline *s)
 {
+	(void)	s;
+
 	fprintf(stderr, "Can't generate spline; omitting object\n");
-	}
+}
 
 void
 genlatex_ellipse(F_ellipse *e)
@@ -896,7 +900,6 @@ genlatex_text(F_text *t)
 	else
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
 #ifdef I18N
-		    extern bool support_i18n;
 		    if (support_i18n && (t->font <= 2))
 			fputc(*cp, tfp);
 		    else
@@ -1163,7 +1166,7 @@ reset_color(int col)
 struct driver dev_latex = {
 	genlatex_option,
 	genlatex_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genlatex_arc,
 	genlatex_ellipse,
 	genlatex_line,

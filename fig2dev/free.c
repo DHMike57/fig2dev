@@ -1,17 +1,18 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2007 by Brian V. Smith
+ * Parts Copyright (c) 2015 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
@@ -33,9 +34,10 @@ free_arc(F_arc **list)
 	for (a = *list; a != NULL;) {
 	    arc = a;
 	    a = a->next;
-	    if (arc->for_arrow) free((char*)arc->for_arrow);
-	    if (arc->back_arrow) free((char*)arc->back_arrow);
-	    free((char*)arc);
+	    if (arc->for_arrow) free(arc->for_arrow);
+	    if (arc->back_arrow) free(arc->back_arrow);
+	    if (arc->comments) free_comments(arc->comments);
+	    free(arc);
 	}
 	*list = NULL;
 }
@@ -54,7 +56,8 @@ free_compound(F_compound **list)
 	    free_line(&compound->lines);
 	    free_spline(&compound->splines);
 	    free_text(&compound->texts);
-	    free((char*)compound);
+	    if (compound->comments) free_comments(compound->comments);
+	    free(compound);
 	}
 	*list = NULL;
 }
@@ -67,7 +70,8 @@ free_ellipse(F_ellipse **list)
 	for (e = *list; e != NULL;) {
 	    ellipse = e;
 	    e = e->next;
-	    free((char*)ellipse);
+	    if (ellipse->comments) free_comments(ellipse->comments);
+	    free(ellipse);
 	}
 	*list = NULL;
 }
@@ -94,7 +98,8 @@ free_text(F_text **list)
 	    text = t;
 	    t = t->next;
 	    free(text->cstring);
-	    free((char*)text);
+	    if (text->comments) free_comments(text->comments);
+	    free(text);
 	}
 	*list = NULL;
 }
@@ -120,15 +125,16 @@ free_splinestorage(F_spline *s)
 
 	for (p = s->points; p != NULL; p = q) {
 	    q = p->next;
-	    free((char*)p);
+	    free(p);
 	}
 	for (a = s->controls; a != NULL; a = b) {
 	    b = a->next;
-	    free((char*)a);
+	    free(a);
 	}
-	if (s->for_arrow) free((char*)s->for_arrow);
-	if (s->back_arrow) free((char*)s->back_arrow);
-	free((char*)s);
+	if (s->for_arrow) free(s->for_arrow);
+	if (s->back_arrow) free(s->back_arrow);
+	if (s->comments) free_comments(s->comments);
+	free(s);
 }
 
 void
@@ -138,9 +144,32 @@ free_linestorage(F_line *l)
 
 	for (p = l->points; p != NULL; p = q) {
 	    q = p->next;
-	    free((char*)p);
+	    free(p);
 	    }
-	if (l->for_arrow) free((char*)l->for_arrow);
-	if (l->back_arrow) free((char*)l->back_arrow);
-	free((char*)l);
+	if (l->for_arrow) free(l->for_arrow);
+	if (l->back_arrow) free(l->back_arrow);
+	if (l->pic) {
+		free(l->pic->file);
+		free(l->pic->bitmap);
+#ifdef HAVE_X11_XPM_H
+		XpmFreeXpmImage(&l->pic->xpmimage);
+#endif
+#ifdef V4_0
+		free_compound(l->pic->compound);
+#endif
+		free(l->pic);
+	}
+	if (l->comments) free_comments(l->comments);
+	free(l);
+}
+
+void
+free_comments(F_comment *c)
+{
+	F_comment	*d, *n;
+
+	for (d = c; d != NULL; d = n) {
+		n = d->next;
+		free(d);
+	}
 }

@@ -1,9 +1,26 @@
+/*
+ * Fig2dev: Translate Fig code to various Devices
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2017 by Thomas Loimer
+ *
+ * Any party obtaining a copy of these files is granted, free of charge, a
+ * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
+ *
+ */
+
 #define		BEGIN_PROLOG1	"\
 /$F2psDict 200 dict def\n\
 $F2psDict begin\n\
 $F2psDict /mtrx matrix put\n\
-/col-1 {0 setgray} bind def\n\
-"
+/col-1 {0 setgray} bind def\n"
 
 #define		BEGIN_PROLOG2	"\
 /cp {closepath} bind def\n\
@@ -13,6 +30,7 @@ $F2psDict /mtrx matrix put\n\
 /sa {save} bind def\n\
 /rs {restore} bind def\n\
 /l {lineto} bind def\n\
+/rl {rlineto} bind def\n\
 /m {moveto} bind def\n\
 /rm {rmoveto} bind def\n\
 /n {newpath} bind def\n\
@@ -36,558 +54,530 @@ $F2psDict /mtrx matrix put\n\
   4 -2 roll dup 1 exch sub 3 -1 roll mul add srgb}\n\
   bind def\n\
 /shd {dup dup currentrgbcolor 4 -2 roll mul 4 -2 roll mul\n\
-  4 -2 roll mul srgb} bind def\n\
-"
+  4 -2 roll mul srgb} bind def\n"
 
 #define		FILL_PAT01	"\
 % left30\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [-2 -4 10 5]\n\
- /XStep 8\n\
- /YStep 4\n\
+ /TilingType 1\n\
+ /BBox [0 0 48 24]\n\
+ /XStep 48\n\
+ /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  newpath\n\
-  -2 5 moveto\n\
-  .7 setlinewidth\n\
-  12 -6 rlineto\n\
-  stroke\n\
+  .7 slw n\n\
+  3 4 24 {dup -2 exch m 2 mul -1 l} for\n\
+  1 4 22 {dup 2 mul 25 m 50 exch l} for\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P1 exch def\n\
-"
+/P1 exch def\n"
+/*
+ * % the line above
+ *    3 4 24 {dup -2 exch m 2 mul -1 l} for	% is equivalent to ...
+ * %	-2  3 m   6 -1 l
+ * %	-2  7 m  14 -1 l
+ * %	-2 11 m  22 -1 l
+ * %		.
+ * %		.
+ * %	-2 23 m  46 -1 l
+ *
+ *    1 4 22 {dup 2 mul 25 m 50 exch l} for	% equivalent to ...
+ * %	 2 25 m  50  1 l
+ * %	10 25 m  50  5 l
+ * %	18 25 m  50  9 l
+ * %		.
+ * %		.
+ * %	42 25 m  50 21 l
+ */
+
 #define		FILL_PAT02	"\
 % right30\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [-2 -4 10 5]\n\
- /XStep 8\n\
- /YStep 4\n\
+ /TilingType 1\n\
+ /BBox [0 0 48 24]\n\
+ /XStep 48\n\
+ /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  newpath\n\
-  .7 setlinewidth\n\
-  -2 -1 moveto\n\
-  12 6 rlineto\n\
-  stroke\n\
+  .7 slw n\n\
+  -3 -4 -24 {dup -2 exch 24 add m -2 mul 25 l} for\n\
+  -1 -4 -22 {dup -2 mul -1 m 50 exch 24 add l} for\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P2 exch def\n\
-"
+/P2 exch def\n"
+/*
+ * % the line above
+ *   -3 -4 -24 {dup -2 exch 24 add m -2 mul 25 l} for	% is equivalent to ...
+ * %	-2 21 m   6 25 l
+ * %	-2 17 m  14 25 l
+ * %	-2 13 m  22 25 l
+ * %		.
+ * %		.
+ * %	-2  1 m  46 25 l
+ *
+ *   -1 -4 -22 {dup -2 mul -1 m 50 exch 24 add l} for	% equivalent to ...
+ * %	 2 -1 m  50 23 l
+ * %	10 -1 m  50 19 l
+ * %	18 -1 m  50 15 l
+ * %		.
+ * %		.
+ * %	42 -1 m  50  3 l
+ */
+
 #define		FILL_PAT03	"\
 % crosshatch30\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [-2 -4 10 5]\n\
- /XStep 8\n\
- /YStep 4\n\
+ /TilingType 1\n\
+ /BBox [0 0 48 24]\n\
+ /XStep 48\n\
+ /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  newpath\n\
-  .7 setlinewidth\n\
-  -2 5 moveto\n\
-  12 -6 rlineto\n\
-  stroke\n\
-  newpath\n\
-  .7 setlinewidth\n\
-  -2 -1 moveto\n\
-  12 6 rlineto\n\
-  stroke\n\
+  .7 slw n\n\
+  3 4 24 {dup 2 copy -2 exch m 2 mul -1 l -2 exch -1 mul 24 add m 2 mul 25 l} for\n\
+  1 4 22 {dup 2 copy 2 mul 25 m 50 exch l 2 mul -1 m 50 exch -1 mul 24 add l} for\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P3 exch def\n\
-"
+/P3 exch def\n"
+
 #define		FILL_PAT04	"\
 % left45\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [-1 -1 9 9]\n\
- /XStep 8\n\
- /YStep 8\n\
+ /TilingType 1\n\
+ /BBox [0 0 24 24]\n\
+ /XStep 24\n\
+ /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  newpath\n\
-  1 setlinewidth\n\
-  -1 9 moveto\n\
-  9 -1 lineto\n\
-  stroke\n\
+  1 slw n\n\
+  7 8 24 {dup dup -1 exch m -1 l -2 add dup 25 m 25 exch l} for\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P4 exch def\n\
-"
+/P4 exch def\n"
+/*
+ * the procedure above was
+ *  7 8 24 {dup -1 exch m -1 l} for\n\
+ *  5 8 22 {dup 25 m 25 exch l} for\n\
+ * equivalent to
+ *  -1 7 m 7 -1 l  -1 15 m 15 -1 l  -1 23 m 23 -1 l
+ *   5 25 m 25 5 l  13 25 m 25 13 l  21 25 m 25 21 l
+ */
+
 #define		FILL_PAT05	"\
 % right45\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [-1 -1 9 9]\n\
- /XStep 8\n\
- /YStep 8\n\
+ /TilingType 1\n\
+ /BBox [0 0 24 24]\n\
+ /XStep 24\n\
+ /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  newpath\n\
-  1 setlinewidth\n\
-  -1 -1 moveto\n\
-  9 9 lineto\n\
-  stroke\n\
+  1 slw n\n\
+  1 8 18 {dup dup -1 m 25 exch -1 mul 24 add l 4 add dup -1 exch m\
+ -1 mul 24 add 25 l} for\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P5 exch def\n\
-"
+/P5 exch def\n"
+
 #define		FILL_PAT06	"\
 % crosshatch45\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [-1 -1 9 9] \n\
- /XStep 8\n\
- /YStep 8\n\
+ /TilingType 1\n\
+ /BBox [0 0 24 24] \n\
+ /XStep 24\n\
+ /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  newpath\n\
-  1 setlinewidth\n\
-  -1 9 moveto\n\
-  9 -1 lineto\n\
-  stroke\n\
-  -1 -1 moveto\n\
-  9 9 lineto\n\
-  stroke\n\
+  1 slw n\n\
+  1 8 18 {dup 2 copy -1 m 25 exch -1 mul 24 add l 4 add dup -1 exch m\
+ -1 mul 24 add 25 l\n\
+    dup 6 add dup -1 exch m -1 l 4 add dup 25 m 25 exch l} for\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P6 exch def\n\
-"
+/P6 exch def\n"
+
 #define		FILL_PAT07	"\
 % bricks\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [-1 0 17 17]  % At least linewidth bigger than Xstep and Ystep\n\
- /XStep 16           % These numbers mimic old Xfig bitmaps\n\
- /YStep 16\n\
+ /TilingType 1\n\
+ /BBox [0 0 32 32]\n\
+ /XStep 32\n\
+ /YStep 32\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  1 setlinewidth 0 setlinecap\n\
-  newpath 0 0 moveto 0 8 lineto stroke\n\
-  newpath 8 8 moveto 8 16 lineto stroke\n\
-  newpath 0 8 moveto 16 8 lineto stroke\n\
-  newpath 0 16 moveto 16 16 lineto stroke\n\
+  1 slw 0 slc n\n\
+  2 4 {dup -1 exch m 34 0 rl 8 add} repeat pop\n\
+  2 2 {dup 2 m 0 8 rl 0 8 rm 0 8 rl 16 add} repeat pop\n\
+  10 2 {dup -1 m 0 3 rl 0 8 rm 0 8 rl 0 8 rm 0 7 rl 16 add} repeat pop\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P7 exch def\n\
-"
+/P7 exch def\n"
+
 #define		FILL_PAT08	"\
 % vertical bricks\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [0 -1 17 17]  % At least linewidth bigger than Xstep and Ystep\n\
- /XStep 16\n\
- /YStep 16\n\
+ /TilingType 1\n\
+ /BBox [0 0 32 32]\n\
+ /XStep 32\n\
+ /YStep 32\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  1 setlinewidth 0 setlinecap\n\
-  newpath 0 0 moveto 8 0 lineto stroke\n\
-  newpath 8 8 moveto 16 8 lineto stroke\n\
-  newpath 8 0 moveto 8 16 lineto stroke\n\
-  newpath 16 0 moveto 16 16 lineto stroke\n\
+  1 slw 0 slc n\n\
+  2 4 {dup -1 m 0 34 rl 8 add} repeat pop\n\
+  2 2 {dup 2 exch m 8 0 rl 8 0 rm 8 0 rl 16 add} repeat pop\n\
+  10 2 {dup -1 exch m 3 0 rl 8 0 rm 8 0 rl 8 0 rm 7 0 rl 16 add} repeat pop\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P8 exch def\n\
-"
+/P8 exch def\n"
+
 #define		FILL_PAT09	"\
 % horizontal lines\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [0 0 4 4]  % At least linewidth bigger than Xstep and Ystep\n\
- /XStep 4\n\
- /YStep 4\n\
+ /TilingType 1\n\
+ /BBox [0 0 36 24]\n\
+ /XStep 36\n\
+ /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  1 setlinewidth 0 setlinecap\n\
-  newpath 0 3.5 moveto 4 3.5 lineto stroke\n\
+  1 slw 0 slc n\n\
+  -2 6 {4 add dup -1 exch m 38 0 rl} repeat pop s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P9 exch def\n\
-"
+/P9 exch def"
+
 #define		FILL_PAT10	"\
 % vertical lines\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [0 0 4 4]\n\
- /XStep 4\n\
- /YStep 4\n\
+ /TilingType 1\n\
+ /BBox [0 0 24 36]\n\
+ /XStep 24\n\
+ /YStep 36\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  1 setlinewidth 0 setlinecap\n\
-  newpath 3.5 0 moveto 3.5 4 lineto stroke\n\
+  1 slw 0 slc n\n\
+  -2 6 {4 add dup -1 m 0 38 rl} repeat pop s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P10 exch def\n\
-"
+/P10 exch def\n"
+
 #define		FILL_PAT11	"\
 % crosshatch lines\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [0 0 4 4]\n\
- /XStep 4\n\
- /YStep 4\n\
+ /TilingType 1\n\
+ /BBox [0 0 36 36]\n\
+ /XStep 36\n\
+ /YStep 36\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  1 setlinewidth 0 setlinecap\n\
-  newpath 3.5 0 moveto 3.5 4 lineto stroke\n\
-  newpath 0 3.5 moveto 4 3.5 lineto stroke\n\
+  1 slw 0 slc n\n\
+  -2 9 {4 add dup dup -1 exch m 38 0 rl -1 m 0 38 rl} repeat pop s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P11 exch def\n\
-"
+/P11 exch def\n"
+
 #define		FILL_PAT12	"\
 % left-shingles\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [0 0 25 24]\n\
+ /TilingType 1\n\
+ /BBox [0 0 24 24]\n\
  /XStep 24\n\
  /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  1 setlinewidth 0 setlinecap\n\
-  newpath 0 0.5 moveto 24 0.5 lineto stroke\n\
-  newpath 0 8.5 moveto 24 8.5 lineto stroke\n\
-  newpath 0 16.5 moveto 24 16.5 lineto stroke\n\
-  newpath 4 8.5 moveto 8 16.5 lineto stroke\n\
-  newpath 12 0.5 moveto 16 8.5 lineto stroke\n\
-  newpath 20 16.5 moveto 24 24.5 lineto stroke\n\
+  1 slw 0 slc n\n\
+  2 3 {dup -1 exch m 26 0 rl 8 add} repeat pop\n\
+  2 10 m 6 18 l 10 2 m 14 10 l 18 18 m 22 26 l 20 -2 m 22 2 l\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P12 exch def\n\
-"
+/P12 exch def\n"
+
 #define		FILL_PAT13	"\
 % right-shingles\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [0 0 25 24]\n\
+ /TilingType 1\n\
+ /BBox [0 0 24 24]\n\
  /XStep 24\n\
  /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  1 setlinewidth 0 setlinecap\n\
-  newpath 0 0.5 moveto 24 0.5 lineto stroke\n\
-  newpath 0 8.5 moveto 24 8.5 lineto stroke\n\
-  newpath 0 16.5 moveto 24 16.5 lineto stroke\n\
-  newpath 4 24.5 moveto 8 16.5 lineto stroke\n\
-  newpath 16 0.5 moveto 12 8.5 lineto stroke\n\
-  newpath 20 16.5 moveto 24 8.5 lineto stroke\n\
+  1 slw 0 slc n\n\
+  2 3 {dup -1 exch m 26 0 rl 8 add} repeat pop\n\
+  2 26 m 6 18 l 14 2 m 10 10 l 18 18 m 22 10 l 2 2 m 4 -2 l\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P13 exch def\n\
-"
+/P13 exch def\n"
+
 #define		FILL_PAT14	"\
 % vertical left-shingles\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [0 0 25 25]\n\
+ /TilingType 1\n\
+ /BBox [0 0 24 24]\n\
  /XStep 24\n\
  /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  1 setlinewidth 0 setlinecap\n\
-  newpath 0.5 0 moveto 0.5 24 lineto stroke\n\
-  newpath 8.5 0 moveto 8.5 24 lineto stroke\n\
-  newpath 16.5 0 moveto 16.5 24 lineto stroke\n\
-  newpath 24.5 4 moveto 16.5 8 lineto stroke\n\
-  newpath 0.5 16 moveto 8.5 12 lineto stroke\n\
-  newpath 16.5 20 moveto 8.5 24 lineto stroke\n\
+  1 slw 0 slc n\n\
+  2 3 {dup -1 m 0 26 rl 8 add} repeat pop\n\
+  26 2 m 18 6 l 2 14 m 10 10 l 18 18 m 10 22 l 2 2 m -2 4 l\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P14 exch def\n\
-"
+/P14 exch def\n"
+
 #define		FILL_PAT15	"\
 % vertical right-shingles\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [0 0 24 25]\n\
+ /TilingType 1\n\
+ /BBox [0 0 24 24]\n\
  /XStep 24\n\
  /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  1 setlinewidth 0 setlinecap\n\
-  newpath 0.5 0 moveto 0.5 24 lineto stroke\n\
-  newpath 8.5 0 moveto 8.5 24 lineto stroke\n\
-  newpath 16.5 0 moveto 16.5 24 lineto stroke\n\
-  newpath 8.5 4 moveto 16.5 8 lineto stroke\n\
-  newpath 0.5 12 moveto 8.5 16 lineto stroke\n\
-  newpath 16.5 20 moveto 24.5 24 lineto stroke\n\
+  1 slw 0 slc n\n\
+  2 3 {dup -1 m 0 26 rl 8 add} repeat pop\n\
+  10 2 m 18 6 l 2 10 m 10 14 l 18 18 m 26 22 l -2 20 m 2 22 l\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P15 exch def\n\
-"
+/P15 exch def\n"
+
 #define		FILL_PAT16	"\
 % fishscales\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [0 -1 17 9]\n\
+ /TilingType 1\n\
+ /BBox [0 0 16 8]\n\
  /XStep 16\n\
  /YStep 8\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  0.7 setlinewidth 0 setlinecap\n\
-  newpath 8 15 11 223 317 arc stroke\n\
-  newpath 0 11 11 223 317 arc stroke\n\
-  newpath 16 11 11 223 317 arc stroke\n\
+  0.7 slw 0 slc\n\
+  8 9 8 17 8 25 0 13 16 13 0 21 16 21 7 {n 11 223 317 arc s} repeat\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P16 exch def\n\
-"
+/P16 exch def\n"
+
 #define		FILL_PAT17	"\
 % small fishscales\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [0 -0.5 8 8.5]\n\
- /XStep 8\n\
- /YStep 8\n\
+ /TilingType 1\n\
+ /BBox [0 0 24 16]\n\
+ /XStep 24\n\
+ /YStep 16\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  0.7 setlinewidth 0 setlinecap\n\
-  newpath 4 8 4 180 360 arc stroke\n\
-  newpath 0 4 4 180 360 arc stroke\n\
-  newpath 8 4 4 180 360 arc stroke\n\
+  0.7 slw 0 slc 2 slj\n\
+  n -6 8 27 {2 4 180 360 arc} for s\n\
+  n -2 8 23 {6 4 180 360 arc} for s\n\
+  n -6 8 27 {10 4 180 360 arc} for s\n\
+  n -2 8 23 {14 4 180 360 arc} for s\n\
+  n -6 8 27 {18 4 180 360 arc} for s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P17 exch def\n\
-"
+/P17 exch def\n"
+
 #define		FILL_PAT18	"\
 % circles\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
- /TilingType 2\n\
- /BBox [-0.35 -0.35 16.35 16.35] % (0, 16) plus 1/2 linewidth\n\
- /XStep 16\n\
- /YStep 16\n\
- /PaintProc\n\
- {\n\
-  pop\n\
-  0.7 setlinewidth 0 setlinecap\n\
-  newpath 8 8 8 0 360 arc stroke\n\
- } bind\n\
-\n\
->>\n\
-\n\
-matrix\n\
-makepattern\n\
-/P18 exch def\n\
-"
-#define		FILL_PAT19	"\
-% hexagons\n\
-<<\n\
- /PatternType 1\n\
- /PaintType 2\n\
  /TilingType 1\n\
- /BBox [-0.5 -0.35 27 17]\n\
- /XStep 26\n\
- /YStep 16\n\
- /PaintProc\n\
- {\n\
-  pop\n\
-  0.7 setlinewidth 0 setlinejoin newpath\n\
-  4 0 moveto\n\
-  9 0 rlineto      % right\n\
-  4 8 rlineto      % up-right\n\
-  -4 8 rlineto     % up-left\n\
-  -9 0 rmoveto     % back\n\
-  -4 -8 rlineto     % down-left\n\
-  4 -8 rlineto 1 0 rlineto stroke % down-right\n\
-  newpath 17 8 moveto 9 0 rlineto stroke\n\
- } bind\n\
-\n\
->>\n\
-\n\
-matrix\n\
-makepattern\n\
-/P19 exch def\n\
-"
-#define		FILL_PAT20	"\
-% octagons\n\
-<<\n\
- /PatternType 1\n\
- /PaintType 2\n\
- /TilingType 2\n\
  /BBox [0 0 16 16]\n\
  /XStep 16\n\
  /YStep 16\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  .8 setlinewidth 0 setlinejoin newpath\n\
-  5 0 moveto 6 0 rlineto 5 5 rlineto 0 6 rlineto\n\
-  -5 5 rlineto -6 0 rlineto -5 -5 rlineto 0 -6 rlineto closepath stroke\n\
+  0.7 slw\n\
+  n 8 8 8 0 360 arc s\n\
  } bind\n\
-\n\
 >>\n\
 \n\
 matrix\n\
 makepattern\n\
-/P20 exch def\n\
-"
+/P18 exch def\n"
+
+#define		FILL_PAT19	"\
+% hexagons\n\
+<<\n\
+ /PatternType 1\n\
+ /PaintType 2\n\
+ /TilingType 1\n\
+ /BBox [0 0 26 16]\n\
+ /XStep 26\n\
+ /YStep 16\n\
+ /PaintProc\n\
+ {\n\
+  pop\n\
+  0.7 slw 0 slj n\n\
+  -1 8 m 2 8 l 6 0 l 15 0 l 19 8 l 15 16 l 6 16 l 2 8 l\n\
+  19 8 m 27 8 l s\n\
+ } bind\n\
+>>\n\
+matrix\n\
+makepattern\n\
+/P19 exch def\n"
+
+#define		FILL_PAT20	"\
+% octagons\n\
+<<\n\
+ /PatternType 1\n\
+ /PaintType 2\n\
+ /TilingType 1\n\
+ /BBox [0 0 16 16]\n\
+ /XStep 16\n\
+ /YStep 16\n\
+ /PaintProc\n\
+ {\n\
+  pop\n\
+  .8 slw 0 slj n\n\
+  5 0 m 11 0 l 16 5 l 16 11 l 11 16 l 5 16 l 0 11 l 0 5 l cp s\n\
+ } bind\n\
+>>\n\
+matrix\n\
+makepattern\n\
+/P20 exch def\n"
+
 #define		FILL_PAT21	"\
 % horizontal sawtooth lines\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
  /TilingType 1\n\
- /BBox [0 0 8 8]\n\
- /XStep 8\n\
- /YStep 8\n\
+ /BBox [0 0 24 24]\n\
+ /XStep 24\n\
+ /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  .8 setlinewidth 0 setlinejoin newpath\n\
-  -1 3 moveto 1 -1 rlineto 4 4 rlineto 4 -4 rlineto 1 1 rlineto stroke\n\
+  .8 slw 0 slj n\n\
+  -1 5 m 2 2 l 3 {4 4 rl 4 -4 rl} repeat\n\
+  -1 13 m 2 10 l 3 {4 4 rl 4 -4 rl} repeat\n\
+  -1 21 m 2 18 l 3 {4 4 rl 4 -4 rl} repeat\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P21 exch def\n\
-"
+/P21 exch def\n"
+
 #define		FILL_PAT22	"\
 % vertical sawtooth lines\n\
 <<\n\
  /PatternType 1\n\
  /PaintType 2\n\
  /TilingType 1\n\
- /BBox [0 0 8.5 8]\n\
- /XStep 8\n\
- /YStep 8\n\
+ /BBox [0 0 24 24]\n\
+ /XStep 24\n\
+ /YStep 24\n\
  /PaintProc\n\
  {\n\
   pop\n\
-  .8 setlinewidth 0 setlinejoin newpath\n\
-  3 -1 moveto -1 1 rlineto 4 4 rlineto -4 4 rlineto 1 1 rlineto stroke\n\
+  .8 slw 0 slj n\n\
+  5 -1 m 2 2 l 3 {4 4 rl -4 4 rl} repeat\n\
+  13 -1 m 10 2 l 3 {4 4 rl -4 4 rl} repeat\n\
+  21 -1 m 18 2 l 3 {4 4 rl -4 4 rl} repeat\n\
+  s\n\
  } bind\n\
-\n\
 >>\n\
-\n\
 matrix\n\
 makepattern\n\
-/P22 exch def\n\
-"
+/P22 exch def\n"
+
 
 #define		SPECIAL_CHAR_1	"\
 /reencdict 12 dict def /ReEncode { reencdict begin\n\

@@ -1,18 +1,17 @@
 /*
- * TransFig: Facility for Translating Fig code
- *
- * (C) Thomas Merz 1994-2002
- * Used with permission 19-03-2002
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Fig2dev: Translate Fig code to various Devices
+ * Parts Copyright (c) by Thomas Merz 1994-2002
+ * Parts Copyright (c) 1989-2010 by Brian V. Smith
+ * Parts Copyright (c) 2015-2017 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
@@ -21,6 +20,7 @@
  * convert JPEG files to compressed PostScript Level 2 or 3 EPS
  *
  * (C) Thomas Merz 1994-2002
+ * Used with permission 19-03-2002
  * Adapted from Version 1.9 for fig2dev by Brian V. Smith 19-03-2002
  *
  * ------------------------------------------------------------------*/
@@ -33,9 +33,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include "bool.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "psimage.h"
 #include "creationdate.h"
@@ -43,10 +42,9 @@
 #include <io.h>
 #include <fcntl.h>
 #endif
-#include "pathmax.h"
 
 extern void	 close_picfile(FILE *file, int type);
-extern FILE	*open_picfile(char *name, int *type, bool pipeok,char *retname);
+extern FILE	*open_picfile(char *name, int *type,bool pipeok,char **retname);
 
 int Margin	= 20;		/* safety margin */
 bool quiet	= false;	/* suppress informational messages */
@@ -67,6 +65,7 @@ static imagedata image;
 int
 read_jpg(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 {
+	(void)	filetype;
 
 	/* setup internal header */
 	image.mode	= ASCII85;	/* we won't use the BINARY mode */
@@ -101,17 +100,17 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
   imagedata	*JPEG;
   size_t	 n;
   int		 i, filtype;
-  char		 realname[PATH_MAX];
+  char		 *realname;
   char		 date_buf[CREATION_TIME_LEN];
 
   JPEG = &image;
 
   /* reopen the file */
-  JPEG->fp = open_picfile(jpegfile, &filtype, true, realname);
+  JPEG->fp = open_picfile(jpegfile, &filtype, true, &realname);
 
   /* produce EPS header comments */
   fprintf(PSfile, "%%!PS-Adobe-3.0 EPSF-3.0\n");
-  fprintf(PSfile, "%%%%Creator: jpeg2ps %s by Thomas Merz\n", VERSION);
+  fprintf(PSfile, "%%%%Creator: jpeg2ps %s by Thomas Merz\n", PACKAGE_VERSION);
   fprintf(PSfile, "%%%%Title: %s\n", JPEG->filename);
   if (creation_date(date_buf))
     fprintf(PSfile, "%%%%CreationDate: %s\n", date_buf);
@@ -183,7 +182,7 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
 	case BINARY:
 	    /* important: ONE blank and NO newline */
 	    fprintf(PSfile, " ");
-	#ifdef HAVE__SETMODE	/* equivalent to #ifdef DOS */
+	#ifdef HAVE__SETMODE
 	    fflush(PSfile);		  /* up to now we have CR/NL mapping */
 	    _setmode(fileno(PSfile), O_BINARY);	  /* continue in binary mode */
 	#endif

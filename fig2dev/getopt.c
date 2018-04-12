@@ -1,8 +1,9 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2007 by Brian V. Smith
+ * Parts Copyright (c) 2015-2017 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -36,9 +37,11 @@
 #include <stdio.h>
 #include <string.h>
 
+/*
 #ifndef lint
 static	char	sccsfid[] = "@(#) getopt.c 5.0 (UTZoo) 1985";
 #endif
+*/
 
 #define	ARGCH    (int)':'
 #define BADCH	 (int)'?'
@@ -48,22 +51,24 @@ static	char	sccsfid[] = "@(#) getopt.c 5.0 (UTZoo) 1985";
 /*
  * get option letter from argument vector
  */
-int	opterr = 1,		/* useless, never set or used */
-	optind = 1,		/* index into parent argv vector */
-	optc;			/* character checked for validity */
+/* int	opterr = 1 */		/* useless, never set or used */
+int	optind = 1;		/* index into parent argv vector */
 char	*optarg;		/* argument associated with option */
 
-#define tell(s)	fputs(*nargv,stderr);fputs(s,stderr); \
-		fputc(optc,stderr);fputc('\n',stderr);return(BADCH);
+#define tell(s)	fputs(*nargv,stderr); fputs(s,stderr); \
+		fputc(optc,stderr); fputc('\n',stderr); return BADCH
 
 int
 fig_getopt(int nargc, char **nargv, char *ostr)
 {
 	static char	*place = EMSG;	/* option letter processing */
-	register char	*oli;		/* option letter list index */
+	char		*oli;		/* option letter list index */
+	int		optc;		/* character checked for validity */
 
 	if(!*place) {			/* update scanning pointer */
-		if(optind >= nargc || *(place = nargv[optind]) != '-' || !*++place) return(EOF);
+		if(optind >= nargc || *(place = nargv[optind]) != '-' ||
+				!*++place)
+			return(EOF);
 		if (*place == '-') {	/* found "--" */
 			++optind;
 			return(EOF);
@@ -87,5 +92,5 @@ fig_getopt(int nargc, char **nargv, char *ostr)
 		place = EMSG;
 		++optind;
 	}
-	return(optc);			/* dump back option letter */
+	return optc;			/* dump back option letter */
 }

@@ -1,36 +1,38 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 2002 by Christian Gollwitzer (auriocus)
- * Parts Copyright (c) 1999 by T. Sato
- * Parts Copyright (c) 1989-1999 by Brian V. Smith
+ * Parts Copyright (c) 2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
-/* genshape.c: LaTeX shapepar driver for fig2dev
+/*
+ * genshape.c: convert fig to LaTeX shapepar
+ *
+ * Copyright (c) 2002 by Christian Gollwitzer (auriocus)
  * derived from genmap.c
  *
- * "Christian Gollwitzer" <auriocus@web.de>
- * if an object has a comment starting with '+', it becomes
- * a filled shape. If the comment starts with '-'
- * then it is a hole. The objects are composed
- * in the order of their depths. A word following the initial
- * '+' or '-' is considered to be an identifier that groups
- * different shapes to one text segment. The order of filling these
- * segments is determined by the alphabetic sort order of the identifiers.
- * The special comments "center", "width" and "height" define
- * position and dimension.
+ * genmap.c:
+ * Copyright (c) 1999 by T. Sato
  *
- * 2016-08-17 Thomas Loimer <thomas.loimer@tuwien.ac.at>
- *	* Ported to configure / autoconf and removed some compiler warnings.
+ * "Christian Gollwitzer" <auriocus@web.de>
+ * If an object has a comment starting with '+', it becomes a filled shape.
+ * If the comment starts with '-' then it is a hole. The objects are
+ * composed in the order of their depths. A word following the initial
+ * '+' or '-' is considered to be an identifier that groups different shapes
+ * to one text segment. The order of filling these segments is determined by
+ * the alphabetic sort order of the identifiers. The special comments
+ * "center", "width" and "height" define position and dimension.
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -40,13 +42,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <math.h>
 #include <ctype.h>
-#include "bool.h"
-#include "pi.h"
 
-#include "fig2dev.h"
+#include "pi.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 
 static void die(const char * msg) {
@@ -1415,7 +1418,7 @@ genshape_end(void)
 struct driver dev_shape = {
 	genshape_option,
 	genshape_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genshape_arc,
 	genshape_ellipse,
 	genshape_line,

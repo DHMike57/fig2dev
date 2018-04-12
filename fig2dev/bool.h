@@ -1,26 +1,31 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2016 by Brian V. Smith
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
- *	bool.h - created 2016-08-13 by Thomas Loimer
+ */
+
+/*
+ * bool.h:  provide bool, as proposed by info autoconf
+ * Written by Thomas Loimer, 2016-08-13
  *
  */
 
 /* config.h must be read, before bool.h is included */
 
-#ifndef BOOL_H
-#define BOOL_H
+#ifndef _BOOL_H
+#define _BOOL_H
 /* proposed by info autoconf */
 #ifdef HAVE_STDBOOL_H
 #include <stdbool.h>
@@ -37,4 +42,4 @@ typedef bool	_Bool;
 #define	true	1
 #define __bool_true_false_are_defined	1
 #endif
-#endif
+#endif /* _BOOL_H */

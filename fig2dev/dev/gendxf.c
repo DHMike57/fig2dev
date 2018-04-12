@@ -1,42 +1,42 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 
 /*
- *	  gendxf.c:	experimental dxf driver for fig2dev
- *	   Author Oluf Bagger, Nokia Mobile Phones March 2003
- *	  (ob@ieee.org)
+ *  gendxf.c: experimental dxf driver for fig2dev
  *
- *		  adapted from:
+ *  Author: Oluf Bagger, Nokia Mobile Phones, March 2003 (ob@ieee.org)
  *
- *	  genibmgl.c:	IBMGL driver for fig2dev
- *			  IBM 6180 Color Plotter with
- *			  IBM Graphics Enhancement Cartridge
- *	   Author E. Robert Tisdale, University of California, 1/92
- *	  (edwin@cs.ucla.edu)
+ *	  adapted from:
  *
- *		  adapted from:
+ *  genibmgl.c:	IBMGL driver for fig2dev
+ *		  IBM 6180 Color Plotter with
+ *		  IBM Graphics Enhancement Cartridge
+ *   Author E. Robert Tisdale, University of California, 1/92
+ *  (edwin@cs.ucla.edu)
  *
- *	  genpictex.c:	PiCTeX driver for fig2dev
+ *	  adapted from:
  *
- *	   Author Micah Beck, Cornell University, 4/88
- *	  Color, rotated text and ISO-chars added by Herbert Bauer 11/91
- *	  PCL job control option added Brian V. Smith 1/2001
-*/
+ *  genpictex.c:	PiCTeX driver for fig2dev
+ *   Author Micah Beck, Cornell University, 4/88
+ *  Color, rotated text and ISO-chars added by Herbert Bauer 11/91
+ *  PCL job control option added Brian V. Smith 1/2001
+ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -45,10 +45,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "localmath.h"
 
@@ -86,9 +85,6 @@ static double	pagelength = ISO_A4/UNITS_PER_INCH;
 static double	pagelength = ANSI_A/UNITS_PER_INCH;
 #endif
 static double	pageheight = HEIGHT/UNITS_PER_INCH;
-static double	pen_speed = SPEED_LIMIT;
-static double	xz =  0.0;		/* inches */
-static double	yz =  0.0;		/* inches */
 static double	xl =  0.0;		/* inches */
 static double	yl =  0.0;		/* inches */
 static double	xu = 32.25;		/* inches */
@@ -122,13 +118,13 @@ static double	high[] = {.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,.8,
 static void
 gendxf_option(char opt, char *optarg)
 {
-	FILE	    *ffp;
-	int	    font;
-	int	    pattern;
+	// (void)	optarg;
+	FILE	*ffp;
+	int	font;
+	int	pattern;
 
 	switch (opt) {
-
-	    case 'a':			/* paper size */
+	case 'a':				/* paper size */
 #ifdef A4
 		pagelength = ANSI_A/UNITS_PER_INCH;
 #else
@@ -136,81 +132,71 @@ gendxf_option(char opt, char *optarg)
 #endif
 		break;
 
-	    case 'c':				     /* Graphics Enhancement */
-		ibmgec = !ibmgec;	 /* Cartridge emulation */
+	case 'c':		/* Graphics Enhancement Cartridge emulation */
+		ibmgec = !ibmgec;
 		break;
 
-	    case 'd':				     /* position and window */
+	case 'd':				/* position and window, inches*/
 		sscanf(optarg, "%lf,%lf,%lf,%lf", &xl,&yl,&xu,&yu);
-						/* inches */
 		break;
 
-	    case 'f':				     /* user's characters */
+	case 'f':				/* user's characters */
 		if ((ffp = fopen(optarg, "r")) == NULL)
-		    fprintf(stderr, "Couldn't open %s\n", optarg);
-		else
-		    for (font = 0; font <= fonts; font++)
-			fscanf(ffp, "%d%d%lf%lf%lf",
-				&standard[font],	/* 0-4 6-9 30-39*/
-				&alternate[font],	/* 0-4 6-9 30-39*/
-				&slant[font],		/* degrees */
-				&wide[font],		/* ~1.0 */
-				&high[font]);		/* ~1.0 */
-		fclose(ffp);
-		break;
-
-	    case 'l':				     /* user's fill patterns */
-		if ((ffp = fopen(optarg, "r")) == NULL)
-		    fprintf(stderr, "Couldn't open %s\n", optarg);
-		else
-		    for (pattern = 0; pattern < patterns; pattern++)
-			fscanf(ffp, "%d%lf%d%lf%lf",
-				&line_type[pattern],	    /*	  -1-6 */
-				&line_space[pattern],	     /*   inches */
-				&fill_type[pattern],	    /*	   1-5 */
-				&fill_space[pattern],	     /*   inches */
-				&fill_angle[pattern]);	      /*   degrees */
-		fclose(ffp);
-		break;
-
-	    case 'G':
-	    case 'L':				     /* language */
-		break;
-
-	    case 'm':				     /* magnify and offset */
-		sscanf(optarg, "%lf,%lf,%lf", &mag,&xz,&yz);
-						/* inches */
-		break;
-
-	    case 'p':				     /* user's colors */
-		{
-		    FILE	*ffp;
-		    int		       color;
-		    if ((ffp = fopen(optarg, "r")) == NULL)
 			fprintf(stderr, "Couldn't open %s\n", optarg);
-		    else
-			for (color = 0; color <= colors; color++)
-			    fscanf(ffp, "%d%lf",
-				&pen_number[color],	  /*	  1-8 */
-				&pen_thickness[color]);   /* millimeters */
-		    fclose(ffp);
+		else
+			for (font = 0; font <= fonts; ++font)
+				fscanf(ffp, "%d%d%lf%lf%lf",
+					&standard[font],  /* 0-4 6-9 30-39*/
+					&alternate[font], /* 0-4 6-9 30-39*/
+					&slant[font],	  /* degrees */
+					&wide[font],	  /* ~1.0 */
+					&high[font]);	  /* ~1.0 */
+		fclose(ffp);
+		break;
+
+	case 'l':				/* user's fill patterns */
+		if ((ffp = fopen(optarg, "r")) == NULL)
+			fprintf(stderr, "Couldn't open %s\n", optarg);
+		else
+			for (pattern = 0; pattern < patterns; pattern++)
+				fscanf(ffp, "%d%lf%d%lf%lf",
+					&line_type[pattern],	/*  -1-6  */
+					&line_space[pattern],	/* inches */
+					&fill_type[pattern],	/*  1-5   */
+					&fill_space[pattern],	/* inches */
+					&fill_angle[pattern]);	/* degrees */
+		fclose(ffp);
+		break;
+
+	case 'G':
+	case 'L':				/* language */
+		break;
+
+	case 'p':				/* user's colors */
+		{
+			FILE	*ffp;
+			int	color;
+			if ((ffp = fopen(optarg, "r")) == NULL)
+				fprintf(stderr, "Couldn't open %s\n", optarg);
+			else
+				for (color = 0; color <= colors; color++)
+					fscanf(ffp, "%d%lf",
+						&pen_number[color],    /* 1-8 */
+						&pen_thickness[color]); /* mm */
+			fclose(ffp);
 		}
 		break;
 
-	    case 'P':				     /* portrait mode */
+	case 'P':				/* portrait mode */
 		landscape = false;
-		orientspec = true;	  /* user-specified */
+		orientspec = true; /* user-specified */
 		break;
 
-	    case 'S':				     /* select pen velocity */
-		pen_speed = atof(optarg);
+	case 'v':
+		reflected = true;		/* mirror image */
 		break;
 
-	    case 'v':
-		reflected = true;	 /* mirror image */
-		break;
-
-	    default:
+	default:
 		put_msg(Err_badarg, opt, "dxf");
 		exit(1);
 	}
@@ -223,10 +209,7 @@ static double	hcmpp = CMPP;	/* centimeter/point */
 void
 gendxf_start(F_compound *objects)
 {
-/*	int	    P1x, P1y, P2x, P2y; */
-/*	int	    Xll, Yll, Xur, Yur; */
-/*	double	      Xmin,Xmax,Ymin,Ymax; */
-/*	double	      height, length; */
+	(void)	objects;
 
 	if (fabs(mag) < 1.0/2048.0){
 	    fprintf(stderr, "|mag| < 1/2048\n");
@@ -343,49 +326,15 @@ gendxf_start(F_compound *objects)
 		hcmpp	= -hcmpp;
 	}
 
-/*
- *	Xmin = xz;
- *	Ymin = yz;
- *	Xmax = xz + length/mag;
- *	Ymax = yz + height/mag;
- */
-
-/*
- *	   fprintf(tfp, "IP%d,%d,%d,%d;\n",
- *		  P1x, P1y, P2x, P2y);
- *	  fprintf(tfp, "IW%d,%d,%d,%d;\n",
- *		  Xll, Yll, Xur, Yur);
- *	  fprintf(tfp, "SC%.4f,%.4f,%.4f,%.4f;\n",
- *		  Xmin,Xmax,Ymin,Ymax);
- *	  if (0.0 < pen_speed && pen_speed < SPEED_LIMIT)
- *	      fprintf(tfp, "VS%.2f;\n", pen_speed);
- */
 }
 
 /*	  draw arrow heading from (x1, y1) to (x2, y2) */
 
 static void
-draw_arrow_head(double x1, double y1, double x2, double y2, double arrowht, double arrowwid)
+draw_arrow_head(double x1, double y1, double x2, double y2)
 {
-/*	double	      x, y, xb, yb, dx, dy, l, sina, cosa; */
-/*	double	      xc, yc, xd, yd; */
 	int style;
 	double length;
-
-/*	dx = x2 - x1;
-	dy = y1 - y2;
-	l = sqrt(dx*dx+dy*dy);
-	sina = dy/l;
-	cosa = dx/l;
-	xb = x2*cosa - y2*sina;
-	yb = x2*sina + y2*cosa;
-	x = xb - arrowht;
-	y = yb - arrowwid/2.0;
-	xc =  x*cosa + y*sina;
-	yc = -x*sina + y*cosa;
-	y = yb + arrowwid/2.0;
-	xd =  x*cosa + y*sina;
-	yd = -x*sina + y*cosa; */
 
 	/* save line style and set to solid */
 	style = line_style;
@@ -394,10 +343,6 @@ draw_arrow_head(double x1, double y1, double x2, double y2, double arrowht, doub
 
 	fprintf(tfp, "999\nPrint an arrow from (%f;%f) to (%f;%f)\n",
 		x1, y1, x2, y2);
-/*
- *	  fprintf(tfp, "PA%.4f,%.4f;PD%.4f,%.4f,%.4f,%.4f;PU\n",
- *		  xc, yc, x2, y2, xd, yd);
- */
 
 	/* restore line style */
 	set_style(style, length);
@@ -460,13 +405,15 @@ set_style(int style, double length)
  * set_width - issue line width commands as appropriate
  *		  NOTE: for HP plotters we can't do anything
  */
+/*
 static void
 set_width(int w)
 {
 }
+*/
 
 static void
-fill_polygon(int pattern, int color)
+fill_polygon(int pattern)
 {
 	if (0 < pattern && pattern < patterns) {
 	    int		       style;
@@ -533,7 +480,7 @@ gendxf_arc(F_arc *a)
 
 
 	    set_style(a->style, a->style_val);
-	    set_width(a->thickness);
+/*	    set_width(a->thickness);	*/
 
 	    cx = a->center.x/ppi;
 	    cy = a->center.y/ppi;
@@ -558,8 +505,7 @@ gendxf_arc(F_arc *a)
 
 	    if (a->type == T_OPEN_ARC && a->thickness != 0 && a->back_arrow) {
 		arc_tangent(cx, cy, sx, sy, !a->direction, &x, &y);
-		draw_arrow_head(x, y, sx, sy,
-		a->back_arrow->ht/ppi, a->back_arrow->wid/ppi);
+		draw_arrow_head(x, y, sx, sy);
 		}
 
 	    fprintf(tfp, "PA%.4f,%.4f;PM;PD;", sx, sy);
@@ -571,12 +517,11 @@ gendxf_arc(F_arc *a)
 
 	    if (a->type == T_OPEN_ARC && a->thickness != 0 && a->for_arrow) {
 		arc_tangent(cx, cy, ex, ey, a->direction, &x, &y);
-		draw_arrow_head(x, y, ex, ey,
-			a->for_arrow->ht/ppi, a->for_arrow->wid/ppi);
+		draw_arrow_head(x, y, ex, ey);
 		}
 
 	    if (0 < a->fill_style && a->fill_style < patterns)
-		fill_polygon(a->fill_style, a->fill_color);
+		fill_polygon(a->fill_style);
 	    }
   }
 }
@@ -598,7 +543,7 @@ gendxf_ellipse(F_ellipse *e)
     double	  x,  y;
 
     set_style(e->style, e->style_val);
-    set_width(e->thickness);
+/*    set_width(e->thickness);	*/
 
     a	  = e->radiuses.x/ppi;
     b	  = e->radiuses.y/ppi;
@@ -647,7 +592,7 @@ gendxf_line(F_line *l)
     F_point	   *p, *q, *r;
 
     set_style(l->style, l->style_val);
-    set_width(l->thickness);
+/*    set_width(l->thickness);	*/
 
     p = l->points;
     q = p->next;
@@ -676,10 +621,7 @@ gendxf_line(F_line *l)
 	  fprintf(tfp, " 20\n%f\n",p->y/ppi);
 	} else {
 	  if (l->thickness != 0 && l->back_arrow)
-	      draw_arrow_head(q->x/ppi, q->y/ppi,
-			  p->x/ppi, p->y/ppi,
-		      l->back_arrow->ht/ppi,
-		      l->back_arrow->wid/ppi);
+	      draw_arrow_head(q->x/ppi, q->y/ppi, p->x/ppi, p->y/ppi);
 
 	  fprintf(tfp, "  0\nPOLYLINE\n");
 	  fprintf(tfp, "  6\nSolid\n");
@@ -710,14 +652,10 @@ gendxf_line(F_line *l)
 	  }
 
 	  if (l->thickness != 0 && l->for_arrow)
-	    draw_arrow_head(r->x/ppi, r->y/ppi,
-			    q->x/ppi, q->y/ppi,
-			    l->for_arrow->ht/ppi,
-			    l->for_arrow->wid/ppi);
-/*
- *	  if (0 < l->fill_style && l->fill_style < patterns)
- *	    fill_polygon((int)l->fill_style, l->fill_color);
- */
+	    draw_arrow_head(r->x/ppi, r->y/ppi, q->x/ppi, q->y/ppi);
+
+/*	  if (0 < l->fill_style && l->fill_style < patterns)
+	    fill_polygon((int)l->fill_style, l->fill_color);	*/
 
 	  fprintf(tfp, "  0\nSEQEND\n");
 	}
@@ -860,8 +798,7 @@ gendxf_itp_spline(F_spline *s)
 	x2 = p1->x/ppi; y2 = p1->y/ppi;
 
 	if (s->thickness != 0 && s->back_arrow)
-	    draw_arrow_head(cp1->rx/ppi, cp1->ry/ppi, x2, y2,
-		    s->back_arrow->ht/ppi, s->back_arrow->wid/ppi);
+	    draw_arrow_head(cp1->rx/ppi, cp1->ry/ppi, x2, y2);
 
 	fprintf(tfp, "PA%.4f,%.4f;PD;\n", x2, y2);
 	for (p2 = p1->next, cp2 = cp1->next; p2 != NULL;
@@ -876,8 +813,7 @@ gendxf_itp_spline(F_spline *s)
 	fprintf(tfp, "PU;\n");
 
 	if (s->thickness != 0 && s->for_arrow)
-	    draw_arrow_head(cp1->lx/ppi, cp1->ly/ppi, x2, y2,
-		    s->for_arrow->ht/ppi, s->for_arrow->wid/ppi);
+	    draw_arrow_head(cp1->lx/ppi, cp1->ly/ppi, x2, y2);
 	}
 
 static void
@@ -927,8 +863,7 @@ gendxf_ctl_spline(F_spline *s)
 	    fprintf(tfp, "PA%.4f,%.4f;PD;\n ", cx1, cy1);
 	else {
 	    if (s->thickness != 0 && s->back_arrow)
-		draw_arrow_head(cx1, cy1, x1, y1,
-			s->back_arrow->ht/ppi, s->back_arrow->wid/ppi);
+		draw_arrow_head(cx1, cy1, x1, y1);
 	    fprintf(tfp, "PA%.4f,%.4f;PD%.4f,%.4f;\n",
 		    x1, y1, cx1, cy1);
 	    }
@@ -964,8 +899,7 @@ gendxf_ctl_spline(F_spline *s)
 	else {
 	    fprintf(tfp, "PA%.4f,%.4f;PU;\n", x1, y1);
 	    if (s->thickness != 0 && s->for_arrow)
-		    draw_arrow_head(cx1, cy1, x1, y1,
-			s->for_arrow->ht/ppi, s->for_arrow->wid/ppi);
+		    draw_arrow_head(cx1, cy1, x1, y1);
 	    }
 	}
 
@@ -975,7 +909,7 @@ gendxf_spline(F_spline *s)
   fprintf(tfp, "999\n !! found spline FIX \n");
 	if (s->thickness != 0) {
 	    set_style(s->style, s->style_val);
-	    set_width(s->thickness);
+/*	    set_width(s->thickness);	*/
 
 	    if (int_spline(s))
 		gendxf_itp_spline(s);
@@ -1034,7 +968,7 @@ gendxf_end(void)
 struct driver dev_dxf = {
 	gendxf_option,
 	gendxf_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	gendxf_arc,
 	gendxf_ellipse,
 	gendxf_line,

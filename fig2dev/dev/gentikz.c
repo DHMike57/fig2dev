@@ -1,23 +1,25 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- * gentikz.c: TeX/LaTeX tikz driver for fig2dev
- * Copyright (c) 2015, 2016 by Thomas Loimer
+ * gentikz.c: convert fig to tikz macro language for TeX/LaTeX
+ *
+ * Author: Thomas Loimer
  *
  * BUGS:	o shades or tints of the default color may be incorrect
  *		o arrows on arcs and on very short lines may be different
@@ -32,14 +34,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "texfonts.h"		/* texfontnames[] */
 #include "bound.h"
 #include "gentikz.h"
+#include "psfonts.h"
 
 /* String arrays and structs */
 extern char	*ISO1toTeX[];	/* iso2tex.c */
@@ -248,6 +250,7 @@ static bool	removesuffix = false;
 static bool	usetexfonts = false;
 static bool	allspecial = false;
 static bool	pagemode = false;
+static bool	nofigscaling = false;
 static char	*prepend = NULL;
 static int	encoding = 1;
 static int	verbose = 0;
@@ -347,6 +350,10 @@ gentikz_option(char opt, char *optarg)
 
 	case 'v':
 	    verbose = 1;		/* verbose mode */
+	    break;
+
+	case 'W':
+	    nofigscaling = true;
 	    break;
 
 	case 'w':		/* remove suffix from included graphics file */
@@ -680,7 +687,7 @@ gentikz_start(F_compound *objects)
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {
 	    fprintf(tfp,"%%\n");
-	    print_comments("% ",objects->comments, "");
+	    print_comments("% ", objects->comments, "");
 	    fprintf(tfp,"%%\n");
 	}
 	if (pagemode) {
@@ -706,6 +713,8 @@ gentikz_start(F_compound *objects)
 	    if (pats_used)
 		fputs("\\usetikzlibrary{patterns}\n", tfp);
 	    fputs("\\parindent0pt\n\\begin{document}\n", tfp);
+	}
+	if (pagemode || nofigscaling) {
 /*	if (metric)	fprintf(tfp, "%% 4143.7 sp = (1/472.44) cm\n");
  *	else		fprintf(tfp, "%% 3946.9 sp = (1/1200) in\n");	*/
 	    fprintf(tfp, "\\tikzpicture[x=+%lisp, y=+%lisp]\n",
@@ -872,15 +881,13 @@ put_picture(F_point *p, F_point *r, F_pic *pic)
 	 *					       |      |
 	 *					     2 +------+ 3
 	 */
-	int	n, dx, dy, rot;
+	int	n, dx, dy, rot = 0;
 	char	*c;
 
 	dx = r->x - p->x;
 	dy = r->y - p->y;
 	/* get the rotation, and write the height and width to dx and dy */
-	if (dx >= 0 && dy >= 0) {   /* >= 0 - to silence static analyzer warnings */
-	    rot = 0;
-	} else if (dx < 0 && dy < 0) {
+	if (dx < 0 && dy < 0) {
 	    dx = -dx;
 	    dy = -dy;
 	    rot = 180;
@@ -894,7 +901,7 @@ put_picture(F_point *p, F_point *r, F_pic *pic)
 	    dx = -dy;
 	    dy = rot;
 	    rot = 90;
-	}
+	} /* else dx >= 0 && dy >= 0: rot = 0 */
 
 	if (pic->flipped) {
 	    rot += 90;
@@ -907,7 +914,7 @@ put_picture(F_point *p, F_point *r, F_pic *pic)
 
 	if (removesuffix) {
 	    c = strrchr(pic->file,'.');
-	    n =  c == NULL ? strlen(pic->file) : c - pic->file;
+	    n =  c == NULL ? (int)strlen(pic->file) : c - pic->file;
 	} else {
 	    n = strlen(pic->file);
 	}
@@ -1654,6 +1661,7 @@ gentikz_line(F_line *l)
 void
 gentikz_spline(F_spline *s)
 {
+	print_comments("% ", s->comments, "");
 	fprintf(stderr, "Can't generate spline; omitting object\n");
 }
 
@@ -1663,7 +1671,7 @@ gentikz_ellipse(F_ellipse *e)
 	if (verbose)
 	    fputs("%%\n%% Fig ELLIPSE object\n%%\n", tfp);
 
-	print_comments("% ",e->comments, "");
+	print_comments("% ", e->comments, "");
 
 	if (e->thickness <= 0 && e->fill_style == UNFILLED) return;
 
@@ -1729,7 +1737,7 @@ put_font(F_text *t)
 /*
  * Put the text, e.g.,
  *   \pgfsetfillcolor{blue}   % \pgftext obeys \pgfsetfillcolor
- *   \pgftext[base,left,at=\pgfqpointxy{3}{2},rotate=45] {Text here!};
+ *   \pgftext[base,left,at=\pgfqpointxy{3}{2},rotate=45] {Text here!}
  * Order ist important! First at=..., then rotate=... !
  */
 void
@@ -1741,7 +1749,7 @@ gentikz_text(F_text *t)
 	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
 	/* print any comments prefixed with "%" */
-	print_comments("% ",t->comments, "");
+	print_comments("% ", t->comments, "");
 
 	set_fillcolor(t->color, NUMSHADES - 1);
 
@@ -1804,7 +1812,6 @@ gentikz_text(F_text *t)
 	    }
 	} else for (cp = (unsigned char*)t->cstring; *cp; ++cp) {
 #ifdef I18N
-	    extern bool support_i18n;
 	    if (support_i18n && (t->font <= 2))
 		fputc(*cp, tfp);
 	    else
@@ -1824,7 +1831,7 @@ gentikz_text(F_text *t)
 	    } else
 		fputc(*cp, tfp);
 	}
-	fputs("};\n", tfp);
+	fputs("}\n", tfp);
 }
 
 void
@@ -1838,7 +1845,7 @@ gentikz_arc(F_arc *a)
 	    fprintf(tfp, "%%\n%% Fig ARC object\n%%\n");
 
 	/* print any comments prefixed with "%" */
-	print_comments("% ",a->comments, "");
+	print_comments("% ", a->comments, "");
 
 	if (a->thickness <= 0 && a->fill_style == UNFILLED &&
 			!a->for_arrow && !a->back_arrow)

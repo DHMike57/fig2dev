@@ -1,26 +1,18 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
- *
- */
-
-/*
- * Changes:
- *
- * 2015-12-17 -	Skip over co-incident points when reading line objects.
- *		Write booleans std_color_used[], arrows_used, arrow_used[].
- *		Modify for build with autoconf.  (Thomas Loimer)
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
@@ -31,26 +23,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #ifdef	HAVE_STRERROR
 #include <errno.h>
 #endif
 #include <ctype.h>
 #include <limits.h>
-#include "bool.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "alloc.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "free.h"
 #include "read.h"
 #include "trans_spline.h"
-#include "pathmax.h"
 
-char		Err_incomp[] = "Incomplete %s object at line %d.";
-
-extern F_arrow	*make_arrow(int type, int style,
+extern F_arrow	*make_arrow(int type, int style,	/* arrow.c */
 				double thickness, double wid, double ht);
+
+User_color	 user_colors[MAX_USR_COLS];		/* fig2dev.h */
+int		 user_col_indx[MAX_USR_COLS];		/* fig2dev.h */
+int		 num_usr_cols;				/* fig2dev.h */
+int		 num_object;		/* read1_3.c */
+					/* flags, psfonts.h, genps.c */
+int		 v2_flag;		/* Protocol V2.0 or higher */
+int		 v21_flag;		/* Protocol V2.1 or higher */
+int		 v30_flag;		/* Protocol V3.0 or higher */
+int		 v32_flag;		/* Protocol V3.2 or higher */
 
 static void		 read_colordef(void);
 static F_ellipse	*read_ellipseobject(void);
@@ -64,39 +64,26 @@ static void		 count_lines_correctly(FILE *fp);
 static void		 init_pats_used(void);
 static int		 read_objects(FILE *fp, F_compound *obj);
 static int		 get_line(FILE *fp);
-static void		 note_pattern(int fill_style);
 static void		 skip_line(FILE *fp);
 static int		 backslash_count(char cp[], int start);
 static int		 save_comment(void);
+static char	Err_incomp[] = "Incomplete %s object at line %d.";
+static char	Err_invalid[] = "Invalid %s object at line %d.";
+static char	Err_arrow[] = "Invalid %s arrow at line %d.";
 
 #define		FILL_CONVERT(f)	((v2_flag || (f) < WHITE_FILL) \
 					? (v30_flag? f: (f-1)) : 20 - ((f)-1)*5)
 
-/* input buffer size */
-#define		BUF_SIZE	1024
-
 /* max number of comments that can be stored with each object */
 #define		MAXCOMMENTS	100
 
-User_color	 user_colors[MAX_USR_COLS];	/* extern, fig2dev.h */
-int		 user_col_indx[MAX_USR_COLS];	/* extern, fig2dev.h */
-int		 num_usr_cols;			/* extern, fig2dev.h */
 static int	 gif_colnum = 0;
-static char	 buf[BUF_SIZE];
+static char	 buf[BUFSIZ];
 static int	 line_no = 0;
-int		 num_object;		/* extern, read1_3.c */
-				 /*flags, extern psfonts.h, genps.c */
-int		 v2_flag;		/* Protocol V2.0 or higher */
-int		 v21_flag;		/* Protocol V2.1 or higher */
-int		 v30_flag;		/* Protocol V3.0 or higher */
-int		 v32_flag;		/* Protocol V3.2 or higher */
 static char	*comments[MAXCOMMENTS];	/* comments saved for current object */
 static int	 numcom;		/* current comment index */
 static bool	 com_alloc = false;	/* whether or not the comment array
 					 * has been initialized */
-#define	NOTE_FILL(o)	if (o->fill_style != UNFILLED) \
-				note_pattern(o->fill_style), \
-				fix_and_note_color(&o->fill_color)
 
 void
 read_fail_message(char *file, int err)
@@ -145,11 +132,12 @@ read_fig(char *file_name, F_compound *obj)
 {
 	FILE		*fp;
 
-	/* initialize pattern_used[] array */
-	init_pats_used();
-
 	if ((fp = fopen(file_name, "r")) == NULL)
+#ifdef HAVE_STRERROR
 	    return errno;
+#else
+	    return -1;
+#endif
 	else
 	    return readfp_fig(fp, obj);
 }
@@ -157,32 +145,33 @@ read_fig(char *file_name, F_compound *obj)
 int
 readfp_fig(FILE *fp, F_compound *obj)
 {
-	char		c;
-	int		i,status;
+	char	c;
+	int	i, status;
 
 	num_object = 0;
 	num_usr_cols = 0;
+	init_pats_used();
 
 	/* reset comment number */
 	numcom = 0;
 	/* initialize the comment array */
 	if (!com_alloc)
-	    for (i=0; i<MAXCOMMENTS; i++)
-		comments[i] = (char *) NULL;
+		for (i = 0; i < MAXCOMMENTS; ++i)
+			comments[i] = (char *) NULL;
 	com_alloc = true;
 	memset((char*)obj, '\0', COMOBJ_SIZE);
 
 	/* read first character to see if it is "#" (#FIG 1.4 and newer) */
 	c = fgetc(fp);
 	if (feof(fp))
-	    return -2;
+		return -2;
 	memset((char*)obj, '\0', COMOBJ_SIZE);
 	/* put the character back */
 	ungetc(c, fp);
 	if (c == '#')
-	    status = read_objects(fp, obj);
+		status = read_objects(fp, obj);
 	else
-	    status = read_1_3_objects(fp, obj);
+		status = read_1_3_objects(fp, obj);
 	(void)fclose(fp);
 	return status;
 }
@@ -199,11 +188,11 @@ read_objects(FILE *fp, F_compound *obj)
 	int		object, coord_sys, len;
 
 	memset((char*)obj, '\0', COMOBJ_SIZE);
-	(void) fgets(buf, BUF_SIZE, fp);	/* get the version line */
+	(void) fgets(buf, BUFSIZ, fp);	/* get the version line */
 	len = strlen(buf);
 	if (len > 0)
 	    buf[len-1] = '\0';			/* remove newline */
-	if (buf[len-2] == '\r')
+	if (len > 1 && buf[len-2] == '\r')
 	    buf[len-2] = '\0';			/* and any CR (from a PC perhaps) */
 
 	/* v2_flag is for version 2 or higher */
@@ -215,9 +204,9 @@ read_objects(FILE *fp, F_compound *obj)
 	/* version 3.2 contains paper size, magnif, multiple page and transparent color
 	   in Fig file */
 	v32_flag = (!strncmp(buf, "#FIG 3.2", 8));
-	if (strncmp(&buf[5],VERSION,3) > 0) {
+	if (strncmp(&buf[5], PACKAGE_VERSION, 3) > 0) {
 	    put_msg("Fig file format (%s) newer than this version of fig2dev (%s), exiting",
-			&buf[5],VERSION);
+			&buf[5], PACKAGE_VERSION);
 	    exit(1);
 	}
 
@@ -252,7 +241,7 @@ read_objects(FILE *fp, F_compound *obj)
 	    }
 	    /* read metric/inches spec */
 	    /* if metric, scale magnification to correct for xfig display error */
-	    if (strncasecmp(buf,"metric",5)==0) {
+	    if (strncasecmp(buf,"metric", 6) == 0) {
 		metric = 1;
 	    } else {
 		metric = 0;
@@ -280,8 +269,12 @@ read_objects(FILE *fp, F_compound *obj)
 		}
 		/* if the users hasn't specified a magnification on the command line,
 		   use the one in the file */
-		if (!magspec)
-		    fontmag = mag = atof(buf)/100.0;
+		if (!magspec) {
+		    mag = atof(buf)/100.0;
+		    if (mag <= 0.)
+			mag = 1.;
+		    fontmag = mag;
+		}
 
 		/* read the multiple page flag */
 		if (get_line(fp) < 0) {
@@ -297,7 +290,11 @@ read_objects(FILE *fp, F_compound *obj)
 		    return -1;
 		}
 		if (!transspec) {
-		    gif_colnum = atof(buf);
+		    gif_colnum = atoi(buf);
+		    if (gif_colnum < -3) {
+			put_msg("Invalid color number for transparent color.");
+			return -1;
+		    }
 		    /* if standard color, get the name from the array */
 		    /* for user colors, wait till we've read in the file to get the value */
 		    if (gif_colnum < NUM_STD_COLS && gif_colnum >= 0)
@@ -323,22 +320,28 @@ read_objects(FILE *fp, F_compound *obj)
 	if (get_line(fp) < 0) {
 	    put_msg("File is truncated at resolution specification.");
 	    return -1;
-	    }
+	}
 	if (sscanf(buf,"%lf%d\n", &ppi, &coord_sys) != 2) {
-	    put_msg("Incomplete resolution information at line %d", line_no);
+	    put_msg("Incomplete resolution information at line %d.", line_no);
 	    return -1;
-	    }
+	}
+	if (ppi <= 0.) {
+	    put_msg("Invalid resolution information (%g) at line %d.",
+		    ppi, line_no);
+	    return -1;
+	}
 
-	THICK_SCALE = ppi/80;	/* convert line thickness from screen resolution */
+	/* convert line thickness from screen resolution */
+	THICK_SCALE = ppi/80;
 
 	/* attach any comments found thus far to the whole figure */
 	obj->comments = attach_comments();
 
 	while (get_line(fp) > 0) {
 	    if (sscanf(buf, "%d", &object) != 1) {
-		put_msg("Incorrect format at line %d", line_no);
+		put_msg("Incorrect format at line %d.", line_no);
 		return -1;
-		}
+	    }
 	    switch (object) {
 		case OBJ_COLOR_DEF:
 		    read_colordef();
@@ -347,7 +350,7 @@ read_objects(FILE *fp, F_compound *obj)
 				line_no);
 			return (-1);
 		    }
-		    num_usr_cols++;
+		    ++num_usr_cols;
 		    break;
 		case OBJ_POLYLINE :
 		    if ((l = read_lineobject(fp)) == NULL)
@@ -431,7 +434,7 @@ read_objects(FILE *fp, F_compound *obj)
 		    num_object++;
 		    break;
 		default :
-		    put_msg("Incorrect object code at line %d", line_no);
+		    put_msg("Incorrect object code at line %d.", line_no);
 		    return -1;
 		} /*  switch */
 	} /*  while (get_line(fp)) */
@@ -440,7 +443,7 @@ read_objects(FILE *fp, F_compound *obj)
 	   rgb values from the user color array now that we've read them in */
 	if (gif_colnum >= NUM_STD_COLS) {
 	    int i;
-	    for (i=0; i<num_usr_cols; i++)
+	    for (i=0; i<num_usr_cols; ++i)
 		if (user_col_indx[i] == gif_colnum)
 		    break;
 	    if (i < num_usr_cols)
@@ -451,8 +454,11 @@ read_objects(FILE *fp, F_compound *obj)
 	if (feof(fp))
 	    return 0;
 	else
+#ifdef HAVE_STRERROR
 	    return errno;
-
+#else
+	    return -1;
+#endif
 } /*  read_objects */
 
 static void
@@ -483,22 +489,27 @@ fix_and_note_color(int *color)
 	}
 	return;
     }
-    for (i=0; i<num_usr_cols; i++)
+    for (i=0; i<num_usr_cols; ++i)
 	if (*color == user_col_indx[i]) {
-		*color = i+NUM_STD_COLS;
+		*color = i + NUM_STD_COLS;
 		return;
 	}
-    put_msg("Cannot locate user color %d, using default color for line %d.",
-		*color,line_no);
+    put_msg("Cannot locate user color %d, using default color at line %d.",
+		*color, line_no);
     *color = DEFAULT;
     return;
 }
 
 static void
-note_arrow(int type, int style)
+note_fill(int fill, int *color)
 {
-	arrows_used = true;
-	arrow_used[2*type + style] = true;
+	if (fill != UNFILLED) {
+		fix_and_note_color(color);
+		if (fill >= NUMSHADES + NUMTINTS) {
+			pattern_used[fill - NUMSHADES - NUMTINTS] = true;
+			pats_used = true;
+		}
+	}
 }
 
 static F_arc *
@@ -542,34 +553,51 @@ read_arcobject(FILE *fp)
 	}
 	if ((v30_flag && n != 21) || (!v30_flag && n != 19)) {
 	    put_msg(Err_incomp, "arc", line_no);
-	    free((char*)a);
+	    free(a);
 	    return NULL;
 	}
 	a->thickness *= round(THICK_SCALE);
 	a->fill_style = FILL_CONVERT(a->fill_style);
-	NOTE_FILL(a);
+	if (INVALID_ARC(a)) {
+		put_msg(Err_invalid, "arc", line_no);
+		free(a);
+		return NULL;
+	}
 	fix_and_note_color(&a->pen_color);
+	note_fill(a->fill_style, &a->fill_color);
 	if (fa) {
 	    if (get_line(fp) < 0 ||
-	        sscanf(buf, "%d%d%lf%lf%lf", &type, &style, &thickness, &wid, &ht) != 5) {
+	        sscanf(buf, "%d%d%lf%lf%lf",
+				&type, &style, &thickness, &wid, &ht) != 5) {
 		    put_msg(Err_incomp, "arc", line_no);
+		    free(a);
 		    return NULL;
 	    }
-	    a->for_arrow = make_arrow(type, style, thickness, wid, ht);
-	    note_arrow(type, style);
+	    if ((a->for_arrow = make_arrow(type, style, thickness, wid, ht))
+			    == NULL) {
+		    put_msg(Err_arrow, "forward", line_no);
+		    free(a);
+		    return NULL;
+	    }
 	}
 	if (ba) {
 	    if (get_line(fp) < 0 ||
-	        sscanf(buf, "%d%d%lf%lf%lf", &type, &style, &thickness, &wid, &ht) != 5) {
+	        sscanf(buf, "%d%d%lf%lf%lf",
+				&type, &style, &thickness, &wid, &ht) != 5) {
 		    put_msg(Err_incomp, "arc", line_no);
+		    free(a);
 		    return NULL;
 	    }
-	    a->back_arrow = make_arrow(type, style, thickness, wid, ht);
-	    note_arrow(type, style);
+	    if ((a->back_arrow = make_arrow(type, style, thickness, wid, ht))
+			    == NULL) {
+		    put_msg(Err_arrow, "backward", line_no);
+		    free(a);
+		    return NULL;
+	    }
 	}
 	a->comments = attach_comments();		/* attach any comments */
 	return a;
-	}
+}
 
 static F_compound *
 read_compoundobject(FILE *fp)
@@ -596,7 +624,7 @@ read_compoundobject(FILE *fp)
 		&com->secorner.x, &com->secorner.y);
 	if (n != 4) {
 	    put_msg(Err_incomp, "compound", line_no);
-	    free((char*)com);
+	    free(com);
 	    return NULL;
 	    }
 	while (get_line(fp) > 0) {
@@ -724,13 +752,18 @@ read_ellipseobject(void)
 	}
 	if ((v30_flag && n != 19) || (!v30_flag && n != 18)) {
 	    put_msg(Err_incomp, "ellipse", line_no);
-	    free((char*)e);
+	    free(e);
 	    return NULL;
 	    }
 	fix_and_note_color(&e->pen_color);
 	e->thickness *= round(THICK_SCALE);
 	e->fill_style = FILL_CONVERT(e->fill_style);
-	NOTE_FILL(e);
+	if (INVALID_ELLIPSE(e)) {
+		put_msg(Err_invalid, "ellipse", line_no);
+		free(e);
+		return NULL;
+	}
+	note_fill(e->fill_style, &e->fill_color);
 	e->comments = attach_comments();	/* attach any comments */
 	return e;
 }
@@ -768,13 +801,13 @@ sanitize_lineobject(
 		    /* tests/testsuite -k polyline,read.c */
 		    put_msg(
 			"A single point with a forward arrow - remove the arrow.");
-		    free((char*)l->for_arrow);
+		    free(l->for_arrow);
 		    l->for_arrow = NULL;
 		}
 		if (l->back_arrow) {
 		    put_msg(
 			"A single point with a backward arrow - remove the arrow.");
-		    free((char*)l->back_arrow);
+		    free(l->back_arrow);
 		    l->back_arrow = NULL;
 		}
 	    }
@@ -843,7 +876,6 @@ read_lineobject(FILE *fp)
 	int	type, style, radius_flag;
 	double	thickness, wid, ht;
 	int	npts;
-	char	file[PATH_MAX], *c;
 
 	Line_malloc(l);
 	l->points = NULL;
@@ -889,24 +921,33 @@ read_lineobject(FILE *fp)
 	if ((!radius_flag && n!=10) ||
 	     (radius_flag && ((!v30_flag && n!=11)||(v30_flag && n!=15)))) {
 	    put_msg(Err_incomp, "line", line_no);
-	    free((char*)l);
+	    free(l);
 	    return NULL;
 	}
 	l->radius *= round(THICK_SCALE);
 	l->thickness *= round(THICK_SCALE);
 	l->fill_style = FILL_CONVERT(l->fill_style);
-	NOTE_FILL(l);
+	if (INVALID_LINE(l)) {
+		put_msg(Err_invalid, "line", line_no);
+		free(l);
+		return NULL;
+	}
+	note_fill(l->fill_style, &l->fill_color);
 	fix_and_note_color(&l->pen_color);
 	if (fa) {
 	    if (get_line(fp) < 0 ||
 			sscanf(buf, "%d%d%lf%lf%lf",
 				&type, &style, &thickness, &wid, &ht) != 5) {
 		put_msg(Err_incomp, "line", line_no);
-		free((char*)l);
+		free(l);
 		return NULL;
 	    }
-	    l->for_arrow = make_arrow(type, style, thickness, wid, ht);
-	    note_arrow(type, style);
+	    if ((l->for_arrow = make_arrow(type, style, thickness, wid, ht))
+			    == NULL) {
+		    put_msg(Err_arrow, "forward", line_no);
+		    free(l);
+		    return NULL;
+	    }
 	}
 	if (ba) {
 	    if (get_line(fp) < 0 ||
@@ -916,36 +957,48 @@ read_lineobject(FILE *fp)
 		free_linestorage(l);
 		return NULL;
 	    }
-	    l->back_arrow = make_arrow(type, style, thickness, wid, ht);
-	    note_arrow(type, style);
+	    if ((l->back_arrow = make_arrow(type, style, thickness, wid, ht))
+			    == NULL) {
+		    put_msg(Err_arrow, "backward", line_no);
+		    free_linestorage(l);
+		    return NULL;
+	    }
 	}
 	if (l->type == T_PIC_BOX) {
+	    char	file[BUFSIZ], *c;
+	    size_t	len;
+
 	    Pic_malloc(l->pic);
 	    l->pic->transp = -1;
 	    if (l->pic  == NULL) {
-		free((char *)l);
+		free(l);
 		return NULL;
 	    }
+			/* %[^\n]: really, read until first '\0' in buf */
 	    if (get_line(fp) < 0 || sscanf(buf, "%d %[^\n]",
-					    &l->pic->flipped, file) != 2) {
-	        put_msg(Err_incomp, "Picture object", line_no);
-		free((char *)l);
+					&l->pic->flipped, file) != 2) {
+	        put_msg(Err_incomp, "picture", line_no);
+		free(l);
 	        return NULL;
 	    }
-	    /* if there is a path in the .fig filename, and the path of the imported
-	       picture filename is NOT absolute, prepend the .fig file path to it */
-	    if (from && file[0] != '/') {
-		/* copy the .fig filename to pic filename */
-		strcpy(l->pic->file, from);
-		if ((c = strrchr(l->pic->file,'/'))) {
-		    /* there is a '/', copy the filename past the last one */
-		    strcpy(c+1, file);
-		} else {
-		    /* either absolute picture file path or no path in the .fig filename */
-		    strcpy(l->pic->file, file);
+	    /* if there is a path in the .fig filename, and the path of the
+	     * imported picture filename is NOT absolute, prepend the
+	     * .fig file path to it
+	     */
+	    if (from && (c = strrchr(from, '/')) && file[0] != '/') {
+		if ((l->pic->file = malloc((size_t)(c - from + 2) +
+				    (len = strlen(file)))) ==
+			NULL) {
+		    put_msg(Err_mem);
+		    free(l);	/* Points not read yet. */
+		    return NULL;
 		}
+		strncpy(l->pic->file, from, (size_t)(c - from + 1));
+		memcpy(l->pic->file + (c - from + 1), file, len + 1);
 	    } else {
-		strcpy(l->pic->file, file);
+		/* either absolute picture path or no path in .fig filename */
+		l->pic->file = malloc(len = strlen(file) + 1);
+		memcpy(l->pic->file, file, len);
 	    }
 	} else
 	    l->pic = NULL;
@@ -1046,30 +1099,47 @@ read_splineobject(FILE *fp)
 	}
 	if ((v30_flag && n != 13) || (!v30_flag && n != 10)) {
 	    put_msg(Err_incomp, "spline", line_no);
-	    free((char*)s);
+	    free(s);
 	    return NULL;
 	    }
 	s->thickness *= round(THICK_SCALE);
 	s->fill_style = FILL_CONVERT(s->fill_style);
-	NOTE_FILL(s);
+	if (INVALID_SPLINE(s)) {
+		put_msg(Err_invalid, "spline", line_no);
+		free(s);
+		return NULL;
+	}
+	note_fill(s->fill_style, &s->fill_color);
 	fix_and_note_color(&s->pen_color);
 	if (fa) {
 	    if (get_line(fp) < 0 ||
-	        sscanf(buf, "%d%d%lf%lf%lf", &type, &style, &thickness, &wid, &ht) != 5) {
+			    sscanf(buf, "%d%d%lf%lf%lf",
+				    &type, &style, &thickness, &wid, &ht) != 5) {
 		    put_msg(Err_incomp, "spline", line_no);
+		    free(s);
 		    return NULL;
 	    }
-	    s->for_arrow = make_arrow(type, style, thickness, wid, ht);
-	    note_arrow(type, style);
+	    if ((s->for_arrow = make_arrow(type, style, thickness, wid, ht))
+			    == NULL) {
+		    put_msg(Err_arrow, "forward", line_no);
+		    free(s);
+		    return NULL;
+	    }
 	}
 	if (ba) {
 	    if (get_line(fp) < 0 ||
-	        sscanf(buf, "%d%d%lf%lf%lf", &type, &style, &thickness, &wid, &ht) != 5) {
+			    sscanf(buf, "%d%d%lf%lf%lf",
+				    &type, &style, &thickness, &wid, &ht) != 5) {
 		    put_msg(Err_incomp, "spline", line_no);
+		    free_splinestorage(s);
 		    return NULL;
 	    }
-	    s->back_arrow = make_arrow(type, style, thickness, wid, ht);
-	    note_arrow(type, style);
+	    if ((s->back_arrow = make_arrow(type, style, thickness, wid, ht))
+			    == NULL) {
+		    put_msg(Err_arrow, "backward", line_no);
+		    free_splinestorage(s);
+		    return NULL;
+	    }
 	}
 
 	/* Read points */
@@ -1109,7 +1179,7 @@ read_splineobject(FILE *fp)
 	    q->y = y;
 	    p->next = q;
 	    p = q;
-	    c++;
+	    ++c;
 	    }
 	p->next = NULL;
 	s->comments = attach_comments();	/* attach any comments */
@@ -1154,12 +1224,12 @@ read_splineobject(FILE *fp)
 	    put_msg(Err_incomp, "spline", line_no);
 	    free_splinestorage(s);
 	    return NULL;
-	    };
+	}
 	if (NULL == (s->controls = Control_malloc(cp))) {
 	    put_msg(Err_mem);
 	    free_splinestorage(s);
 	    return NULL;
-	    }
+	}
 	cp->lx = lx; cp->ly = ly;
 	cp->rx = rx; cp->ry = ry;
 	while (--c) {
@@ -1170,18 +1240,18 @@ read_splineobject(FILE *fp)
 		cp->next = NULL;
 		free_splinestorage(s);
 		return NULL;
-		};
+	    }
 	    if (NULL == (Control_malloc(cq))) {
 		put_msg(Err_mem);
 		cp->next = NULL;
 		free_splinestorage(s);
 		return NULL;
-		}
+	    }
 	    cq->lx = lx; cq->ly = ly;
 	    cq->rx = rx; cq->ry = ry;
 	    cp->next = cq;
 	    cp = cq;
-	    }
+	}
 	cp->next = NULL;
 
 	/* skip to the end of the line */
@@ -1194,7 +1264,7 @@ read_textobject(FILE *fp)
 {
 	F_text	*t;
 	int	n, ignore = 0;
-	char	s[BUF_SIZE], s_temp[BUF_SIZE], junk[2];
+	char	s[BUFSIZ], s_temp[BUFSIZ], junk[2];
 	int	more, len, l;
 
 	Text_malloc(t);
@@ -1225,7 +1295,7 @@ read_textobject(FILE *fp)
 	}
 	if ((n != 14) && (n != 13)) {
 	  put_msg(Err_incomp, "text", line_no);
-	  free((char*)t);
+	  free(t);
 	  return NULL;
 	}
 
@@ -1256,10 +1326,10 @@ read_textobject(FILE *fp)
 	  /* Read in the subsequent lines of the text if there are more */
 	  do {
 	    ++line_no;				/* As is done in get_line */
-	    if (fgets(s_temp, BUF_SIZE, fp) == NULL)
+	    if (fgets(s_temp, BUFSIZ, fp) == NULL)
 		break;
 	    len = strlen(s_temp)-1;		/* ignore newline */
-	    if (s_temp[len-1] == '\r') {	/* strip any trailing CR */
+	    if (len > 0 && s_temp[len-1] == '\r') { /* strip any trailing CR */
 		s_temp[len-1] = '\0';
 		len--;
 	    }
@@ -1275,7 +1345,7 @@ read_textobject(FILE *fp)
 		n = sscanf(buf, "%[^\1]%[\1]", s_temp, junk);
 	    }
 	    /* Safety check */
-	    if (strlen(s)+1 + strlen(s_temp)+1 > BUF_SIZE) {
+	    if (strlen(s)+1 + strlen(s_temp)+1 > BUFSIZ) {
 	      /* Too many characters.  Ignore the rest. */
 	      ignore = 1;
 	    }
@@ -1288,13 +1358,14 @@ read_textobject(FILE *fp)
 	    if (strchr(s,'\\')) {
 		unsigned int num;
 		len = strlen(s);
-		for (l=0,n=0; l < len; l++) {
+		for (l=0,n=0; l < len; ++l) {
 		    if (s[l]=='\\') {
 			/* a backslash, see if a digit follows */
 			if (l < len && isdigit(s[l+1])) {
 			    /* yes, scan for 3 digit octal value */
 			    if (sscanf(&s[l+1],"%3o",&num)!=1) {
-				put_msg("Error in parsing text string on line",line_no);
+				put_msg("Error in parsing text string on line %d",
+						line_no);
 				return NULL;
 			    }
 			    buf[n++]= (unsigned char) num;	/* put char in */
@@ -1312,10 +1383,10 @@ read_textobject(FILE *fp)
 	}
 	if (strlen(s) == 0)
 		(void)strcpy(s, " ");
-	t->cstring = (char*)calloc((unsigned)(strlen(s)), sizeof(char));
+	t->cstring = calloc((unsigned)(strlen(s)), sizeof(char));
 	if (NULL == t->cstring) {
 	    put_msg(Err_mem);
-	    free((char*)t);
+	    free(t);
 	    return NULL;
 	}
 	(void)strcpy(t->cstring, s+1);
@@ -1328,9 +1399,11 @@ read_textobject(FILE *fp)
 		t->flags = ((t->flags != DEFAULT) ? t->flags : 0)
 				| PSFONT_TEXT;
 
-	/* keep the font number reasonable */
-	if (t->font > MAXFONT(t))
-		t->font = MAXFONT(t);
+	if (INVALID_TEXT(t)) {
+		put_msg(Err_invalid, "text", line_no);
+		free_text(&t);
+		return NULL;
+	}
 	fix_and_note_color(&t->color);
 	t->comments = attach_comments();	/* attach any comments */
 	return t;
@@ -1382,23 +1455,23 @@ attach_comments(void)
 static int
 get_line(FILE *fp)
 {
-    int		    len;
-    while (1) {
-	if (NULL == fgets(buf, BUF_SIZE, fp)) {
-	    return (-1);
+	int	len;
+	while (1) {
+		if (NULL == fgets(buf, BUFSIZ, fp)) {
+			return -1;
+		}
+		++line_no;
+		if (*buf == '#') {			/* save any comments */
+			if (save_comment() < 0)
+				return -1;
+		} else if (*buf != '\n') {		/* Skip empty lines */
+			len = strlen(buf);
+			buf[len-1] = '\0';	    /* strip trailing newline */
+			if (buf[len-2] == '\r')
+				buf[len-2] = '\0';	/* strip trailing CRs */
+			return 1;
+		}
 	}
-	++line_no;
-	if (*buf == '#') {			/* save any comments */
-	    if (save_comment() < 0)
-		return -1;
-	} else if (*buf != '\n') {		/* Skip empty lines */
-	    len = strlen(buf);
-	    buf[len-1] = '\0';			/* strip trailing newline */
-	    if (buf[len-2] == '\r')
-		buf[len-2] = '\0';		/* strip any trailing CRs */
-	    return 1;
-	}
-    }
 }
 
 /* save a comment line to be stored with the *subsequent* object */
@@ -1436,16 +1509,6 @@ skip_line(FILE *fp)
     }
 }
 
-/* keep track which patterns are used (if any) */
-static void
-note_pattern(int fill_style)
-{
-	if (fill_style >= NUMSHADES+NUMTINTS) {
-	    pattern_used[fill_style-NUMSHADES-NUMTINTS] = true;
-	    pats_used = true;
-	}
-}
-
 /* reset pattern_used[] array */
 
 static void
@@ -1453,8 +1516,8 @@ init_pats_used(void)
 {
 	int i;
 	pats_used = false;
-	for (i=0; i<NUMPATTERNS; i++)
-	    pattern_used[i] = false;
+	for (i = 0; i < NUMPATTERNS; ++i)
+		pattern_used[i] = false;
 }
 
 #ifdef V4_0
@@ -1464,27 +1527,27 @@ init_pats_used(void)
 int suppress_error=0;
 
 static struct stackobj {
-  User_color		user_colors[MAX_USR_COLS];
-  int			user_col_indx[MAX_USR_COLS];
-  int			num_usr_cols;
-  char			buf[BUF_SIZE];
-  int			line_no;
-  int			num_object;
-  int			v2_flag;
-  int			v21_flag;
-  int			v30_flag;
-  float			THICK_SCALE;
-  int landscape;
-  int center;
-  double mag;
-  bool pats_used;
-  bool pattern_used[NUMPATTERNS];
-  bool std_color_used[NUM_STD_COLS];
-  bool arrows_used;
-  bool arrow_used[NUMARROWS];
+	User_color	user_colors[MAX_USR_COLS];
+	int		user_col_indx[MAX_USR_COLS];
+	int		num_usr_cols;
+	char		buf[BUFSIZ];
+	int		line_no;
+	int		num_object;
+	int		v2_flag;
+	int		v21_flag;
+	int		v30_flag;
+	float		THICK_SCALE;
+	int		landscape;
+	int		center;
+	double		mag;
+	bool		pats_used;
+	bool		pattern_used[NUMPATTERNS];
+	bool		std_color_used[NUM_STD_COLS];
+	bool		arrows_used;
+	bool		arrow_used[NUMARROWS];
 
-  struct stackobj *previous;
-  int stack_height;
+	struct		stackobj *previous;
+	int		stack_height;
 };
 
 static struct stackobj *top = NULL;
@@ -1499,12 +1562,12 @@ static int push() {
   newobj->previous=top;
   top=newobj;
 
-  for (i=0; i < MAX_USR_COLS;i++) {
-    top->user_colors[i]=user_colors[i];
-    top->user_col_indx[i]=user_col_indx[i];
+  for (i=0; i<MAX_USR_COLS; ++i) {
+    top->user_colors[i] = user_colors[i];
+    top->user_col_indx[i] = user_col_indx[i];
   }
-  top->num_usr_cols=num_usr_cols;
-  for (i=0; i < BUF_SIZE; i++)
+  top->num_usr_cols = num_usr_cols;
+  for (i=0; i < BUFSIZ; ++i)
     top->buf[i]=buf[i];
   top->line_no=line_no;
   top->num_object=num_object;
@@ -1516,12 +1579,12 @@ static int push() {
   top->center=center;
   top->mag=mag;
   top->pats_used=pats_used;
-  for (i=0;i < NUMPATTERNS;i++)
+  for (i=0; i<NUMPATTERNS; ++i)
     top->pattern_used[i]=pattern_used[i];
-  for (i=0;i < NUM_STD_COLS;++i)
+  for (i=0; i<NUM_STD_COLS; ++i)
     top->std_color_used[i]=std_color_used[i];
   top->arrows_used = arrows_used;
-  for (i=0; i < NUMARROWS; ++i)
+  for (i=0; i<NUMARROWS; ++i)
     top->arrow_used[i]=arrow_used[i];
 
   if (top->previous!=NULL) {
@@ -1545,7 +1608,7 @@ static int pop() {
     user_col_indx[i]=top->user_col_indx[i];
   }
   num_usr_cols=top->num_usr_cols;
-  for (i=0;i < BUF_SIZE;i++)
+  for (i=0;i < BUFSIZ;++i)
     buf[i]=top->buf[i];
   line_no=top->line_no;
   num_object=top->num_object;
@@ -1567,7 +1630,7 @@ static int pop() {
 
   oldtop=top;
   top=top->previous;
-  free ((char *) oldtop);
+  free (oldtop);
 
   if (top==NULL)
     return 0;
@@ -1577,17 +1640,6 @@ static int pop() {
 }
 
 #endif /* V4_0 */
-
-/* print comments to the output file preceded by string1 and succeeded by string2 */
-
-void
-print_comments(char *string1, F_comment *comment, char *string2)
-{
-    while (comment) {
-	fprintf(tfp,"%s %s %s\n",string1, comment->comment, string2);
-	comment = comment->next;
-    }
-}
 
 /* this function is to count line numbers correctly while reading
  * input files.

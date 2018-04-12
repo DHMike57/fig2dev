@@ -1,25 +1,24 @@
 /*
- * TransFig: Facility for Translating Fig code
- * Copyright (c) 1999 by T. Sato
+ * Fig2dev: Translate Fig code to various Devices
  * Parts Copyright (c) 2002 by Anthony Starks
  * Parts Copyright (c) 2002-2006 by Martin Kroeker
- * Parts Copyright (c) 2002 by Brian V. Smith
- * Parts Copyright (c) 2016, 2017 by Thomas Loimer
+ * Parts Copyright (c) 2002-2010 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
  *
- * gensvg.c: SVG driver for fig2dev
+ * gensvg.c: convert fig to SVG
  *
  *  from fig2svg -- convert FIG 3.2 to SVG
  *
@@ -240,13 +239,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <math.h>
-//#include <ctype.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "bound.h"
 #include "creationdate.h"
@@ -438,8 +437,6 @@ gensvg_start(F_compound *objects)
     int     pagewidth = -1, pageheight = -1;
     int     vw, vh;
     char    date_buf[CREATION_TIME_LEN];
-    time_t  when;
-    char    stime[80];
 
     fprintf(tfp, "%s\n", PREAMBLE);
     fprintf(tfp, "<!-- Creator: %s Version %s -->\n",
@@ -924,114 +921,122 @@ gensvg_ellipse(F_ellipse *e)
 void
 gensvg_text(F_text *t)
 {
-    unsigned char *cp;
-    int ch;
-    const char *anchor[3] = { "start", "middle", "end" };
-    static const char *family[9] = { "Times", "AvantGarde",
-	"Bookman", "Courier", "Helvetica", "Helvetica Narrow",
-	"New Century Schoolbook", "Palatino", "Times,Symbol"
-    };
-    int x = t->base_x ;
-    int y = t->base_y ;
-    int dy = 0;
-
-    fprintf(tfp, "<!-- Text -->\n");
-    print_comments("<!-- ", t->comments, " -->");
-
-    if (t->angle != 0.) {
-	fprintf(tfp, "<g transform=\"translate(%d,%d) rotate(%.0f)\" >\n",
-		 x, y, degrees(t->angle));
-	x = y = 0;
-    }
-    fputs("<text xml:space=\"preserve\" ", tfp);
-    fprintf(tfp, "x=\"%d\" y=\"%d\" fill=\"#%6.6x\" font-family=\"%s\" ",
-		x, y, rgbColorVal(t->color), family[t->font / 4]);
-    fprintf(tfp,
-	"font-style=\"%s\" font-weight=\"%s\" font-size=\"%d\" text-anchor=\"%s\">",
-	 ((t->font % 2 == 0 || t->font > 31) ? "normal" : "italic"),
-	 ((t->font % 4 < 2 || t->font > 31) ? "normal" : "bold"),
-	 (int)ceil(t->size * 12), anchor[t->type]);
-
-    if (t->font == 32) {
-	for (cp = (unsigned char *) t->cstring; *cp; cp++) {
-		ch=*cp;
-	    fprintf(tfp, "&#%d;", symbolchar[ch]);
-	}
-    }
-    else if (t->font == 34) {
-	for (cp = (unsigned char *) t->cstring; *cp; cp++) {
-		ch=*cp;
-	    fprintf(tfp, "&#%d;", dingbatchar[ch]);
-	}
-    }
-    else if (special_text(t)) {
-    int supsub=0;
+	unsigned char *cp;
+	int ch;
+	const char *anchor[3] = { "start", "middle", "end" };
+	const char *family[9] = { "Times", "AvantGarde",
+		"Bookman", "Courier", "Helvetica", "Helvetica Narrow",
+		"New Century Schoolbook", "Palatino", "Times,Symbol"
+	};
+	int x = t->base_x ;
+	int y = t->base_y ;
 #ifdef NOSUPER
-    int old_dy=0;
+	int dy = 0;
 #endif
-    dy=0;
-	for (cp = (unsigned char *) t->cstring; *cp; cp++) {
-	    ch = *cp;
-	    if (( supsub == 2 &&ch == '}' ) || supsub==1) {
+
+	fprintf(tfp, "<!-- Text -->\n");
+	print_comments("<!-- ", t->comments, " -->");
+
+	if (t->angle != 0.) {
+		fprintf(tfp,
+			"<g transform=\"translate(%d,%d) rotate(%.0f)\" >\n",
+			x, y, degrees(t->angle));
+	x = y = 0;
+	}
+	fputs("<text xml:space=\"preserve\" ", tfp);
+	fprintf(tfp, "x=\"%d\" y=\"%d\" fill=\"#%6.6x\" font-family=\"%s\" ",
+			x, y, rgbColorVal(t->color), family[t->font / 4]);
+	fprintf(tfp,
+		"font-style=\"%s\" font-weight=\"%s\" font-size=\"%d\" text-anchor=\"%s\">",
+		((t->font % 2 == 0 || t->font > 31) ? "normal" : "italic"),
+		((t->font % 4 < 2 || t->font > 31) ? "normal" : "bold"),
+		(int)ceil(t->size * 12), anchor[t->type]);
+
+	if (t->font == 32) {
+		for (cp = (unsigned char *) t->cstring; *cp; ++cp) {
+			ch = *cp;
+			fprintf(tfp, "&#%d;", symbolchar[ch]);
+		}
+	} else if (t->font == 34) {
+		for (cp = (unsigned char *) t->cstring; *cp; ++cp) {
+			ch = *cp;
+			fprintf(tfp, "&#%d;", dingbatchar[ch]);
+		}
+	} else if (special_text(t)) {
+		int supsub = 0;
 #ifdef NOSUPER
-		fprintf(tfp,"</tspan><tspan dy=\"%d\">",-dy);
-		old_dy=-dy;
+		int old_dy=0;
+#endif
+		for (cp = (unsigned char *) t->cstring; *cp; cp++) {
+			ch = *cp;
+			if (( supsub == 2 &&ch == '}' ) || supsub==1) {
+#ifdef NOSUPER
+				fprintf(tfp,"</tspan><tspan dy=\"%d\">",-dy);
+				old_dy=-dy;
 #else
+				fprintf(tfp,"</tspan>");
+#endif
+				supsub = 0;
+				if (ch == '}') {
+					++cp;
+					ch = *cp;
+				}
+			}
+			if (ch == '_' || ch == '^') {
+				supsub=1;
+#ifdef NOSUPER
+				if (dy != 0)
+					fprintf(tfp,"</tspan>");
+				if (ch == '_')
+					dy = 35.;
+				if (ch == '^')
+					dy = -50.;
+				fprintf(tfp,
+					"<tspan font-size=\"%d\" dy=\"%d\">",
+					(int)ceil(t->size * 8), dy + old_dy);
+				old_dy = 0;
+#else
+				fprintf(tfp,
+					"<tspan font-size=\"%d\" baseline-shift=\"",
+					(int)ceil(t->size * 8));
+				if (ch == '_')
+					fprintf(tfp,"sub\">");
+				if (ch == '^')
+					fprintf(tfp,"super\">");
+#endif
+				++cp;
+				ch = *cp;
+				if (ch == '{' ) {
+					supsub=2;
+					++cp;
+					ch = *cp;
+				}
+			}
+#ifdef NOSUPER
+			else old_dy=0;
+#endif
+			if (ch < 128 && ch != 38 && ch != 60 && ch != 62 &&
+					ch != '$')
+				(void)fputc(ch, tfp);
+			else if (ch != '$')
+				fprintf(tfp, "&#%d;", ch);
+		}
+	} else {
+		for (cp = (unsigned char *) t->cstring; *cp; ++cp) {
+			ch = *cp;
+			if (ch < 128 && ch != 38 && ch != 60 && ch != 62)
+				(void)fputc(ch, tfp);
+			else
+				fprintf(tfp, "&#%d;", ch);
+		}
+	}
+#ifdef NOSUPER
+	if (dy != 0)
 		fprintf(tfp,"</tspan>");
 #endif
-		supsub=0;
-		if (ch == '}') {
-		  cp++;
-		  ch=*cp;
-		}
-	    }
-	   if (ch == '_' || ch == '^') {
-		supsub=1;
-#ifdef NOSUPER
-		if (dy != 0) fprintf(tfp,"</tspan>");
-		if (ch == '_') dy=35.;
-		if (ch == '^') dy=-50.;
-		fprintf(tfp,"<tspan font-size=\"%d\" dy=\"%d\">",
-			(int) ceil(t->size * 8), dy+old_dy);
-		old_dy=0;
-#else
-		fprintf(tfp,"<tspan font-size=\"%d\" baseline-shift=\"",
-			(int) ceil(t->size * 8));
-		if (ch == '_') fprintf(tfp,"sub\">");
-		if (ch == '^') fprintf(tfp,"super\">");
-#endif
-		cp++;
-		ch=*cp;
-		if (ch == '{' ) {
-		  supsub=2;
-		  cp++;
-		  ch=*cp;
-		}
-	    }
-#ifdef NOSUPER
-		else old_dy=0;
-#endif
-	    if (ch < 128 && ch != 38 && ch != 60 && ch != 62
-	    && ch != '$')
-		(void)fputc(ch, tfp);
-	    else if (ch != '$')
-		fprintf(tfp, "&#%d;", ch);
-    }
-    } else {
-	for (cp = (unsigned char *) t->cstring; *cp; cp++) {
-	    ch = *cp;
-	    if (ch < 128 && ch != 38 && ch != 60 && ch != 62)
-		(void)fputc(ch, tfp);
-	    else
-		fprintf(tfp, "&#%d;", ch);
-	}
-    }
-#ifdef NOSUPER
-    if (dy != 0) fprintf(tfp,"</tspan>");
-#endif
-    fprintf(tfp, "</text>\n");
-    if (t->angle != 0)
-	fprintf(tfp, "</g>");
+	fprintf(tfp, "</text>\n");
+	if (t->angle != 0)
+		fprintf(tfp, "</g>");
 }
 
 static void
@@ -1281,14 +1286,14 @@ svg_dash(int style, double val)
 /* driver defs */
 
 struct driver dev_svg = {
-    gensvg_option,
-    gensvg_start,
-    gendev_nogrid,
-    gensvg_arc,
-    gensvg_ellipse,
-    gensvg_line,
-    gensvg_spline,
-    gensvg_text,
-    gensvg_end,
-    INCLUDE_TEXT
+	gensvg_option,
+	gensvg_start,
+	(void(*)(float,float))gendev_null,
+	gensvg_arc,
+	gensvg_ellipse,
+	gensvg_line,
+	gensvg_spline,
+	gensvg_text,
+	gensvg_end,
+	INCLUDE_TEXT
 };

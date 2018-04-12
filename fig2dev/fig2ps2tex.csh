@@ -21,6 +21,7 @@
 #
 # 2016-07-07  Thomas Loimer
 #	* use here-document, instead of echo
+#
 
 set bbox = `grep "^%%BoundingBox:" $1`
 

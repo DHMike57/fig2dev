@@ -1,26 +1,29 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2010 by Brian V. Smith
+ * Parts Copyright (c) 2015-2017 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *	genpstex.c : psTeX and psTeX_t drivers for fig2dev
+ * genpstex.c: convert fig to psTeX and psTeX_t
  *
- *	Author: Jose Alberto Fernandez R /Maryland CP 9/90
- *	It uses the LaTeX and PostScript drivers to generate
- *	LaTeX processed text for a Postscript figure.
+ * Author: Jose Alberto Fernandez R /Maryland CP 9/90
+ *
+ *
+ * It uses the LaTeX and PostScript drivers to generate
+ * LaTeX processed text for a Postscript figure.
  *
  * The pstex_t driver is like a latex driver that only translates
  * text defined in the default font.
@@ -44,7 +47,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include "bool.h"
 
 #include "fig2dev.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
@@ -129,7 +131,7 @@ genpstex_option(char opt, char *optarg)
 struct driver dev_pstex_t = {
 	genpstex_t_option,
 	genpstex_t_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	gendev_null,
 	gendev_null,
 	gendev_null,
@@ -142,7 +144,7 @@ struct driver dev_pstex_t = {
 struct driver dev_pdftex_t = {
 	genpstex_t_option,
 	genpstex_t_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	gendev_null,
 	gendev_null,
 	gendev_null,

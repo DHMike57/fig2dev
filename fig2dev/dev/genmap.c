@@ -1,31 +1,32 @@
 /*
- * TransFig: Facility for Translating Fig code
- * Copyright (c) 1999 by T. Sato
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Fig2dev: Translate Fig code to various Devices
+ * Parts Copyright (c) 1999 by T. Sato
+ * Parts Copyright (c) 1999-2012 by Brian V. Smith
+ * Parts Copyright (c) 2015-2017 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- * genmap.c: HTML imagemap driver for fig2dev
+ * genmap.c: convert fig to HTML imagemap
  *
- * T.Sato <VEF00200@nifty.ne.jp>
+ * Copyright (c) 1999 by T. Sato <VEF00200@nifty.ne.jp>
  *
  *
  * Description:
- *   Generate HTML imagemap from Fig file.
- *   If an object has comment like ``HREF="url" ALT="string"'',
- *   the object will become a link to the URL.
- *   Object with smaller depth will be listed before deeper ones.
- *   Figure comment will be used as the default link.
+ *	Generate HTML imagemap from Fig file.
+ *	If an object has comment like ``HREF="url" ALT="string"'',
+ *	the object will become a link to the URL.
+ *	Object with smaller depth will be listed before deeper ones.
+ *	Figure comment will be used as the default link.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -35,13 +36,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <math.h>
 #include <ctype.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 
 #define TEXT_LENGTH  300
@@ -386,7 +388,7 @@ genmap_text(F_text *t)
 struct driver dev_map = {
 	genmap_option,
 	genmap_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genmap_arc,
 	genmap_ellipse,
 	genmap_line,

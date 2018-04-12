@@ -1,26 +1,29 @@
 /*
- * TransFig: Facility for Translating Fig code
- * Copyright (c) 1998 by Mike Markowski
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2007 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *	genptk : Perl/Tk driver for fig2dev
+ * genptk.c: convert fig to Perl/Tk
  *
- *	Author: Slaven Rezic (rezic@onlineoffice.de) 8/2000
- *      based on code by Mike Markowski (mm@udel.edu), U of Delaware, 4/98
+ * Author: Slaven Rezic <rezic@onlineoffice.de> 8/2000
+ *	based on code by Mike Markowski <mm@udel.edu>, U of Delaware, 4/98
+ *
+ * gentk.c: convert fig to TK
+ * Copyright (c) 1998 by Mike Markowski
  */
 
 #ifdef HAVE_CONFIG_H
@@ -30,15 +33,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <math.h>
 #include <limits.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
-#include "pathmax.h"
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
@@ -52,10 +55,10 @@ static void
 	drawBitmap(F_line *),
 	drawShape(void (*)(), void *, int, int, int, int),
 	niceLine(char *),
-	ptkArc(void *, unsigned int, unsigned int, unsigned int, int),
-	ptkEllipse(void *, unsigned int, unsigned int, unsigned int, int),
-	ptkLine(void *, unsigned int, unsigned int, unsigned int, int),
-	ptkPolygon(void *, unsigned int, unsigned int, unsigned int, int);
+	ptkArc(void *, int, int, int, int),
+	ptkEllipse(void *, int, int, int, int),
+	ptkLine(void *, int, int, int, int),
+	ptkPolygon(void *, int, int, int, int);
 
 static unsigned int
 	rgbColorVal(int);
@@ -64,7 +67,7 @@ static char *
 	stippleFilename(int);
 
 static char *canvas = "$c";
-static char *xbmPathVar = "$xbmPath";
+static char xbmPathVar[] = "$xbmPath";
 static char *xbmPathName = BITMAPDIR;
 
 static char pngRequired  = 0;
@@ -302,6 +305,8 @@ genptk_line(F_line *l)
     switch (l->type) {
 	case T_ARC_BOX:	/* Fall through to T_BOX... */
 		fprintf(stderr, "genptk_line: arc box not supported.\n");
+		/* the comment below silences gcc's -Wimplicit-fallthrough */
+		/* intentionally fall through */
 	case T_BOX:
 	case T_POLYLINE:
 		/* Take care of filled regions first. */
@@ -344,9 +349,9 @@ drawBitmap(F_line *l)
 	FILE	*fd;
 	int	filtype;	/* file (0) or pipe (1) */
 	int	stat;
-	FILE	*open_picfile(char *name, int *type, bool pipeok,char *retname);
+	FILE	*open_picfile(char *name, int *type,bool pipeok,char **retname);
 	void	close_picfile(FILE *file, int type);
-	char	xname[PATH_MAX];
+	char	*xname;
 	char    isphoto;
 
 	p = l->pic;
@@ -359,13 +364,13 @@ drawBitmap(F_line *l)
 
 	/* see if supported image format first */
 
-	if ((fd=open_picfile(p->file, &filtype, true, xname)) == NULL) {
+	if ((fd=open_picfile(p->file, &filtype, true, &xname)) == NULL) {
 	    fprintf(stderr,"drawBitmap: can't open bitmap file %s\n",p->file);
 	    return;
 	}
+	free(xname);
 
 	/* read header */
-
 	stat = ReadOK(fd,buf,6);
 	close_picfile(fd,filtype);
 	if (!stat) {
@@ -406,17 +411,21 @@ drawBitmap(F_line *l)
 	if (isphoto) {
 		/* GIF/PNG/TIFF/JPEG/PPM allright, create the image command */
 		/* first make a name without the .gif part */
-		char pname[PATH_MAX], *dot;
-		strcpy(pname,p->file);
+		char	*pname, *dot;
+		pname = strdup(p->file);
 		if ((dot=strchr(pname,'.')))
 			*dot='\0';
 		/* image create */
-		sprintf(stfp, "$img{\"%s\"} = $top->Photo(-file => \"%s\");\n",pname, p->file);
+		sprintf(stfp,
+			"$img{\"%s\"} = $top->Photo(-file => \"%s\");\n",
+			pname, p->file);
 		niceLine(stfp);
 		/* now the canvas image */
-		sprintf(stfp, "%s->createImage(qw/%fi %fi -anchor nw -image/, $img{\"%s\"});",
+		sprintf(stfp,
+			"%s->createImage(qw/%fi %fi -anchor nw -image/, $img{\"%s\"});",
 			canvas, X(l->points->x), Y(l->points->y), pname);
 		niceLine(stfp);
+		free(pname);
 	} else {
 	    /* Try for an X Bitmap file format. */
 	    unsigned int dummy;		/* Thomas Loimer, 2015-12 */
@@ -463,7 +472,7 @@ void
 genptk_text(F_text *t)
 {
 	char		stfp[2048];
-	int		i, j;
+	unsigned int	i, j;
 
 	/* I'm sure I'm just too dense to have seen a better way of doing this... */
 	static struct {
@@ -556,7 +565,7 @@ genptk_text(F_text *t)
 	niceLine(stfp);
 	strcpy(stfp, " -text/, '");
 	j = strlen(stfp);
-	for (i = 0; i < strlen(t->cstring); i++) {
+	for (i = 0; i < strlen(t->cstring); ++i) {
 		if (t->cstring[i] == '\'')
 			stfp[j++] = '\\';
 		stfp[j++] = t->cstring[i];
@@ -1057,8 +1066,8 @@ drawShape(void (*ptkShape)(), void *p, int thickness, int penColor,
  */
 
 void
-ptkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
-	unsigned int fillPattern, int thickness)
+ptkArc(void *shape, int outlineColor, int fillColor,
+	int fillPattern, int thickness)
 {
 	char	stfp[1024];
 	double	cx, cy,	/* Center of circle containing arc. */
@@ -1114,14 +1123,16 @@ ptkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
 		if (fillColor == NONE)
 			sprintf(stfp, ", -style => 'arc', -fill => undef");
 		else
-			sprintf(stfp, ", -style => 'chord', -fill => '#%6.6x'", fillColor);
+			sprintf(stfp, ", -style => 'chord', -fill => '#%6.6x'",
+					fillColor);
 		niceLine(stfp);
 		break;
 	case T_PIE_WEDGE_ARC:
 		if (fillColor == NONE)
 			sprintf(stfp, ", -style => 'pieslice', -fill => undef");
 		else
-			sprintf(stfp, ", -style => 'pieslice', -fill => '#%6.6x'",
+			sprintf(stfp,
+				", -style => 'pieslice', -fill => '#%6.6x'",
 				fillColor);
 		niceLine(stfp);
 		break;
@@ -1131,7 +1142,8 @@ ptkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
 	}
 
 	if (fillPattern != NONE) {
-		sprintf(stfp, ", -stipple => \"\\@%s\"", stippleFilename(fillPattern));
+		sprintf(stfp, ", -stipple => \"\\@%s\"",
+				stippleFilename(fillPattern));
 		niceLine(stfp);
 	}
 	if (thickness != 1) {
@@ -1148,8 +1160,8 @@ ptkArc(void *shape, unsigned int outlineColor, unsigned int fillColor,
  */
 
 void
-ptkEllipse(void *shape, unsigned int outlineColor, unsigned int fillColor,
-	unsigned int fillPattern, int thickness)
+ptkEllipse(void *shape, int outlineColor, int fillColor,
+	int fillPattern, int thickness)
 {
 	char		stfp[1024];
 	F_ellipse	*e;
@@ -1176,7 +1188,8 @@ ptkEllipse(void *shape, unsigned int outlineColor, unsigned int fillColor,
 	niceLine(stfp);
 
 	if (fillPattern != NONE) {
-		sprintf(stfp, ", -stipple => \"\\@%s\"", stippleFilename(fillPattern));
+		sprintf(stfp, ", -stipple => \"\\@%s\"",
+				stippleFilename(fillPattern));
 		niceLine(stfp);
 	}
 
@@ -1194,9 +1207,11 @@ ptkEllipse(void *shape, unsigned int outlineColor, unsigned int fillColor,
  */
 
 static void
-ptkLine(void * shape, unsigned int penColor, unsigned int fillColor,
-	unsigned int fillPattern, int thickness)
+ptkLine(void * shape, int penColor, int fillColor,
+	int fillPattern, int thickness)
 {
+	(void)		fillColor;
+	(void)		fillPattern;
 	char		dir[8], stfp[1024];
 	extern char	*canvas;	/* Tk canvas name. */
 	F_arrow		*a;
@@ -1251,25 +1266,29 @@ ptkLine(void * shape, unsigned int penColor, unsigned int fillColor,
 	if (a)
 		switch (a->type) {
 		case 0:	/* Stick type. */
-			sprintf(stfp, ", -arrow => '%s', -arrowshape => [0, '%fi', '%fi']",
-				dir, X(a->ht), X(a->wid)/2.);
+			sprintf(stfp, ", -arrow => '%s', "
+					"-arrowshape => [0, '%fi', '%fi']",
+					dir, X(a->ht), X(a->wid)/2.);
 			niceLine(stfp);
 			fprintf(stderr, "Warning: stick arrows do not "
-				"work well in Tk.\n");
+					"work well in Tk.\n");
 			break;
 		case 1:	/* Closed triangle. */
-			sprintf(stfp, ", -arrow => '%s', -arrowshape => ['%fi', '%fi', '%fi']",
-				dir, X(a->ht), X(a->ht), X(a->wid)/2.);
+			sprintf(stfp, ", -arrow => '%s', "
+					"-arrowshape => ['%fi', '%fi', '%fi']",
+					dir, X(a->ht), X(a->ht), X(a->wid)/2.);
 			niceLine(stfp);
 			break;
 		case 2:	/* Closed with indented butt. */
-			sprintf(stfp, ", -arrow => '%s', -arrowshape => ['%fi', '%fi', '%fi']",
-				dir, 0.8 * X(a->ht), X(a->ht), X(a->wid)/2.);
+			sprintf(stfp, ", -arrow => '%s', -arrowshape => "
+					"['%fi', '%fi', '%fi']", dir,
+					0.8 * X(a->ht), X(a->ht), X(a->wid)/2.);
 			niceLine(stfp);
 			break;
 		case 3:	/* Closed with pointed butt. */
-			sprintf(stfp, ", -arrow => '%s', -arrowshape => ['%fi', '%fi', '%fi']",
-				dir, 1.2 * X(a->ht), X(a->ht), X(a->wid)/2.);
+			sprintf(stfp, ", -arrow => '%s', -arrowshape => "
+					"['%fi', '%fi', '%fi']", dir,
+					1.2 * X(a->ht), X(a->ht), X(a->wid)/2.);
 			niceLine(stfp);
 			break;
 		default:
@@ -1326,8 +1345,8 @@ ptkLine(void * shape, unsigned int penColor, unsigned int fillColor,
  */
 
 static void
-ptkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
-	unsigned int fillPattern, int thickness)
+ptkPolygon(void * shape, int outlineColor, int fillColor,
+	int fillPattern, int thickness)
 {
 	char		stfp[1024];
 	extern char	*canvas;	/* Tk canvas name. */
@@ -1367,7 +1386,8 @@ ptkPolygon(void * shape, unsigned int outlineColor, unsigned int fillColor,
 	niceLine(stfp);
 
 	if (fillPattern != NONE) {
-		sprintf(stfp, ", -stipple => \"\\@%s\"", stippleFilename(fillPattern));
+		sprintf(stfp, ", -stipple => \"\\@%s\"",
+				stippleFilename(fillPattern));
 		niceLine(stfp);
 	}
 
@@ -1441,8 +1461,7 @@ stippleFilename(int patternIndex)
 		"small_fishscales.bmp", "circles.bmp", "hexagons.bmp",
 		"octagons.bmp", "horiz_saw.bmp", "vert_saw.bmp"
 	};
-	extern char	*xbmPathVar;	/* Global. */
-	static char	path[256];
+	static char	path[32];
 
 	/* XXX something like File::Spec would be better, but this is
 	   sufficient for Unix and Win32 */
@@ -1464,12 +1483,12 @@ static void
 niceLine(char *s)
 {
 	extern FILE	*tfp;	/* File descriptor of Tk file. */
-	int		i, len;
+	size_t		i, len;
 	static int	inQuote = 0;
 	static int	pos = 0;
 
 	len = strlen(s);
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < len; ++i) {
 		if (s[i] == '"') {
 			inQuote ^= 1;	/* Flip between 0/1. */
 			putc(s[i], tfp);
@@ -1497,7 +1516,7 @@ niceLine(char *s)
 struct driver   dev_ptk = {
 	genptk_option,
 	genptk_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genptk_arc,
 	genptk_ellipse,
 	genptk_line,

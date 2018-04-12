@@ -1,26 +1,27 @@
 /*
- * TransFig: Facility for Translating Fig code
+ * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
+ * Parts Copyright (c) 1989-2010 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- * genpstricks.c: pstricks driver for fig2dev
+ * genpstricks.c: convert fig to pstricks
  * Copyright (c) 2004, 2005, 2006, 2007, 2008 by Eugene Ressler
  * Acknowledgement: code for font manipulation is modeled closely after
- *   the epic driver by Conrad Kwok.
+ *	the epic driver by Conrad Kwok.
  *
  * Changes:
  *   V1.2:
@@ -38,12 +39,12 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
-#include "bool.h"
 #include "pi.h"
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "texfonts.h"
+#include "psfonts.h"
 
 /**********************************************************************/
 /* utility functions						      */
@@ -647,9 +648,13 @@ genpstrx_option(char opt, char *optarg)
     break;
 
   case 'S':
-    if (optarg && sscanf(optarg, "%d", &tmp_int) == 1
-	&& (tmp_int < 8 || tmp_int > 12)) {
-      fprintf(stderr, "Scale must be between 8 and 12 inclusively\n");
+    if (!optarg) {
+	    fputs("Integer argument to -S between 8 and 12 expected.\n",
+			stderr);
+	    exit(EXIT_FAILURE);
+    }
+    if (sscanf(optarg, "%d", &tmp_int) == 1 && (tmp_int < 8 || tmp_int > 12)) {
+      fputs("Scale must be between 8 and 12 inclusively.\n", stderr);
       exit(1);
     }
     mag = ScaleTbl[tmp_int - 8].mag;
@@ -1579,6 +1584,8 @@ format_terminators(char *opts_sqrb, char *opts_curb, int flags, int ch_arrow,
       /* closest we can get to bishade and indented butt arrows is a
 	 full indented butt arrow */
       warn(W_TERMINATOR_ARROW);
+      /* the comment below silences gcc's -Wimplicit-fallthrough */
+      /* intentionally fall through */
     case INDENTED_BUTT_ARROW:
       inset = 0.3;
       break;
@@ -1587,6 +1594,7 @@ format_terminators(char *opts_sqrb, char *opts_curb, int flags, int ch_arrow,
       /* closest we can get to a pointed butt half arrow is a pointed
 	 butt full arrow */
       warn(W_TERMINATOR_ARROW);
+      /* intentionally fall through */
     case POINTED_BUTT_ARROW:
       inset = -0.3;
       /* It looks like Andreas is doing this, but original calc_arrow does not. */
@@ -1596,6 +1604,7 @@ format_terminators(char *opts_sqrb, char *opts_curb, int flags, int ch_arrow,
     case RECTANGLE_ARROW:
       /* closest we can get to a rectangle is a diamond */
       warn(W_TERMINATOR_ARROW);
+      /* intentionally fall through */
     case DIAMOND_ARROW:
       inset = -1.0;
       length *= 1.0 / (1.0 - inset);
@@ -2602,45 +2611,6 @@ check_tex_format(char *buf)
   if ((n_dollars & 1) != 0)
     fprintf(stderr, "warning: unbalanced $'s in special text '%s'\n", buf);
 }
-
-/* copied from psfonts */
-static int PSfontmap[] = {
-  ROMAN_FONT,ROMAN_FONT,/* Times-Roman */
-  ITALIC_FONT,		/* Times-Italic */
-  BOLD_FONT,		/* Times-Bold */
-  BOLD_FONT,		/* Times-BoldItalic */
-  ROMAN_FONT,		/* AvantGarde */
-  ROMAN_FONT,		/* AvantGarde-BookOblique */
-  ROMAN_FONT,		/* AvantGarde-Demi */
-  ROMAN_FONT,		/* AvantGarde-DemiOblique */
-  ROMAN_FONT,		/* Bookman-Light */
-  ITALIC_FONT,		/* Bookman-LightItalic */
-  ROMAN_FONT,		/* Bookman-Demi */
-  ITALIC_FONT,		/* Bookman-DemiItalic */
-  TYPEWRITER_FONT,	/* Courier */
-  TYPEWRITER_FONT,	/* Courier-Oblique */
-  BOLD_FONT,		/* Courier-Bold */
-  BOLD_FONT,		/* Courier-BoldItalic */
-  MODERN_FONT,		/* Helvetica */
-  MODERN_FONT,		/* Helvetica-Oblique */
-  BOLD_FONT,		/* Helvetica-Bold */
-  BOLD_FONT,		/* Helvetica-BoldOblique */
-  MODERN_FONT,		/* Helvetica-Narrow */
-  MODERN_FONT,		/* Helvetica-Narrow-Oblique */
-  BOLD_FONT,		/* Helvetica-Narrow-Bold */
-  BOLD_FONT,		/* Helvetica-Narrow-BoldOblique */
-  ROMAN_FONT,		/* NewCenturySchlbk-Roman */
-  ITALIC_FONT,		/* NewCenturySchlbk-Italic */
-  BOLD_FONT,		/* NewCenturySchlbk-Bold */
-  BOLD_FONT,		/* NewCenturySchlbk-BoldItalic */
-  ROMAN_FONT,		/* Palatino-Roman */
-  ITALIC_FONT,		/* Palatino-Italic */
-  BOLD_FONT,		/* Palatino-Bold */
-  BOLD_FONT,		/* Palatino-BoldItalic */
-  ROMAN_FONT,		/* Symbol */
-  ROMAN_FONT,		/* ZapfChancery-MediumItalic */
-  ROMAN_FONT		/* ZapfDingbats */
-};
 
 static int PSmapwarn[] = {
   false, false,		/* Times-Roman */

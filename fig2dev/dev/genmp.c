@@ -1,131 +1,133 @@
 /*
- * TransFig: Facility for Translating Fig code
- *
- * Ported from fig2MP by Klaus Guntermann (guntermann@iti.informatik.tu-darmstadt.de)
- * Original fig2MP Copyright 1995 Dane Dwyer (dwyer@geisel.csl.uiuc.edu)
+ * Fig2dev: Translate Fig code to various Devices
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *  fig2MP -- convert fig to METAPOST code
+ * genmp.c: convert fig to METAPOST code
+ * Ported from fig2MP by Klaus Guntermann
+ *		<guntermann@iti.informatik.tu-darmstadt.de>
  *
- *  Copyright 1995 Dane Dwyer (dwyer@geisel.csl.uiuc.edu)
- *  Written while a student at the University of Illinois at Urbana-Champaign
+ * fig2MP:
+ * Copyright 1995 Dane Dwyer <dwyer@geisel.csl.uiuc.edu>
+ * Written while a student at the University of Illinois at Urbana-Champaign
  *
- *  Permission is granted to freely distribute this program provided
- *	    this copyright notice is included.
+ * Permission is granted to freely distribute this program provided
+ *    this copyright notice is included.
  *
- *  Version 0.00 --  Initial attempt  (8/20/95)
- *  Version 0.01 --  Added user defined colors	(8/27/95)
- *		     Added filled and unfilled arrowheads  (8/27/95)
- *  Version 0.02 --  Changed default mapping of ps fonts to match teTeX
- *		      (standard?)  (9/16/96)
+ * Version 0.00 --  Initial attempt  (8/20/95)
+ * Version 0.01 --  Added user defined colors	(8/27/95)
+ *		    Added filled and unfilled arrowheads  (8/27/95)
+ * Version 0.02 --  Changed default mapping of ps fonts to match teTeX
+ *		    (standard?)  (9/16/96)
  *
- *  Development for new extensions at TU Darmstadt, Germany starting 1999
+ * Development for new extensions at TU Darmstadt, Germany starting 1999
  *
- *  Version 0.03 --  Allow to "build" pictures incrementally.
- *		     To achieve this we split the complete figure into
- *		     layers in separate mp-figures. The complete figure
- *		     will be seen when overlapping all layers.
- *		     A layer is combined from adjacent depths in xfig.
- *		     This makes it possible to overlap items also when
- *		     splitting into layers.
- *		     The layered version creates files with extension
- *		     ".mmp" (multi-level MetaPost). These can be processed
- *		     with normal MetaPost, but you have to provide the
- *		     extension of the filename in the call.
+ * Version 0.03 --  Allow to "build" pictures incrementally.
+ *		    To achieve this we split the complete figure into
+ *		    layers in separate mp-figures. The complete figure
+ *		    will be seen when overlapping all layers.
+ *		    A layer is combined from adjacent depths in xfig.
+ *		    This makes it possible to overlap items also when
+ *		    splitting into layers.
  *
- *  Version 0.04 --  Fix handling of special characters (May 2001)
- *		     as suggested by Jorma Laaksonen <jorma.laaksonen@hut.fi>.
- *		     "Normal" text should come out correct without needing
- *		     escapes for (LaTeX). That should make it easier to
- *		     export to different formats with the same result.
- *		     Let's use latex as the primary processor for our mpost
- *		     output. Others probably won't use that anyway.
+ * Version 0.04 --  Fix handling of special characters (May 2001)
+ *		    as suggested by Jorma Laaksonen <jorma.laaksonen@hut.fi>.
+ *		    "Normal" text should come out correct without needing
+ *		    escapes for (LaTeX). That should make it easier to
+ *		    export to different formats with the same result.
+ *		    Let's use latex as the primary processor for our mpost
+ *		    output. Others probably won't use that anyway.
  *
- *		     Additional options for this processor:
- *		     -I filename     include LaTeX commands
- *				     immediately into metapost file
- *		     -i filename     let LaTeX input commands
- *				     when processing with MetaPost
+ *		    Additional options for this processor:
+ *		    -I filename     include LaTeX commands
+ *				    immediately into metapost file
+ *		    -i filename    let LaTeX input commands
+ *				   when processing with MetaPost
  *
- *  Version 0.05 --  Fix positioning of imported text figures (Aug 2001).
- *		     We need to take into account also their depth.
+ * Version 0.05 --  Fix positioning of imported text figures (Aug 2001).
+ *		    We need to take into account also their depth.
  *
- *  Version 0.06 --  Fix setting the correct font in math mode (Jun 2002).
+ * Version 0.06 --  Fix setting the correct font in math mode (Jun 2002).
  *
- *		     Bug fixed with rotated text.
+ *		    Bug fixed with rotated text.
  *
- *		     Support of scaled fonts.
+ *		    Support of scaled fonts.
  *
- *		     Blanks are also special characters (replaced with ~).
+ *		    Blanks are also special characters (replaced with ~).
  *
- *		     The comments +MP-ADDITIONAL-HEADER and
- *		     -MP-ADDITIONAL-HEADER surround the (la)tex
- *		     header (if you want to automatically replace the header
- *		     with a script afterwards).
+ *		    The comments +MP-ADDITIONAL-HEADER and
+ *		    -MP-ADDITIONAL-HEADER surround the (la)tex
+ *		    header (if you want to automatically replace the header
+ *		    with a script afterwards).
  *
- *		     Option -I does not longer include material _into_ the
- *		     header; it includes a whole header given in a file
+ *		    Option -I does not longer include material _into_ the
+ *		    header; it includes a whole header given in a file
  *
- *		     Options -I and -i can also be used in old mode (-o).
+ *		    Options -I and -i can also be used in old mode (-o).
  *
- *		     Additional and changed options:
+ *		    Additional and changed options:
  *
- *		     -I filename     include a whole header (from
- *				     \documentclass... to \begin{document}
- *				     if using latex) into the metapost file
- *		     -o		     old mode (tex, no latex)
- *		     -p number	     This option adds the line
+ *		    -I filename     include a whole header (from
+ *				    \documentclass... to \begin{document}
+ *				    if using latex) into the metapost file
+ *		    -o		    old mode (tex, no latex)
+ *		    -p number	    This option adds the line
  *					 prologues:=number;
- *				     to the metapost file.
+ *				    to the metapost file.
  *
  *
- *		     In latex mode the font setting mechanism of genmplatex
- *		     is used if the fig text is printed in a latex font. If
- *		     it is printed in a postscript font, the font will be
- *		     specified directly in a metapost label command.
+ *		    In latex mode the font setting mechanism of genmplatex
+ *		    is used if the fig text is printed in a latex font. If
+ *		    it is printed in a postscript font, the font will be
+ *		    specified directly in a metapost label command.
  *
  *
- *		     If the fig text is printed in the default latex font,
- *		     the font of the surrounding latex environment will
- *		     be taken.
- *		     If the fig text is printed in the default postscript
- *		     font, the defaultfont of metapost will be taken.
- *		     (An option which selects this feature has been discarded
- *		     because it is not clear what should be done if such an
- *		     option is not used.)
+ *		    If the fig text is printed in the default latex font,
+ *		    the font of the surrounding latex environment will
+ *		    be taken.
+ *		    If the fig text is printed in the default postscript
+ *		    font, the defaultfont of metapost will be taken.
+ *		    (An option which selects this feature has been discarded
+ *		    because it is not clear what should be done if such an
+ *		    option is not used.)
  *
- *		     Changes by Christian Spannagel <cspannagel@web.de>
- *		     Thanks to Dirk Krause for his suggestions.
+ *		    Changes by Christian Spannagel <cspannagel@web.de>
+ *		    Thanks to Dirk Krause for his suggestions.
  *
- *   02 Feb 2003 - all arrowhead types supported now.  Tim Braun
+ * 02 Feb 2003 - all arrowhead types supported now.  Tim Braun
+ *
+ * 18 Mar 2018 --   Use -M option for multipage output, instead of using an
+ *		    additional driver name (mmp).
+ *		    Change option -I to -d.
  */
 
 /*
- *  Limitations:
+ * Limitations:
  *	   No fill patterns (just shades) -- Not supported by MetaPost
  *	   No embedded images -- Not supported by MetaPost
  *	   Only flatback arrows
  *
- *  Assumptions:
+ * Assumptions:
  *	   11" high paper (can be easily changed below)
  *	   xfig coordinates are 1200 pixels per inch
  *	   xfig fonts scaled by 72/80
  *	   Output is for MetaPost version 0.63
  */
 
-#include <stdio.h>
-#include <string.h>
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -133,8 +135,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_STRINGS_H
 #include <strings.h>
-#include "bool.h"
+#endif
 
 #include "fig2dev.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
@@ -173,7 +176,7 @@ static void	do_split(int); /* new procedure to split different depths' objects *
 /* #define	char2()		((c2++ % 26)+'A') */
 /* char c1=0,c2=0;*/
 
-int split = false; /* no splitting is default */
+static int split = false; /* no splitting is default */
 
 /*
  *  Static variables for variant mmp:
@@ -418,56 +421,53 @@ genmp_end(void)
 void
 genmp_option(char opt, char *optarg)
 {
-    int cllen = 0;
+	int cllen = 0;
 
-    switch (opt) {
-      case 'L':
-	  if (strcasecmp(optarg,"mmp") == 0){
-	      split = true;
-	  } else if (strcasecmp(optarg,"mp") == 0) {
-	      split = false;
-	  } else {
-	      fprintf(stderr,"bad language option %s",optarg);
-	  }
-	  break;
-      case 'o':
-	  latexmode = 0;
-	  break;
-      case 'I':
-	  if (optarg!=NULL) {
-	      immediate_insert_filename=strdup(optarg);
-	  }
-	  else fprintf(stderr,"Warning: missing argument for '-I'. Ignored.\n");
-	  break;
-      case 'i':
-	  if (optarg!=NULL) {
-	      include_filename=strdup(optarg);
-	  }
-	  else fprintf(stderr,"Warning: missing argument for '-i'. Ignored.\n");
-	  break;
-      case 'p':
-	  if (optarg!=NULL) {
-	      has_prologues = 1;
-	      prologues_nr = atoi(optarg);
-	  } else {
-	      fprintf(stderr,"Warning: missing argument for '-p'. Ignored.\n");
-	  }
-	  break;
-      /* other options are silently ignored */
-    }
+	switch (opt) {
+	case 'M':
+		split = true;
+		break;
+	case 'o':
+		latexmode = 0;
+		break;
+	case 'd':
+		if (optarg!=NULL) {
+			immediate_insert_filename=strdup(optarg);
+		}
+		else fprintf(stderr,
+			"Warning: missing argument for '-d'. Ignored.\n");
+		break;
+	case 'i':
+		if (optarg!=NULL) {
+			include_filename=strdup(optarg);
+		}
+		else fprintf(stderr,
+			"Warning: missing argument for '-i'. Ignored.\n");
+		break;
+	case 'p':
+		if (optarg!=NULL) {
+			has_prologues = 1;
+			prologues_nr = atoi(optarg);
+		} else {
+			fprintf(stderr,
+			    "Warning: missing argument for '-p'. Ignored.\n");
+		}
+		break;
+		/* other options are silently ignored */
+	}
 
-    /* add option (and argument) to the options string */
-    cllen = strlen(options);
-    if (cllen+4<sizeof(options)) {
-	options[cllen++]=' ';
-	options[cllen++]='-';
-	options[cllen++]=opt;
-	options[cllen]='\0';
-    }
-    if (optarg != NULL && (cllen+strlen(optarg+2)<sizeof(options))) {
-	options[cllen++]=' ';
-	strcat (options, optarg);
-    }
+	/* add option (and argument) to the options string */
+	cllen = strlen(options);
+	if (cllen + 4 < (int) sizeof(options)) {
+		options[cllen++]=' ';
+		options[cllen++]='-';
+		options[cllen++]=opt;
+		options[cllen]='\0';
+	}
+	if (optarg != NULL && (cllen+strlen(optarg+2)<sizeof(options))) {
+		options[cllen++]=' ';
+		strcat (options, optarg);
+	}
 }
 
 /* Changes for arrowhead support start here
@@ -1338,7 +1338,7 @@ do_split(int actual_depth)
 struct driver dev_mp = {
 	genmp_option,
 	genmp_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genmp_arc,
 	genmp_ellipse,
 	genmp_line,

@@ -1,22 +1,25 @@
 /*
- * TransFig: Facility for Translating Fig code
- * Copyright (c) 1993 Anthony Starks (ajs@merck.com)
+ * Fig2dev: Translate Fig code to various Devices
+ * Parts Copyright (c) 1993 by Anthony Starks <ajs@merck.com>
+ * Parts Copyright (c) 1994-2007 by Brian V. Smith
+ * Parts Copyright (c) 2015-2017 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
- * nonexclusive right and license to deal in this software and
- * documentation files (the "Software"), including without limitation the
- * rights to use, copy, modify, merge, publish and/or distribute copies of
- * the Software, and to permit persons who receive copies from any such
- * party to do so, with the only requirement being that this copyright
- * notice remain intact.
+ * nonexclusive right and license to deal in this software and documentation
+ * files (the "Software"), including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense and/or sell copies
+ * of the Software, and to permit persons who receive copies from any such
+ * party to do so, with the only requirement being that the above copyright
+ * and this permission notice remain intact.
  *
  */
 
 /*
- *  fig2MF -- convert fig to mfpic METAFONT code
+ *  fig2MF: convert fig to mfpic METAFONT code
  *
- *  Copyright (c) 1993 Anthony Starks (ajs@merck.com)
+ *  Copyright (c) 1993 by Anthony Starks <ajs@merck.com>
+ *
  *
  *  Version 0.00 --	Incorporate Tobin's small suggestions
  *  Version 0.01 --	Change scaling to inches,
@@ -45,7 +48,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "bool.h"
 
 #include "fig2dev.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
@@ -285,7 +287,7 @@ genmf_text(F_text *t)
 struct driver dev_mf = {
 	genmf_option,
 	genmf_start,
-	gendev_nogrid,
+	(void(*)(float,float))gendev_null,
 	genmf_arc,
 	genmf_ellipse,
 	genmf_line,
