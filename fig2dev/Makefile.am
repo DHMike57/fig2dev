@@ -21,7 +21,7 @@
 
 MAINTAINERCLEANFILES = Makefile.in
 
-SUBDIRS = dev bitmaps
+SUBDIRS = dev
 if ENABLE_I18N
 SUBDIRS += i18n
 endif

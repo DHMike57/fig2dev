@@ -1,6 +1,9 @@
 ## Run automake on this file to produce Makefile.in
 
 # Fig2dev: Translate Fig code to various Devices
+# Copyright (c) 1991 by Micah Beck
+# Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+# Parts Copyright (c) 1989-2015 by Brian V. Smith
 # Parts Copyright (c) 2015-2018 by Thomas Loimer
 #
 # Any party obtaining a copy of these files is granted, free of charge, a
@@ -34,7 +37,7 @@ noinst_LIBRARIES = libdrivers.a
 ##   libdrivers_a_CPPFLAGS = -I..
 ## objects like libdrivers_a-as85ec.o etc. are created
 # i18ndir and bitmapsdir are defined and AC_SUBST'd in configure.ac
-AM_CPPFLAGS = -I"$(top_srcdir)/fig2dev" -DBITMAPDIR="\"$(bitmapsdir)\""
+AM_CPPFLAGS = -I"$(top_srcdir)/fig2dev"
 if ENABLE_I18N
 AM_CPPFLAGS += -DI18N_DATADIR="\"$(i18ndir)\""
 endif
@@ -49,7 +52,7 @@ libdrivers_a_SOURCES = asc85ec.c genbitmaps.c genbox.c gencgm.c gendxf.c \
     picpsfonts.h psencode.h psencode.c psfonts.c psfonts.h psimage.h \
     psprolog.h readeps.c readgif.c readjpg.c readpcx.c readpics.c readppm.c \
     readtif.c readxbm.c texfonts.h texfonts.c setfigfont.h setfigfont.c \
-    xtmpfile.c xtmpfile.h
+    tkpattern.h tkpattern.c xtmpfile.h xtmpfile.c
 
 # These contain PACKAGE_VERSION, hence depend on $(CONFIG_HEADER) = config.h.
 genps.o gensvg.o genemf.o gengbx.o genmp.o genpictex.o gentk.o: $(CONFIG_HEADER)

@@ -838,6 +838,7 @@ help_msg(void)
 "  -l dummyarg landscape mode (dummy argument required after \"-l\")\n"
 "  -p dummyarg portrait mode (dummy argument required after \"-p\")\n"
 "  -P          generate canvas of full page size instead of figure bounds\n"
+"  -w          add wrapper to generate complete perl file\n"
 "  -z papersize        set the papersize (see man pages for available sizes)"
 			);
 		}

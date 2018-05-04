@@ -136,7 +136,7 @@ struct pict2earrow {
 	/* type 0 */
 	{ 0., 0.5},
 	/* place holder for what would be type 0 filled */
-	{ 0 },
+	{ 0., 0. },
 	/* type 1a simple triangle */
 	{ 1., 0.5},
 	/* type 1b filled simple triangle*/

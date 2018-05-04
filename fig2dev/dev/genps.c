@@ -1288,15 +1288,8 @@ set_style(int s, double v)
 static void
 reset_style(int s, double v)
 {
-	if (s == DASH_LINE) {
-	    if (v > 0.0) fputs(" [] 0 sd", tfp);
-	} else if (s == DOTTED_LINE) {
-	    if (v > 0.0) fputs(" [] 0 sd", tfp);
-	} else if (s == DASH_DOT_LINE || s == DASH_2_DOTS_LINE ||
-		 s == DASH_3_DOTS_LINE) {
-	    if (v > 0.0) fputs(" [] 0 sd", tfp);
-	}
-	fputs("\n", tfp);
+	if (v > 0.0 && s >= DASH_LINE && s <= DASH_3_DOTS_LINE)
+		fputs(" [] 0 sd\n", tfp);
 }
 
 static void

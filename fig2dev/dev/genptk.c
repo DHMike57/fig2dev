@@ -21,9 +21,8 @@
  *
  * Author: Slaven Rezic <rezic@onlineoffice.de> 8/2000
  *	based on code by Mike Markowski <mm@udel.edu>, U of Delaware, 4/98
+ *	modified by Thomas Loimer, 2018
  *
- * gentk.c: convert fig to TK
- * Copyright (c) 1998 by Mike Markowski
  */
 
 #ifdef HAVE_CONFIG_H
@@ -42,6 +41,7 @@
 
 #include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
+#include "tkpattern.h"
 
 #define X(x) ((double)(x)/ppi)
 #define Y(y) ((double)(y)/ppi)
@@ -53,22 +53,20 @@ int ReadFromBitmapFile(FILE *file, unsigned int *width, unsigned int *height,
 
 static void
 	drawBitmap(F_line *),
-	drawShape(void (*)(), void *, int, int, int, int),
+	drawFilledShape(void (*)(), void *, int, int, int, int, int, double),
 	niceLine(char *),
-	ptkArc(void *, int, int, int, int),
-	ptkEllipse(void *, int, int, int, int),
-	ptkLine(void *, int, int, int, int),
-	ptkPolygon(void *, int, int, int, int);
+	ptkArc(void *),
+	ptkEllipse(void *),
+	ptkLine(F_line *, int, int, int, double),
+	ptkPolygon(void *),
+	ptk_setstyle(int style, double v);
 
 static unsigned int
 	rgbColorVal(int);
 
-static char *
-	stippleFilename(int);
-
-static char *canvas = "$c";
-static char xbmPathVar[] = "$xbmPath";
-static char *xbmPathName = BITMAPDIR;
+static const char canvas[] = "$c";
+static const char xbmPathVar[] = "$xbmPath";
+static const char patname[] = "$xfigp";
 
 static char pngRequired  = 0;
 static char jpegRequired = 0;
@@ -76,6 +74,41 @@ static char tiffRequired = 0;
 
 #define		TOP	8.5 /* inches */
 static int	full_page = false;
+static bool	wrap = false;
+
+/*
+ * Write the stipple bitmaps to files.
+ */
+static void
+define_pattern(int n)
+{
+	int	i;
+
+	fprintf(tfp, "# %s\n", tkpattern[n].name);
+	fprintf(tfp, "my %s%d = \"%s/%s.xbm\";\n",
+			patname, n, xbmPathVar, tkpattern[n].name);
+	fprintf(tfp, "unless (-e %s%d) {\n    open(my $fh, '>', %s%d) or die ",
+			patname, n, patname, n);
+	fprintf(tfp, "\"Cannot open file '%s%d' for writing: $!\\n\";\n",
+			patname, n);
+	fputs("    print $fh <<'EOF';\n", tfp);
+	fprintf(tfp, "#define %s_width %d\n",
+			tkpattern[n].name, tkpattern[n].width);
+	fprintf(tfp, "#define %s_height %d\n",
+			tkpattern[n].name, tkpattern[n].height);
+	fprintf(tfp, "static unsigned char %s_bits[] = {\n",
+			tkpattern[n].name);
+	fprintf(tfp, "\t0x%.2x", tkpattern[n].bits[0]);
+	for (i = 1; i < ((tkpattern[n].width + 7) / 8) * tkpattern[n].height;
+			++i) {
+		if (i % 12 == 0)
+			fputs(",\n\t", tfp);
+		else
+			fputs(", ", tfp);
+		fprintf(tfp, "0x%.2x", tkpattern[n].bits[i]);
+	}
+	fputs("};\nEOF\n    close $fh;\n};\n", tfp);
+}
 
 /*
  *   g e n p T k O p t i o n ( )
@@ -84,7 +117,7 @@ static int	full_page = false;
 void
 genptk_option(char opt, char *optarg)
 {
-    switch (opt) {
+	switch (opt) {
 	case 'l':			/* landscape mode */
 		landscape = true;	/* override the figure file setting */
 		orientspec = true;	/* user-specified */
@@ -95,10 +128,13 @@ genptk_option(char opt, char *optarg)
 		orientspec = true;	/* user-specified */
 		break;
 
-	case 'P':			/* use full page instead of bounding box */
+	case 'P':		    /* use full page instead of bounding box */
 		full_page = true;
 		break;
 
+	case 'w':
+		wrap = true;		/* create complete perl file */
+		break;
 	case 'z':			/* papersize */
 		(void) strcpy (papersize, optarg);
 		paperspec = true;	/* user-specified */
@@ -109,8 +145,8 @@ genptk_option(char opt, char *optarg)
 		break;
 
 	default:
-		put_msg(Err_badarg, opt, "tk");
-		exit(1);
+		put_msg(Err_badarg, opt, "ptk");
+		exit(EXIT_FAILURE);
     }
 
 }
@@ -124,7 +160,6 @@ genptk_option(char opt, char *optarg)
 void
 genptk_start(F_compound *objects)
 {
-	char		stfp[1024];
 	float		wid = -1. , ht = -1. , swap;
 	struct paperdef	*pd;
 
@@ -132,92 +167,105 @@ genptk_start(F_compound *objects)
 
 	/* print any whole-figure comments prefixed with "#" */
 	if (objects->comments) {
-	    fprintf(tfp,"#\n");
-	    print_comments("# ",objects->comments, "");
-	    fprintf(tfp,"#\n");
+		fputs("#\n", tfp);
+		print_comments("# ", objects->comments, "");
+		fputs("#\n", tfp);
 	}
 
 	if ( !full_page ) {
-	    /* get width and height in fig units */
-	    wid = urx - llx;
-	    ht = ury - lly;
+		/* get width and height in fig units */
+		wid = urx - llx;
+		ht = ury - lly;
 
-	    /* add 1% border around */
-	    llx -= round(wid/100.0);
-	    lly -= round(ht/100.0);
-	    urx += round(wid/100.0);
-	    ury += round(ht/100.0);
+		/* add 1% border around */
+		llx -= round(wid/100.0);
+		lly -= round(ht/100.0);
+		urx += round(wid/100.0);
+		ury += round(ht/100.0);
 
-	    /* recalculate new width and height in inches */
-	    wid = 1.0*(urx - llx)/ppi;
-	    ht = 1.0*(ury - lly)/ppi;
+		/* recalculate new width and height in inches */
+		wid = 1.0*(urx - llx)/ppi;
+		ht = 1.0*(ury - lly)/ppi;
 
 	} else {
-	    /* full page, get the papersize as the width and height for the canvas */
-            for (pd = paperdef; pd->name != NULL; pd++)
-		if (strcasecmp (papersize, pd->name) == 0) {
-		    /* width/height are in dpi, convert to inches */
-		    wid = pd->width/80.0;
-		    ht = pd->height/80.0;
-		    strcpy(papersize,pd->name);	/* use the "nice" form */
-		    break;
+		/* full page, get the papersize as the width and
+		   height for the canvas */
+		for (pd = paperdef; pd->name != NULL; ++pd)
+			if (strcasecmp (papersize, pd->name) == 0) {
+				/* width/height are in dpi, convert to inches */
+				wid = pd->width/80.0;
+				ht = pd->height/80.0;
+				strcpy(papersize, pd->name);
+				break;
+			}
+
+		if (wid < 0 || ht < 0) {
+			(void) fprintf (stderr, "Unknown paper size `%s'\n",
+					papersize);
+			exit(EXIT_FAILURE);
 		}
 
-	    if (wid < 0 || ht < 0) {
-		(void) fprintf (stderr, "Unknown paper size `%s'\n", papersize);
-		exit (1);
-	    }
+		fprintf(tfp, "# Page size specified: %s\n", papersize);
 
-	    sprintf(stfp, "# Page size specified: %s\n",papersize);
-	    niceLine(stfp);
-
-	    /* swap for landscape */
-	    if ( landscape) {
-		sprintf(stfp, "# Landscape orientation\n");
-		niceLine(stfp);
-		swap = wid;
-		wid = ht;
-		ht = swap;
-	    } else {
-		sprintf(stfp, "# Portrait orientation\n");
-		niceLine(stfp);
-	    }
+		/* swap for landscape */
+		if (landscape) {
+			fputs("# Landscape orientation\n", tfp);
+			swap = wid;
+			wid = ht;
+			ht = swap;
+		} else {
+			fputs("# Portrait orientation\n", tfp);
+		}
 	}
 
-	sprintf(stfp, "sub {\n");
-	niceLine(stfp);
-	sprintf(stfp, "my $top = shift;\n");
-	niceLine(stfp);
-	sprintf(stfp, "my %%img;\n");
-	niceLine(stfp);
-	sprintf(stfp, "my $c = $top->Canvas(qw/-width %.2fi -height %.2fi -bg ivory/);\n", wid, ht);
-	niceLine(stfp);
-	sprintf(stfp, "#$c->configure(qw/-xscrollincrement 1p -yscrollincrement 1p/);\n");
-	niceLine(stfp);
-	if ( !full_page ) {
-	    sprintf(stfp, "$c->configure(-scrollregion => ['%.2fi','%.2fi','%.2fi','%.2fi']);\n",
-			    MIN(X(urx),X(llx)), MIN(Y(ury),Y(lly)),MAX(X(urx),X(llx)), MAX(Y(ury),Y(lly)));
-	    niceLine(stfp);
-	    sprintf(stfp, "# Shift canvas by lower of bounding box\n");
-	    niceLine(stfp);
-	    sprintf(stfp, "#$c->xview(qw/scroll %d u/);\n",round(llx/16.45*mag));
-	    niceLine(stfp);
-	    sprintf(stfp, "#$c->yview(qw/scroll %d u/);\n",round(lly/16.45*mag));
-	    niceLine(stfp);
+	if (wrap)
+		fputs("use strict;\nuse warnings;\nuse Tk;\nmy $xfigure = ",
+				tfp);
+	fputs("sub {\nmy $top = shift;\nmy %img;\n", tfp);
+	fprintf(tfp,
+		"my $c = $top->Canvas(qw/-width %.2fi -height %.2fi -bg ivory/);\n",
+			wid, ht);
+	fputs("#$c->configure(qw/-xscrollincrement 1p -yscrollincrement 1p/);\n",
+			tfp);
+	if (!full_page) {
+		fprintf(tfp,
+			"$c->configure(-scrollregion => ['%.2fi','%.2fi','%.2fi','%.2fi']);\n",
+				MIN(X(urx),X(llx)), MIN(Y(ury),Y(lly)),
+				MAX(X(urx),X(llx)), MAX(Y(ury),Y(lly)));
+		fputs("# Shift canvas by lower of bounding box\n", tfp);
+		fprintf(tfp, "#$c->xview(qw/scroll %d u/);\n",
+				round(llx/16.45*mag));
+		fprintf(tfp, "#$c->yview(qw/scroll %d u/);\n",
+				round(lly/16.45*mag));
 	}
 
-	sprintf(stfp, "$c->pack(-expand => 1, -fill => 'both');\n");
-	niceLine(stfp);
-	sprintf(stfp, "# If your fill-pattern bitmaps will be elsewhere,\n");
-	niceLine(stfp);
-	sprintf(stfp, "# change the next line appropriately, and all will\n");
-	niceLine(stfp);
-	sprintf(stfp, "# work well without further modification.\n\n");
-	niceLine(stfp);
-	sprintf(stfp, "my %s = '%s';\n\n", xbmPathVar, xbmPathName);
-	niceLine(stfp);
-	sprintf(stfp, "# The xfig objects begin here.\n");
-	niceLine(stfp);
+	fputs("$c->pack(-expand => 1, -fill => 'both');\n\n", tfp);
+
+	/* define shade and tint functions */
+	fputs("# Shade and tint colors: &$shade($color, shade), &$tint($color,"
+	" tint),\n# where shade and tint are between 0 and 100, respectively.\n"
+	"my $shade = sub {\n    my($r, $g, $b, $c, $s);\n"
+	"    ($c, $s) = @_;    $s /= 100;\n    ($r, $g, $b) = $top->rgb($c);\n"
+	"    return(sprintf('#%.2x%.2x%.2x', $r*$s/256, $g*$s/256, $b*$s/256));"
+	"\n};\nmy $tint = sub {\n    my($r, $g, $b, $c, $t);\n"
+	"    ($c, $t) = @_;    $t /= 100;\n    ($r, $g, $b) = $top->rgb($c);\n"
+	"    return(sprintf('#%.2x%.2x%.2x', 255 - (65535-$r)*$t/256,\n"
+	"                   255 - (65535-$g)*$t/256, 255 - (65535-$b)*$t/256));"
+	"\n};\n\n", tfp);
+	if (pats_used) {
+		int	i;
+		fputs(
+		"# If the fill-pattern bitmaps should not be placed into\n"
+		"# the current directory, change the next line accordingly.\n",
+				tfp);
+		fprintf(tfp, "my %s = '.';\n\n", xbmPathVar);
+		for (i = 0; i < NUMPATTERNS; ++i) {
+			if (pattern_used[i])
+				define_pattern(i);
+		}
+		fputc('\n', tfp);
+	}
+	fputs("# The xfig objects begin here.\n", tfp);
 }
 
 /*
@@ -229,11 +277,14 @@ genptk_start(F_compound *objects)
 int
 genptk_end(void)
 {
-	char	stfp[64];
-
-	sprintf(stfp, "%s->focus;\n", canvas);
-	sprintf(stfp, "\n}\n");
-	niceLine(stfp);
+	/* focus is not necessary */
+	/* sprintf(stfp, "%s->focus;\n", canvas); */
+	fputs("\n}", tfp);
+	if (wrap)
+		fputs(";\nmy $mw = MainWindow->new;\n$xfigure->($mw);\n"
+				"MainLoop;\n", tfp);
+	else
+		fputc('\n', tfp);
 
 	/* all ok */
 	return 0;
@@ -242,24 +293,36 @@ genptk_end(void)
 /*
  *   g e n p T k A r c ( )
  *
- *   The Fig arc is one of the few objects that is only a subset of its
- *   equivalent Tk canvas object, since a Tk arc can be oval.  But that
- *   has no bearing on the code written here, so this is a pretty
- *   useless comment...
  */
 
 void
 genptk_arc(F_arc *a)
 {
-    /* print any comments prefixed with "#" */
-    print_comments("# ",a->comments, "");
+	/* print any comments prefixed with "#" */
+	print_comments("# ", a->comments, "");
 
-    if (a->style > 0)
-	fprintf(stderr, "genptk_arc: only solid lines are supported by Tk.\n");
-    if (a->type == T_OPEN_ARC && (a->for_arrow || a->back_arrow))
-	fprintf(stderr, "genptk_arc: arc arrows not supported by Tk.\n");
-    drawShape(ptkArc, (void *) a, a->thickness,
-	a->pen_color, a->fill_color, a->fill_style);
+	if (a->type == T_OPEN_ARC) {
+		if (a->for_arrow || a->back_arrow)
+			fputs("genptk_arc: arc arrows not supported by Tk.\n",
+					stderr);
+		if (a->fill_style != UNFILLED) {
+			/* (ab)use a->thickness to pass information to ptkArc */
+			int      save_thickness = a->thickness;
+			a->thickness = 0;
+			/* draw the fill without the outline*/
+			drawFilledShape(ptkArc, (void *)a, 0, 0, a->fill_color,
+					a->fill_style, 0, 0.0);
+			a->thickness = save_thickness;
+		}
+		/* draw the outline */
+		if (a->thickness > 0)
+			drawFilledShape(ptkArc, (void *)a, a->thickness,
+					a->pen_color, 0, UNFILLED, a->style,
+					a->style_val);
+	} else {
+		drawFilledShape(ptkArc, (void *)a, a->thickness, a->pen_color,
+				a->fill_color, a->fill_style, a->style,
+				a->style_val); }
 }
 
 /*
@@ -269,27 +332,12 @@ genptk_arc(F_arc *a)
 void
 genptk_ellipse(F_ellipse *e)
 {
-    /* print any comments prefixed with "#" */
-    print_comments("# ",e->comments, "");
+	/* print any comments prefixed with "#" */
+	print_comments("# ", e->comments, "");
 
-    switch (e->type) {
-	case T_CIRCLE_BY_DIA:
-	case T_CIRCLE_BY_RAD:
-	case T_ELLIPSE_BY_DIA:
-	case T_ELLIPSE_BY_RAD:
-		if (e->style > 0)
-			fprintf(stderr, "genptk_ellipse: only solid lines "
-				"supported.\n");
-		drawShape(ptkEllipse, (void *) e, e->thickness,
-			e->pen_color, e->fill_color, e->fill_style);
-		break;
-	default:
-		/* Stole this line from Netscape 3.03... */
-		fprintf(stderr, "genptk_ellipse: Whatchew talkin' 'bout, "
-			"Willis?\n");
-		return;
-		break;
-    }
+	drawFilledShape(ptkEllipse, (void *)e, e->thickness, e->pen_color,
+			e->fill_color, e->fill_style, e->style, e->style_val);
+
 }
 
 /*
@@ -300,37 +348,36 @@ void
 genptk_line(F_line *l)
 {
     /* print any comments prefixed with "#" */
-    print_comments("# ",l->comments, "");
+	print_comments("# ", l->comments, "");
 
-    switch (l->type) {
-	case T_ARC_BOX:	/* Fall through to T_BOX... */
-		fprintf(stderr, "genptk_line: arc box not supported.\n");
-		/* the comment below silences gcc's -Wimplicit-fallthrough */
-		/* intentionally fall through */
-	case T_BOX:
+	switch (l->type) {
 	case T_POLYLINE:
 		/* Take care of filled regions first. */
-		drawShape(ptkPolygon, (void *) l->points, 0,
-			l->pen_color, l->fill_color, l->fill_style);
+		if (l->fill_style != UNFILLED && l->points->next &&
+				l->points->next->next)
+			drawFilledShape(ptkPolygon, (void *)l->points, 0, 0,
+					l->fill_color, l->fill_style, 0, 0.0);
 		/* Now draw line itself. */
-		drawShape(ptkLine, (void *) l, l->thickness, l->pen_color,
-			NONE, UNFILLED);
+		ptkLine(l, l->pen_color, l->thickness/15, l->style,
+				l->style_val);
 		break;
 	case T_PIC_BOX:
 		drawBitmap(l);
 		break;
+	case T_ARC_BOX:	/* Fall through to T_BOX... */
+		fputs("genptk_line: arc box not supported.\n", stderr);
+		/* the comment below silences gcc's -Wimplicit-fallthrough */
+		/* intentionally fall through */
+	case T_BOX:
 	case T_POLYGON:
-		if (l->style > 0) {
-			fprintf(stderr, "genptk_line: only solid line "
-				"styles supported.\n");
-		}
-		drawShape(ptkPolygon, (void *) l->points, l->thickness,
-			l->pen_color, l->fill_color, l->fill_style);
+		drawFilledShape(ptkPolygon, (void *)l->points, l->thickness,
+				l->pen_color, l->fill_color, l->fill_style,
+				l->style, l->style_val);
 		break;
 	default:
-		fprintf(stderr, "genptk_line: Whatchew talkin' 'bout, Willis?\n");
+		fputs("genptk_line: Whatchew talkin' 'bout, Willis?\n", stderr);
 		break;
-    }
+	}
 }
 
 /*
@@ -359,14 +406,15 @@ drawBitmap(F_line *l)
 	dx = l->points->next->next->x - l->points->x;
 	dy = l->points->next->next->y - l->points->y;
 	if (!(dx >= 0. && dy >= 0.))
-		fprintf(stderr, "drawBitmap: rotated bitmaps not supprted"
-			" by Tk.\n");
+		fputs("drawBitmap: rotated bitmaps not supprted by Tk.\n",
+				stderr);
 
 	/* see if supported image format first */
 
 	if ((fd=open_picfile(p->file, &filtype, true, &xname)) == NULL) {
-	    fprintf(stderr,"drawBitmap: can't open bitmap file %s\n",p->file);
-	    return;
+		fprintf(stderr, "drawBitmap: can't open bitmap file %s\n",
+				p->file);
+		return;
 	}
 	free(xname);
 
@@ -374,37 +422,37 @@ drawBitmap(F_line *l)
 	stat = ReadOK(fd,buf,6);
 	close_picfile(fd,filtype);
 	if (!stat) {
-		fprintf(stderr,"drawBitmap: Bitmap file %s too short\n",p->file);
+		fprintf(stderr, "drawBitmap: Bitmap file %s too short\n",
+				p->file);
 		return;
 	}
 
 	isphoto = 0;
-	if ((strncmp((char *) buf,"GIF",3) == 0) ||
-	    (*buf == 'P'  && (*(buf+1) == '5' || *(buf+1) == '6')) /* PPM/PGM */ ||
-	    (strncmp((char *) buf,"BM",2) == 0) /* Windows BMP */ ||
-	    (strncmp((char *) buf,"/* XPM */",9) == 0) /* X11 Pixmap */ ) {
+	if ((strncmp((char *)buf, "GIF", 3) == 0) ||
+			/* PPM/PGM */
+			(*buf == 'P' && (*(buf+1) == '5' || *(buf+1) == '6')) ||
+			(strncmp((char *)buf, "BM",2) == 0) /* Windows BMP */ ||
+			/* X11 Pixmap */
+			(strncmp((char *)buf, "/* XPM */", 9) == 0)) {
 		isphoto = 1;
-	} else if (strncmp((char *) buf+1,"PNG",3) == 0) {
+	} else if (strncmp((char *)buf+1, "PNG", 3) == 0) {
 		isphoto = 1;
 		if (!pngRequired) {
-			sprintf(stfp, "require Tk::PNG;\n");
-			niceLine(stfp);
-			pngRequired++;
+			fputs("require Tk::PNG;\n", tfp);
+			++pngRequired;
 		}
-	} else if (strncmp((char *) buf, "\377\330\377\340", 4) == 0) /* JPEG */ {
+	} else if (strncmp((char *)buf, "\377\330\377\340",4) == 0) /* JPEG */ {
 		isphoto = 1;
 		if (!jpegRequired) {
-			sprintf(stfp, "require Tk::JPEG;\n");
-			niceLine(stfp);
-			jpegRequired++;
+			fputs("require Tk::JPEG;\n", tfp);
+			++jpegRequired;
 		}
-	} else if ((strncmp((char *) buf,"MM\x00\x2a",4) == 0) /* TIFF BE */ ||
-		   (strncmp((char *) buf,"II\x2a\x00",4) == 0) /* TIFF LE */ ) {
+	} else if ((strncmp((char *)buf, "MM\x00\x2a", 4) == 0) /* TIFF BE */ ||
+		    (strncmp((char *)buf,"II\x2a\x00",4) == 0) /* TIFF LE */ ) {
 		isphoto = 1;
 		if (!tiffRequired) {
-			sprintf(stfp, "require Tk::TIFF;\n");
-			niceLine(stfp);
-			tiffRequired++;
+			fputs("require Tk::TIFF;\n", tfp);
+			++tiffRequired;
 		}
 	}
 
@@ -416,43 +464,42 @@ drawBitmap(F_line *l)
 		if ((dot=strchr(pname,'.')))
 			*dot='\0';
 		/* image create */
-		sprintf(stfp,
-			"$img{\"%s\"} = $top->Photo(-file => \"%s\");\n",
-			pname, p->file);
-		niceLine(stfp);
+		fprintf(tfp, "$img{\"%s\"} = $top->Photo(-file => \"%s\");\n",
+				pname, p->file);
 		/* now the canvas image */
-		sprintf(stfp,
+		fprintf(tfp,
 			"%s->createImage(qw/%fi %fi -anchor nw -image/, $img{\"%s\"});",
-			canvas, X(l->points->x), Y(l->points->y), pname);
-		niceLine(stfp);
+				canvas, X(l->points->x), Y(l->points->y),
+				pname);
 		free(pname);
 	} else {
-	    /* Try for an X Bitmap file format. */
-	    unsigned int dummy;		/* Thomas Loimer, 2015-12 */
-	    rewind(fd);
-			/* return values width, height obviously not used */
-	    if (ReadFromBitmapFile(fd, &dummy, &dummy, &p->bitmap)) {
-		sprintf(stfp, "%s->createBitmap(qw/%fi %fi -anchor nw",
-			canvas, X(l->points->x), Y(l->points->y));
-		niceLine(stfp);
-		sprintf(stfp, " -bitmap/, \"@%s\"", p->file);
-		niceLine(stfp);
-		if (l->pen_color != BLACK_COLOR && l->pen_color != DEFAULT) {
-			sprintf(stfp, ", -foreground => '#%6.6x'",
-				rgbColorVal(l->pen_color));
+		/* Try for an X Bitmap file format. */
+		unsigned int dummy;		/* Thomas Loimer, 2015-12 */
+		rewind(fd);
+		/* return values width, height obviously not used */
+		if (ReadFromBitmapFile(fd, &dummy, &dummy, &p->bitmap)) {
+			sprintf(stfp, "%s->createBitmap(qw/%fi %fi -anchor nw",
+					canvas, X(l->points->x), Y(l->points->y));
 			niceLine(stfp);
-		}
-		niceLine(stfp);
-		if (l->fill_color != UNFILLED) {
-			sprintf(stfp, ", -background => '#%6.6x'",
-				rgbColorVal(l->fill_color));
+			sprintf(stfp, " -bitmap/, \"@%s\"", p->file);
 			niceLine(stfp);
-		}
-		sprintf(stfp, ");\n");
-		niceLine(stfp);
-	    } else
-		fprintf(stderr, "Only X bitmap, TIFF, JPEG, PPM and GIF picture objects "
-			"are supported in Tk canvases.\n");
+			if (l->pen_color != BLACK_COLOR &&
+					l->pen_color != DEFAULT) {
+				sprintf(stfp, ", -foreground => '#%6.6x'",
+						rgbColorVal(l->pen_color));
+				niceLine(stfp);
+			}
+			if (l->fill_color != UNFILLED) {
+				sprintf(stfp, ", -background => '#%6.6x'",
+						rgbColorVal(l->fill_color));
+				niceLine(stfp);
+			}
+			sprintf(stfp, ");\n");
+			niceLine(stfp);
+		} else
+			fputs("Only X bitmap, TIFF, JPEG, PPM and GIF picture "
+				"objects are supported in Tk canvases.\n",
+					stderr);
 	}
 }
 
@@ -554,11 +601,11 @@ genptk_text(F_text *t)
 	};
 
 	/* print any comments prefixed with "#" */
-	print_comments("# ",t->comments, "");
+	print_comments("# ", t->comments, "");
 
 	if (t->angle != 0.)
-		fprintf(stderr, "genptk_text: rotated text not "
-			"supported by Tk.\n");
+		fputs("genptk_text: rotated text not supported by Tk.\n",
+				stderr);
 
 	sprintf(stfp, "%s->createText(qw/%fi %fi", canvas, X(t->base_x),
 		Y(t->base_y));
@@ -587,15 +634,16 @@ genptk_text(F_text *t)
 		sprintf(stfp, ", -anchor => 'se'");
 		break;
 	default:
-		fprintf(stderr, "genptk_text: Unknown text justification\n");
+		fputs("genptk_text: Unknown text justification\n", stderr);
 		t->type = T_LEFT_JUSTIFIED;
 		break;
 	}
 	niceLine(stfp);
 
 	if (psfont_text(t)) {
-		sprintf(stfp, ", -font => \"%s%d%s\"", fontNames[t->font+1].prefix,
-			(int) t->size, fontNames[t->font+1].suffix);
+		sprintf(stfp, ", -font => \"%s%d%s\"",
+				fontNames[t->font+1].prefix, (int) t->size,
+				fontNames[t->font+1].suffix);
 		niceLine(stfp);
 	} else {	/* Rigid, special, and LaTeX fonts. */
 		int fnum;
@@ -621,11 +669,11 @@ genptk_text(F_text *t)
 			break;
 		default:
 			fnum = latexFontDefault;
-			fprintf(stderr, "genptk_text: unknown LaTeX font.\n");
+			fputs("genptk_text: unknown LaTeX font.\n", stderr);
 			break;
 		}
 		sprintf(stfp, ", -font => \"%s%d%s\"", fontNames[fnum].prefix,
-			(int) t->size, fontNames[fnum].suffix);
+				(int)t->size, fontNames[fnum].suffix);
 		niceLine(stfp);
 	}
 	if (t->color != BLACK_COLOR && t->color != DEFAULT) {
@@ -720,8 +768,8 @@ genptk_itpSpline(F_spline *s)
 			sprintf(stfp, ", -arrow => '%s', -arrowshape => [0, '%fi', '%fi']",
 				dir, X(a->ht), X(a->wid)/2.);
 			niceLine(stfp);
-			fprintf(stderr, "Warning: stick arrows do not "
-				"work well in Tk.\n");
+			fputs("Warning: stick arrows do not work well in Tk.\n",
+					stderr);
 			break;
 		case 1:	/* Closed triangle. */
 			sprintf(stfp, " -arrow => '%s', -arrowshape => ['%fi', '%fi', '%fi']",
@@ -739,7 +787,7 @@ genptk_itpSpline(F_spline *s)
 			niceLine(stfp);
 			break;
 		default:
-			fprintf(stderr, "tkLine: unknown arrow type.\n");
+			fputs("tkLine: unknown arrow type.\n", stderr);
 			break;
 		}
 
@@ -755,7 +803,7 @@ genptk_itpSpline(F_spline *s)
 		niceLine(stfp);
 		break;
 	default:
-		fprintf(stderr, "tkLine: unknown cap style.\n");
+		fputs("tkLine: unknown cap style.\n", stderr);
 		break;
 	}
 
@@ -830,7 +878,8 @@ genptk_ctlSpline(F_spline *s)
 	cy2	 = (y1 + 3.0*y2)/4.0;
 
 	if (closed_spline(s)) {
-		sprintf(stfp, "%s->createPolygon(qw/%.4f %.4f/,", canvas, cx1, cy1);
+		sprintf(stfp, "%s->createPolygon(qw/%.4f %.4f/,",
+				canvas, cx1, cy1);
 		niceLine(stfp);
 	} else {
 		sprintf(stfp, "%s->createLine(", canvas);
@@ -880,12 +929,12 @@ genptk_ctlSpline(F_spline *s)
 			niceLine(stfp);
 		}
 		if (s->fill_style != NONE) {
-			sprintf(stfp, " -stipple => \"\\@%s\",",
-				stippleFilename(s->fill_style));
+			sprintf(stfp, " -stipple => \"\\@%s%d\",", patname,
+					s->fill_style - NUMSHADES - NUMTINTS);
 			niceLine(stfp);
 		}
 		if (s->thickness != 1) {
-			sprintf(stfp, " -width => '%d'", s->thickness);
+			sprintf(stfp, " -width => %d", s->thickness);
 			niceLine(stfp);
 		}
 	} else {
@@ -908,8 +957,8 @@ genptk_ctlSpline(F_spline *s)
 					"[0, '%fi', '%fi'],",
 					dir, X(a->ht), X(a->wid)/2.);
 				niceLine(stfp);
-				fprintf(stderr, "Warning: stick arrows do not "
-					"work well in Tk.\n");
+				fputs("Warning: stick arrows do not work well "
+						"in Tk.\n", stderr);
 				break;
 			case 1:	/* Closed triangle. */
 				sprintf(stfp, " -arrow => '%s', -arrowshape =>"
@@ -919,14 +968,14 @@ genptk_ctlSpline(F_spline *s)
 				break;
 			case 2:	/* Closed with indented butt. */
 				sprintf(stfp, " -arrow => '%s', -arrowshape =>"
-					"['%fi', '%fi', '%fi']", dir, 0.8 * X(a->ht),
-					X(a->ht), X(a->wid)/2.);
+					"['%fi', '%fi', '%fi']", dir,
+					0.8 * X(a->ht), X(a->ht), X(a->wid)/2.);
 				niceLine(stfp);
 				break;
 			case 3:	/* Closed with pointed butt. */
 				sprintf(stfp, " -arrow => %s, -arrowshape =>"
-					"['%fi', '%fi', '%fi']", dir, 1.2 * X(a->ht),
-					X(a->ht), X(a->wid)/2.);
+					"['%fi', '%fi', '%fi']", dir,
+					1.2 * X(a->ht), X(a->ht), X(a->wid)/2.);
 				niceLine(stfp);
 				break;
 			default:
@@ -971,7 +1020,7 @@ void
 genptk_spline(F_spline *s)
 {
 	/* print any comments prefixed with "#" */
-	print_comments("# ",s->comments, "");
+	print_comments("# ", s->comments, "");
 
 	if (int_spline(s))
 		genptk_itpSpline(s);
@@ -980,81 +1029,84 @@ genptk_spline(F_spline *s)
 }
 
 /*
- *   d r a w S h a p e ( )
+ *   d r a w F i l l e d S h a p e ( )
  *
- *   This routine is way too dependent on hardcoded fill_style values.
- *   Because so many other gen*.c routines use them, though, I'm too
- *   lazy to go through all the code.
+ * Call (*ptkShape)(), which initiates drawing an object, add
+ * the "-fill", "-stipple, "-outline" and "-width" options
+ * as necessary, and close the object.
  */
-
 static void
-drawShape(void (*ptkShape)(), void *p, int thickness, int penColor,
-	int fillColor, int fillStyle)
+drawFilledShape(void (*tkShape)(), void *p, int thickness, int penColor,
+	int fillColor, int fillStyle, int style, double style_val)
 {
+	char	sftp[256];
+
 	/* Draw filled and/or stippled region enclosed by shape. */
-	if (fillStyle != UNFILLED) {
-		switch (fillColor) {
-		case DEFAULT:
-		case BLACK_COLOR:
-		case WHITE_COLOR:
-			if (fillStyle < 20) {
-				/* Draw underlying shape. */
-				ptkShape(p, NONE, rgbColorVal(fillColor)
-					 ^ 0xffffff, NONE, 0);
-				/* Draw stipple pattern in fill color. */
-				ptkShape(p, NONE, rgbColorVal(fillColor),
-					 fillStyle, 0);
-			} else if (fillStyle == 20) {
-				/* Draw underlying shape. */
-				ptkShape(p, NONE, rgbColorVal(fillColor),
-					 NONE, 0);
-			} else if (fillStyle <= 40) {
-				/* Should never get here... */
-				fprintf(stderr, "drawShape: b&w error.\n");
-			} else {
-				/* Draw underlying shape with fill color. */
-				ptkShape(p, NONE, rgbColorVal(fillColor),
-					 NONE, 0);
-				/* Draw fill pattern with pen color. */
-				ptkShape(p, NONE, rgbColorVal(penColor),
-					 fillStyle, 0);
+	tkShape(p);
+	if (fillStyle >= NUMSHADES + NUMTINTS) { /* has a stipple pattern */
+		/* Draw the shape, fill it with the background color,
+		   and close the shape. */
+		sprintf(sftp, ", -fill => '#%.6x', -outline => undef, -width => 0);\n",
+				rgbColorVal(fillColor));
+		niceLine(sftp);
+
+		/* Again draw the shape and specify the pattern. */
+		tkShape(p);
+		sprintf(sftp, ", -fill => '#%.6x', -stipple => \"\\@%s%d\"",
+				rgbColorVal(penColor), patname,
+				fillStyle - NUMSHADES - NUMTINTS);
+		niceLine(sftp);
+		/* outline and width are specified further below */
+
+	} else if (fillStyle != UNFILLED) {
+		/* fill with a shaded, tinted, or fully saturated color */
+		if (fillStyle > WHITE_FILL && fillStyle < BLACK_FILL) {
+			if (fillColor == BLACK_COLOR || fillColor == DEFAULT) {
+				fillColor = WHITE_COLOR;
+				fillStyle = BLACK_FILL - fillStyle;
 			}
-			break;
-		default:
-			if (fillStyle < 20) {
-				/* First, fill region with black. */
-				ptkShape(p, NONE, 0x000000, NONE, 0);
-				/* Then, stipple pattern in fill color. */
-				ptkShape(p, NONE, rgbColorVal(fillColor),
-					 fillStyle, 0);
-			} else if (fillStyle == 20) {
-				/* Full saturation of fill color. */
-				ptkShape(p, NONE, rgbColorVal(fillColor),
-					 NONE, 0);
-			} else if (fillStyle < 40) {
-				/* First, fill region with fill color. */
-				ptkShape(p, NONE, rgbColorVal(fillColor),
-					NONE, 0);
-				/* Then, draw stipple pattern in white. */
-				ptkShape(p, NONE, 0xffffff, fillStyle-20, 0);
-			} else if (fillStyle == 40) {
-				/* Maximally tinted: white. */
-				ptkShape(p, NONE, 0xffffff, NONE, 0);
-			} else {
-				/* Draw underlying shape with fill color. */
-				ptkShape(p, NONE, rgbColorVal(fillColor),
-					 NONE, 0);
-				/* Draw fill pattern with pen color. */
-				ptkShape(p, NONE, rgbColorVal(penColor),
-					 fillStyle, 0);
-			}
-			break;
+			sprintf(sftp, ", -fill => &$shade('#%.6x', %d)",
+					rgbColorVal(fillColor), fillStyle * 5);
+			niceLine(sftp);
+		} else if (fillStyle > BLACK_FILL &&
+				fillStyle < NUMSHADES + NUMTINTS - 1) {
+			sprintf(sftp, ", -fill => &$tint('#%.6x', %d)",
+				rgbColorVal(fillColor),
+				(NUMSHADES + NUMTINTS - 1 - fillStyle) * 5);
+			niceLine(sftp);
+		} else { /* fillStyle == WHITE_FILL || BLACK_FILL ||
+					NUMSHADES + NUMTINTS - 1 */
+			if (fillStyle == WHITE_FILL) {
+				if (fillColor == BLACK_COLOR)
+					fillColor = WHITE_COLOR;
+				else
+					fillColor = BLACK_COLOR;
+			} else if (fillStyle == NUMSHADES + NUMTINTS - 1) {
+				fillColor = WHITE_COLOR;
+			} /* else, fillStyle == BLACK_FILL */
+			sprintf(sftp, ", -fill => '#%.6x'",
+					rgbColorVal(fillColor));
+			niceLine(sftp);
 		}
 	}
 
-	/* Finally draw shape itself. */
-	if (thickness > 0)
-		ptkShape(p, rgbColorVal(penColor), NONE, NONE, thickness/15);
+	/* outline color and thickness */
+	if (thickness > 0) {
+		sprintf(sftp, ", -outline => '#%.6x'", rgbColorVal(penColor));
+		niceLine(sftp);
+		if (thickness != 15) {
+			sprintf(sftp, ", -width => %d", thickness/15);
+			niceLine(sftp);
+		}
+
+		/* dash pattern */
+		ptk_setstyle(style, style_val);
+	} else {
+		strcpy(sftp, ", -outline => undef, -width => 0");
+		niceLine(sftp);
+	}
+	strcpy(sftp, ");\n");
+	niceLine(sftp);
 }
 
 /*
@@ -1066,8 +1118,7 @@ drawShape(void (*ptkShape)(), void *p, int thickness, int penColor,
  */
 
 void
-ptkArc(void *shape, int outlineColor, int fillColor,
-	int fillPattern, int thickness)
+ptkArc(void *shape)
 {
 	char	stfp[1024];
 	double	cx, cy,	/* Center of circle containing arc. */
@@ -1112,47 +1163,23 @@ ptkArc(void *shape, int outlineColor, int fillColor,
 	sprintf(stfp, " -start %lf -extent %lf/", startAngle, extent);
 	niceLine(stfp);
 
-	if (outlineColor == NONE)
-		sprintf(stfp, ", -outline => undef");
-	else
-		sprintf(stfp, ", -outline => '#%6.6x'", outlineColor);
-	niceLine(stfp);
-
 	switch (a->type) {
 	case T_OPEN_ARC:
-		if (fillColor == NONE)
-			sprintf(stfp, ", -style => 'arc', -fill => undef");
+		if (a->thickness > 0)
+		    strcpy(stfp, ", -style => 'arc'");
 		else
-			sprintf(stfp, ", -style => 'chord', -fill => '#%6.6x'",
-					fillColor);
+		    strcpy(stfp, ", -style => 'chord'");
 		niceLine(stfp);
 		break;
 	case T_PIE_WEDGE_ARC:
-		if (fillColor == NONE)
-			sprintf(stfp, ", -style => 'pieslice', -fill => undef");
-		else
-			sprintf(stfp,
-				", -style => 'pieslice', -fill => '#%6.6x'",
-				fillColor);
+		strcpy(stfp, ", -style => 'pieslice'");
 		niceLine(stfp);
 		break;
 	default:
 		fprintf(stderr, "ptkArc: unknown arc type.\n");
 		break;
 	}
-
-	if (fillPattern != NONE) {
-		sprintf(stfp, ", -stipple => \"\\@%s\"",
-				stippleFilename(fillPattern));
-		niceLine(stfp);
-	}
-	if (thickness != 1) {
-		sprintf(stfp, ", -width => '%d'", thickness);
-		niceLine(stfp);
-	}
-
-	sprintf(stfp, ");\n");
-	niceLine(stfp);
+	/* sprintf(stfp, ");\n"); */
 }
 
 /*
@@ -1160,8 +1187,7 @@ ptkArc(void *shape, int outlineColor, int fillColor,
  */
 
 void
-ptkEllipse(void *shape, int outlineColor, int fillColor,
-	int fillPattern, int thickness)
+ptkEllipse(void *shape)
 {
 	char		stfp[1024];
 	F_ellipse	*e;
@@ -1174,32 +1200,6 @@ ptkEllipse(void *shape, int outlineColor, int fillColor,
 		X(e->center.x + e->radiuses.x),
 		Y(e->center.y + e->radiuses.y));
 	niceLine(stfp);
-
-	if (outlineColor == NONE)
-		sprintf(stfp, ", -outline => undef");
-	else
-		sprintf(stfp, ", -outline => '#%6.6x'", outlineColor);
-	niceLine(stfp);
-
-	if (fillColor == NONE)
-		sprintf(stfp, ", -fill => undef");
-	else
-		sprintf(stfp, ", -fill => '#%6.6x'", fillColor);
-	niceLine(stfp);
-
-	if (fillPattern != NONE) {
-		sprintf(stfp, ", -stipple => \"\\@%s\"",
-				stippleFilename(fillPattern));
-		niceLine(stfp);
-	}
-
-	if (thickness != 1) {
-		sprintf(stfp, ", -width => '%d'", thickness);
-		niceLine(stfp);
-	}
-
-	sprintf(stfp, ");\n");
-	niceLine(stfp);
 }
 
 /*
@@ -1207,18 +1207,12 @@ ptkEllipse(void *shape, int outlineColor, int fillColor,
  */
 
 static void
-ptkLine(void * shape, int penColor, int fillColor,
-	int fillPattern, int thickness)
+ptkLine(F_line *l, int penColor, int thickness, int style, double style_val)
 {
-	(void)		fillColor;
-	(void)		fillPattern;
 	char		dir[8], stfp[1024];
-	extern char	*canvas;	/* Tk canvas name. */
 	F_arrow		*a;
-	F_line		*l;
 	F_point		*p, *q;
 
-	l = (F_line *) shape;
 	p = l->points;
 	q = p->next;
 
@@ -1228,28 +1222,13 @@ ptkLine(void * shape, int penColor, int fillColor,
 			canvas, X(p->x), Y(p->y), X(p->x), Y(p->y));
 		niceLine(stfp);
 	} else {
-		sprintf(stfp, "%s->createLine(", canvas);
-		niceLine(stfp);
-		sprintf(stfp, " '%lfi', '%lfi'", X(p->x), Y(p->y));
+		sprintf(stfp, "%s->createLine('%fi','%fi'", canvas,
+				X(p->x), Y(p->y));
 		niceLine(stfp);
 		for ( /* No op. */ ; q != NULL; q = q->next) {
-			sprintf(stfp, ", '%lfi', '%lfi'", X(q->x), Y(q->y));
+			sprintf(stfp, ", '%fi','%fi'", X(q->x), Y(q->y));
 			niceLine(stfp);
 		}
-	}
-
-	switch (l->style) {
-	case -1:/* Default. */
-	case 0:	/* Solid line. */
-		break;
-	case 1:	/* Dashed line. */
-	case 2:	/* Dotted line. */
-	case 3:	/* Dash-dotted line. */
-	case 4:	/* Dash-double-dotted line. */
-	case 5:	/* Dash-triple-dotted line. */
-	default:
-		fprintf(stderr, "ptkLine: only solid line styles supported.\n");
-		break;
 	}
 
 	a = NULL;
@@ -1296,6 +1275,8 @@ ptkLine(void * shape, int penColor, int fillColor,
 			break;
 		}
 
+	ptk_setstyle(style, style_val);
+
 	switch (l->join_style) {
 	case 0:	/* Miter (Tk default). */
 		break;
@@ -1333,7 +1314,7 @@ ptkLine(void * shape, int penColor, int fillColor,
 		niceLine(stfp);
 	}
 	if (penColor != BLACK_COLOR && penColor != DEFAULT) {
-		sprintf(stfp, ", -fill => '#%6.6x'", penColor);
+		sprintf(stfp, ", -fill => '#%6.6x'", rgbColorVal(penColor));
 		niceLine(stfp);
 	}
 	sprintf(stfp, ");\n");
@@ -1345,58 +1326,69 @@ ptkLine(void * shape, int penColor, int fillColor,
  */
 
 static void
-ptkPolygon(void * shape, int outlineColor, int fillColor,
-	int fillPattern, int thickness)
+ptkPolygon(void *points)
 {
 	char		stfp[1024];
-	extern char	*canvas;	/* Tk canvas name. */
 	F_point		*p, *q;
-	int		pts;
 
-	p = (F_point *) shape;
+	p = (F_point *)points;
 
+	sprintf(stfp, "%s->createPolygon('%fi','%fi'", canvas,
+		 X(p->x), Y(p->y));
+	niceLine(stfp);
 	q = p->next;
-	for (pts = 0; q != NULL; q = q->next) {
-		if (++pts == 3)
-			break;
+	/* emit all but the last point */
+	while (q->next != NULL) {
+		sprintf(stfp, ", '%fi','%fi'", X(q->x), Y(q->y));
+		niceLine(stfp);
+		q = q->next;
 	}
-	if (pts < 3)
-		return;	/* Bail out if it's not a polygon. */
-
-	q = p->next;
-	sprintf(stfp, "%s->createPolygon(", canvas);
-	niceLine(stfp);
-	sprintf(stfp, "'%lfi', '%lfi'", X(p->x), Y(p->y));
-	niceLine(stfp);
-	for ( /* No op. */ ; q != NULL; q = q->next) {
-		sprintf(stfp, ", '%lfi', '%lfi'", X(q->x), Y(q->y));
+	/*
+	 * ptkPolygon may be used to fill a line, or to draw and optionally fill
+	 * a polygon. Check, whether the last point must be emitted.
+	 */
+	if (q->x != p->x || q->y != p->y) {
+		sprintf(stfp, ", '%fi','%fi'", X(q->x), Y(q->y));
 		niceLine(stfp);
 	}
+}
 
-	if (outlineColor == NONE)
-		sprintf(stfp, ", -outline => undef");
-	else
-		sprintf(stfp, ", -outline => '#%6.6x'", outlineColor);
-	niceLine(stfp);
+static void
+ptk_setstyle(int style, double v)
+{
+	char		stfp[200];
+	const int	one = 1;
 
-	if (fillColor == NONE)
-		sprintf(stfp, ", -fill => undef");
-	else
-		sprintf(stfp, ", -fill => '#%6.6x'", fillColor);
-	niceLine(stfp);
+	v *= 96. / 80.0;	/* Let us say, 96 screen pixels to the inch */
 
-	if (fillPattern != NONE) {
-		sprintf(stfp, ", -stipple => \"\\@%s\"",
-				stippleFilename(fillPattern));
-		niceLine(stfp);
+	if (style == SOLID_LINE) {
+		return;
+	} else if (style == DASH_LINE) {
+		if (v > 0.0)
+			sprintf(stfp, ", -dash => [%d,%d]", round(v), round(v));
+	} else if (style == DOTTED_LINE) {
+		if (v > 0.0)
+			sprintf(stfp, ", -dash => [%d,%d]", one, round(v));
+	} else if (style == DASH_DOT_LINE) {
+		if (v > 0.0)
+			sprintf(stfp, ", -dash => [%d,%d,%d,%d]",
+					round(v), round(v*0.5),
+					one, round(v*0.5));
+	} else if (style == DASH_2_DOTS_LINE) {
+		if (v > 0.0)
+			sprintf(stfp, ", -dash => [%d,%d,%d,%d,%d,%d]",
+					round(v), round(v*0.45), one,
+					round(v*0.333), one, round(v*0.45));
+	} else if (style == DASH_3_DOTS_LINE) {
+		if (v > 0.0)
+			sprintf(stfp, ", -dash => [%d,%d,%d,%d,%d,%d,%d,%d]",
+					round(v), round(v*0.4), one,
+					round(v*0.3), one, round(v*0.3), one,
+					round(v*0.4));
+	} else {
+		return;
 	}
 
-	if (thickness != 1) {
-		sprintf(stfp, ", -width => '%d'", thickness);
-		niceLine(stfp);
-	}
-
-	sprintf(stfp, ");\n");
 	niceLine(stfp);
 }
 
@@ -1433,44 +1425,6 @@ rgbColorVal(int colorIndex)
 }
 
 /*
- *   s t i p p l e F i l e n a m e ( )
- *
- *   Given xfig index number, return the filename of the corresponding
- *   stipple pattern.  Tk requires the bitmap to be in a file.
- */
-
-static char *
-stippleFilename(int patternIndex)
-{
-	static char *	fillNames[63] = {
-		"sp0.bmp", "sp1.bmp", "sp2.bmp", "sp3.bmp", "sp4.bmp",
-		"sp5.bmp", "sp6.bmp", "sp7.bmp", "sp8.bmp", "sp9.bmp",
-		"sp10.bmp", "sp11.bmp", "sp12.bmp", "sp13.bmp", "sp14.bmp",
-		"sp15.bmp", "sp16.bmp", "sp17.bmp", "sp18.bmp", "sp19.bmp",
-		"sp20.bmp",
-
-		"", "", "", "", "", "", "", "", "", "",
-		"", "", "", "", "", "", "", "", "", "",
-
-		"left30.bmp", "right30.bmp", "crosshatch30.bmp",
-		"left45.bmp", "right45.bmp", "crosshatch45.bmp",
-		"bricks.bmp", "vert_bricks.bmp", "horizontal.bmp",
-		"vertical.bmp", "crosshatch.bmp", "leftshingle.bmp",
-		"rightshingle.bmp", "vert_leftshingle.bmp",
-		"vert_rightshingle.bmp", "fishscales.bmp",
-		"small_fishscales.bmp", "circles.bmp", "hexagons.bmp",
-		"octagons.bmp", "horiz_saw.bmp", "vert_saw.bmp"
-	};
-	static char	path[32];
-
-	/* XXX something like File::Spec would be better, but this is
-	   sufficient for Unix and Win32 */
-	sprintf(path, "%s/%s",
-		xbmPathVar, fillNames[patternIndex]);
-	return path;
-}
-
-/*
  *   n i c e L i n e ( )
  *
  *   Instead of directly calling fprintf()'s, this routine is used so
@@ -1492,16 +1446,16 @@ niceLine(char *s)
 		if (s[i] == '"') {
 			inQuote ^= 1;	/* Flip between 0/1. */
 			putc(s[i], tfp);
-			pos++;
+			++pos;
 		} else if (!inQuote && (pos > 80) && (s[i] == ' ')) {
-			fprintf(tfp, " \n  ");
-			pos = 2;
+			fprintf(tfp, "\n    ");
+			pos = 4;
 		} else {
 			putc(s[i], tfp);
 			if (s[i] == '\n')
 				pos = 0;
 			else
-				pos++;
+				++pos;
 		}
 	}
 }

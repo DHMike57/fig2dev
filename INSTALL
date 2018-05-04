@@ -8,9 +8,9 @@ and issue the command
 
   name /f Nmakefile
 
-For installation, you would manually have to copy the folders bitmaps/ and
-i18n/ and the file rgb.txt to the location given in the Nmakefile. Chances
-are good, that fig2dev works to your satisfaction even without these files.
+For installation, you would manually have to copy the folder i18n/ and
+the file rgb.txt to the location given in the Nmakefile. Chances
+are good that fig2dev works to your satisfaction even without these files.
 
 Requirements
 ------------
@@ -40,8 +40,8 @@ Optionally,
   ./configure; make; make check; make install; make installcheck
 
 will run tests (make check) with the freshly built executable still at
-its location in the build tree, and (make installcheck) with the final,
-installed executable.
+its location in the build tree, and (make installcheck) with the
+executable installed in its final location.
 
 Under Darwin, necessary libraries and header files are often installed
 in non-standard locations.  These locations can be given in the LDFLAGS
@@ -55,12 +55,10 @@ The commands above will compile fig2dev and copy the executables fig2dev,
 fig2ps2tex and pic2tpic to /usr/local/bin.  Three man-pages for these
 binaries are put into /usr/local/man/man1.  Furthermore, files which may
 be needed at runtime are put under /usr/local/share/fig2dev.
-The runtime files are (i) bitmap files, which are stored in
-/usr/local/share/fig2dev/bitmaps, (ii) internationalization files, put
-into /usr/local/share/fig2dev/i18n, and the color definition file
-/usr/local/share/fig2dev/rgb.txt.  The bitmap-files are used by the tk
-(tcl/tk) and ptk (perl/tk) output language.  The internationalization
-files may be used by the PostScript and all bitmap output languages.
+The runtime files are (i) internationalization files, which are stored
+under /usr/local/share/fig2dev/i18n, and (ii) the color definition file
+/usr/local/share/fig2dev/rgb.txt. The internationalization files may be
+used by the PostScript and all bitmap output languages.
 
 
 	Options
@@ -81,7 +79,7 @@ Compilation flags are typically
 
 Try
   ./configure --prefix=/tmp/fig2dev; make install
-and 
+and
   ls -R /tmp/fig2dev or tree /tmp/fig2dev
 to see all files that are installed.
 

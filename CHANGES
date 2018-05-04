@@ -2,6 +2,18 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
+Patchlevel 7a (April 2018)
+
+BUGS FIXED:
+	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
+	o Fix regression whereupon flipped ellipses were not read. Ticket #23.
+	o Distribute i18n files ru_RU.CP1251.ps and uk_UA.KOI8-U.ps.
+	o Make test "survive debian bug #890016" succeed on 32 bit systems.
+	o Distribute the X bitmaps files within fig2dev, no need to install
+	  these files. The files were needed for Tk and Perl/Tk output.
+	o Add option -w, wrap (create stand-alone perl file) for Perl/Tk output.
+
+-------------------------------------
 Patchlevel 7 (April 2018)
 
 OPTION LETTER CHANGES:

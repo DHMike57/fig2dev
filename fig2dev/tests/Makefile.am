@@ -1,7 +1,10 @@
 ## Run automake on this file to produce Makefile.in
 
 # Fig2dev: Translate Fig code to various Devices
-# Parts Copyright (c) 2016-2018 by Thomas Loimer
+# Copyright (c) 1991 by Micah Beck
+# Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+# Parts Copyright (c) 1989-2015 by Brian V. Smith
+# Parts Copyright (c) 2015-2018 by Thomas Loimer
 #
 # Any party obtaining a copy of these files is granted, free of charge, a
 # full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -41,7 +44,6 @@ check_PROGRAMS = test1
 # keep the definition below in sync with that in ../Makefile.am
 AM_CPPFLAGS = -DRGB_FILE="\"$(pkgdatadir)/rgb.txt\""
 # keep the definitions below in sync with those in ../dev/Makefile.am
-AM_CPPFLAGS += -DBITMAPDIR="\"$(bitmapsdir)\""
 if ENABLE_I18N
 AM_CPPFLAGS += -DI18N_DATADIR="\"$(i18ndir)\""
 endif

@@ -205,8 +205,7 @@ AT_CHECK([fig2dev -L box <<EOF
 1 6
 1=6
 EOF
-],1,ignore,[Invalid resolution information (-1).
-])
+],1,ignore,ignore)
 AT_CLEANUP
 
 AT_BANNER([Dynamically allocate picture file name.])

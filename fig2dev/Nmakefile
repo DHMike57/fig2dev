@@ -32,7 +32,6 @@ PROGRAM_NAME = fig2dev.exe
 # Backslashes must be properly quoted.
 # "fig2dev" really should be "PACKAGE", #defined in config.h or config.vc,
 # but I was tired of the additional expansion level.
-BITMAPDIR = $(PROGRAMFILES:\=\\)\\fig2dev\\bitmaps
 I18N_DATADIR = $(PROGRAMFILES:\=\\)\\fig2dev\\i18n
 RGB_FILE = $(PROGRAMFILES:\=\\)\\fig2dev\\rgb.txt
 
@@ -73,8 +72,8 @@ CCD   = cl.exe $(RTLIBD) /Gm /ZI /Od /D_DEBUG /RTC1
 #RCD   = rc.exe /dDEBUGBUILD=1
 
 CFLAGS = /I. /Idev /nologo /W1 /DWIN32 /D_BIND_TO_CURRENT_VCLIBS_VERSION=1 \
-	/DHAVE_CONFIG_H=1 /DBITMAPDIR="\"$(BITMAPDIR)\"" \
-	/DI18N_DATADIR="\"$(I18N_DATADIR)\"" /DRGB_FILE="\"$(RGB_FILE)\""
+	/DHAVE_CONFIG_H=1 /DI18N_DATADIR="\"$(I18N_DATADIR)\"" \
+	/DRGB_FILE="\"$(RGB_FILE)\""
 # /EHsc ... enable C++ exception handling (?)
 # /nologo ... suppress startup banner
 # /FD ... IDE minimal rebuild(?)
@@ -94,13 +93,14 @@ FIG2DEV_SRCS = arrow.c bound.c colors.c creationdate.c fig2dev.c free.c \
 	dev/gensvg.c dev/gentextyl.c dev/gentikz.c dev/gentk.c dev/gentpic.c \
 	dev/psencode.c dev/readeps.c dev/readgif.c dev/readjpg.c dev/readpcx.c \
 	dev/readpics.c dev/readppm.c dev/readtif.c dev/readxbm.c \
-	dev/setfigfont.c dev/texfonts.c dev/xtmpfile.c
+	dev/setfigfont.c dev/texfonts.c dev/tkpattern.c dev/xtmpfile.c
 
 FIG2DEV_HEADERS = alloc.h bool.h bound.h colors.h creationdate.h drivers.h \
 	fig2dev.h free.h localmath.h object.h pi.h read.h trans_spline.h \
 	dev/genemf.h dev/genlatex.h dev/genps.h dev/gentikz.h dev/picfonts.h \
 	dev/picpsfonts.h dev/psencode.h dev/psfonts.h dev/psimage.h \
-	dev/psprolog.h dev/setfigfont.h dev/texfonts.h dev/xtmpfile.h
+	dev/psprolog.h dev/setfigfont.h dev/texfonts.h dev/tkpattern.h \
+	dev/xtmpfile.h
 
 all : release
 

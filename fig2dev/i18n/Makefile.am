@@ -19,7 +19,8 @@
 MAINTAINERCLEANFILES = Makefile.in
 
 # With dist_, these files are installed into $(i18ndir).
-dist_i18n_DATA = cs_CZ.ps japanese.ps korean.ps ru_RU.KOI8-R.ps
+dist_i18n_DATA = cs_CZ.ps japanese.ps korean.ps ru_RU.CP1251.ps ru_RU.KOI8-R.ps\
+	uk_UA.KOI8-U.ps
 
 install-data-hook:
 	cd "$(DESTDIR)$(i18ndir)" && { \

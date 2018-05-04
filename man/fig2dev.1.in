@@ -763,7 +763,7 @@ The default is \fI\\rmfamily\fR.
 .B \-i dir
 Prepend the string \fIdir\fR to graphics files included in the pict2e-picture.
 For instance, having imported "image.jpg" in xfig, with
-\fB\- i '$HOME/Figures/'\fR the code "\\incudegraphics{$HOME/Figures/image.jpg}"
+\fB\-i '$HOME/Figures/'\fR the code "\\incudegraphics{$HOME/Figures/image.jpg}"
 will be generated.
 
 .TP
@@ -1546,6 +1546,14 @@ This is the default for Fig files of version 2.1 or lower.
 .B \-P
 Generate canvas of full page size instead of using the bounding box
 of the figure's objects. The default is to use only the bounding box.
+
+.TP
+.B \-w
+Wrap the figure with code in order to generate a complete perl file.
+That is, you can do
+.B fig2dev -L ptk -w f.fig f.pl; perl f.pl
+and a widget pops up that shows the graphics contained in f.pl.
+Only available for ptk output.
 
 .TP
 .B \-z papersize

@@ -1472,7 +1472,8 @@ assign_arrow(struct tikzarrow *a, struct tikzarrow *o)
 static void
 set_arrows(F_arrow *back, F_arrow *forw)
 {
-	static struct tikzarrow	    cur_b = {NOARROW}, cur_f = {NOARROW};
+	static struct tikzarrow      cur_b = {NOARROW,0,0,{0,0.0,0.0,0.0,0,0}};
+	static struct tikzarrow      cur_f = {NOARROW,0,0,{0,0.0,0.0,0.0,0,0}};
 	struct tikzarrow    b, f;
 	struct settings	    *d = NULL;
 	bool		    set_back, set_forw;

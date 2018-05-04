@@ -368,12 +368,6 @@ AC_REPLACE_FUNCS([isascii strstr strchr strrchr strcasecmp strncasecmp \
 # Place the replacement functions into this dir.
 AC_CONFIG_LIBOBJ_DIR([fig2dev/lib])
 
-# The directory were bitmaps are installed to.
-# fig2dev/dev/Makefile.am defines -DBITMAPDIR and -DI18N_DATADIR
-# bitmapsdir is used in fig2dev/bitmaps/Makefile.am.
-# Bitmaps are used by the tk- and ptk-driver.
-AC_SUBST([bitmapsdir],['$(pkgdatadir)/bitmaps'])
-
 #
 # Autotest infrastructure.
 #
@@ -388,7 +382,6 @@ AC_CONFIG_FILES([Makefile
 		fig2dev/Makefile
 		fig2dev/config.vc
 		fig2dev/dev/Makefile
-		fig2dev/bitmaps/Makefile
 		fig2dev/i18n/Makefile
 		fig2dev/tests/Makefile
 		fig2dev/tests/atlocal
