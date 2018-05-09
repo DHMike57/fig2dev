@@ -2,6 +2,12 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
+Patchlevel 7b (Xxx 201x)
+
+BUGS FIXED:
+	o Correct typos in man-pages, debian 30_man_typo.patch.
+
+-------------------------------------
 Patchlevel 7a (May 2018)
 
 NEW FEATURES:

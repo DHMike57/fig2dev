@@ -1176,7 +1176,7 @@ comes from standard input.
 .SH PSTEX_T and PDFTEX_T OPTIONS
 The \fBpstex_t\fR and \fBpdftex_t\fR languages produce only the text flagged
 with the "TeX Text" flag, the commands necessary to position this text, and the
-commands necesary to overlay the PostScript or PDF file generated using
+commands necessary to overlay the PostScript or PDF file generated using
 .B pstex
 or
 .B pdftex
@@ -1499,7 +1499,7 @@ type of the object that is drawn.
 
 .TP
 .B \-W
-Do not emit code at the beginning of the file that allows to set the
+Do not emit code at the beginning of the file that allows one to set the
 figure width or height from the including TeX document.
 Otherwise, e.g., "\fB\\newdimen\\XFigwidth\\XFigwidth=\\linewidth\fR"
 would scale the following figures to the line width.
