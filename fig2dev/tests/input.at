@@ -63,6 +63,13 @@ AT_CHECK([fig2dev -Leps -g'mistyrose' $srcdir/data/line.fig
 ], 0, ignore-nolog)
 AT_CLEANUP
 
+AT_SETUP([accept blanks in color names])
+AT_KEYWORDS(colors names)
+AT_SKIP_IF([test "x$INSTALLCHECK" = xno])
+AT_CHECK([fig2dev -Leps -g'steel blue' $srcdir/data/line.fig
+], 0, ignore-nolog)
+AT_CLEANUP
+
 AT_BANNER([Read installed files.])
 AT_SETUP([rgb.txt and i18ndir/cs_CZ.ps])
 AT_KEYWORDS(installpath)
