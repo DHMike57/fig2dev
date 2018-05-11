@@ -26,8 +26,8 @@
 #ifdef	HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#include "pi.h"
 
+#include "pi.h"
 #include "fig2dev.h"	/* includes "bool.h" */
 
 struct color_db {
@@ -35,7 +35,6 @@ struct color_db {
 	unsigned char	red, green, blue;
 };
 
-static int		read_colordb(void);
 static int		numXcolors = 0;
 static struct color_db	*Xcolors;
 
@@ -704,17 +703,79 @@ static struct color_db defaultXcolors[] = {
 	{"lightgreen",		144, 238, 144}
 };
 
-
-static void
-strip_blank(char *dest, const char *src)
+/*
+ * Squeeze blanks and tabs out of a string.
+ * Return the length of the resulting string, excluding the
+ * terminating null byte ('\0').
+ */
+static size_t
+squeeze_str(char *s)
 {
-	while (*src)
-		if (*src == ' ' || *src == '\t')
-			++src;
-		else
-			*dest++ = *src++;
-	*dest = '\0';
+	char	*c1, *c2;
+	/* remove any white space from the color name */
+	for (c1 = s, c2 = s; *c2; ++c2) {
+		if (*c2 != ' ' && *c2 != '\t') {
+			*c1 = *c2;
+			++c1;
+		}
+	}
+	*c1 = '\0';
+	return c1 - s;
 }
+
+/* read the X11 RGB color database (ASCII .txt) file */
+static int
+read_colordb(void)
+{
+	static int	maxcolors = 400;
+	FILE		*fp;
+#define MAX_LINE	100
+	char		s[MAX_LINE], s1[MAX_LINE];
+
+	fp = fopen(RGB_FILE, "r");
+	if (fp == NULL) {
+		Xcolors = defaultXcolors;
+		numXcolors = sizeof(defaultXcolors) / sizeof(struct color_db);
+		return 0;
+	}
+
+#define Err_Xcolors	"Could not allocate space for the RGB database file.\n"
+
+	if ((Xcolors = malloc(maxcolors * sizeof(struct color_db))) == NULL) {
+		fputs(Err_Xcolors, stderr);
+		fclose(fp);
+		return -1;
+	}
+
+	while (fgets(s, sizeof(s), fp)) {
+		unsigned char	r, g, b;
+		struct color_db	*col;
+
+		if (numXcolors >= maxcolors) {
+			maxcolors += 500;
+			if ((Xcolors = realloc(Xcolors, maxcolors * sizeof(
+							struct color_db))) ==
+					NULL) {
+				fputs(Err_Xcolors, stderr);
+				fclose(fp);
+				return -1;
+			}
+		}
+#undef Err_Xcolors
+		if (sscanf(s, "%hhu %hhu %hhu %[^\n]", &r, &g, &b, s1) == 4) {
+			col = Xcolors + numXcolors;
+			col->red = r;
+			col->green = g;
+			col->blue = b;
+			col->name = malloc(squeeze_str(s1) + 1);
+			strcpy(col->name, s1);
+			++numXcolors;
+		}
+	}
+	fclose(fp);
+	return 0;
+}
+
 
 int
 lookup_X_color(char *name, RGB *rgb)
@@ -725,123 +786,67 @@ lookup_X_color(char *name, RGB *rgb)
 
 	len = strlen(name);
 	if (name[0] == '#') {			/* hex color parse it now */
-	    unsigned short	r, g, b;
-	    int			n = 0;
-	    if (len == 4) {		/* #rgb */
-		    n = sscanf(name,"#%1hx%1hx%1hx",&r,&g,&b);
-		    rgb->red   = ((r << 4) + r) << 8;
-		    rgb->green = ((g << 4) + g) << 8;
-		    rgb->blue  = ((b << 4) + b) << 8;
-	    } else if (len == 7) {		/* #rrggbb */
-		    n = sscanf(name,"#%2hx%2hx%2hx",&r,&g,&b);
-		    rgb->red   = r << 8;
-		    rgb->green = g << 8;
-		    rgb->blue  = b << 8;
-	    } else if (len == 10) {	/* #rrrgggbbb */
-		    n = sscanf(name,"#%3hx%3hx%3hx",&r,&g,&b);
-		    rgb->red   = r << 4;
-		    rgb->green = g << 4;
-		    rgb->blue  = b << 4;
-	    } else if (len == 13) {	/* #rrrrggggbbbb */
-		    n = sscanf(name,"#%4hx%4hx%4hx",&r,&g,&b);
-		    rgb->red   = r;
-		    rgb->green = g;
-		    rgb->blue  = b;
-	    }
-	    if (n == 3) {
-		/* ok */
-		return 0;
-	    }
+		unsigned short	r, g, b;
+		int		n = 0;
+
+		if (len == 4) {		/* #rgb */
+			n = sscanf(name, "#%1hx%1hx%1hx", &r, &g, &b);
+			rgb->red   = ((r << 4) + r) << 8;
+			rgb->green = ((g << 4) + g) << 8;
+			rgb->blue  = ((b << 4) + b) << 8;
+		} else if (len == 7) {		/* #rrggbb */
+			n = sscanf(name, "#%2hx%2hx%2hx", &r, &g, &b);
+			rgb->red   = r << 8;
+			rgb->green = g << 8;
+			rgb->blue  = b << 8;
+		} else if (len == 10) {	/* #rrrgggbbb */
+			n = sscanf(name, "#%3hx%3hx%3hx", &r, &g, &b);
+			rgb->red   = r << 4;
+			rgb->green = g << 4;
+			rgb->blue  = b << 4;
+		} else if (len == 13) {	/* #rrrrggggbbbb */
+			n = sscanf(name, "#%4hx%4hx%4hx", &r, &g, &b);
+			rgb->red   = r;
+			rgb->green = g;
+			rgb->blue  = b;
+		}
+		if (n == 3)
+			return 0;	/* ok */
 	} else {
-	    /* read the X color database file if we haven't done that yet */
-	    if (!have_read_X_colors) {
-		if (read_colordb() != 0) {
-		    /* error reading color database, return black */
-		    rgb->red = rgb->green = rgb->blue = 0u;
-		    return -1;
+		/* read the X color database file if we haven't done that yet */
+		if (!have_read_X_colors) {
+			if (read_colordb() != 0) {
+				/* error reading color database, return black */
+				rgb->red = rgb->green = rgb->blue = 0u;
+				return -1;
+			}
+			have_read_X_colors = true;
 		}
-		have_read_X_colors = true;
-	    }
 
-	    /* named color, look in the database we read in */
-	    for (col = Xcolors; col - Xcolors < numXcolors; ++col) {
-		char	buf[100];
-		char	*strip_name;
+		/* named color, look in the database we read in */
+		for (col = Xcolors; col - Xcolors < numXcolors; ++col) {
+			char	squeezed[MAX_LINE];
+#undef MAX_LINE
 
-		strip_name = len >= 100 ? malloc(len + 1) : buf;
-		strip_blank(strip_name, name);
-		if (strcasecmp(col->name, strip_name) == 0) {
-		    /* found it */
-		    rgb->red = (unsigned short)col->red << 8;
-		    rgb->green = (unsigned short)col->green << 8;
-		    rgb->blue = (unsigned short)col->blue << 8;
-		    return 0;
+			strcpy(squeezed, name);
+			(void)squeeze_str(squeezed);
+			if (strcasecmp(col->name, squeezed) == 0) {
+				/* found it */
+				rgb->red = (unsigned short)col->red << 8;
+				rgb->green = (unsigned short)col->green << 8;
+				rgb->blue = (unsigned short)col->blue << 8;
+				return 0;
+			}
 		}
-	    }
 	}
 	/* not found or bad #rgb spec, set to black */
 	rgb->red = rgb->green = rgb->blue = 0;
 	return -1;
 }
-
-/* read the X11 RGB color database (ASCII .txt) file */
-int
-read_colordb(void)
-{
-    static int		maxcolors = 400;
-    FILE		*fp;
-    char		s[100], s1[100];
-
-    fp = fopen(RGB_FILE, "r");
-    if (fp == NULL) {
-      Xcolors = defaultXcolors;
-      numXcolors = sizeof(defaultXcolors) / sizeof(struct color_db);
-	return 0;
-    }
-    if ((Xcolors = (struct color_db*) malloc(maxcolors*sizeof(struct color_db)))
-		== NULL) {
-      fprintf(stderr,"Couldn't allocate space for the RGB database file\n");
-      return -1;
-    }
-
-    while (fgets(s, sizeof(s), fp)) {
-	unsigned char	r, g, b;
-	struct color_db	*col;
-
-	if (numXcolors >= maxcolors) {
-	    maxcolors += 500;
-	    if ((Xcolors = (struct color_db*) realloc(Xcolors, maxcolors*sizeof(struct color_db))) == NULL) {
-	      fprintf(stderr,"Couldn't allocate space for the RGB database file\n");
-	      return -1;
-	    }
-	}
-	if (sscanf(s, "%hhu %hhu %hhu %[^\n]", &r, &g, &b, s1) == 4) {
-	    char	*c1, *c2;
-	    /* remove any white space from the color name */
-	    for (c1=s1, c2=s1; *c2; ++c2) {
-		if (*c2 != ' ' && *c2 != '\t') {
-		   *c1 = *c2;
-		   ++c1;
-		}
-	    }
-	    *c1 = '\0';
-	    col = (Xcolors+numXcolors);
-	    col->red = r;
-	    col->green = g;
-	    col->blue = b;
-	    col->name = malloc((size_t)(c1 - s1 + 1));
-	    strcpy(col->name, s1);
-	    ++numXcolors;
-	}
-    }
-    fclose(fp);
-    return 0;
-}
-
 /* convert rgb to gray scale using the classic luminance conversion factors */
 
 float
 rgb2luminance (float r, float g, float b)
 {
-      return (float) (0.3*r + 0.59*g + 0.11*b);
+	return 0.3*r + 0.59*g + 0.11*b;
 }
