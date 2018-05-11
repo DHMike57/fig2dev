@@ -254,6 +254,12 @@ AS_IF([test "x$with_png" != xno],
 
 AM_CONDITIONAL([WITH_PNG], [test "$ac_cv_header_png_h" = yes])
 
+AC_ARG_WITH(rgbfile, [AS_HELP_STRING([--with-rgbfile=<path>],
+	[specify full path of X color file (default: /etc/X11/rgb.txt)])],
+	[],[withval=/etc/X11/rgb.txt])
+AC_DEFINE_UNQUOTED([RGB_FILE], ["$withval"],dnl
+	[Define to the full path of the X color database file.])
+
 # If with-xpm is true, search for the X11 include and library paths,
 # then search for libXpm, then search for X11/xpm.h. If all are found,
 # regardless of whether --x-includes and --x-libraries are set on the

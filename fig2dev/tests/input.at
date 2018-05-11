@@ -56,22 +56,14 @@ AT_CHECK([fig2dev -Leps -g'#30g' $srcdir/data/line.fig
 ])
 AT_CLEANUP
 
-AT_SETUP([read color database .../rgb.txt])
+AT_SETUP([use built-in color database, blanks in names])
 AT_KEYWORDS(colors names)
-AT_SKIP_IF([test "x$INSTALLCHECK" = xno])
-AT_CHECK([fig2dev -Leps -g'mistyrose' $srcdir/data/line.fig
-], 0, ignore-nolog)
-AT_CLEANUP
-
-AT_SETUP([accept blanks in color names])
-AT_KEYWORDS(colors names)
-AT_SKIP_IF([test "x$INSTALLCHECK" = xno])
-AT_CHECK([fig2dev -Leps -g'steel blue' $srcdir/data/line.fig
+AT_CHECK([fig2dev -Leps -g'misty rose' $srcdir/data/line.fig
 ], 0, ignore-nolog)
 AT_CLEANUP
 
 AT_BANNER([Read installed files.])
-AT_SETUP([rgb.txt and i18ndir/cs_CZ.ps])
+AT_SETUP([$i18ndir/cs_CZ.ps must exist])
 AT_KEYWORDS(installpath)
 AT_SKIP_IF([test "x$INSTALLCHECK" = xno])
 AT_CHECK(["$abs_builddir"/test1], 0)

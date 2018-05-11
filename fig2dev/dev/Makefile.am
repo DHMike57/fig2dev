@@ -36,7 +36,7 @@ noinst_LIBRARIES = libdrivers.a
 ## if CPPFLAGS are set individually, like
 ##   libdrivers_a_CPPFLAGS = -I..
 ## objects like libdrivers_a-as85ec.o etc. are created
-# i18ndir and bitmapsdir are defined and AC_SUBST'd in configure.ac
+# i18ndir is defined and AC_SUBST'd in configure.ac
 AM_CPPFLAGS = -I"$(top_srcdir)/fig2dev"
 if ENABLE_I18N
 AM_CPPFLAGS += -DI18N_DATADIR="\"$(i18ndir)\""

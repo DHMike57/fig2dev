@@ -29,14 +29,8 @@ SUBDIRS += tests
 
 EXTRA_DIST = fig2ps2tex.csh config.vc Nmakefile
 
-# Copy the rgb.txt file into, usually, ../share/fig2dev/rgb.txt
-## The pkgdata has its argument be put into pkgdatadir
-dist_pkgdata_DATA = rgb.txt
-
-## Need to use \"$(DESTDIR)$(pkgdatadir)? ... no
-AM_CPPFLAGS = -DRGB_FILE="\"$(pkgdatadir)/rgb.txt\""
 if WITH_XPM
-AM_CPPFLAGS += $(XCPPFLAGS)
+AM_CPPFLAGS = $(XCPPFLAGS)
 AM_LDFLAGS = $(XLDFLAGS)
 endif
 

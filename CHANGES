@@ -4,6 +4,10 @@ Version 3.2
 ===============================================================================
 Patchlevel 7b (Xxx 201x)
 
+NEW FEATURES:
+	o A X color database is not needed, but can be provided. The location of
+	  the database can be given at compile time, default /etc/X11/rgb.txt.
+
 BUGS FIXED:
 	o Accept blanks in color names (e.g., fig2dev -L eps -g"Misty Rose"..).
 	o Correct typos in man-pages, debian 30_man_typo.patch.

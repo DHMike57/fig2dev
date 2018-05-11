@@ -41,11 +41,9 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 
 check_PROGRAMS = test1
 
-# keep the definition below in sync with that in ../Makefile.am
-AM_CPPFLAGS = -DRGB_FILE="\"$(pkgdatadir)/rgb.txt\""
 # keep the definitions below in sync with those in ../dev/Makefile.am
 if ENABLE_I18N
-AM_CPPFLAGS += -DI18N_DATADIR="\"$(i18ndir)\""
+AM_CPPFLAGS = -DI18N_DATADIR="\"$(i18ndir)\""
 endif
 
 check-local: atconfig $(TESTSUITE) atlocal

@@ -29,7 +29,7 @@
  * The code below really mocks the code in genps.c and colors.c and
  * therefore must be kept in sync with the code there.
  * Integration tests would be to fragile: I18N_DATADIR depends on the locale
- * to be present. RGB_FILE is checked in an integration test.
+ * to be present.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -50,16 +50,9 @@ main(void)
 	int err = 0;
 	char buf[BUFSIZ];
 	char *filepath = buf;
-//	char rgbpath[] = STRINGIZE(RGB_FILE);
 //	char i18ndir[] = STRINGIZE(I18N_DATADIR);
-	char rgbpath[] = RGB_FILE;
 	char i18ndir[] = I18N_DATADIR;
 	size_t	n;
-
-	if (fopen(rgbpath, mode) == NULL) {
-		printf("Cannot open file: %s\n", rgbpath);
-		err += 1;
-	}
 
 #ifdef I18N_DATADIR
 	n = strlen(i18ndir);
@@ -69,7 +62,7 @@ main(void)
 	memcpy(filepath + n, "/cs_CZ.ps", (size_t)10);
 	if (fopen(filepath, mode) == NULL) {
 		printf("Cannot open file: %s\n", filepath);
-		err += 2;
+		err += 1;
 	}
 #endif
 
