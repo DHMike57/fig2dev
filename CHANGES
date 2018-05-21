@@ -9,6 +9,8 @@ NEW FEATURES:
 	  the database can be given at compile time, default /etc/X11/rgb.txt.
 
 BUGS FIXED:
+	o Use SetFigFont, not SetFigFontNFSS in pictex output. Fixes
+	  https://bugs.launchpad.net/ubuntu/+source/transfig/+bug/1359485 .
 	o Accept blanks in color names (e.g., fig2dev -L eps -g"Misty Rose"..).
 	o Correct typos in man-pages, debian 30_man_typo.patch.
 
