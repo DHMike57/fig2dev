@@ -369,6 +369,7 @@ read_lineobject(FILE *fp)
 	l->next = NULL;
 	l->points = Point_malloc(p);
 	l->points->next = NULL;
+	l->pic = NULL;
 	l->comments = NULL;
 	n = fscanf(fp, " %d %d %d %lf %d %d %d %d %d %d", &t,
 			&l->style, &l->thickness, &l->style_val,
