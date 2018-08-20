@@ -1481,6 +1481,9 @@ save_comment(void)
 {
     int		    i;
 
+    /* skip too many comment lines */
+    if (numcom == MAXCOMMENTS)
+	return 2;
     i=strlen(buf);
     /* see if we've allocated space for this comment */
     if (comments[numcom])
@@ -1493,8 +1496,7 @@ save_comment(void)
     i=1;
     if (buf[1] == ' ')	/* remove one leading blank from the comment, if there is one */
 	i=2;
-    if (numcom < MAXCOMMENTS)
-	strcpy(comments[numcom++], &buf[i]);
+    strcpy(comments[numcom++], &buf[i]);
     return 1;
 }
 
