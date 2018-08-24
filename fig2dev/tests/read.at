@@ -211,11 +211,21 @@ AT_CLEANUP
 AT_SETUP([ignore too many comment lines, ticket #25])
 AT_KEYWORDS([read.c])
 AT_CHECK([fig2dev -L box <<EOF
+#FIG 3.2
+Landscape
+Center
+Inches
+Letter
+100.
+Single
+-2
 m4_for([i], [1], [102], [], [#
 ])dnl
+1200 2
+2 1 0 1 -1 -1 50 -1 -1 0.0 0 0 -1 0 0 2
+        0 0 100 100
 EOF
-],1,ignore,[File is truncated at resolution specification.
-])
+],0,ignore-nolog)
 AT_CLEANUP
 
 AT_SETUP([ignore truncated line object, ticket #26])

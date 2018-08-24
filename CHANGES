@@ -9,6 +9,13 @@ NEW FEATURES:
 	  the database can be given at compile time, default /etc/X11/rgb.txt.
 
 BUGS FIXED:
+	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
+	Debian bug numbers refer to https://bugs.debian.org/#.
+	o Properly initalize line storage when reading fig files version 1.3.
+	  Would segfault when reading incomplete line and trying to free it.
+	  Fixes ticket #26, debian bug 906743.
+	o Silently ignore the hundred-first and more comment lines. This
+	  fixes ticket #25 and debian bug 906740.
 	o Use SetFigFont, not SetFigFontNFSS in pictex output. Fixes
 	  https://bugs.launchpad.net/ubuntu/+source/transfig/+bug/1359485 .
 	o Accept blanks in color names (e.g., fig2dev -L eps -g"Misty Rose"..).
