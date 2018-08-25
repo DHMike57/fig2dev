@@ -1175,16 +1175,20 @@ read_splineobject(FILE *fp)
 	    free_splinestorage(s);
 	    return NULL;
 	    }
-	p->x = x; p->y = y;
+	p->x = x; p->y = y; p->next = NULL;
 	c = 1;
 	if (!v30_flag)
 		npts = 1000000;
+	if (npts < 2) {
+		put_msg(Err_incomp, "spline", line_no);
+		free_splinestorage(s);
+		return NULL;
+	}
 	for (--npts; npts > 0; --npts) {
 	    /* keep track of newlines for line counter */
 	    count_lines_correctly(fp);
 	    if (fscanf(fp, "%d%d", &x, &y) != 2) {
 		put_msg(Err_incomp, "spline", line_no);
-		p->next = NULL;
 		free_splinestorage(s);
 		return NULL;
 		};
