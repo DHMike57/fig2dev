@@ -40,6 +40,9 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	} >'$(srcdir)/package.m4'
 
 check_PROGRAMS = test1
+# test1 calls malloc(), may be replaced by a rpl_malloc() defined in malloc.o in
+# LIBOBJS by AC_FUNC_MALLOC in configure.ac
+test1_LDADD = $(LIBOBJS)
 
 # keep the definitions below in sync with those in ../dev/Makefile.am
 if ENABLE_I18N

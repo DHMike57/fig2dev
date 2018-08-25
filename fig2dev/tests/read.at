@@ -228,7 +228,7 @@ EOF
 ],0,ignore-nolog)
 AT_CLEANUP
 
-AT_SETUP([ignore truncated line object, ticket #26])
+AT_SETUP([correctly free invalid line object, ticket #26])
 AT_KEYWORDS([read1_3.c])
 AT_CHECK([fig2dev -L box <<EOF
 
@@ -237,6 +237,50 @@ AT_CHECK([fig2dev -L box <<EOF
 2
 EOF
 ],1,ignore,[incomplete line object
+])
+AT_CLEANUP
+
+AT_SETUP([correctly free invalid spline, ticket #27])
+AT_KEYWORDS([read.c])
+AT_CHECK([fig2dev -L box <<EOF
+#FIG 2
+1200 2
+3 0 0 0 0 0 0 0 0. 0 1
+0
+EOF
+],1,ignore,[Incomplete spline object at line 3.
+])
+AT_CLEANUP
+
+AT_SETUP([allow last line without newline, ticket #28])
+AT_KEYWORDS([read.c])
+AT_CHECK([AS_ECHO_N(['#FIG 2
+0']) | fig2dev -L box],
+1, ignore, [Incomplete resolution information at line 1.
+])
+AT_CLEANUP
+
+AT_SETUP([correctly free invalid line object])
+AT_KEYWORDS([read.c])
+AT_CHECK([fig2dev -L box <<EOF
+#FIG 2
+1200 2
+2 1 1 1 -1 50 0 0 0. 0 0
+0
+EOF
+], 1, ignore, [Incomplete line object at line 3.
+])
+AT_CLEANUP
+
+AT_SETUP([correctly free invalid line with picture])
+AT_KEYWORDS([read.c])
+AT_CHECK([fig2dev -L box <<EOF
+FIG_FILE_TOP
+2 5 0 1 0 -1 50 0 0 0. 0 0 0 0 0 5
+0 img
+0
+EOF
+], 1, ignore, [Incomplete line object at line 12.
 ])
 AT_CLEANUP
 

@@ -11,6 +11,11 @@ NEW FEATURES:
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	Debian bug numbers refer to https://bugs.debian.org/#.
+	o Allow one char without newline in the last line of an input file.
+	  Fixes ticket #28.
+	o Harden input, mainly against files in which an incomplete object would
+	  be created and freeing the object would violate memory, i.e, it may
+	  cause segfault. See, e.g., ticket #27.
 	o Properly initalize line storage when reading fig files version 1.3.
 	  Would segfault when reading incomplete line and trying to free it.
 	  Fixes ticket #26, debian bug 906743.

@@ -96,8 +96,6 @@ _read_pcx(FILE *pcxfile, F_pic *pic)
 	fprintf(tfp, "%% Begin Imported PCX File: %s\n\n", pic->file);
 	pic->subtype = P_PCX;
 
-	pic->bitmap=NULL;
-
 	fread(&header,1,sizeof(struct pcxhed),pcxfile);
 	if (header.manuf!=10 || header.encod!=1)
 	    return 0;
