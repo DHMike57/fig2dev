@@ -40,9 +40,17 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	} >'$(srcdir)/package.m4'
 
 check_PROGRAMS = test1
-# test1 calls malloc(), may be replaced by a rpl_malloc() defined in malloc.o in
-# LIBOBJS by AC_FUNC_MALLOC in configure.ac
-test1_LDADD = $(LIBOBJS)
+# test1 calls malloc(). AC_FUNC_MALLOC may replace malloc() by rpl_malloc()
+# which is defined in malloc.o. The latter is contained in $(LIBOBJS) in
+# ${LIBOBJDIR}. Specifically, ./configure CFLAGS="-fsanitize=address" causes
+# this replacment. Unfortunately, using test1_LDADD, causes make distcheck to
+# fail, because both this Makefile and the one in .. try to clean
+# ../libs/.deps/*.Po on make distcheck, when ./configure is used with
+# --enable-dependency-tracking, which is the default. Using
+# EXTRA_test1_DEPENDENCIES = $(LIBOBJS) also failed.
+#
+# Uncomment the line below, when using CFLAGS=-fsanitize=address
+#test1_LDADD = $(LIBOBJS)
 
 # keep the definitions below in sync with those in ../dev/Makefile.am
 if ENABLE_I18N

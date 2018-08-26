@@ -495,6 +495,12 @@ static void
 fix_and_note_color(int *color)
 {
     int		    i;
+    if (*color < DEFAULT) {
+	put_msg("Invalid color number %d at line %d, using default color.",
+			*color, line_no);
+	*color = DEFAULT;
+	return;
+    }
     if (*color < NUM_STD_COLS) {
 	if (*color >= BLACK_COLOR) {
 	    std_color_used[*color] = true;

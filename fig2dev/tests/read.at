@@ -17,7 +17,7 @@ dnl read.at
 dnl Author: Thomas Loimer, 2017, 2018
 
 
-AT_BANNER([Sanitize input files in read.c.])
+AT_BANNER([Sanitize and harden input.])
 
 AT_SETUP([co-incident points])
 AT_KEYWORDS(read.c coincident)
@@ -292,6 +292,18 @@ FIG_FILE_TOP
 0 0 0
 EOF
 ], 1, ignore, [Incomplete spline object at line 11.
+])
+AT_CLEANUP
+
+AT_SETUP([set invalid color number to default, ticket #30])
+AT_KEYWORDS([read.c])
+AT_CHECK([fig2dev -L pict2e <<EOF
+#FIG 2
+1200 2
+2 1 1 1 -502350 50 0 0 0. 0 0
+0 0 100 100 9999 0
+EOF
+],0,ignore-nolog,[Invalid color number -502350 at line 2, using default color.
 ])
 AT_CLEANUP
 
