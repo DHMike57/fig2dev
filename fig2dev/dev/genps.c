@@ -1454,6 +1454,7 @@ genps_line(F_line *l)
 								== NULL) {
 			fprintf(stderr, "No such picture file: %s\n",
 				l->pic->file);
+			free(realname);
 			return;
 		}
 
@@ -1740,8 +1741,9 @@ genps_line(F_line *l)
 		} else if (l->pic->subtype == P_EPS) {
 		    int len;
 		    fputs("% EPS file follows:\n", tfp);
-		    if ((picf=open_picfile(l->pic->file, &filtype, true,
-							&realname)) == NULL) {
+		    picf = open_picfile(l->pic->file, &filtype, true,&realname);
+		    free(realname);
+		    if (picf == NULL) {
 #ifdef	HAVE_STRERROR
 			fprintf(stderr,
 				"Unable to open EPS file '%s': error: %s\n",
@@ -1751,7 +1753,6 @@ genps_line(F_line *l)
 				l->pic->file);
 #endif
 			fputs("gr\n", tfp);
-			free(realname);
 			return;
 		    }
 		    /* use read/write() calls in case of binary data! */
@@ -1775,7 +1776,6 @@ genps_line(F_line *l)
 			    write(fileno(tfp),buf,len);
 			}
 		    }
-		    free(realname);
 		    close_picfile(picf,filtype);
 		}
 

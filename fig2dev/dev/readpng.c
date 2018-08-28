@@ -178,6 +178,7 @@ read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 	if ((row_pointers[i] = malloc(rowsize)) == NULL) {
 	    for (j=0; j<i; ++j)
 		free(row_pointers[j]);
+	    free(row_pointers);
 	    return 0;
 	}
     }
@@ -186,8 +187,12 @@ read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
     png_read_image(png_ptr, row_pointers);
 
     /* allocate the bitmap */
-    if ((pic->bitmap=malloc(rowsize*h))==NULL)
+    if ((pic->bitmap=malloc(rowsize*h))==NULL) {
+	    for (i=0; i<h; ++i)
+		    free(row_pointers[i]);
+	    free(row_pointers);
 	    return 0;
+    }
 
     /* copy it to our bitmap */
     ptr = pic->bitmap;
@@ -212,6 +217,7 @@ read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
     png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
     for (i=0; i<h; ++i)
 	free(row_pointers[i]);
+    free(row_pointers);
 
     pic->subtype = P_PNG;
     pic->hw_ratio = (float) pic->bit_size.y / pic->bit_size.x;

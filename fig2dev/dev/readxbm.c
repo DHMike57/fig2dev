@@ -1,7 +1,7 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
  * Parts Copyright (c) 1989-2007 by Brian V. Smith
- * Parts Copyright (c) 2015-2017 by Thomas Loimer
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -213,7 +213,7 @@ ReadFromBitmapFile (FILE *file,
 	initHexTable();
 
     /* error cleanup and return macro	*/
-#define	RETURN(code) { if (data) free (data);  return code; }
+#define	RETURN(code) do {if (data) free(data);  return code;} while (0)
 
     while (fgets(line, MAX_SIZE, file)) {
 	if (strlen(line) == MAX_SIZE-1) {
@@ -260,9 +260,8 @@ ReadFromBitmapFile (FILE *file,
 	bytes_per_line = (ww+7)/8 + padding;
 
 	size = bytes_per_line * hh;
-	data = (unsigned char *) malloc ((unsigned int) size);
-	if (!data)
-	  RETURN (0);
+	if ((data = malloc((unsigned int) size)) == NULL)
+	  return 0;
 
 	if (version10p) {
 	    unsigned char *ptr;
@@ -288,12 +287,12 @@ ReadFromBitmapFile (FILE *file,
     }					/* end while */
 
     if (data == NULL) {
-	RETURN (0);
+	return 0;
     }
 
     *data_ret = data;
     *width = ww;
     *height = hh;
 
-    RETURN (1);
+    return 1;
 }

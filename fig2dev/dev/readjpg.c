@@ -107,6 +107,7 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
 
   /* reopen the file */
   JPEG->fp = open_picfile(jpegfile, &filtype, true, &realname);
+  free(realname);
 
   /* produce EPS header comments */
   fprintf(PSfile, "%%!PS-Adobe-3.0 EPSF-3.0\n");

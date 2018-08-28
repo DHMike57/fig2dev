@@ -2420,11 +2420,12 @@ picbox(F_line *l)
     else if (dy < 0 && dx >= 0)
        rotation = 90;
 
-    if ((picf = open_picfile(l->pic->file, &filtype, true,&realname)) == NULL) {
+    picf = open_picfile(l->pic->file, &filtype, true, &realname);
+    free(realname);	/* not used */
+    if (picf == NULL) {
 	fprintf(stderr, "fig2dev: %s: No such picture file\n", l->pic->file);
 	return;
     }
-    free(realname);	/* not used */
     if (fread(buf, (size_t) 16, (size_t) 1, picf) != 1) {
 	fprintf(stderr, "fig2dev: %s: short read\n", l->pic->file);
 	close_picfile(picf, filtype);
@@ -2442,12 +2443,12 @@ picbox(F_line *l)
     if (strncmp(buf, "\211\120\116\107\015\012\032\012", (size_t) 8) == 0) {
 	/* png file */
 	int pllx, plly;
-	if ((picf = open_picfile(l->pic->file, &filtype, true,&realname)) ==
-									NULL) {
+	picf = open_picfile(l->pic->file, &filtype, true, &realname);
+	free(realname);		/* not used */
+	if (picf == NULL) {
 	    perror(l->pic->file);
 	    return;
 	}
-	free(realname);		/* not used */
 	if (read_png(picf, filtype, l->pic, &pllx, &plly) == 0) {
 	    fprintf(stderr, "fig2dev: %s: illegal format\n", l->pic->file);
 	    close_picfile(picf, filtype);

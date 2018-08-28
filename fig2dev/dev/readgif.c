@@ -97,6 +97,7 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 
 	/* open the file */
 	if ((file=open_picfile(filename, &filetype, false,&realname)) == NULL) {
+		free(realname);
 		fprintf(stderr,"No such GIF file: %s\n", filename);
 		return 0;
 	}
@@ -117,11 +118,13 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 	version[3] = '\0';
 
 	if ((strcmp(version, "87a") != 0) && (strcmp(version, "89a") != 0)) {
+		free(realname);
 		fprintf(stderr,"Unknown GIF version %s\n",version);
 		return 0;
 	}
 
 	if (! ReadOK(file,buf,7)) {
+		free(realname);
 		return 0;		/* failed to read screen descriptor */
 	}
 
@@ -134,6 +137,7 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 
 	if (BitSet(buf[4], LOCALCOLORMAP)) {	/* Global Colormap */
 		if (!ReadColorMap(file,GifScreen.BitPixel,pic->cmap)) {
+			free(realname);
 			return 0;	/* error reading global colormap */
 		}
 	}
@@ -143,6 +147,7 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 
 	for (;;) {
 		if (! ReadOK(file,&c,1)) {
+			free(realname);
 			return 0;	/* EOF / read error on image data */
 		}
 
@@ -163,7 +168,8 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 		}
 
 		if (! ReadOK(file,buf,9)) {
-			return 1;      /* couldn't read left/top/width/height */
+			free(realname);
+			return 0;      /* couldn't read left/top/width/height */
 		}
 
 		useGlobalColormap = ! BitSet(buf[8], LOCALCOLORMAP);
@@ -172,8 +178,9 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 
 		if (! useGlobalColormap) {
 		    if (!ReadColorMap(file, bitPixel, pic->cmap)) {
+			free(realname);
 			fprintf(stderr, "error reading local GIF colormap\n");
-			return 1;
+			return 0;
 		    }
 		}
 		break;			/* image starts here, header is done */

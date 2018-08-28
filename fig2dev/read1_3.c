@@ -92,6 +92,7 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 		put_msg("Invalid resolution information (%d).", pixperinch);
 		return -1;
 	}
+	ppi = pixperinch;
 	obj->nwcorner.x = pixperinch;
 	obj->nwcorner.y = coord_sys;
 	while (fscanf(fp, "%d", &object) == 1) {
@@ -469,7 +470,7 @@ read_splineobject(FILE *fp)
 		if (fscanf(fp, " %d %d", &x, &y) != 2) {
 			put_msg("incomplete spline object");
 			free_splinestorage(s);
-			return(NULL);
+			return NULL;
 		};
 		if (x == 9999) break;
 		Point_malloc(q);
@@ -478,6 +479,11 @@ read_splineobject(FILE *fp)
 		q->next = NULL;
 		p->next = q;
 		p = q;
+	}
+	if (s->points->next == NULL) {
+		put_msg("spline with a single point");
+		free_splinestorage(s);
+		return NULL;
 	}
 	return(s);
 }

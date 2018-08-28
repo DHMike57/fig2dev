@@ -295,6 +295,17 @@ EOF
 ])
 AT_CLEANUP
 
+AT_SETUP([ignore splines with one point in format 1.3])
+AT_KEYWORDS([read1_3.c])
+AT_CHECK([fig2dev -L box <<EOF
+1200 2 9 9
+3 10 0 1 1 0 0 0 0 0 0
+9999 0
+EOF
+], 1, ignore, [spline with a single point
+])
+AT_CLEANUP
+
 AT_SETUP([set invalid color number to default, ticket #30])
 AT_KEYWORDS([read.c])
 AT_CHECK([fig2dev -L pict2e <<EOF
@@ -307,6 +318,15 @@ EOF
 ])
 AT_CLEANUP
 
+AT_SETUP([set ppi when reading fig files format 1.3])
+AT_KEYWORDS([read1_3.c])
+AT_CHECK([fig2dev -L dxf <<EOF
+1200 2 9 9
+3 10 0 1 1 0 0 0 0 0 0
+100 100 200 0 9999 0
+EOF
+], 0, ignore)
+AT_CLEANUP
 AT_BANNER([Dynamically allocate picture file name.])
 
 AT_SETUP([prepend fig file path to picture file name])
