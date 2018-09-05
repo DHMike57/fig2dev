@@ -11,7 +11,8 @@ NEW FEATURES:
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	Debian bug numbers refer to https://bugs.debian.org/#.
-	o Correct a few memory leaks and corruptions. See commit
+	o Omit spurious showpage when including jpg-file. From Rainer Buchty.
+	o Correct a few memory leaks and corruptions. See commit d1c54f6.
 	o Change negative color numbers to default color. Fixes ticket #30.
 	o A spline with one point would cause segfault. Fixed, see ticket #29.
 	o Allow one char without newline in the last line of an input file.

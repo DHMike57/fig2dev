@@ -1,8 +1,8 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
  * Parts Copyright (c) by Thomas Merz 1994-2002
- * Parts Copyright (c) 1989-2010 by Brian V. Smith
- * Parts Copyright (c) 2015-2017 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -54,8 +54,7 @@ extern	bool	AnalyzeJPEG(imagedata *image);
 extern	int	ASCII85Encode(FILE *in, FILE *out);
 extern	void	ASCIIHexEncode(FILE *in, FILE *out);
 
-#define BUFFERSIZE 1024
-static char buffer[BUFFERSIZE];
+static char buffer[BUFSIZ];
 static char *ColorSpaceNames[] = {"", "Gray", "", "RGB", "CMYK" };
 
 static imagedata image;
@@ -175,7 +174,6 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
   fprintf(PSfile, "  >> image\n");
   fprintf(PSfile, "  Data closefile\n");
   fprintf(PSfile, "  RawData flushfile\n");
-  fprintf(PSfile, "  showpage\n");
   fprintf(PSfile, "  restore\n");
   fprintf(PSfile, "} exec");
 
@@ -361,11 +359,7 @@ AnalyzeJPEG(imagedata *image) {
       case M_SOF13:
       case M_SOF14:
       case M_SOF15:
-	fprintf(stderr,
-	 "Warning: JPEG file uses compression method %X - proceeding anyway.\n", c);
-	fprintf(stderr, "PostScript output does not work on all PS interpreters!\n");
-	/* FALLTHROUGH */
-
+      /* this below is supported in PostScript level 2 */
       case M_SOF0:
       case M_SOF1:
 	length = get_2bytes(image->fp);    /* read segment length  */
