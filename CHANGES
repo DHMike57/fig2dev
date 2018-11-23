@@ -11,6 +11,7 @@ NEW FEATURES:
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	Debian bug numbers refer to https://bugs.debian.org/#.
+	o For tikz output, do not draw arrows on a single point line.
 	o Omit spurious showpage when including jpg-file. From Rainer Buchty.
 	o Correct a few memory leaks and corruptions. See commit d1c54f6.
 	o Change negative color numbers to default color. Fixes ticket #30.

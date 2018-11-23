@@ -1602,7 +1602,7 @@ gentikz_line(F_line *l)
 		return;
 	    set_width(l->thickness);
 	    set_linecolor(l->pen_color);
-	    if (p->next == NULL) {
+	    if (p->next == NULL) {	/* a single point */
 		if (l->cap_style == ROUNDCAP) {
 		    set_capstyle(l->cap_style);
 		    fprintf(tfp, "\\draw (%d,%d);\n",
@@ -1610,12 +1610,13 @@ gentikz_line(F_line *l)
 		} else {
 		    double	h;
 		    set_capstyle(BUTTCAP);
+		    set_arrows((F_arrow *) NULL, (F_arrow *) NULL);
 		    h = THICKNESS(l->thickness)/2.;
 		    fprintf(tfp, "\\draw (%d,%d)--(%d,%d);\n",
 			    XCOORD(round(p->x - h)), YCOORD(p->y),
 			    XCOORD(round(p->x + h)), YCOORD(p->y));
 		}
-	    } else { /* q->next == NULL */
+	    } else { /* q->next == NULL, two points */
 		set_capstyle(l->cap_style);
 		set_stipple(l->style, l->style_val);
 		set_arrows(l->back_arrow, l->for_arrow);
