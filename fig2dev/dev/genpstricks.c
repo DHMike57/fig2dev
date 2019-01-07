@@ -419,7 +419,7 @@ static int Arrows = A_XFIG;
 static int Font_handling = FH_FULL;
 
 static int Pic_convert_p = 0;
-static char Pic_convert_dir[260] = "";
+static char Pic_convert_dir[245] = "";	/* 256 minus length of "/readme.txt" */
 static double X_margin = 0, Y_margin = 0;
 static double Line_weight = 0.5;
 

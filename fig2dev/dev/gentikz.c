@@ -255,7 +255,7 @@ static char	*prepend = NULL;
 static int	encoding = 1;
 static int	verbose = 0;
 static double	unitlength;
-static int	default_color = BLACK_COLOR;
+static int	default_color = DEFAULT;
 /* static int	cur_color = DEFAULT; */
 static int	cur_pencolor = DEFAULT;
 static int	cur_patcolor = DEFAULT;
@@ -1868,17 +1868,19 @@ gentikz_arc(F_arc *a)
 
 	/* direction == 0 clockwise, 1 counterclockwise */
 	if (a->direction) {	/* counter-clockwise */
-	    if (angle1 > angle2)
+	    if (angle1 > angle2) {
 		if (angle1 > 180.)
 		    angle1 -= 360.;
 		else
 		    angle2 += 360.;
+	    }
 	} else {	/* !a->direction, clockwise */
-	    if (angle1 < angle2)
+	    if (angle1 < angle2) {
 		if (angle1 > 180.)
 		    angle2 -= 360.;
 		else
 		    angle1 += 360.;
+	    }
 	}
 
 	if (a->thickness > 0 && a->type == T_PIE_WEDGE_ARC)
