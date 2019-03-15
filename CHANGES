@@ -11,6 +11,8 @@ NEW FEATURES:
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	Debian bug numbers refer to https://bugs.debian.org/#.
+	o Make tests #27 and #33 work on Mac Darwin, failed due to whitespace
+	  formatting differences. From Hanspeter Niederstrasser. Ticket #40.
 	o Use etex, not tex, to test tikz output. From Roland Rosenfeld.
 	  Closes debian bug 920368.
 	o For tikz output, do not draw arrows on a single point line.

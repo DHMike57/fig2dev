@@ -172,10 +172,10 @@ AT_DATA(latex.tex, [\documentclass{minimal}\usepackage{tikz}\begin{document}
 ])
 fig2dev -L tikz $srcdir/data/line.fig line.tikz
 dnl do not count on grep to support -q, or -s
-AT_CHECK([etex tex.tex | $FGREP dimen | uniq | wc -l
+AT_CHECK([etex tex.tex | $FGREP dimen | uniq | wc -l | tr -d ' \t'
 ],0,[1
 ],ignore-nolog)
-AT_CHECK([latex latex.tex | $FGREP dimen | uniq | wc -l
+AT_CHECK([latex latex.tex | $FGREP dimen | uniq | wc -l | tr -d ' \t'
 ],0,[1
 ],ignore-nolog)
 AT_CLEANUP
