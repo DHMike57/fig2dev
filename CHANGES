@@ -11,6 +11,8 @@ NEW FEATURES:
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	Debian bug numbers refer to https://bugs.debian.org/#.
+	o Pass utf8-strings to svg output, escape some chars (<>&).
+	o Accept inclined boxes and change them to polygons. Fixes ticket #43.
 	o Make tests #27 and #33 work on Mac Darwin, failed due to whitespace
 	  formatting differences. From Hanspeter Niederstrasser. Ticket #40.
 	o Use etex, not tex, to test tikz output. From Roland Rosenfeld.

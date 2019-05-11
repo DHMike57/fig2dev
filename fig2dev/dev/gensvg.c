@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Parts Copyright (c) 2002 by Anthony Starks
  * Parts Copyright (c) 2002-2006 by Martin Kroeker
- * Parts Copyright (c) 2002-2010 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2002-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -32,6 +32,10 @@
  *  Changes:
  *
  *  by Thomas Loimer <thomas.loimer@tuwien.ac.at>
+ *
+ *  2019-05-11
+ *	- Output utf8-encoded text
+ *	- Parse and replace characters <, > and & in comments by &lt; &gt; &amp;
  *
  *  2017-01-04
  *	- Fix pattern definitions. Use clip paths when painting objects with
@@ -255,7 +259,7 @@ static bool svg_arrows(int line_thickness, F_arrow *for_arrow, F_arrow *back_arr
 static void generate_tile(int number, int colorIndex);
 static void svg_dash(int, double);
 
-#define PREAMBLE "<?xml version=\"1.0\" standalone=\"no\"?>"
+#define PREAMBLE "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>"
 #define	SVG_LINEWIDTH	76
 
 static unsigned int symbolchar[256]=
@@ -414,6 +418,37 @@ linewidth_adj(int linewidth)
 }
 
 void
+put_sanitized_char(int c)
+{
+	switch (c) {
+	case '<':
+		fputs("&lt;", tfp);
+		break;
+	case '>':
+		fputs("&gt;", tfp);
+		break;
+	case '&':
+		fputs("&amp;", tfp);
+		break;
+	default:
+		fputc(c, tfp);
+	}
+}
+
+void
+print_svgcomments(char *s1, F_comment *comments, char *s2)
+{
+	unsigned char	*c;
+	while (comments) {
+		fputs(s1, tfp);
+		for (c = (unsigned char *)comments->comment; *c; ++c)
+			put_sanitized_char((int)*c);
+		fputs(s2, tfp);
+		comments = comments->next;
+	}
+}
+
+void
 gensvg_option(char opt, char *optarg)
 {
     switch (opt) {
@@ -478,7 +513,7 @@ gensvg_start(F_compound *objects)
 	vw, vh, llx, lly, urx - llx , ury - lly);
 
     if (objects->comments)
-	print_comments("<desc>", objects->comments, "</desc>");
+	print_svgcomments("<desc>", objects->comments, "</desc>\n");
     fputs("<g fill=\"none\">\n", tfp);
 
 }
@@ -646,7 +681,7 @@ gensvg_line(F_line *l)
 
     /* l->type == T_BOX, T_ARC_BOX, T_POLYGON or T_POLYLINE */
     fprintf(tfp, "<!-- Line -->\n");
-    print_comments("<!-- ", l->comments, " -->");
+    print_svgcomments("<!-- ", l->comments, " -->\n");
 
     if (l->type == T_BOX || l->type == T_ARC_BOX || l->type == T_POLYGON) {
 
@@ -762,7 +797,7 @@ gensvg_spline( /* not used by fig2dev */
 {
     F_point *p;
     fprintf(tfp, "<!-- Spline -->\n");
-    print_comments("<!-- ", s->comments, " -->");
+    print_svgcomments("<!-- ", s->comments, " -->\n");
 
     fprintf(tfp, "<path style=\"stroke:#%6.6x;stroke-width:%d\" d=\"",
 	     rgbColorVal(s->pen_color), (int) ceil (linewidth_adj(s->thickness)));
@@ -786,7 +821,7 @@ gensvg_arc(F_arc *a)
 	return;
 
     fputs("<!-- Arc -->\n", tfp);
-    print_comments("<!-- ", a->comments, " -->");
+    print_svgcomments("<!-- ", a->comments, " -->\n");
 
     if (a->for_arrow || a->back_arrow) {
 	if (a->for_arrow) {
@@ -881,7 +916,7 @@ gensvg_ellipse(F_ellipse *e)
     if (e->type == T_CIRCLE_BY_RAD || e->type == T_CIRCLE_BY_DIA) {
 	int r = e->radiuses.x ;
 	fputs("<!-- Circle -->\n", tfp);
-	print_comments("<!-- ", e->comments, " -->");
+	print_svgcomments("<!-- ", e->comments, " -->\n");
 
 	INIT_PAINT(e->fill_style);
 
@@ -892,7 +927,7 @@ gensvg_ellipse(F_ellipse *e)
 	int rx = e->radiuses.x ;
 	int ry = e->radiuses.y ;
 	fputs("<!-- Ellipse -->\n", tfp);
-	print_comments("<!-- ", e->comments, " -->");
+	print_svgcomments("<!-- ", e->comments, " -->\n");
 
 	INIT_PAINT(e->fill_style);
 
@@ -935,7 +970,7 @@ gensvg_text(F_text *t)
 #endif
 
 	fprintf(tfp, "<!-- Text -->\n");
-	print_comments("<!-- ", t->comments, " -->");
+	print_svgcomments("<!-- ", t->comments, " -->\n");
 
 	if (t->angle != 0.) {
 		fprintf(tfp,
@@ -953,12 +988,12 @@ gensvg_text(F_text *t)
 		(int)ceil(t->size * 12), anchor[t->type]);
 
 	if (t->font == 32) {
-		for (cp = (unsigned char *) t->cstring; *cp; ++cp) {
+		for (cp = (unsigned char *)t->cstring; *cp; ++cp) {
 			ch = *cp;
 			fprintf(tfp, "&#%d;", symbolchar[ch]);
 		}
 	} else if (t->font == 34) {
-		for (cp = (unsigned char *) t->cstring; *cp; ++cp) {
+		for (cp = (unsigned char *)t->cstring; *cp; ++cp) {
 			ch = *cp;
 			fprintf(tfp, "&#%d;", dingbatchar[ch]);
 		}
@@ -967,7 +1002,7 @@ gensvg_text(F_text *t)
 #ifdef NOSUPER
 		int old_dy=0;
 #endif
-		for (cp = (unsigned char *) t->cstring; *cp; cp++) {
+		for (cp = (unsigned char *)t->cstring; *cp; cp++) {
 			ch = *cp;
 			if (( supsub == 2 &&ch == '}' ) || supsub==1) {
 #ifdef NOSUPER
@@ -1015,20 +1050,12 @@ gensvg_text(F_text *t)
 #ifdef NOSUPER
 			else old_dy=0;
 #endif
-			if (ch < 128 && ch != 38 && ch != 60 && ch != 62 &&
-					ch != '$')
-				(void)fputc(ch, tfp);
-			else if (ch != '$')
-				fprintf(tfp, "&#%d;", ch);
+			if (ch != '$')
+				put_sanitized_char(ch);
 		}
 	} else {
-		for (cp = (unsigned char *) t->cstring; *cp; ++cp) {
-			ch = *cp;
-			if (ch < 128 && ch != 38 && ch != 60 && ch != 62)
-				(void)fputc(ch, tfp);
-			else
-				fprintf(tfp, "&#%d;", ch);
-		}
+		for (cp = (unsigned char *)t->cstring; *cp; ++cp)
+			put_sanitized_char((int)*cp);
 	}
 #ifdef NOSUPER
 	if (dy != 0)

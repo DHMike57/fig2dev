@@ -1,4 +1,4 @@
-<?xml version="1.0" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Creator: fig2dev Version @PACKAGE_VERSION@ -->
 <!-- CreationDate: 2017-01-04 21:21:21 -->
 <!-- Magnification: 1 -->
@@ -10,19 +10,19 @@
 <!-- Line -->
 <rect x="-75" y="-375" width="1200" height="1875" fill="#bfbfbf"/>
 <!-- Arc -->
-<!--  9  -->
+<!-- 9 -->
 <path d="M 331,272 L 61,481 A 341 341 0 0 0 300 612 z"
 	stroke="#000000" stroke-width="8px" stroke-dasharray="30 9 10 9 10 9"/>
 <!-- Arc -->
-<!--  10  -->
+<!-- 10 -->
 <path d="M 390,306 L 376,639 A 333 333 0 0 0 587 575 z" fill="#000000"
 	stroke="#ffffff" stroke-width="8px"/>
 <!-- Arc -->
-<!--  11  -->
+<!-- 11 -->
 <path d="M 711,620 L 513,420 A 281 281 0 0 1 702 339 z" fill="#4c4c4c"
 	stroke="#ffffff" stroke-width="8px"/>
 <!-- Arc -->
-<!--  12  -->
+<!-- 12 -->
 <defs>
 <path d="M 1063,300 L 793,509 A 341 341 0 0 0 1032 640 z" id="p0"/>
 <pattern id="tile0" patternUnits="userSpaceOnUse"
@@ -36,7 +36,7 @@
 <use xlink:href="#p0" fill="url(#tile0)"
 	stroke="#000000" stroke-width="8px"/>
 <!-- Arc -->
-<!--  13  -->
+<!-- 13 -->
 <defs>
 <clipPath id="cp0">
 	<path clip-rule="evenodd" d="M -76,-376 H 1126 V 1501 H -76 z
@@ -56,7 +56,7 @@
  25,677 32,679 39,680 47,679 54,678 60,675 67,671 72,667"
 	stroke="#000000" stroke-width="8px" stroke-miterlimit="8"/>
 <!-- Arc -->
-<!--  14  -->
+<!-- 14 -->
 <defs>
 <clipPath id="cp1">
 	<path clip-rule="evenodd" d="M -76,-376 H 1126 V 1501 H -76 z
@@ -79,7 +79,7 @@
  383,904 378,908"
 	stroke="#ffffff" stroke-width="8px" stroke-miterlimit="8"/>
 <!-- Arc -->
-<!--  15  -->
+<!-- 15 -->
 <defs>
 <clipPath id="cp2">
 	<path clip-rule="evenodd" d="M -76,-376 H 1126 V 1501 H -76 z
@@ -102,7 +102,7 @@
  592,746 597,742"
 	stroke="#ffffff" stroke-width="8px" stroke-miterlimit="8"/>
 <!-- Arc -->
-<!--  16  -->
+<!-- 16 -->
 <defs>
 <clipPath id="cp3">
 	<path clip-rule="evenodd" d="M -76,-376 H 1126 V 1501 H -76 z
@@ -131,19 +131,19 @@
  908,904 903,908"
 	stroke="#000000" stroke-width="8px" stroke-miterlimit="8"/>
 <!-- Ellipse -->
-<!--  5  -->
+<!-- 5 -->
 <ellipse transform="translate(150,225) rotate(-45)" rx="150" ry="75"
 	stroke="#000000" stroke-width="8px"/>
 <!-- Ellipse -->
-<!--  6  -->
+<!-- 6 -->
 <ellipse transform="translate(454,190) rotate(-315)" rx="188" ry="38" fill="#000000"
 	stroke="#ffffff" stroke-width="8px"/>
 <!-- Ellipse -->
-<!--  7  -->
+<!-- 7 -->
 <ellipse transform="translate(674,187) rotate(-315)" rx="188" ry="38" fill="#4c4c4c"
 	stroke="#ffffff" stroke-width="8px"/>
 <!-- Circle -->
-<!--  8  -->
+<!-- 8 -->
 <defs>
 <circle cx="937" cy="150" r="136" id="p4"/>
 <pattern id="tile2" patternUnits="userSpaceOnUse"
@@ -157,19 +157,19 @@
 <use xlink:href="#p4" fill="url(#tile2)"
 	stroke="#000000" stroke-width="8px"/>
 <!-- Line -->
-<!--  1  -->
+<!-- 1 -->
 <rect x="0" y="-300" width="300" height="300" rx="120"
 	stroke="#000000" stroke-width="8px"/>
 <!-- Line -->
-<!--  2  -->
+<!-- 2 -->
 <polygon points=" 375,-300 375,0 600,0" fill="#000000"
 	stroke="#ffffff" stroke-width="8px"/>
 <!-- Line -->
-<!--  3  -->
+<!-- 3 -->
 <polygon points=" 450,-300 675,0 675,-300" fill="#4c4c4c"
 	stroke="#ffffff" stroke-width="8px"/>
 <!-- Line -->
-<!--  4  -->
+<!-- 4 -->
 <defs>
 <rect x="750" y="-300" width="300" height="300" id="p5"/>
 <pattern id="tile3" patternUnits="userSpaceOnUse"
@@ -183,7 +183,7 @@
 <use xlink:href="#p5" fill="url(#tile3)"
 	stroke="#000000" stroke-width="8px"/>
 <!-- Line -->
-<!--  17  -->
+<!-- 17 -->
 <defs>
 <clipPath id="cp4">
 	<path clip-rule="evenodd" d="M -76,-376 H 1126 V 1501 H -76 z
@@ -204,7 +204,7 @@
  144,1081 149,1086 155,1090 162,1093 169,1094 176,1095"
 	stroke="#000000" stroke-width="8px" stroke-miterlimit="8"/>
 <!-- Line -->
-<!--  18  -->
+<!-- 18 -->
 <defs>
 <clipPath id="cp5">
 	<path clip-rule="evenodd" d="M -76,-376 H 1126 V 1501 H -76 z
@@ -227,7 +227,7 @@
  433,1073 438,1078 444,1082 451,1085 458,1086 465,1087"
 	stroke="#ffffff" stroke-width="8px" stroke-miterlimit="8"/>
 <!-- Line -->
-<!--  19  -->
+<!-- 19 -->
 <defs>
 <clipPath id="cp6">
 	<path clip-rule="evenodd" d="M -76,-376 H 1126 V 1501 H -76 z
@@ -250,7 +250,7 @@
  642,1398 637,1393 631,1389 624,1386 617,1385 610,1384"
 	stroke="#ffffff" stroke-width="8px" stroke-miterlimit="8"/>
 <!-- Line -->
-<!--  20  -->
+<!-- 20 -->
 <defs>
 <clipPath id="cp7">
 	<path clip-rule="evenodd" d="M -76,-376 H 1126 V 1501 H -76 z
