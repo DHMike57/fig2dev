@@ -794,7 +794,7 @@ read_ellipseobject(void)
  * rectangles, polygons: last point must coincide with first point
  * rectangle: convert to polygon, if not 5 points
  * rectangle with rounded corners: error, if not 5 points
- * boxes: allow only vertical and horizontal edges
+ * boxes: allow only vertical and horizontal edges, convert to polygon otherwise
  */
 static int
 sanitize_lineobject(
@@ -875,6 +875,12 @@ sanitize_lineobject(
 			q->y != q->next->y || l->points->x != q->next->x ||
 			l->points->next->x != q->x)) {
 		    /* tests/testsuite -k distorted,read.c */
+		    if (l->type == T_BOX) {
+			put_msg("A distorted %s at line %d - convert to a polygon.",
+			    obj_name[l->type-2], line_no);
+			l->type = T_POLYGON;
+			return 0;
+		    }
 		    put_msg("A distorted or inclined %s at line %d.",
 			    obj_name[l->type-2], line_no);
 		    return -1;
