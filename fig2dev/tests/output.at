@@ -160,21 +160,13 @@ AT_BANNER([Test tikz output language.])
 
 AT_SETUP([conditionally allocate \XFigu])
 AT_KEYWORDS(tikz newdimen)
-AT_SKIP_IF([! etex --version || ! latex --version])
-AT_DATA(tex.tex, [\input tikz
-\input line.tikz\immediate\write16{\meaning\XFigu}
-\input line.tikz\immediate\write16{\meaning\XFigu}\bye
-])
-
+AT_SKIP_IF([! latex --version])
 AT_DATA(latex.tex, [\documentclass{minimal}\usepackage{tikz}\begin{document}
 \input line.tikz\immediate\write16{\meaning\XFigu}
 \input line.tikz\immediate\write16{\meaning\XFigu}\end{document}
 ])
 fig2dev -L tikz $srcdir/data/line.fig line.tikz
 dnl do not count on grep to support -q, or -s
-AT_CHECK([etex tex.tex | $FGREP dimen | uniq | wc -l | tr -d ' \t'
-],0,[1
-],ignore-nolog)
 AT_CHECK([latex latex.tex | $FGREP dimen | uniq | wc -l | tr -d ' \t'
 ],0,[1
 ],ignore-nolog)

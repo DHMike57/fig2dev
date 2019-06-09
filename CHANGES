@@ -11,12 +11,13 @@ NEW FEATURES:
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	Debian bug numbers refer to https://bugs.debian.org/#.
+	o Obey join-style of lines in tikz output.
 	o Pass utf8-strings to svg output, escape some chars (<>&).
 	o Accept inclined boxes and change them to polygons. Fixes ticket #43.
 	o Make tests #27 and #33 work on Mac Darwin, failed due to whitespace
 	  formatting differences. From Hanspeter Niederstrasser. Ticket #40.
-	o Use etex, not tex, to test tikz output. From Roland Rosenfeld.
-	  Closes debian bug 920368.
+	o Use only latex, neither etex or tex, to test tikz output. Usage of
+	  etex, after hint from Roland Rosenfeld, closed debian bug 920368.
 	o For tikz output, do not draw arrows on a single point line.
 	o Omit spurious showpage when including jpg-file. From Rainer Buchty.
 	o Correct a few memory leaks and corruptions. See commit d1c54f6.

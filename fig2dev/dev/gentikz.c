@@ -1638,6 +1638,9 @@ gentikz_line(F_line *l)
 			!l->for_arrow && !l->back_arrow)
 	    return;
 
+	if (l->type == T_BOX || l->type == T_POLYGON || l->type == T_POLYLINE)
+	    set_joinstyle(l->join_style);
+
 	if (l->type == T_BOX || l->type == T_POLYGON || l->type == T_ARC_BOX) {
 	    PUT_DRAWCMD(l, false, l->cap_style);
 
