@@ -11,6 +11,7 @@ NEW FEATURES:
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	Debian bug numbers refer to https://bugs.debian.org/#.
+	o Make tests (test1.c) work with -fsanitize=address compiler option.
 	o Obey join-style of lines in tikz output.
 	o Pass utf8-strings to svg output, escape some chars (<>&).
 	o Accept inclined boxes and change them to polygons. Fixes ticket #43.

@@ -56,8 +56,10 @@ main(void)
 
 #ifdef I18N_DATADIR
 	n = strlen(i18ndir);
-	if (n + 10 > BUFSIZ)
-		filepath = malloc(n + 10);
+	if (n + 10 > BUFSIZ) {
+		printf("File path too long, %ld > %d.\n", n + 10, BUFSIZ);
+		return -2;
+	}
 	memcpy(filepath, i18ndir, n);
 	memcpy(filepath + n, "/cs_CZ.ps", (size_t)10);
 	if (fopen(filepath, mode) == NULL) {
@@ -66,7 +68,5 @@ main(void)
 	}
 #endif
 
-	if (filepath != buf)
-		free(filepath);
 	return err;
 }
