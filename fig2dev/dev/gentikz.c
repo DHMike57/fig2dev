@@ -714,6 +714,8 @@ gentikz_start(F_compound *objects)
 		fputs("\\usetikzlibrary{patterns}\n", tfp);
 	    fputs("\\parindent0pt\n\\begin{document}\n", tfp);
 	}
+	if (!pagemode)
+		fputs("{\\pgfkeys{/pgf/fpu/.try=false}%\n", tfp);
 	if (pagemode || nofigscaling) {
 /*	if (metric)	fprintf(tfp, "%% 4143.7 sp = (1/472.44) cm\n");
  *	else		fprintf(tfp, "%% 3946.9 sp = (1/1200) in\n");	*/
@@ -831,9 +833,11 @@ gentikz_grid(float major, float minor)
 int
 gentikz_end()
 {
-	fprintf(tfp, "\\endtikzpicture%%\n");
+	fputs("\\endtikzpicture", tfp);
 	if (pagemode)
-	    fprintf(tfp, "\\end{document}");
+	    fputs("%\n\\end{document}", tfp);
+	else
+	    fputs("}%\n", tfp);
 
 	return 0;
 }
