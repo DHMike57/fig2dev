@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -252,6 +252,8 @@ static bool	allspecial = false;
 static bool	pagemode = false;
 static bool	nofigscaling = false;
 static char	*prepend = NULL;
+static int	xshift = 0;		/* translate figure, if necessary */
+static int	yshift = 0;		/* translate figure, if necessary */
 static int	encoding = 1;
 static int	verbose = 0;
 static double	unitlength;
@@ -268,13 +270,8 @@ static struct options	alt_options;
 /* Macros */
 #define	PREC1(f)	floor(f) == f ? 0 : 1
 #define	MINLINELENGTH	75
-/* coordinates relative to the lower left corner of the bounding box */
-/* #define XCOORD(x)	((x) - llx) */
-/* #define YCOORD(y)	(ury - (y)) */
-/* coordinates relative to the origin on the xfig canvas, which is top left */
-/* The origin must be kept if a grid should be drawn */
-#define XCOORD(x)	(x)
-#define YCOORD(y)	(-(y))
+#define XCOORD(x)	(x + xshift)
+#define YCOORD(y)	(-y + yshift)
 #define XDIR(x)		x
 #define YDIR(y)		-(y)
 #define THICKNESS(T)	(T <= THICK_SCALE ? 0.5*T : T - THICK_SCALE)
@@ -290,6 +287,7 @@ static struct options	alt_options;
 #define	HAS_JOINS	2
 
 #define	DEG_RAD		57.295779513082322865	/* = 180. / M_PI */
+
 
 void
 gentikz_option(char opt, char *optarg)
@@ -665,6 +663,31 @@ define_arrow(int ttype, int indx)
 	fputs("  }\n}\n", tfp);
 }
 
+/*
+ * TeX cannot handle numbers larger than 16383. However, coordinate numbers
+ * larger than 16383 are ok, while numbers smaller than -16383 yield a
+ * "dimension too large" error. Presumably, positive numbers are handled
+ * directly by tikz, while negative numbers involve a pass to TeX. Hence,
+ * shift the figure such that all coordinates are larger than -16383.
+ */
+
+/* Compute a shift to translate coordinates to values larger than -16383 */
+int
+shift_coordinate(int ll)
+{
+	const int	ippi = (int)ppi;
+	const int	min_number = -16383;
+	int		shift;
+
+	if (ll >= min_number) {
+		shift = 0;
+	} else {
+		shift = min_number - ll;
+		shift = ((shift / ippi) + 1) * ippi;
+	}
+	return shift;
+}
+
 void
 gentikz_start(F_compound *objects)
 {
@@ -683,6 +706,9 @@ gentikz_start(F_compound *objects)
 	lly -= border_margin;
 	urx += border_margin;
 	ury += border_margin;
+
+	xshift = shift_coordinate(llx);
+	yshift = shift_coordinate(-ury);
 
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {

@@ -114,6 +114,23 @@ AT_CHECK([fig2dev -L pict2e -G0.2:1cm default.fig
 ], 0, ignore-nolog)
 AT_CLEANUP
 
+AT_SETUP([accept large coordinates])
+AT_KEYWORDS(pict2e)
+AT_SKIP_IF([! latex --version])
+AT_DATA(big1.fig, [FIG_FILE_TOP
+2 1 0 8 0 7 50 -1 -1 0.0 0 0 -1 0 0 2
+-18000 0 0 -18000
+])
+AT_DATA(big2.fig, [FIG_FILE_TOP
+2 1 0 8 0 7 50 -1 -1 0.0 0 0 -1 0 0 2
+0 18000 18000 0
+])
+AT_CHECK([fig2dev -L pict2e -P big1.fig big1.tex && \
+	fig2dev -L pict2e -P big2.fig big2.tex && \
+	latex -halt-on-error big1.tex && latex -halt-on-error big2.tex
+], 0, ignore)
+AT_CLEANUP
+
 
 AT_BANNER([Test svg output language.])
 AT_SETUP([compare patterns with template])
@@ -182,4 +199,21 @@ dnl do not count on grep to support -q, or -s
 AT_CHECK([fig2dev -L tikz -P box.fig | $FGREP '\pgfsetfillpattern{xfigp8}{blue}
 \pattern'
 ],0,ignore,ignore)
+AT_CLEANUP
+
+AT_SETUP([accept large coordinates])
+AT_KEYWORDS(tikz)
+AT_SKIP_IF([! latex --version])
+AT_DATA(big1.fig, [FIG_FILE_TOP
+2 1 0 8 0 7 50 -1 -1 0.0 0 0 -1 0 0 2
+-18000 0 0 -18000
+])
+AT_DATA(big2.fig, [FIG_FILE_TOP
+2 1 0 8 0 7 50 -1 -1 0.0 0 0 -1 0 0 2
+0 18000 18000 0
+])
+AT_CHECK([fig2dev -L tikz -P big1.fig big1.tex && \
+	fig2dev -L tikz -P big2.fig big2.tex && \
+	latex -halt-on-error big1.tex && latex -halt-on-error big2.tex
+], 0, ignore)
 AT_CLEANUP
