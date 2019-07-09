@@ -776,6 +776,10 @@ read_ellipseobject(void)
 	fix_and_note_color(&e->pen_color);
 	e->thickness *= round(THICK_SCALE);
 	e->fill_style = FILL_CONVERT(e->fill_style);
+	if (e->radiuses.x < 0)
+		e->radiuses.x = -e->radiuses.x;
+	if (e->radiuses.y < 0)
+		e->radiuses.y = -e->radiuses.y;
 	if (INVALID_ELLIPSE(e)) {
 		put_msg(Err_invalid, "ellipse", line_no);
 		free(e);

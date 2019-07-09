@@ -145,6 +145,15 @@ EOF
 ])
 AT_CLEANUP
 
+AT_SETUP([allow negative circle or ellipse radii])
+AT_KEYWORDS(read.c ellipse)
+AT_CHECK([fig2dev -L box <<EOF
+FIG_FILE_TOP
+1 2 0 1 0 7 50 -1 -1 0.0 1 0.0 0 0 -1200 -600 -1200 600 1200 -600
+EOF
+], 0, ignore)
+AT_CLEANUP
+
 AT_SETUP([survive debian bugs #881143, #881144])
 AT_KEYWORDS([font pic tikz])
 AT_CHECK([fig2dev -L pic <<EOF

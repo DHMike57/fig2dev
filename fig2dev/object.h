@@ -91,7 +91,7 @@ typedef struct f_ellipse {
 #define INVALID_ELLIPSE(e)	\
 	e->type < T_ELLIPSE_BY_RAD || e->type > T_CIRCLE_BY_DIA ||	\
 	COMMON_PROPERTIES(e) || e->direction != 1 && e->direction != 0 || \
-	e->radiuses.x < 0 || e->radiuses.y < 0
+	e->radiuses.x == 0 || e->radiuses.y == 0
 
 typedef struct f_arc {
 	int			type;
