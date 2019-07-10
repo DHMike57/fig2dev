@@ -250,7 +250,7 @@ static bool	removesuffix = false;
 static bool	usetexfonts = false;
 static bool	allspecial = false;
 static bool	pagemode = false;
-static bool	nofigscaling = false;
+static bool	figscaling = true;
 static char	*prepend = NULL;
 static int	xshift = 0;		/* translate figure, if necessary */
 static int	yshift = 0;		/* translate figure, if necessary */
@@ -351,7 +351,7 @@ gentikz_option(char opt, char *optarg)
 	    break;
 
 	case 'W':
-	    nofigscaling = true;
+	    figscaling = false;
 	    break;
 
 	case 'w':		/* remove suffix from included graphics file */
@@ -742,13 +742,13 @@ gentikz_start(F_compound *objects)
 	}
 	if (!pagemode)
 		fputs("{\\pgfkeys{/pgf/fpu/.try=false}%\n", tfp);
-	if (pagemode || nofigscaling) {
+	if (pagemode || !figscaling) {
 /*	if (metric)	fprintf(tfp, "%% 4143.7 sp = (1/472.44) cm\n");
  *	else		fprintf(tfp, "%% 3946.9 sp = (1/1200) in\n");	*/
 	    fprintf(tfp, "\\tikzpicture[x=+%lisp, y=+%lisp]\n",
 		    (long) splength,	/* intentionally do not round	*/
 		    (long) splength);	/* like (splength + 0.5)	*/
-	    fprintf(tfp, "\\newdimen\\XFigu\\XFigu%lisp\n", (long) splength);
+	    fprintf(tfp, "\\newdimen\\XFigu\\XFigu%lisp\n", (long)splength);
 	} else {
 	    fputs("\\ifx\\XFigwidth\\undefined\\dimen1=0pt", tfp);
 	    fputs("\\else\\dimen1\\XFigwidth\\fi\n", tfp);
@@ -757,18 +757,27 @@ gentikz_start(F_compound *objects)
 	    fputs("\\else\\dimen3\\XFigheight\\fi\n", tfp);
 	    fprintf(tfp, "\\divide\\dimen3 by %d\n", ury-lly);
 	    fputs("\\ifdim\\dimen1=0pt\\ifdim\\dimen3=0pt", tfp);
-	    fprintf(tfp, "\\dimen1=%lisp\\dimen3\\dimen1\n", (long) splength);
+	    fprintf(tfp, "\\dimen1=%lisp\\dimen3\\dimen1\n", (long)splength);
 	    fputs("  \\else\\dimen1\\dimen3\\fi", tfp);
 	    fputs("\\else\\ifdim\\dimen3=0pt\\dimen3\\dimen1\\fi\\fi\n", tfp);
 	    fputs("\\tikzpicture[x=+\\dimen1, y=+\\dimen3]\n", tfp);
+	}
+	if (pagemode) {
+	    fprintf(tfp, "\\newdimen\\XFigu\\XFigu%lisp\n", (long)splength);
+	} else {
 	    fputs("{\\ifx\\XFigu\\undefined\\catcode`\\@11\n", tfp);
+		/* \newdimen can only be used in \outer mode */
+		/* define \temp like \newdimen in plain.tex, without \outer */
 	    fputs("\\def\\temp{\\alloc@1\\dimen\\dimendef\\insc@unt}", tfp);
 	    fputs("\\temp\\XFigu\\catcode`\\@12\\fi}\n", tfp);
 	    fprintf(tfp, "\\XFigu%lisp\n", (long) splength);
-	    fputs("% Uncomment to scale line thicknesses with the same\n", tfp);
-	    fputs("% factor as width of the drawing.\n", tfp);
-	    fputs("%\\pgfextractx\\XFigu{\\pgfqpointxy{1}{1}}\n", tfp);
-	    fputs("\\ifdim\\XFigu<0pt\\XFigu-\\XFigu\\fi\n", tfp);
+	    if (figscaling) {
+	        fputs("% Uncomment to scale line thicknesses with the same\n",
+				tfp);
+	        fputs("% factor as width of the drawing.\n", tfp);
+	        fputs("%\\pgfextractx\\XFigu{\\pgfqpointxy{1}{1}}\n", tfp);
+	        fputs("\\ifdim\\XFigu<0pt\\XFigu-\\XFigu\\fi\n", tfp);
+	    }
 	}
 
 	if (pats_used) {
