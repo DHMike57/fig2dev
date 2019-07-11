@@ -229,13 +229,14 @@ read_compoundobject(FILE *fp)
 		&com->secorner.x, &com->secorner.y);
 	if (n != 4) {
 	    put_msg("Incorrect compound object format");
+	    free(com);
 	    return(NULL);
 	    }
 	while (fscanf(fp, "%d", &object) == 1) {
 	    switch (object) {
 		case OBJ_POLYLINE :
 		    if ((l = read_lineobject(fp)) == NULL) {
-			free_line(&l);
+			free_compound(&com);
 			return(NULL);
 			}
 		    if (ll)
@@ -245,7 +246,7 @@ read_compoundobject(FILE *fp)
 		    break;
 		case OBJ_SPLINE :
 		    if ((s = read_splineobject(fp)) == NULL) {
-			free_spline(&s);
+			free_compound(&com);
 			return(NULL);
 			}
 		    if (ls)
@@ -255,7 +256,7 @@ read_compoundobject(FILE *fp)
 		    break;
 		case OBJ_ELLIPSE :
 		    if ((e = read_ellipseobject(fp)) == NULL) {
-			free_ellipse(&e);
+			free_compound(&com);
 			return(NULL);
 			}
 		    if (le)
@@ -265,7 +266,7 @@ read_compoundobject(FILE *fp)
 		    break;
 		case OBJ_ARC :
 		    if ((a = read_arcobject(fp)) == NULL) {
-			free_arc(&a);
+			free_compound(&com);
 			return(NULL);
 			}
 		    if (la)
@@ -275,7 +276,7 @@ read_compoundobject(FILE *fp)
 		    break;
 		case OBJ_TEXT :
 		    if ((t = read_textobject(fp)) == NULL) {
-			free_text(&t);
+			free_compound(&com);
 			return(NULL);
 			}
 		    if (lt)
@@ -285,7 +286,7 @@ read_compoundobject(FILE *fp)
 		    break;
 		case OBJ_COMPOUND :
 		    if ((c = read_compoundobject(fp)) == NULL) {
-			free_compound(&c);
+			free_compound(&com);
 			return(NULL);
 			}
 		    if (lc)
@@ -305,6 +306,7 @@ read_compoundobject(FILE *fp)
 #else
 	    put_msg("Format error.");
 #endif
+	    free_compound(&com);
 	    return(NULL);
 	    }
 	}
