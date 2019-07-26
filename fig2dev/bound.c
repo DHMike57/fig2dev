@@ -905,7 +905,7 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 	    /*
 	     * CIRCLE and HALF-CIRCLE arrowheads
 	     *
-	     * We approximate circles with (40+zoom)/4 points
+	     * We approximate circles with 40 points
 	     */
 	    double	maxx;
 	    double	fix_x, fix_y, xs, ys;
@@ -936,8 +936,8 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 	    dy = my - ys;
 	    fix_x = xs + (dx / 2.0);
 	    fix_y = ys + (dy / 2.0);
-	    /* choose number of points for circle - 40+mag/4 points */
-	    *npoints = np = round(mag/4.0) + 40;
+	    /* choose number of points for circle */
+	    *npoints = np = 40;
 
 	    if (type == 5) {
 		/* full circle */

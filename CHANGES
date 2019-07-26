@@ -11,6 +11,8 @@ NEW FEATURES:
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	Debian bug numbers refer to https://bugs.debian.org/#.
+	o Do not segfault on circle/half circle arrowheads with a magnification
+	  larger 42. Always draw circle arrowheads with 40 points. Ticket #52.
 	o Allow circles or ellipses with negative radii. Ticket #49.
 	o Avoid "dimension too large error" with tikz output by avoiding
 	  coordinate values smaller than -16383.
