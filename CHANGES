@@ -11,6 +11,7 @@ NEW FEATURES:
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	Debian bug numbers refer to https://bugs.debian.org/#.
+	o Do not clip objects with line-thickness 0 having arrows. Ticket #53.
 	o Do not segfault on circle/half circle arrowheads with a magnification
 	  larger 42. Always draw circle arrowheads with 40 points. Ticket #52.
 	o Allow circles or ellipses with negative radii. Ticket #49.

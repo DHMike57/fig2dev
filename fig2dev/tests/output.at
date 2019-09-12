@@ -2,7 +2,7 @@ dnl Fig2dev: Translate Fig code to various Devices
 dnl Copyright (c) 1991 by Micah Beck
 dnl Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 dnl Parts Copyright (c) 1989-2015 by Brian V. Smith
-dnl Parts Copyright (c) 2015-2018 by Thomas Loimer
+dnl Parts Copyright (c) 2015-2019 by Thomas Loimer
 dnl 
 dnl Any party obtaining a copy of these files is granted, free of charge, a
 dnl full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -45,6 +45,50 @@ mv a.pgm orig.pgm; mv b.pgm current.pgm])
 AT_CAPTURE_FILE(orig.pgm)
 AT_CAPTURE_FILE(current.pgm)
 AT_CAPTURE_FILE(diff.pgm)
+AT_CLEANUP
+
+AT_SETUP([do not clip 0-width objects having arrows, #53])
+AT_KEYWORDS(eps clip0)
+# The lines of objects which have a line thickness of zero and which
+# have arrow heads do not need to be clipped.
+AT_SKIP_IF([NO_GS || ! pnmarith -version || ! ppmhist -version])
+AT_DATA(clip0.fig, [FIG_FILE_TOP
+2 2 0 0 0 7 60 -1 20 0.000 0 0 -1 0 0 5
+	 0 -300 0 300 450 300 450 -300 0 -300
+2 1 0 0 0 0 50 -1 20 0.000 0 0 -1 1 1 4
+	0 0 1.00 60.00 120.00
+	0 0 1.00 60.00 120.00
+	 0 0 0 -300 150 -300 150 0
+2 1 0 0 0 0 50 -1 20 0.000 0 0 -1 1 1 4
+	13 0 1.00 60.00 120.00
+	13 0 1.00 60.00 120.00
+	 150 0 150 -300 300 -300 300 0
+2 1 0 0 0 0 50 -1 20 0.000 0 0 -1 1 1 4
+	13 1 1.0 60.0 120.0
+	13 1 1.0 60.0 120.0
+	 300 0 300 -300 450 -300 450 0
+2 1 0 0 0 0 50 -1 20 0.0 0 0 -1 1 1 4
+	14 0 1.0 60.00 120.00
+	14 0 1.0 60.00 120.00
+	 0 300 0 0 150 0 150 300
+2 1 0 0 0 0 50 -1 20 0.0 0 0 -1 1 1 4
+	14 1 1.00 60.00 120.00
+	14 1 1.00 60.00 120.00
+	 150 300 150 0 300 0 300 300
+2 2 0 0 0 0 50 -1 20 0.0 0 0 -1 0 0 5
+	 300 0 300 300 450 300 450 0 300 0
+])
+dnl The file above shows five rectangular polylines, one abreast of each other,
+dnl each with line thickness zero, filled with black, having five different
+dnl arrow-heads. The background is a white rectangle. If the lines are clipped,
+dnl the white background would show through. A sixth black rectangle covers the
+dnl remaining white area.
+dnl The command below extracts a box slightly smaller than the six rectangles.
+dnl At a resolution of 80 dpi, this box is 28 x 30 pixels = 1064 pixels.
+AT_CHECK([fig2dev -L eps -B '0.325 0.45 0.025 0.025' clip0.fig | \
+	$GSEXE -sDEVICE=pbmraw -dEPSCrop -r80 -dNOPAUSE -dBATCH -dQUIET \
+	-sOutputFile=- - | ppmhist -noheader | tr -d ' \t'], 0, [00001064
+])
 AT_CLEANUP
 
 AT_SETUP([honor SOURCE_DATE_EPOCH environment variable])

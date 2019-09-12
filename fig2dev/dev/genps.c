@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -288,6 +288,8 @@ static	 struct hdr {
 };
 
 #define NUMHEADERS	(sizeof(headers)/sizeof(headers[0]))
+#define NEEDS_CLIPPING(obj)	((obj->for_arrow || obj->back_arrow) && \
+					obj->thickness > 0)
 
 /******************************/
 /* various methods start here */
@@ -1816,7 +1818,7 @@ genps_line(F_line *l)
 		lpntx1 = q->x;
 		lpnty1 = q->y;
 		/* set clipping for any arrowheads */
-		if (l->for_arrow || l->back_arrow) {
+		if (NEEDS_CLIPPING(l)) {
 		    fprintf(tfp, "gs ");
 		    clip_arrows(l, OBJ_POLYLINE);
 		}
@@ -1856,7 +1858,7 @@ genps_line(F_line *l)
 		     fprintf(tfp, "gs col%d s gr ", l->pen_color);
 
 		/* reset clipping */
-		if (l->type == T_POLYLINE && ((l->for_arrow || l->back_arrow)))
+		if (l->type == T_POLYLINE && NEEDS_CLIPPING(l))
 		    fputs("gr\n", tfp);
 		reset_style(l->style, l->style_val);
 
@@ -1927,9 +1929,10 @@ genps_itp_spline(F_spline *s)
 	lpntx1 = p->x;
 	lpnty1 = p->y;
 	/* set clipping for any arrowheads */
-	fprintf(tfp, "gs ");
-	if (s->for_arrow || s->back_arrow)
+	if (NEEDS_CLIPPING(s)) {
+	    fprintf(tfp, "gs ");
 	    clip_arrows((F_line *)s, OBJ_SPLINE);
+	}
 
 	a = s->controls;
 	p = s->points;
@@ -1948,10 +1951,12 @@ genps_itp_spline(F_spline *s)
 	if (closed_spline(s)) fprintf(tfp, " cp ");
 	if (s->fill_style != UNFILLED)
 	    fill_area(s->fill_style, s->pen_color, s->fill_color);
-	if (s->thickness > 0)
+	if (s->thickness > 0) {
 	    fprintf(tfp, " gs col%d s gr\n", s->pen_color);
-	/* reset clipping */
-	fprintf(tfp," gr\n");
+	    /* reset clipping */
+	    if (NEEDS_CLIPPING(s))
+		fprintf(tfp," gr\n");
+	}
 	reset_style(s->style, s->style_val);
 
 	/* draw arrowheads after spline for open arrow */
@@ -2012,9 +2017,10 @@ genps_ctl_spline(F_spline *s)
 	lpntx1 = round(c);
 	lpnty1 = round(d);
 	/* set clipping for any arrowheads */
-	fprintf(tfp, "gs ");
-	if (s->for_arrow || s->back_arrow)
+	if (NEEDS_CLIPPING(s)) {
+	    fprintf(tfp, "gs ");
 	    clip_arrows((F_line *)s, OBJ_SPLINE);
+	}
 
 	/* now output the points */
 	set_style(s->style, s->style_val);
@@ -2062,10 +2068,12 @@ genps_ctl_spline(F_spline *s)
 	}
 	if (s->fill_style != UNFILLED)
 	    fill_area(s->fill_style, s->pen_color, s->fill_color);
-	if (s->thickness > 0)
+	if (s->thickness > 0) {
 	    fprintf(tfp, " gs col%d s gr\n", s->pen_color);
-	/* reset clipping */
-	fprintf(tfp," gr\n");
+	    /* reset clipping */
+	    if (NEEDS_CLIPPING(s))
+		fprintf(tfp," gr\n");
+	}
 	reset_style(s->style, s->style_val);
 
 	/* draw arrowheads after spline */
@@ -2117,7 +2125,7 @@ genps_arc(F_arc *a)
 	if (fabs(angle1 - angle2) < 0.001)
 	    angle2 = angle1 + 0.01;
 
-	if ((a->type == T_OPEN_ARC) && (a->thickness != 0) && (a->back_arrow || a->for_arrow)) {
+	if (a->type == T_OPEN_ARC && NEEDS_CLIPPING(a)) {
 	    /* set clipping for any arrowheads */
 	    fprintf(tfp, "gs ");
 	    if (a->for_arrow || a->back_arrow)
@@ -2143,7 +2151,7 @@ genps_arc(F_arc *a)
 	if (a->thickness > 0)
 	    fprintf(tfp, "gs col%d s gr\n", a->pen_color);
 
-	if ((a->type == T_OPEN_ARC) && (a->thickness != 0) && (a->back_arrow || a->for_arrow)) {
+	if (a->type == T_OPEN_ARC && NEEDS_CLIPPING(a)) {
 	    /* reset clipping */
 	    fprintf(tfp," gr\n");
 	}
