@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -845,8 +845,8 @@ lookup_X_color(char *name, RGB *rgb)
 }
 /* convert rgb to gray scale using the classic luminance conversion factors */
 
-float
-rgb2luminance (float r, float g, float b)
+double
+rgb2luminance (double r, double g, double b)
 {
 	return 0.3*r + 0.59*g + 0.11*b;
 }

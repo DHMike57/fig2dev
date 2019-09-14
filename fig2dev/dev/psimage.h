@@ -1,7 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Parts Copyright (c) by Thomas Merz 1994-2002
- * Parts Copyright (c) 2015 by Thomas Loimer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -21,6 +23,9 @@
  *
  */
 
+#ifndef PSIMAGE_H
+#define PSIMAGE_H
+
 /* data output mode: binary, ascii85, hex-ascii */
 typedef enum { BINARY, ASCII85, ASCIIHEX } DATAMODE;
 
@@ -38,3 +43,5 @@ typedef struct {
 
 #define	DPI_IGNORE (float) (-1.0)  /* dummy value for imagedata.dpi	*/
 #define DPI_USE_FILE ((float) 0.0) /* dummy value for imagedata.dpi	*/
+
+#endif /* PSIMAGE_H */

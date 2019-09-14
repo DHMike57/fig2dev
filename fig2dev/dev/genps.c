@@ -65,9 +65,10 @@
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "bound.h"
 #include "colors.h"	/* lookup_X_color(), rgb2luminance() */
+#include "creationdate.h"
 #include "psencode.h"
 #include "psfonts.h"
-#include "creationdate.h"
+#include "readpics.h"
 #include "xtmpfile.h"
 
 /* include the PostScript preamble, patterns etc */
@@ -160,7 +161,7 @@ static int last_depth=MAXDEPTH+4;
 /* define the standard 32 colors */
 
 struct	_rgb {
-	float r, g, b;
+	double r, g, b;
 } rgbcols[NUM_STD_COLS] = {
 	{0.00, 0.00, 0.00},	/* black */
 	{0.00, 0.00, 1.00},	/* blue */
@@ -232,8 +233,6 @@ static double	userorigx, userorigy;
 static double	userwidthx, userwidthy;
 static bool	useabsolutecoo = false;
 
-extern FILE	*open_picfile(char *name, int *type,bool pipeok,char **retname);
-extern void	close_picfile(FILE *file, int type);
 static void	do_split(); /* new procedure to split different depths' objects */
 			    /* but only as comment */
 int	filtype;
@@ -479,7 +478,7 @@ genps_start(F_compound *objects)
 	int		 i;
 	int		 cliplx, cliply, clipux, clipuy;
 	int		 userllx, userlly, userurx, userury;
-	struct paperdef	*pd;
+	const struct paperdef	*pd;
 	char		 psize[20];
 
 	char		*libdir;
@@ -532,13 +531,14 @@ genps_start(F_compound *objects)
 	/* convert ledger (deprecated) to tabloid */
 	if (strcasecmp(papersize, "ledger") == 0)
 		strcpy(papersize, "tabloid");
-	for (pd = paperdef; pd->name != NULL; pd++)
-		if (strcasecmp (papersize, pd->name) == 0) {
+	for (pd = paperdef; pd->name != NULL; ++pd) {
+		if (strcasecmp(papersize, pd->name) == 0) {
 			pagewidth = pd->width;
 			pageheight = pd->height;
-			strcpy(papersize,pd->name);  /* use the "nice" form */
+			strcpy(papersize, pd->name);  /* use the "nice" form */
 			break;
-	    }
+		}
+	}
 
 	if (pagewidth < 0 || pageheight < 0) {
 		(void) fprintf (stderr, "Unknown paper size `%s'\n", papersize);
@@ -1516,10 +1516,13 @@ genps_line(F_line *l)
 		    return;
 		}
 
-		/* if we have any of the following pic types, we need the ps encoder */
+		/* If we have any of the following pic types, we need the ps
+		   encoder. Gifs are embedded as P_PCX, see readgif.c, hence
+		   P_GIF does not occur. PSencode() only manages 256 colors. */
 		if ((l->pic->subtype == P_XPM || l->pic->subtype == P_PCX ||
-		    l->pic->subtype == P_PNG) && !psencode_header_done)
-			    PSencode_header();
+			l->pic->subtype == P_PNG) && l->pic->numcols <= 256 &&
+			!psencode_header_done)
+		    PSencode_header();
 
 		/* If we have a GIF with a transparent color, we need the
 		   transparentimage code.  Actually, the GIF has been changed
@@ -1718,6 +1721,7 @@ genps_line(F_line *l)
 			    fputs("% PNG", tfp);
 			else
 			    fputs("% JPEG", tfp);
+
 			fputs(" image follows:\n", tfp);
 			/* scale for size in bits */
 			fprintf(tfp, "%d %d sc\n", purx, pury);
@@ -2187,6 +2191,8 @@ genps_ellipse(F_ellipse *e)
 	set_style(e->style, e->style_val);
 	if (e->style == DOTTED_LINE)
 	    set_linecap(1);	/* round dots */
+	else
+	    set_linecap(0);
 	if (e->angle == 0) {
 	    fprintf(tfp, "n %d %d %d %d 0 360 DrawEllipse ",
 		  e->center.x, e->center.y, e->radiuses.x, e->radiuses.y);
@@ -2478,7 +2484,7 @@ clip_arrows(F_line *obj, int objtype)
 static void
 fill_area(int fill, int pen_color, int fill_color)
 {
-    float pen_r, pen_g, pen_b, fill_r, fill_g, fill_b;
+    double pen_r, pen_g, pen_b, fill_r, fill_g, fill_b;
 
     /* get the rgb values for the fill pattern (if necessary) */
     if (fill_color < NUM_STD_COLS) {
@@ -2518,7 +2524,7 @@ fill_area(int fill, int pen_color, int fill_color)
 	char colorspace[13], pencolor[25], fillcolor[25];
 
 	if (grayonly) {
-	    float grayfill, graypen;
+	    double grayfill, graypen;
 	    grayfill = rgb2luminance(fill_r, fill_g, fill_b);
 	    graypen  = rgb2luminance(pen_r, pen_g, pen_b);
 	    sprintf(colorspace, "/DeviceGray");

@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
- * Parts Copyright (c) 2015-2017 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -69,12 +69,12 @@ genbox_end(void)
 struct driver dev_box = {
 	genbox_option,
 	genbox_start,
-	(void(*)(float,float))gendev_null,
-	gendev_null,
-	gendev_null,
-	gendev_null,
-	gendev_null,
-	gendev_null,
+	gendev_nogrid,
+	(void (*)(F_arc *))gendev_null,
+	(void (*)(F_ellipse *))gendev_null,
+	(void (*)(F_line *))gendev_null,
+	(void (*)(F_spline *))gendev_null,
+	(void (*)(F_text *))gendev_null,
 	genbox_end,
 	INCLUDE_TEXT
 };

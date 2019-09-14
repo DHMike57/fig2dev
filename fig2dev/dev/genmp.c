@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -1338,7 +1338,7 @@ do_split(int actual_depth)
 struct driver dev_mp = {
 	genmp_option,
 	genmp_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	genmp_arc,
 	genmp_ellipse,
 	genmp_line,

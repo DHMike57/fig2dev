@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -16,8 +16,13 @@
  *
  */
 
+#ifndef PSFONTS_H
+#define PSFONTS_H
+
 extern char	*PSfontnames[];
 extern int	PSisomap[];
 extern int	PSfontmap[];
 
 extern void	unpsfont(F_text *);
+
+#endif /* PSFONTS_H */

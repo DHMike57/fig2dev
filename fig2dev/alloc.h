@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1985 by  Supoj Sutantavibul
  * Copyright (c) 1991 by Micah Beck
- * Parts Copyright (c) 1999, 2000 by Brian V. Smith
- * Parts Copyright (c) 2015, 2017 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -15,6 +15,9 @@
  * and this permission notice remain intact.
  *
  */
+
+#ifndef ALLOC_H
+#define ALLOC_H
 
 #define		Line_malloc(z)		z = malloc(LINOBJ_SIZE)
 #define		Pic_malloc(z)		z = malloc(PIC_SIZE)
@@ -28,3 +31,5 @@
 #define		Arrow_malloc(z)		z = malloc(ARROW_SIZE)
 
 extern char	Err_mem[];
+
+#endif /* ALLOC_H */

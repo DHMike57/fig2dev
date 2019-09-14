@@ -3,8 +3,8 @@
  * Copyright (c) 1991 by Micah Beck
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2010 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -1314,7 +1314,7 @@ genepic_text(F_text *text)
     if (!special_text(text))
 	/* This loop escapes special LaTeX characters. */
 	for (cp = (unsigned char*)text->cstring; *cp; cp++) {
-	    if (special_index=strchr(latex_text_specials, *cp)) {
+	    if ((special_index = strchr(latex_text_specials, *cp))) {
 	      /* Write out the replacement.  Implementation note: we can't
 		 use puts since that will output an additional newline. */
 	      esc_cp=latex_text_mappings[special_index-latex_text_specials];
@@ -1665,7 +1665,7 @@ FillCommands(int style, int color)
 struct driver dev_epic = {
 	genepic_option,
 	genepic_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	genepic_arc,
 	genepic_ellipse,
 	genepic_line,

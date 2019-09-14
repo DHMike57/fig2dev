@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2010 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -85,6 +85,7 @@
 
 #include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
+#include "readpics.h"
 #include "genemf.h"
 
 #define UNDEFVALUE	-100	/* UNDEFined attribute value */
@@ -706,10 +707,8 @@ static void textalign();
 static void moveto();
 #endif
 
-extern FILE *open_picfile(char *name, int *type, bool pipeok, char **retname);
-extern void close_picfile(FILE *file, int type);
 #ifdef HAVE_PNG_H
-extern	int read_png();
+extern int  read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
 #endif
 
 /* Piece of code to avoid unnecessary attribute changes */
@@ -3605,7 +3604,7 @@ fig2dev: error: fseek() failed.  EMF language requires the output is seekable.\
 struct driver dev_emf = {
 	genemf_option,
 	genemf_start,
-	(void(*)(float,float))gendev_null,	/* TODO - Create genemf_grid */
+	gendev_nogrid,		/* TODO - Create genemf_grid */
 	genemf_arc,
 	genemf_ellipse,
 	genemf_line,

@@ -1,7 +1,7 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -46,10 +46,9 @@
 
 #include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
+#include "readpics.h"
 
-extern	FILE	*open_picfile(char *, int *, bool, char **);	/* readpics.c */
 extern	int	 _read_pcx(FILE *pcxfile, F_pic *pic);		/* readpcx.c */
-
 static bool	 ReadColorMap(FILE *, unsigned int,
 				unsigned char cmap[3][MAXCOLORMAPSIZE]);
 static bool	 DoGIFextension(FILE *, int);
@@ -96,7 +95,7 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 	unsigned char    transp[3]; /* RGB of transparent color (if any) */
 
 	/* open the file */
-	if ((file=open_picfile(filename, &filetype, false,&realname)) == NULL) {
+	if ((file = open_picfile(filename,&filetype,false,&realname)) == NULL) {
 		free(realname);
 		fprintf(stderr,"No such GIF file: %s\n", filename);
 		return 0;

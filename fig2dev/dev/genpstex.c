@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2010 by Brian V. Smith
- * Parts Copyright (c) 2015-2017 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -106,19 +106,15 @@ genpstex_t_start(F_compound *objects)
 void
 genpstex_t_text(F_text *t)
 {
-
-	if (!special_text(t))
-	  gendev_null();
-	else genlatex_text(t);
+	if (special_text(t))
+		genlatex_text(t);
 }
 
 void
 genpstex_text(F_text *t)
 {
-
 	if (!special_text(t))
-	  genps_text(t);
-	else gendev_null();
+		genps_text(t);
 }
 
 void
@@ -131,11 +127,11 @@ genpstex_option(char opt, char *optarg)
 struct driver dev_pstex_t = {
 	genpstex_t_option,
 	genpstex_t_start,
-	(void(*)(float,float))gendev_null,
-	gendev_null,
-	gendev_null,
-	gendev_null,
-	gendev_null,
+	gendev_nogrid,
+	(void (*)(F_arc *))gendev_null,
+	(void (*)(F_ellipse *))gendev_null,
+	(void (*)(F_line *))gendev_null,
+	(void (*)(F_spline *))gendev_null,
 	genpstex_t_text,
 	genlatex_end,
 	INCLUDE_TEXT
@@ -144,11 +140,11 @@ struct driver dev_pstex_t = {
 struct driver dev_pdftex_t = {
 	genpstex_t_option,
 	genpstex_t_start,
-	(void(*)(float,float))gendev_null,
-	gendev_null,
-	gendev_null,
-	gendev_null,
-	gendev_null,
+	gendev_nogrid,
+	(void (*)(F_arc *))gendev_null,
+	(void (*)(F_ellipse *))gendev_null,
+	(void (*)(F_line *))gendev_null,
+	(void (*)(F_spline *))gendev_null,
 	genpstex_t_text,
 	genlatex_end,
 	INCLUDE_TEXT

@@ -3,8 +3,8 @@
  * Copyright (c) 1991 by Micah Beck
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2012 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -650,7 +650,7 @@ genpic_itp_spline(F_spline *s)
 struct driver dev_pic = {
 	genpic_option,
 	genpic_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	genpic_arc,
 	genpic_ellipse,
 	genpic_line,

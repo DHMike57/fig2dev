@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -90,10 +90,8 @@ float	grid_major_spacing = 0.0; /* grid major spacing (if any) */
 float	THICK_SCALE;		/* convert line thickness from screen resolution
 					calculated in read_objects() */
 char	gscom[1000];		/* to build up a command for ghostscript */
-bool	psencode_header_done = false; /* if PSencode header was already emitted*/
-bool	transp_header_done = false;   /* if transparent image header was already emitted */
 
-char	*Fig_color_names[] = {	/* hex names for Fig colors */
+const char	*Fig_color_names[] = {	/* hex names for Fig colors */
 	"#000000", "#0000ff", "#00ff00", "#00ffff",
 	"#ff0000", "#ff00ff", "#ffff00", "#ffffff",
 	"#000090", "#0000b0", "#0000d0", "#87ceff",
@@ -103,7 +101,7 @@ char	*Fig_color_names[] = {	/* hex names for Fig colors */
 	"#803000", "#a04000", "#c06000", "#ff8080",
 	"#ffa0a0", "#ffc0c0", "#ffe0e0", "#ffd700"
 };
-struct paperdef paperdef[] = {
+const struct paperdef paperdef[] = {
 	{"Letter", 612, 792},		/*  8.5" x 11" */
 	{"Legal", 612, 1008},		/*  8.5" x 14" */
 	{"Tabloid", 792, 1224},		/*   11" x 17" */
@@ -967,10 +965,16 @@ static int compound_dump(F_compound *com, struct obj_rec *array,
 	return count;
 }
 
+static int
+rec_comp(struct obj_rec *r1, struct obj_rec *r2)
+{
+	return (r2->depth - r1->depth);
+}
+
 int
 gendev_objects(F_compound *objects, struct driver *dev)
 {
-	int	obj_count, rec_comp();
+	int	obj_count;
 	int	status;
 	struct	obj_rec *rec_array, *r;
 
@@ -984,7 +988,8 @@ gendev_objects(F_compound *objects, struct driver *dev)
 	(void)compound_dump(objects, rec_array, 0, dev);
 
 	/* sort object array by depth */
-	qsort(rec_array, obj_count, sizeof(struct obj_rec), rec_comp);
+	qsort(rec_array, obj_count, sizeof(struct obj_rec),
+			(int (*)(const void *, const void *))rec_comp);
 
 	/* generate header */
 	(*dev->start)(objects);
@@ -1005,15 +1010,17 @@ gendev_objects(F_compound *objects, struct driver *dev)
 	return status;
 }
 
-int rec_comp(struct obj_rec *r1, struct obj_rec *r2)
-{
-	return (r2->depth - r1->depth);
-}
-
 /* null operations */
 void
 gendev_null(void)
 { ; }
+
+void
+gendev_nogrid(float major, float minor)
+{
+	(void)major;
+	(void)minor;
+}
 
 /*
  * depth_options:

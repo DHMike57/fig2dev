@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -817,9 +817,7 @@ gengbx_option(char opt, char *optarg)
 void
 gengbx_start(F_compound *objects)
 {
-	/* struct paperdef *pd; */
 	char    stime[CREATION_TIME_LEN];
-	/*     long int     i; */
 
 	gbx_scale_factor=pow(10,gbx_after);
 
@@ -1398,7 +1396,7 @@ gengbx_text (F_text *t)
 struct driver dev_gbx = {
 	gengbx_option,
 	gengbx_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	gengbx_arc,
 	gengbx_ellipse,
 	gengbx_line,

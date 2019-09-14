@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2007 by Brian V. Smith
- * Parts Copyright (c) 2015 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -15,6 +15,9 @@
  * and this permission notice remain intact.
  *
  */
+
+#ifndef DRIVERS_H
+#define DRIVERS_H
 
 /* When adding or removing drivers, be sure to update transfig/transfig.c too */
 
@@ -100,3 +103,5 @@ struct {
 	{"xpm",		&dev_bitmaps},
 	{"",		NULL}
 };
+
+#endif /* DRIVERS_H */

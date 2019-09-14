@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -198,7 +198,7 @@ struct pict2earrow {
 #define YCOORD(y)	(ury - (y))
 #define XDIR(x)		x
 #define YDIR(y)		-(y)
-#define EQUAL(p,q)	p->x == q->x && p->y == q->y
+#define EQUAL(p,q)	(p->x == q->x && p->y == q->y)
 			/* cast to double, to not have the integers overflow */
 #define LENGTH(p,q)	sqrt(((double) (q->x - p->x))*(q->x - p->x) \
 			     + ((double)(q->y - p->y))*(q->y - p->y))
@@ -529,23 +529,24 @@ set_fillcolor(int col, int shade, int *pen_color)
 	}
 
 	/* an unknown color can not be shaded or tinted */
-	if (col == DEFAULT)
+	if (col == DEFAULT) {
 	    if (default_color == DEFAULT)
 		col = BLACK_COLOR;
 	    else
 		col = default_color;
+	}
 
 	/* black */
-	if (shade == 0 && col != BLACK_COLOR
-		|| col == WHITE_COLOR && shade == NUMSHADES + NUMTINTS -1) {
+	if ((shade == 0 && col != BLACK_COLOR)
+		|| (col == WHITE_COLOR && shade == NUMSHADES + NUMTINTS -1)) {
 	    set_color(BLACK_COLOR);
 	    cur_shade = NUMSHADES - 1;
 	    return;
 	}
 
 	/* white */
-	if (shade == NUMSHADES + NUMTINTS - 1 && col != WHITE_COLOR
-		 || col == BLACK_COLOR && shade == 0) {
+	if ((shade == NUMSHADES + NUMTINTS - 1 && col != WHITE_COLOR)
+		 || (col == BLACK_COLOR && shade == 0)) {
 	    set_color(WHITE_COLOR);
 	    cur_shade = NUMSHADES - 1;
 	    return;
@@ -586,7 +587,7 @@ set_fillcolor(int col, int shade, int *pen_color)
 	get_rgbcolor(&col,&rgb);
 							/* 4080 = 255 << 4 */
 #define	SHADE(c,t)	(double)(c<<4)*t / (NUMSHADES-1) / 4080.
-#define	TINT(c,t)	((c<<4) + ((double)(255-c<<4) * (t-NUMSHADES+1) \
+#define	TINT(c,t)	((c<<4) + ((double)((255-c)<<4) * (t-NUMSHADES+1) \
 							/ NUMTINTS)) / 4080.
 	if (shade < NUMSHADES) {
 	    red = SHADE(rgb.red, shade);
@@ -2287,7 +2288,7 @@ genpict2e_text(F_text *t)
 	    for (cp = (unsigned char*)t->cstring; *cp; ++cp) {
 		if (strchr("$&%#_{}", *cp))
 		    fputc('\\', tfp);
-		if (c = strchr("~^\\", *cp)) {
+		if ((c = strchr("~^\\", *cp))) {
 		    if (*c == '\\')
 			fputs("\\textbackslash ", tfp);
 		    else
@@ -2609,7 +2610,7 @@ genpict2e_arc(F_arc *a)
 struct driver dev_pict2e = {
 	genpict2e_option,
 	genpict2e_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	genpict2e_arc,
 	genpict2e_ellipse,
 	genpict2e_line,

@@ -13,4 +13,9 @@
  *
  */
 
+#ifndef SETFIGFONT_H
+#define SETFIGFONT_H
+
 void define_setfigfont(FILE *tfp);
+
+#endif /* SETFIGFONT_H */

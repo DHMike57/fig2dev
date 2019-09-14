@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -316,7 +316,7 @@ genibmgl_start(F_compound *objects)
 	int		Xll, Yll, Xur, Yur;
 	double		Xmin,Xmax,Ymin,Ymax,xoff=0,yoff=0;
 	double		height, width, points_per_inch;
-	struct paperdef	*pd;
+	const struct paperdef	*pd;
 
 	if (fabs(mag) < 1.0/2048.0){
 	    fprintf(stderr, "|mag| < 1/2048\n");
@@ -676,7 +676,7 @@ void
 genibmgl_arc(F_arc *a)
 {
 	if (a->thickness != 0 ||
-		ibmgec && 0 <= a->fill_style && a->fill_style < patterns) {
+		(ibmgec && 0 <= a->fill_style && a->fill_style < patterns)) {
 	    double	x, y;
 	    double	cx, cy, sx, sy, ex, ey;
 	    double	dx1, dy1, dx2, dy2, theta;
@@ -734,7 +734,7 @@ void
 genibmgl_ellipse(F_ellipse *e)
 {
 	if (e->thickness != 0 ||
-		ibmgec && 0 <= e->fill_style && e->fill_style < patterns) {
+		(ibmgec && 0 <= e->fill_style && e->fill_style < patterns)) {
 	    int		j;
 	    double	alpha;
 	    double	angle;
@@ -788,7 +788,7 @@ void
 genibmgl_line(F_line *l)
 {
 	if (l->thickness != 0 ||
-		ibmgec && 0 <= l->fill_style && l->fill_style < patterns) {
+		(ibmgec && 0 <= l->fill_style && l->fill_style < patterns)) {
 	    F_point	*p, *q;
 
 	    set_style(l->style, l->style_val);
@@ -1138,7 +1138,7 @@ genibmgl_end(void)
 struct driver dev_ibmgl = {
 	genibmgl_option,
 	genibmgl_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	genibmgl_arc,
 	genibmgl_ellipse,
 	genibmgl_line,

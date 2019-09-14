@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2007 by Brian V. Smith
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
  * Parts Copyright (c) 2015-2018 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
@@ -925,7 +925,7 @@ newline(void)
 struct driver dev_tpic = {
 	gentpic_option,
 	gentpic_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	gentpic_arc,
 	gentpic_ellipse,
 	gentpic_line,

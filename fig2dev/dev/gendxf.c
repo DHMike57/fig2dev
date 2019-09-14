@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -473,7 +473,7 @@ gendxf_arc(F_arc *a)
   fprintf(tfp, "999\n !! found gendxf_arc\n");
   if (1 == 0) {
 	if (a->thickness != 0 ||
-		ibmgec && 0 <= a->fill_style && a->fill_style < patterns) {
+		(ibmgec && 0 <= a->fill_style && a->fill_style < patterns)) {
 	    double	  x, y;
 	    double	  cx, cy, sx, sy, ex, ey;
 	    double	  dx1, dy1, dx2, dy2, theta;
@@ -532,8 +532,7 @@ gendxf_ellipse(F_ellipse *e)
   /* This is a quick fix to use polylines rather than dxf ellipses */
   /* This might be a compatibility option also in the future. */
   if (e->thickness != 0 ||
-	    ibmgec && 0 <= e->fill_style && e->fill_style < patterns)
-  {
+	    (ibmgec && 0 <= e->fill_style && e->fill_style < patterns)) {
     int		       j;
     double	  alpha;
     double	  angle;
@@ -586,8 +585,8 @@ gendxf_ellipse(F_ellipse *e)
 void
 gendxf_line(F_line *l)
 {
-  if (l->thickness != 0 || ibmgec && 0 <= l->fill_style &&
-					l->fill_style < patterns)
+  if (l->thickness != 0 || (ibmgec && 0 <= l->fill_style &&
+					l->fill_style < patterns))
   {
     F_point	   *p, *q, *r;
 
@@ -968,7 +967,7 @@ gendxf_end(void)
 struct driver dev_dxf = {
 	gendxf_option,
 	gendxf_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	gendxf_arc,
 	gendxf_ellipse,
 	gendxf_line,

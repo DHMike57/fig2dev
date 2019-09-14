@@ -1,7 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Parts Copyright (c) 1989-2007 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -65,7 +67,7 @@ open_picfile(char *name, int *type, bool pipeok, char **retname)
 
     if (!stat(name, &status)) {
 	/* see if the filename ends with .Z or .z or .gz */
-	if (len > 3 && !strcmp(".gz", name + (len-3)) ||
+	if ((len > 3 && !strcmp(".gz", name + (len-3))) ||
 		    (len > 2 && (!strcmp(".z", name + (len-2)) ||
 				 !strcmp(".Z", name + (len-2))))) {
 	/* yes, make command to uncompress it */
@@ -105,7 +107,7 @@ open_picfile(char *name, int *type, bool pipeok, char **retname)
 		    char *p;
 		    /* can't find it, if there is a path,
 		       strip it and look in current directory */
-		    if (p = strrchr(name,'/')) {
+		    if ((p = strrchr(name, '/'))) {
 			/* yes, strip it off */
 			/* strcpy(*retname, p + 1); */
 			memcpy(*retname, p + 1, len -= (p - name));
@@ -114,7 +116,6 @@ open_picfile(char *name, int *type, bool pipeok, char **retname)
 			    memcpy(name, *retname, len);
 			} else {
 			    /* All is lost */
-			    free(*retname);
 			    free(unc);
 			    return NULL;
 			}
@@ -128,7 +129,7 @@ open_picfile(char *name, int *type, bool pipeok, char **retname)
     if (*type == 1 && !pipeok) {
 	char *p;
 	system(unc);
-	if (p = strrchr(*retname,'.')) {
+	if ((p = strrchr(*retname,'.'))) {
 	    *p = '\0';		/* terminate name before last .gz, .z or .Z */
 	}
 	strcpy(name, *retname);

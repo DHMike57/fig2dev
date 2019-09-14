@@ -2,7 +2,7 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2007 by Brian V. Smith
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
  * Parts Copyright (c) 2015-2017 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
@@ -588,7 +588,7 @@ bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2,
 struct driver dev_textyl = {
 	gentextyl_option,
 	gentextyl_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	gentextyl_arc,
 	gentextyl_ellipse,
 	gentextyl_line,

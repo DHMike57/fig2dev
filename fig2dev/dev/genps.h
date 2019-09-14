@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
- * Parts Copyright (c) 2015 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -15,6 +15,9 @@
  * and this permission notice remain intact.
  *
  */
+
+#ifndef GENPS_H
+#define GENPS_H
 
 extern bool	epsflag;	/* to distinguish PS and EPS */
 extern bool	pdfflag;	/* to distinguish PDF and PS/EPS */
@@ -29,3 +32,5 @@ extern void	genps_ellipse(F_ellipse *e);
 extern void	genps_line(F_line *l);
 extern void	genps_spline(F_spline *s);
 extern void	genps_text(F_text *t);
+
+#endif /* GENPS_H */

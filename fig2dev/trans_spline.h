@@ -13,9 +13,14 @@
  *
  */
 
+#ifndef TRANS_SPLINE_H
+#define TRANS_SPLINE_H
+
 #define	MAXNUMPTS	25000
 #define	HIGH_PRECISION	0.5
 #define	ARROW_START	4
 
 extern F_line	*create_line_with_spline(F_spline *s);
 extern int	make_control_factors(F_spline *s);
+
+#endif /* TRANS_SPLINE_H */

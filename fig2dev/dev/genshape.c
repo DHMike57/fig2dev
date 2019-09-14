@@ -1,8 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Copyright (c) 2002 by Christian Gollwitzer (auriocus)
- * Parts Copyright (c) 2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -1418,11 +1419,11 @@ genshape_end(void)
 struct driver dev_shape = {
 	genshape_option,
 	genshape_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	genshape_arc,
 	genshape_ellipse,
 	genshape_line,
-	gendev_null,
+	(void (*)(F_spline *))gendev_null,
 	genshape_text,
 	genshape_end,
 	INCLUDE_TEXT

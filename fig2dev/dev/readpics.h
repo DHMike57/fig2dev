@@ -16,27 +16,14 @@
  *
  */
 
-#ifndef PICFONTS_H
-#define PICFONTS_H
+#ifndef READPICS_H
+#define READPICS_H
 
-/*  The selection of font names may be site dependent */
+#include <stdio.h>
+#include "bool.h"
 
-char		*picfontnames[] = {
-			"R", "R",		/* default */
-			"R",			/* roman */
-			"B",			/* bold */
-			"I",			/* italic */
-			"H",			/* sans serif */
-			"C"			/* typewriter */
-		};
+extern FILE	*open_picfile(char *name, int *type, bool pipeok,
+				char **retname);
+extern void	close_picfile(FILE *file, int type);
 
-#define MAXFONTSIZE 108
-
-#define PICFONT(F)	(picfontnames[((F) <= MAX_FONT) ? (F)+1 : MAX_FONT])
-#define PICFONTSIZE(S)  ((S) > 0 ? \
-				((S) <= MAXFONTSIZE ? (int)round(S) : \
-					MAXFONTSIZE) : (int)font_size)
-#define PICFONTMAG(T)	\
-		PICFONTSIZE((int)(T->size*(rigid_text(T) ? 1.0 : fontmag)))
-
-#endif /* PICFONTS_H */
+#endif /* READPICS_H */

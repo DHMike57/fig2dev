@@ -1,8 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Parts Copyright (c) 1993 by Anthony Starks <ajs@merck.com>
- * Parts Copyright (c) 1994-2007 by Brian V. Smith
- * Parts Copyright (c) 2015-2017 by Thomas Loimer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -208,7 +209,7 @@ genmf_spline(F_spline *s)
 
 	setpen(s->thickness);
 	fprintf(tfp, "	store (curpath)\n");
-	if ((s->type == 0) || (s->type == 2) && (s->fill_style < 0)) /* Open spline */
+	if (s->type == 0 || (s->type == 2 && s->fill_style < 0)) /* Open spline */
 		fprintf(tfp,"  drawn curve(false)\n");
 	else { /* Closed and/or filled spline, see comment above */
 		if (s->fill_style == BLACK_FILL)
@@ -287,7 +288,7 @@ genmf_text(F_text *t)
 struct driver dev_mf = {
 	genmf_option,
 	genmf_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	genmf_arc,
 	genmf_ellipse,
 	genmf_line,

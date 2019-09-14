@@ -1353,7 +1353,7 @@ create_arrow(F_arrow *a, struct options *o)
 
 	t.type = arrowtype(a->type, a->style);
 	t.props = pgfarrow[t.type].props;
-	if (a->style && t.props & HAS_FILL + HAS_SWAP)
+	if (a->style && t.props & (HAS_FILL + HAS_SWAP))
 	    t.flags = STYLE_MEANS_SWAP(t.type) ? HAS_SWAP : HAS_FILL;
 	else
 	    t.flags = 0;
@@ -1565,16 +1565,16 @@ set_arrows(F_arrow *back, F_arrow *forw)
 	}
 
 #define	OPTIONS_EQUAL(a,b)	a.has_options == b.has_options && \
-		(a.has_options == false || a.thickness == b.thickness \
+		(a.has_options == false || (a.thickness == b.thickness \
 			&& a.wid == b.wid && a.ht == b.ht \
-			&& a.setflags == b.setflags && a.flags == b.flags)
+			&& a.setflags == b.setflags && a.flags == b.flags))
 
 	/* Which arrows must be set */
 	if (!(b.type == NOARROW && cur_b.type == NOARROW)
 		&& (b.type != cur_b.type
 		    || b.s.has_options != cur_b.s.has_options
-		    || b.s.has_options && cur_b.s.has_options
-			&& !(OPTIONS_EQUAL(b.s, cur_b.s)))) {
+		    || (b.s.has_options && cur_b.s.has_options
+			&& !(OPTIONS_EQUAL(b.s, cur_b.s))))) {
 	    set_back = true;
 	    assign_arrow(&b, &cur_b);
 	} else {
@@ -1583,8 +1583,8 @@ set_arrows(F_arrow *back, F_arrow *forw)
 	if (!(f.type == NOARROW && cur_f.type == NOARROW)
 		&& (f.type != cur_f.type
 		    || f.s.has_options != cur_f.s.has_options
-		    || f.s.has_options && cur_f.s.has_options
-			&& !(OPTIONS_EQUAL(f.s, cur_f.s)))) {
+		    || (f.s.has_options && cur_f.s.has_options
+			&& !(OPTIONS_EQUAL(f.s, cur_f.s))))) {
 	    set_forw = true;
 	    assign_arrow(&f, &cur_f);
 	} else {
@@ -1846,7 +1846,7 @@ gentikz_text(F_text *t)
 	    for (cp = (unsigned char*)t->cstring; *cp; ++cp) {
 		if (strchr("$&%#_{}", *cp))
 		    fputc('\\', tfp);
-		if (c = strchr("~^\\", *cp)) {
+		if ((c = strchr("~^\\", *cp))) {
 		    if (*c == '\\')
 			fprintf(tfp,"\\textbackslash ");
 		    else

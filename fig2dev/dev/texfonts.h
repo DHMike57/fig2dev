@@ -16,6 +16,9 @@
  *
  */
 
+#ifndef TEXFONTS_H
+#define TEXFONTS_H
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -46,3 +49,5 @@ extern char		texfontsizes[];
 #define TEXFONTMAG(T)	TEXFONTSIZE(T->size*(rigid_text(T) ? 1.0 : fontmag))
 
 void setfigfont(F_text *text);		/* genepic.c */
+
+#endif /* TEXFONTS_H */

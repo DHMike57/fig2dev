@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -15,6 +15,9 @@
  * and this permission notice remain intact.
  *
  */
+
+#ifndef OBJECT_H
+#define OBJECT_H
 
 #ifdef HAVE_X11_XPM_H
 #include <X11/xpm.h>
@@ -90,7 +93,7 @@ typedef struct f_ellipse {
 
 #define INVALID_ELLIPSE(e)	\
 	e->type < T_ELLIPSE_BY_RAD || e->type > T_CIRCLE_BY_DIA ||	\
-	COMMON_PROPERTIES(e) || e->direction != 1 && e->direction != 0 || \
+	COMMON_PROPERTIES(e) || (e->direction != 1 && e->direction != 0) || \
 	e->radiuses.x == 0 || e->radiuses.y == 0
 
 typedef struct f_arc {
@@ -339,3 +342,5 @@ typedef struct f_compound {
 
 #define		CLOSED_PATH		0
 #define		OPEN_PATH		1
+
+#endif /* OBJECT_H */

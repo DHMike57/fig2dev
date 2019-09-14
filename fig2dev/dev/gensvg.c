@@ -255,7 +255,7 @@
 #include "creationdate.h"
 
 static bool svg_arrows(int line_thickness, F_arrow *for_arrow, F_arrow *back_arrow,
-	F_pos *forw1, F_pos *forw2, F_pos *back1, F_pos *back2, int pen_color);	
+	F_pos *forw1, F_pos *forw2, F_pos *back1, F_pos *back2, int pen_color);
 static void generate_tile(int number, int colorIndex);
 static void svg_dash(int, double);
 
@@ -468,7 +468,7 @@ gensvg_option(char opt, char *optarg)
 void
 gensvg_start(F_compound *objects)
 {
-    struct paperdef	*pd;
+    const struct paperdef	*pd;
     int     pagewidth = -1, pageheight = -1;
     int     vw, vh;
     char    date_buf[CREATION_TIME_LEN];
@@ -1315,7 +1315,7 @@ svg_dash(int style, double val)
 struct driver dev_svg = {
 	gensvg_option,
 	gensvg_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	gensvg_arc,
 	gensvg_ellipse,
 	gensvg_line,

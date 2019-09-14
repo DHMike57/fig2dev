@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2010 by Brian V. Smith
- * Parts Copyright (c) 2015-2017 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -30,14 +30,19 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "fig2dev.h"
+#include "bool.h"
+#include "fig2dev.h"	/* FILE *tfp */
 
 #define MAXWIDTH       16384
 
-#define put_string nc=strlen(s); for(i=0;i<nc;i++) (putc((s[i]),tfp)); Nbyte += nc
+#define put_string nc=strlen(s); for(i=0;i<nc;++i) putc((s[i]),tfp); Nbyte += nc
 
 typedef unsigned char	byte;
-static	char		**str;
+
+bool	psencode_header_done = false;
+bool	transp_header_done = false;
+
+static char	**str;
 
 /* output PSencode header */
 

@@ -3,8 +3,8 @@
  * Copyright (c) 1998 by Mike Markowski
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -21,7 +21,7 @@
  * gentk: convert fig to Tk
  *
  * Author: Mike Markowski <mm@udel.edu>, U of Delaware, 4/98
- *         Modifications by Thomas Loimer, 2018
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -41,6 +41,7 @@
 #include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "colors.h"	/* lookup_X_color() */
+#include "readpics.h"
 #include "tkpattern.h"
 
 #define X(x) ((double)(x)/ppi)
@@ -160,7 +161,7 @@ void
 gentk_start(F_compound *objects)
 {
 	float		wid = -1., ht = -1., swap;
-	struct paperdef	*pd;
+	const struct paperdef	*pd;
 
 	fprintf(tfp, "# Produced by fig2dev Version %s\n", PACKAGE_VERSION);
 	ppi = ppi / mag * 80/72.0;
@@ -392,8 +393,6 @@ drawBitmap(F_line *l)
 	FILE	*fd;
 	int	filtype;	/* file (0) or pipe (1) */
 	int	stat;
-	FILE	*open_picfile(char *name, int *type,bool pipeok,char **retname);
-	void	close_picfile(FILE *file, int type);
 	char	*xname;
 
 	p = l->pic;
@@ -405,11 +404,12 @@ drawBitmap(F_line *l)
 
 	/* see if GIF first */
 
-	if ((fd=open_picfile(p->file, &filtype, true, &xname)) == NULL) {
+	fd = open_picfile(p->file, &filtype, true, &xname);
+	free(xname);	/* not needed */
+	if (fd == NULL) {
 		fprintf(stderr, "Can't open image file %s\n", p->file);
 		return;
 	}
-	free(xname);	/* not needed */
 
 	/* read header */
 	stat = ReadOK(fd,buf,7);
@@ -1425,7 +1425,7 @@ niceLine(char *s)
 struct driver	dev_tk = {
 	gentk_option,
 	gentk_start,
-	(void(*)(float,float))gendev_null,
+	gendev_nogrid,
 	gentk_arc,
 	gentk_ellipse,
 	gentk_line,

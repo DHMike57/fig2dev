@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1985 Supoj Sutanthavibul
  * Copyright (c) 1991 Micah Beck
- * Parts Copyright (c) 1989-2007 by Brian V. Smith
- * Parts Copyright (c) 2015,2016 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -23,6 +23,9 @@
  *	- Add int startclip, remove bool clip in struct _arrow_shape.
  *
  */
+
+#ifndef BOUND_H
+#define BOUND_H
 
 extern void arc_bound(F_arc *arc, int *xmin, int *ymin, int *xmax, int *ymax);
 extern void compound_bound(F_compound *compound, int *xmin, int *ymin,
@@ -57,3 +60,5 @@ extern struct _arrow_shape {
 	struct	d_pos points[6]; /* points in arrowhead */
 	struct	d_pos fillpoints[6]; /* points to fill if not "simple" */
 } arrow_shapes[];
+
+#endif /* BOUND_H */
