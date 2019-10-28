@@ -3,7 +3,7 @@ dnl Copyright (c) 1991 by Micah Beck
 dnl Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 dnl Parts Copyright (c) 1989-2015 by Brian V. Smith
 dnl Parts Copyright (c) 2015-2019 by Thomas Loimer
-dnl 
+dnl
 dnl Any party obtaining a copy of these files is granted, free of charge, a
 dnl full and unrestricted irrevocable, world-wide, paid up, royalty-free,
 dnl nonexclusive right and license to deal in this software and documentation
@@ -188,12 +188,12 @@ dnl AS_IF([false],
 dnl [
 dnl # Skip this test, if the necessary programs are not found
 dnl AT_SKIP_IF([NO_GS || ! pnmarith -version || ! ppmhist -version])
-dnl 
+dnl
 dnl convert -density 1200 $srcdir/data/patterns.svg a.pbm
-dnl 
+dnl
 dnl # It makes a difference, whether convert... svg:-  or convert... -  is used.
 dnl fig2dev -L svg $srcdir/data/patterns.fig | convert -density 1200 - b.pbm
-dnl 
+dnl
 dnl # Was pamsumm -sum -brief, to expect 0\n on stdout - but pamsumm does not
 dnl # exist on Debian stretch, so use ppmhist -noheader
 dnl AT_CHECK([pnmarith -difference a.pbm b.pbm | ppmhist -noheader | tr -d ' \1'],

@@ -8,9 +8,10 @@ and issue the command
 
   name /f Nmakefile
 
-For installation, you would manually have to copy the folder i18n/ and
-the file rgb.txt to the location given in the Nmakefile. Chances
-are good that fig2dev works to your satisfaction even without these files.
+For installation, you would manually have to copy the folder i18n/ to the
+location given in the Nmakefile. Chances are good that fig2dev works to
+your satisfaction also without these files. You may also give the location
+of a color definition file in the Nmakefile.
 
 Requirements
 ------------
@@ -25,11 +26,16 @@ In addition, the jpeg, png, and xpm-libraries may be needed.
 
 To compile and install fig2dev, issue the commands
 
-  ./configure; make; make install
+  ./configure && make && make install
 
-or, e.g.,
+When compiling from the development sources, do
 
-  ./configure CFLAGS='-O2 -Wno-parentheses'; make -j; make install-strip
+   autoreconf -i
+
+before giving the three commands above.
+An alternative is
+
+  ./configure CFLAGS='-O2 -Wno-parentheses' && make -j && make install-strip
 
 The latter will strip the debugging symbols from the executables.  The
 -j option causes make to try a parallel build with multiple threads.
@@ -54,11 +60,10 @@ or with packages from fink, try
 The commands above will compile fig2dev and copy the executables fig2dev,
 fig2ps2tex and pic2tpic to /usr/local/bin.  Three man-pages for these
 binaries are put into /usr/local/man/man1.  Furthermore, files which may
-be needed at runtime are put under /usr/local/share/fig2dev.
-The runtime files are (i) internationalization files, which are stored
-under /usr/local/share/fig2dev/i18n, and (ii) the color definition file
-/usr/local/share/fig2dev/rgb.txt. The internationalization files may be
-used by the PostScript and all bitmap output languages.
+be needed at runtime are put under /usr/local/share/fig2dev.  These are
+internationalization files, which may be used by the PostScript and all
+bitmap output languages.  They are stored under
+/usr/local/share/fig2dev/i18n.
 
 
 	Options

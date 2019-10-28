@@ -2,7 +2,7 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
-Patchlevel 7b (Xxx 201x)
+Patchlevel 7b (Oct 2019)
 
 NEW FEATURES:
 	o A X color database is not needed, but can be provided. The location of

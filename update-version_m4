@@ -1,8 +1,10 @@
 #!/bin/sh
 
-#
-# Fig2dev: Translate fig code to various devices.
-# Parts Copyright (c) 2016 by Thomas Loimer
+# Fig2dev: Translate Fig code to various Devices
+# Copyright (c) 1991 by Micah Beck
+# Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+# Parts Copyright (c) 1989-2015 by Brian V. Smith
+# Parts Copyright (c) 2015-2019 by Thomas Loimer
 #
 # Any party obtaining a copy of these files is granted, free of charge, a
 # full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -20,7 +22,7 @@
 # Author: Thomas Loimer <thomas.loimer@tuwien.ac.at>, 2016
 #
 
-if test "`git describe --abbrev=1`" != \
+if (git --version) >/dev/null 2>&1 && test "`git describe --abbrev=1`" != \
 	"`sed -n '/^m4_def.*FIG_VERS/ {s/.*, *\[\(.*\)\])/\1/;p}' version.m4`"
 then
     sed  -i "\

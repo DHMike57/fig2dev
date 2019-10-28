@@ -735,7 +735,7 @@ For instance, to use utf8-encoded text, first \fIcreate\fR a text object, then
 \fIedit\fR
 the text using the edit-button in xfig. Convert the fig-file to pict2e with
 the option \fB\-E\ 0\fR and include "\fB\\usepackage[utf8]{inputenc}\fR"
-in the LaTeX file 
+in the LaTeX file
 In xfig, the text typed in may not be displayed correctly, but the document
 produced from the LaTeX file will show the same text as was typed in.
 
