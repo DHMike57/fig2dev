@@ -2,7 +2,14 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
-Patchlevel 7b (Oct 2019)
+Patchlevel Xx (Xxx 20xx)
+
+BUGS FIXED:
+	o Embed images in pdfs with their original compression type, i.e., leave
+	  the gs switch "-dAutoFilterColorImages" at its default value "true".
+
+-------------------------------------
+Patchlevel 7b (Nov 2019)
 
 NEW FEATURES:
 	o A X color database is not needed, but can be provided. The location of

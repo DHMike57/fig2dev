@@ -91,10 +91,8 @@ genpdf_start(F_compound *objects)
 	 */
 	/* -o ... is equivalent to -dBATCH -dNOPAUSE, see ghostscript Use.htm
 	   and -dBATCH is equivalent to -c quit */
-	sprintf(com, "%s -q -sAutoRotatePages=None "
-		"-dAutoFilterColorImages=false -dColorImageFilter=/DCTEncode "
-		"-sDEVICE=pdfwrite -dPDFSETTINGS=/prepress -o '%s' -",
-		GSEXE, ofile);
+	sprintf(com, "%s -q -sAutoRotatePages=None -sDEVICE=pdfwrite "
+			"-dPDFSETTINGS=/prepress -o '%s' -", GSEXE, ofile);
 	(void) signal(SIGPIPE, pdf_broken_pipe);
 	if ((tfp = popen(com, "w")) == 0) {
 		fprintf(stderr, "fig2dev: Cannot open pipe to ghostscript\n");
