@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -1328,7 +1328,7 @@ read_textobject(FILE *fp)
 		If we do not find the CONTROL-A on this line then this must
 		be a multi-line text object and we will have to read more. */
 
-	    n = sscanf(buf,"%*d%d%d%lf%d%d%d%lf%d%lf%lf%d%d%[^\1]%[\1]",
+	    n = sscanf(buf,"%*d%d%d%lf%d%d%d%lf%d%lf%lf%d%d%[^\1]%1[\1]",
 		&t->type, &t->font, &t->size, &t->pen,
 		&t->color, &t->depth, &t->angle,
 		&t->flags, &t->height, &t->length,
