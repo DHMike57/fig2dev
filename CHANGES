@@ -6,6 +6,7 @@ Patchlevel Xx (Xxx 20xx)
 
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
+	o Reject huge arrow types causing integer overflow. Ticket #57.
 	o Allow Fig v2 text strings ending with multiple ^A. Ticket #55.
 	o Embed images in pdfs with their original compression type, i.e., leave
 	  the gs switch "-dAutoFilterColorImages" at its default value "true".
