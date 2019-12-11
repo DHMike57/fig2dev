@@ -793,8 +793,10 @@ read_ellipseobject(void)
 /*
  * Sanitize line objects. Return 0 on success, -1 otherwise.
  * On error, call free_linestorage(l) after sanitize_lineobject().
+ *
  * polylines: remove fill, if less than 3 points
  *		remove arrows, if only one point
+ * polygons: convert to polyline if less than 3 unique points
  * rectangles, polygons: last point must coincide with first point
  * rectangle: convert to polygon, if not 5 points
  * rectangle with rounded corners: error, if not 5 points
@@ -852,6 +854,20 @@ sanitize_lineobject(
 	    q->next = NULL;
 	    q->x = l->points->x;
 	    q->y = l->points->y;
+	}
+
+	if (l->type == T_POLYGON) {
+		int	npts;
+
+		q = l->points;
+		for (npts = 1; q->next && npts < 4; q = q->next)
+			++npts;
+		if (npts < 4 ) {
+			put_msg("A polygon with %d points at line %d - convert to a polyline.",
+			npts, line_no);
+			l->type = T_POLYLINE;
+			return 0;
+		}
 	}
 
 	if (l->type == T_BOX || l->type == T_ARC_BOX || l->type == T_PIC_BOX) {
