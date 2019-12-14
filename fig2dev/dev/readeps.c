@@ -1,7 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Parts Copyright (c) 1989-2007 by Brian V. Smith
- * Parts Copyright (c) 2015-2017 by Thomas Loimer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2019 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -83,18 +85,23 @@ read_eps_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int* lly,
 	while (fgets(buf, BUFSIZ, file) != NULL) {
 	    /* look for /MediaBox for pdf file */
 	    if (pdf_flag) {
-		if (!strncmp(buf, "/MediaBox", 9)) {	/* look for the MediaBox spec */
-		    c = strchr(buf, '[') + 1;
-		    if (c && sscanf(c, "%d %d %d %d", llx, lly, &urx, &ury) < 4)
-		    {
-			*llx = *lly = 0;
-			urx = paperdef[0].width*72;
-			ury = paperdef[0].height*72;
-			put_msg("Bad MediaBox in imported PDF file %s, assuming %s size",
-				pic->file, metric? "A4" : "Letter" );
+		for (c = buf; (c = strchr(c,'/')); ++c) {
+		    if (!strncmp(c, "/MediaBox", 9)) {
+			c = strchr(c, '[');
+			if (c && sscanf(c + 1, "%d %d %d %d",
+				    llx, lly, &urx, &ury) < 4) {
+			    *llx = *lly = 0;
+			    urx = paperdef[0].width*72;
+			    ury = paperdef[0].height*72;
+			    put_msg("Bad MediaBox in imported PDF file %s, assuming %s size",
+				    pic->file, metric? "A4" : "Letter" );
+			}
+			pic->bit_size.x = urx - (*llx);
+			pic->bit_size.y = ury - (*lly);
+			break;
 		    }
 		}
-	    /* look for bounding box for EPS file */
+		/* look for bounding box for EPS file */
 	    } else if (!nested && !strncmp(buf, "%%BoundingBox:", 14)) {
 		c = buf + 14;
 		/* skip past white space */

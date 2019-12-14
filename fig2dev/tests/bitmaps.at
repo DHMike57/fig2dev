@@ -235,3 +235,8 @@ EOF`
 #		1433 on ubuntu 16.04.2 with ghostscript 9.18
 AT_CHECK([test $blackpixels -gt 1431 && test $blackpixels -lt 1494])
 AT_CLEANUP
+
+AT_SETUP([find /MediaBox in pdf file])
+AT_KEYWORDS(pdf)
+AT_CHECK(["$abs_builddir"/test2 "$srcdir/data/cross.pdf"], 0, ignore)
+AT_CLEANUP

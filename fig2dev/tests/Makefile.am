@@ -4,7 +4,7 @@
 # Copyright (c) 1991 by Micah Beck
 # Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 # Parts Copyright (c) 1989-2015 by Brian V. Smith
-# Parts Copyright (c) 2015-2018 by Thomas Loimer
+# Parts Copyright (c) 2015-2019 by Thomas Loimer
 #
 # Any party obtaining a copy of these files is granted, free of charge, a
 # full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -16,7 +16,7 @@
 # and this permission notice remain intact.
 
 # fig2dev/tests/Makefile.am
-# Author: Thomas Loimer, 2016-2018.
+# Author: Thomas Loimer, 2016-2019.
 
 
 # testsuite and package.m4 must be distributed, hence they are
@@ -39,8 +39,8 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	  echo 'm4_define([AT_PACKAGE_URL], [@PACKAGE_URL@])'; \
 	} >'$(srcdir)/package.m4'
 
-check_PROGRAMS = test1
-# test1 calls malloc(). AC_FUNC_MALLOC may replace malloc() by rpl_malloc()
+check_PROGRAMS = test1 test2
+# test1 called malloc(). AC_FUNC_MALLOC may replace malloc() by rpl_malloc()
 # which is defined in malloc.o. The latter is contained in $(LIBOBJS) in
 # ${LIBOBJDIR}. Specifically, ./configure CFLAGS="-fsanitize=address" causes
 # this replacment. Unfortunately, using test1_LDADD, causes make distcheck to
@@ -54,8 +54,13 @@ check_PROGRAMS = test1
 
 # keep the definitions below in sync with those in ../dev/Makefile.am
 if ENABLE_I18N
-AM_CPPFLAGS = -DI18N_DATADIR="\"$(i18ndir)\""
+test1_CPPFLAGS = -DI18N_DATADIR="\"$(i18ndir)\""
 endif
+
+test2_CPPFLAGS = -I$(top_srcdir)/fig2dev
+test2_LDADD = $(top_builddir)/fig2dev/dev/readeps.$(OBJEXT)
+test2_DEPENDENCIES = $(test2_LDADD)
+
 
 check-local: atconfig $(TESTSUITE) atlocal
 	$(SHELL) '$(TESTSUITE)' INSTALLCHECK=no $(TESTSUITEFLAGS)
