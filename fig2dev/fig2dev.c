@@ -218,6 +218,13 @@ get_args(int argc, char *argv[])
 
 	if (argc == 1)
 	    fprintf(stderr, Usage, prog, prog);
+
+	/* print the version, for the comfort of the autotest tests */
+	if (!strcmp(argv[1], "--version")) {
+		printf("fig2dev Version %s\n", PACKAGE_VERSION);
+		exit(EXIT_SUCCESS);
+	}
+
 	/* sum of all arguments */
 	while ((c = fig_getopt(argc, argv, ARGSTRING)) != EOF) {
 
