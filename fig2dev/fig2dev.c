@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <unistd.h>
 #include <locale.h>
 /* In Windows, _setmode() is declared in <io.h>, O_BINARY in <fcntl.h>. It
  * accepts two arguments and sets file mode to text or binary. */
@@ -44,10 +45,11 @@
 #include "bound.h"
 #include "read.h"
 
-/* the three lines below could go into a getopt.h file */
-extern int	 fig_getopt(int nargc, char **nargv, char *ostr); /* getopt.c */
-extern char	*optarg;		/* getopt.c */
-extern int	 optind;		/* getopt.c */
+#ifndef HAVE_GETOPT
+extern int	getopt(int argc, char *argv[], const char *ostr);
+extern char	*optarg;
+extern int	 optind;
+#endif
 
 char	Err_badarg[] = "Argument -%c unknown to %s driver.";
 char	Err_mem[] = "Running out of memory.";
@@ -226,7 +228,7 @@ get_args(int argc, char *argv[])
 	}
 
 	/* sum of all arguments */
-	while ((c = fig_getopt(argc, argv, ARGSTRING)) != EOF) {
+	while ((c = getopt(argc, argv, ARGSTRING)) != EOF) {
 
 	  /* global (all drivers) option handling */
 	    switch (c) {

@@ -5,7 +5,7 @@ AC_COPYRIGHT([Fig2dev: Translate Fig code to various Devices
 Copyright (c) 1991 by Micah Beck
 Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 Parts Copyright (c) 1989-2015 by Brian V. Smith
-Parts Copyright (c) 2015-2018 by Thomas Loimer
+Parts Copyright (c) 2015-2019 by Thomas Loimer
 
 Any party obtaining a copy of these files is granted, free of charge, a
 full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -19,7 +19,7 @@ and this permission notice remain intact.
 
 #
 # configure.ac
-# Author: Thomas Loimer, 2015-2018.
+# Author: Thomas Loimer, 2015-2019.
 #
 
 dnl Define m4 variables for use in AC_INIT and AC_DEFINE below.
@@ -366,9 +366,9 @@ AS_IF([test "$tl_cv_func__setmode" = yes],
 
 # Check for functions and, if not found, use the corresponding
 # replacement, e.g., strstr.c, in the top srcdir. Sets, e.g.,
-# HAVE_STRSTR. Any modern system should have these functions, so
-# this are obsolete checks.
-AC_REPLACE_FUNCS([isascii strstr strchr strrchr strcasecmp strncasecmp \
+# HAVE_STRSTR. Except possibly getopt(), any modern system should have these
+# functions, so all except one are obsolete checks.
+AC_REPLACE_FUNCS([getopt isascii strstr strchr strrchr strcasecmp strncasecmp \
 	strdup strndup])
 
 # Place the replacement functions into this dir.
