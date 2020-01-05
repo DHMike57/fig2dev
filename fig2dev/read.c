@@ -39,8 +39,6 @@
 #include "read.h"
 #include "trans_spline.h"
 
-extern F_arrow	*make_arrow(int type, int style,	/* arrow.c */
-				double thickness, double wid, double ht);
 
 User_color	 user_colors[MAX_USR_COLS];		/* fig2dev.h */
 int		 user_col_indx[MAX_USR_COLS];		/* fig2dev.h */
@@ -51,7 +49,8 @@ int		 v21_flag;		/* Protocol V2.1 or higher */
 int		 v30_flag;		/* Protocol V3.0 or higher */
 int		 v32_flag;		/* Protocol V3.2 or higher */
 
-static void		 read_colordef(char *line, int line_no);
+static int		read_objects(FILE *fp, F_compound *obj);
+static void		read_colordef(char *line, int line_no);
 static F_ellipse	*read_ellipseobject(char *line, int line_no);
 static F_line		*read_lineobject(FILE *fp, char **restrict line,
 					size_t *line_len, int *line_no);
@@ -64,9 +63,10 @@ static F_arc		*read_arcobject(FILE *fp, char **restrict line,
 static F_compound	*read_compoundobject(FILE *fp, char **restrict line,
 					size_t *line_len, int *line_no);
 static F_comment	*attach_comments(void);
+static F_arrow		*make_arrow(int type, int style, double thickness,
+					double wid, double ht);
 static void		count_lines_correctly(FILE *fp, int *line_no);
 static void		init_pats_used(void);
-static int		read_objects(FILE *fp, F_compound *obj);
 static ssize_t		get_line(FILE *fp, char **restrict line,
 					size_t *line_len, int *line_no);
 static void		skip_line(FILE *fp);
@@ -1195,6 +1195,31 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	/* skip to the end of the line */
 	skip_line(fp);
 	return l;
+}
+
+static F_arrow *
+make_arrow(int type, int style, double thickness, double wid, double ht)
+{
+	F_arrow		*a;
+
+	if (style < 0 || style > 1 || type < 0 ||
+			/* beware of int overflow */
+			type > NUMARROWS || (type + 1) * 2 > NUMARROWS)
+		return NULL;
+	if (NULL == (Arrow_malloc(a))) {
+		put_msg(Err_mem);
+		return NULL;
+	}
+
+	arrows_used = true;
+	arrow_used[2*type + style] = true;
+
+	a->type = type;
+	a->style = style;
+	a->thickness = thickness * THICK_SCALE;
+	a->wid = wid;
+	a->ht = ht;
+	return a;
 }
 
 static F_spline *

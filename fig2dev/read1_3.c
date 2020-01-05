@@ -49,7 +49,6 @@
 #define DRAW_CLOSEDSPLINE	11
 #define DRAW_COMPOUND		13
 
-extern F_arrow		*forward_arrow(void), *backward_arrow(void);
 extern int		figure_modified;
 
 static F_ellipse	*read_ellipseobject(FILE *fp);
@@ -58,6 +57,8 @@ static F_text		*read_textobject(FILE *fp);
 static F_spline		*read_splineobject(FILE *fp);
 static F_arc		*read_arcobject(FILE *fp);
 static F_compound	*read_compoundobject(FILE *fp);
+static F_arrow		*forward_arrow(void);
+static F_arrow		*backward_arrow(void);
 
 static char		Err_invalid[] = "Invalid %s object.";
 
@@ -521,4 +522,38 @@ read_textobject(FILE *fp)
 	if (t->size == 0)
 		t->size = 18;
 	return t;
+}
+
+static F_arrow *
+forward_arrow(void)
+{
+	F_arrow		*a;
+
+	if (NULL == (Arrow_malloc(a))) {
+		put_msg(Err_mem);
+		return(NULL);
+	}
+	a->type = 0;
+	a->style = 0;
+	a->thickness = THICK_SCALE;
+	a->wid = 4.0;
+	a->ht = 8.0;
+	return a;
+}
+
+static F_arrow *
+backward_arrow(void)
+{
+	F_arrow		*a;
+
+	if (NULL == (Arrow_malloc(a))) {
+		put_msg(Err_mem);
+		return(NULL);
+	}
+	a->type = 0;
+	a->style = 0;
+	a->thickness = THICK_SCALE;
+	a->wid = 4.0;
+	a->ht = 8.0;
+	return a;
 }

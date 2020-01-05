@@ -4,7 +4,7 @@
 # Copyright (c) 1991 by Micah Beck
 # Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 # Parts Copyright (c) 1989-2015 by Brian V. Smith
-# Parts Copyright (c) 2015-2018 by Thomas Loimer
+# Parts Copyright (c) 2015-2020 by Thomas Loimer
 #
 # Any party obtaining a copy of these files is granted, free of charge, a
 # full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -16,7 +16,7 @@
 # and this permission notice remain intact.
 
 # fig2dev/Makefile.am
-# Author: Thomas Loimer, 2015-2018.
+# Author: Thomas Loimer, 2015-2020.
 
 
 MAINTAINERCLEANFILES = Makefile.in
@@ -36,7 +36,7 @@ endif
 
 bin_PROGRAMS = fig2dev
 
-fig2dev_SOURCES = alloc.h arrow.c bool.h bound.h bound.c colors.h colors.c \
+fig2dev_SOURCES = alloc.h bool.h bound.h bound.c colors.h colors.c \
     creationdate.h creationdate.c drivers.h fig2dev.h fig2dev.c free.h free.c \
     iso2tex.c localmath.h localmath.c object.h read1_3.c read.h read.c \
     trans_spline.h trans_spline.c pi.h
