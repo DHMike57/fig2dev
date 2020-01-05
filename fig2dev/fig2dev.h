@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -101,7 +101,7 @@ extern bool	bgspec;		/* flag to say -g was specified */
 extern bool support_i18n;
 #endif
 extern char	gif_transparent[];/* GIF transp color hex name (e.g. #ff00dd) */
-extern char	papersize[];	/* paper size */
+extern char	papersize[16];	/* paper size */
 extern char	boundingbox[];	/* boundingbox */
 extern char	lang[];		/* selected output language */
 extern const char	*Fig_color_names[]; /* hex names for Fig colors */

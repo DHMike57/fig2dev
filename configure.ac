@@ -5,7 +5,7 @@ AC_COPYRIGHT([Fig2dev: Translate Fig code to various Devices
 Copyright (c) 1991 by Micah Beck
 Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 Parts Copyright (c) 1989-2015 by Brian V. Smith
-Parts Copyright (c) 2015-2019 by Thomas Loimer
+Parts Copyright (c) 2015-2020 by Thomas Loimer
 
 Any party obtaining a copy of these files is granted, free of charge, a
 full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -327,6 +327,7 @@ dnl Just provide our own pi
 # example.
 AC_HEADER_STDBOOL
 AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
 
 #
 # Checks for library functions.

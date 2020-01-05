@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2012 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -51,8 +51,6 @@
 
 extern F_arrow		*forward_arrow(void), *backward_arrow(void);
 extern int		figure_modified;
-//extern int		line_no;
-extern int		num_object;
 
 static F_ellipse	*read_ellipseobject(FILE *fp);
 static F_line		*read_lineobject(FILE *fp);
@@ -103,7 +101,6 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			ll = (ll->next = l);
 		    else
 			ll = obj->lines = l;
-		    num_object++;
 		    break;
 		case OBJ_SPLINE :
 		    if ((s = read_splineobject(fp)) == NULL) return(-1);
@@ -111,7 +108,6 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			ls = (ls->next = s);
 		    else
 			ls = obj->splines = s;
-		    num_object++;
 		    break;
 		case OBJ_ELLIPSE :
 		    if ((e = read_ellipseobject(fp)) == NULL) return(-1);
@@ -119,7 +115,6 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			le = (le->next = e);
 		    else
 			le = obj->ellipses = e;
-		    num_object++;
 		    break;
 		case OBJ_ARC :
 		    if ((a = read_arcobject(fp)) == NULL) return(-1);
@@ -127,7 +122,6 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			la = (la->next = a);
 		    else
 			la = obj->arcs = a;
-		    num_object++;
 		    break;
 		case OBJ_TEXT :
 		    if ((t = read_textobject(fp)) == NULL) return(-1);
@@ -135,7 +129,6 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			lt = (lt->next = t);
 		    else
 			lt = obj->texts = t;
-		    num_object++;
 		    break;
 		case OBJ_COMPOUND :
 		    if ((c = read_compoundobject(fp)) == NULL) return(-1);
@@ -143,7 +136,6 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			lc = (lc->next = c);
 		    else
 			lc = obj->compounds = c;
-		    num_object++;
 		    break;
 		default:
 		    put_msg("Incorrect object code %d", object);
