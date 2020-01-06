@@ -26,16 +26,14 @@
 #ifdef	HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#ifdef	HAVE_STRERROR
-#include <errno.h>
-#endif
 #include <ctype.h>
 #include <limits.h>
 
-#include "fig2dev.h"	/* includes "bool.h" */
+#include "fig2dev.h"	/* includes bool.h and object.h */
+//#include "object.h"	/* includes X11/xpm.h */
 #include "alloc.h"
-#include "object.h"	/* does #include <X11/xpm.h> */
 #include "free.h"
+#include "messages.h"
 #include "read.h"
 #include "trans_spline.h"
 
@@ -88,36 +86,6 @@ static int	 numcom;		/* current comment index */
 static bool	 com_alloc = false;	/* whether or not the comment array
 					 * has been initialized */
 
-void
-read_fail_message(char *file, int err)
-{
-	if (err == 0)		/* Successful read */
-	    return;
-#if (_POSIX_C_SOURCE - 0) >= 200112L
-	else if (err == ENAMETOOLONG)
-	    put_msg("File name \"%s\" is too long", file);
-	else if (err == ENOENT)
-	    put_msg("File \"%s\" does not exist", file);
-	else if (err == ENOTDIR)
-	    put_msg("A name in the path \"%s\" is not a directory", file);
-	else if (err == EACCES)
-	    put_msg("Read access to file \"%s\" is blocked", file);
-	else if (err == EISDIR)
-	    put_msg("File \"%s\" is a directory", file);
-#endif
-	else if (err == -2) {
-	    put_msg("File \"%s\" is empty", file);
-	    }
-	else if (err == -1) {
-	    /* Format error; relevant error message is already delivered */
-	    }
-	else
-#ifdef	HAVE_STRERROR
-	    put_msg("File \"%s\" is not accessible; %s", file, strerror(err));
-#else
-	    put_msg("File \"%s\" is not accessible.", file);
-#endif
-}
 
 /**********************************************************
 Read_fig returns :
@@ -125,7 +93,7 @@ Read_fig returns :
      0 : successful read.
     -1 : File is in incorrect format
     -2 : File is empty
-err_no : if file can not be read for various reasons
+    -3 : Check errno
 
 The resolution (ppi) is stored in global "ppi"
 **********************************************************/
@@ -133,16 +101,12 @@ The resolution (ppi) is stored in global "ppi"
 int
 read_fig(char *file_name, F_compound *obj)
 {
-	FILE		*fp;
+	FILE	*fp;
 
 	if ((fp = fopen(file_name, "r")) == NULL)
-#ifdef HAVE_STRERROR
-	    return errno;
-#else
-	    return -1;
-#endif
+		return -3;
 	else
-	    return readfp_fig(fp, obj);
+		return readfp_fig(fp, obj);
 }
 
 int
@@ -490,7 +454,7 @@ read_objects(FILE *fp, F_compound *obj)
 		    if ((c = read_compoundobject(fp, &line, &line_len,&line_no))
 				== NULL) {
 			free(line);
-			return -1;
+			return -3;
 		    }
 		    if (lc)
 			lc = (lc->next = c);
@@ -522,13 +486,9 @@ read_objects(FILE *fp, F_compound *obj)
 	}
 
 	if (feof(fp))
-	    return 0;
+		return 0;
 	else
-#ifdef HAVE_STRERROR
-	    return errno;
-#else
-	    return -1;
-#endif
+		return -3;
 } /*  read_objects */
 
 static void

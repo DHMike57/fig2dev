@@ -66,12 +66,8 @@ struct driver {
 
 extern void	gendev_null(void);
 extern void	gendev_nogrid(float major, float minor);
-extern void	put_msg(char *fmt, ...);
 extern void	print_comments(char *string1, F_comment *comment,char *string2);
 extern int	depth_filter(int obj_depth);
-
-extern char	Err_badarg[];
-extern char	Err_mem[];
 
 extern const char	prog[];
 extern char	*from, *to;

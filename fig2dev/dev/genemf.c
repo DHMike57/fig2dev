@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -78,15 +78,16 @@
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
-#include "pi.h"
 #if defined(I18N) && defined(HAVE_ICONV)
 #include <iconv.h>
 #endif
 
-#include "fig2dev.h"	/* includes "bool.h" */
-#include "object.h"	/* does #include <X11/xpm.h> */
-#include "readpics.h"
+#include "fig2dev.h"	/* includes bool.h and object.h */
+//#include "object.h"	/* includes X11/xpm.h */
 #include "genemf.h"
+#include "messages.h"
+#include "pi.h"
+#include "readpics.h"
 
 #define UNDEFVALUE	-100	/* UNDEFined attribute value */
 #define EPSILON		1e-4	/* small floating point value */

@@ -1,7 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -13,6 +15,7 @@
  * and this permission notice remain intact.
  *
  */
+
 
 /*
  * genge.c: convert fig to Graphical Editor format
@@ -29,8 +32,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "fig2dev.h"
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "fig2dev.h"	/* includes bool.h and object.h */
+//#include "object.h"	/* includes X11/xpm.h */
+#include "messages.h"
 
 #define		MAX_FONT_SIZE	31
 

@@ -4,7 +4,7 @@
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -103,14 +103,15 @@
 #include <strings.h>
 #endif
 #include <math.h>
-#include "pi.h"
 
-#include "fig2dev.h"	/* includes "bool.h" */
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "fig2dev.h"	/* includes bool.h and object.h */
+//#include "object.h"	/* includes X11/xpm.h */
+#include "localmath.h"
+#include "messages.h"
+#include "pi.h"
+#include "psfonts.h"
 #include "setfigfont.h"
 #include "texfonts.h"
-#include "psfonts.h"
-#include "localmath.h"
 
 extern float	THICK_SCALE;	/* ratio of dpi/80 */
 extern bool	FontSizeOnly;	/* defined in setfigfont.c */
@@ -313,7 +314,7 @@ genepic_option(char opt, char *optarg)
 	case 'S':
 		loop = atoi(optarg);
 		if (loop < 8 || loop > 12) {
-			put_msg("Scale must be between 8 and 12 inclusively\n");
+			put_msg("Scale must be between 8 and 12 inclusively");
 			exit(1);
 		}
 		loop -= 8;
@@ -392,7 +393,7 @@ genepic_start(F_compound *objects)
 	LnCmd = "path";
 	break;
       default:
-	put_msg("Program error in main\n");
+	put_msg("Program error in main");
 	break;
     }
     if (PageMode) {
@@ -818,7 +819,7 @@ genepic_line(F_line *line)
 		    llx, lly, dtemp , urx-llx, ury-lly);
 		break;
 	      default:
-		put_msg("Program Error! No other line styles allowed.\n");
+		put_msg("Program Error! No other line styles allowed.");
 		break;
 	    }
 	    return;

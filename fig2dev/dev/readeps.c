@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -30,8 +30,8 @@
 #include <string.h>
 #include <math.h>
 
-#include "fig2dev.h"	/* includes "bool.h" */
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "fig2dev.h"	/* includes bool.h and object.h */
+//#include "object.h"	/* includes X11/xpm.h */
 
 /* for both procedures:
      return codes:  1 : success
@@ -93,7 +93,7 @@ read_eps_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int* lly,
 			    *llx = *lly = 0;
 			    urx = paperdef[0].width*72;
 			    ury = paperdef[0].height*72;
-			    put_msg("Bad MediaBox in imported PDF file %s, assuming %s size",
+			    fprintf(stderr, "Bad MediaBox in imported PDF file %s, assuming %s size",
 				    pic->file, metric? "A4" : "Letter" );
 			}
 			pic->bit_size.x = urx - (*llx);

@@ -3,7 +3,7 @@
  * Parts Copyright (c) 2002 by Anthony Starks
  * Parts Copyright (c) 2002-2006 by Martin Kroeker
  * Parts Copyright (c) 2002-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -247,12 +247,13 @@
 #include <strings.h>
 #endif
 #include <math.h>
-#include "pi.h"
 
-#include "fig2dev.h"	/* includes "bool.h" */
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "fig2dev.h"	/* includes bool.h and object.h */
+//#include "object.h"	/* includes X11/xpm.h */
 #include "bound.h"
 #include "creationdate.h"
+#include "messages.h"
+#include "pi.h"
 
 static bool svg_arrows(int line_thickness, F_arrow *for_arrow, F_arrow *back_arrow,
 	F_pos *forw1, F_pos *forw2, F_pos *back1, F_pos *back2, int pen_color);

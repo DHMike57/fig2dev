@@ -22,10 +22,11 @@
 #include <string.h>
 #include <math.h>
 
-#include "fig2dev.h"	/* includes "bool.h" */
+#include "fig2dev.h"	/* includes bool.h and object.h*/
+//#include "object.h"	/* includes X11/xpm.h */
 #include "alloc.h"
-#include "object.h"	/* does #include <X11/xpm.h> */
 #include "free.h"
+#include "messages.h"
 #include "trans_spline.h"
 
 
@@ -645,6 +646,6 @@ create_point(void)
     F_point	   *p;
 
     if ((p = (F_point *) malloc(POINT_SIZE)) == NULL)
-	put_msg(Err_mem);
+	fputs(Err_mem, stderr);
     return p;
 }

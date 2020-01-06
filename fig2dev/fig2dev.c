@@ -38,11 +38,12 @@
 #include <fcntl.h>
 #endif
 
-#include "fig2dev.h"	/* includes "bool.h" */
+#include "fig2dev.h"	/* includes bool.h and object.h */
+//#include "object.h"	/* includes X11/xpm.h */
 #include "alloc.h"
-#include "object.h"	/* does #include <X11/xpm.h> */
-#include "drivers.h"
 #include "bound.h"
+#include "drivers.h"
+#include "messages.h"
 #include "read.h"
 
 #ifndef HAVE_GETOPT
@@ -50,9 +51,6 @@ extern int	getopt(int argc, char *argv[], const char *ostr);
 extern char	*optarg;
 extern int	 optind;
 #endif
-
-char	Err_badarg[] = "Argument -%c unknown to %s driver.";
-char	Err_mem[] = "Running out of memory.";
 
 const char	prog[] = PACKAGE_NAME;
 char	*from = NULL, *to = NULL;
@@ -173,16 +171,6 @@ static int	 gendev_objects(F_compound *objects, struct driver *dev);
 static void	 help_msg(void);
 static void	 depth_option(char *s);
 
-
-void
-put_msg(char *fmt, ...)
-{
-	va_list argptr;
-	va_start(argptr, fmt);
-	vfprintf(stderr, fmt, argptr);
-	va_end(argptr);
-	fputc('\n', stderr);
-}
 
 /*
  * print comments to the output file preceded by string1 and
@@ -429,18 +417,21 @@ main(int argc, char *argv[])
 
 	if (from)
 		status = read_fig(from, &objects);
-	else	/* read from stdin */
+	else
 		status = readfp_fig(stdin, &objects);
+	if (status != 0) {
+		if (status == -3) {
+			if (from)
+				err_msg("File \"%s\" is not accessible", from);
+			else
+				err_msg("Input error");
+		}
+		exit(EXIT_FAILURE);
+	}
 
 	/* multiply grid spacing by unit and scale to get FIG units */
 	grid_minor_spacing = mult * grid_minor_spacing * ppi;
 	grid_major_spacing = mult * grid_major_spacing * ppi;
-
-	if (status != 0) {
-		if (from)
-			read_fail_message(from, status);
-		exit(1);
-	}
 
 	if (to == NULL)
 		tfp = stdout;

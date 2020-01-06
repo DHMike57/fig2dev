@@ -26,14 +26,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_STRERROR
-#include <errno.h>
-#endif
 
-#include "fig2dev.h"
+#include "fig2dev.h"	/* includes object.h */
 #include "alloc.h"
-#include "object.h"	/* does #include <X11/xpm.h> */
+//#include "object.h"	/* includes X11/xpm.h */
 #include "free.h"
+#include "messages.h"
 
 /*******    Fig 1.3 subtype of objects    *******/
 #define DRAW_ELLIPSE_BY_RAD	1
@@ -132,7 +130,7 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 			lt = obj->texts = t;
 		    break;
 		case OBJ_COMPOUND :
-		    if ((c = read_compoundobject(fp)) == NULL) return(-1);
+		    if ((c = read_compoundobject(fp)) == NULL) return(-3);
 		    if (lc)
 			lc = (lc->next = c);
 		    else
@@ -144,13 +142,9 @@ read_1_3_objects(FILE *fp, F_compound *obj)
 		} /*  switch */
 	    } /*  while */
 	if (feof(fp))
-	    return 0;
+		return 0;
 	else
-#ifdef HAVE_STRERROR
-	    return errno;
-#else
-	    return -1;
-#endif
+		return -3;
 }
 
 static F_arc *
@@ -291,18 +285,14 @@ read_compoundobject(FILE *fp)
 		    return(com);
 		} /*  switch */
 	    }
-	if (feof(fp))
-	    return(com);
-	else {
-#ifdef HAVE_STRERROR
-	    put_msg("Format error: %s", strerror(errno));
-#else
-	    put_msg("Format error.");
-#endif
-	    free_compound(&com);
-	    return(NULL);
-	    }
+	if (feof(fp)) {
+		return com;
+	} else {
+		put_msg("Fig 1.3 format error.");
+		free_compound(&com);
+		return NULL;
 	}
+}
 
 static F_ellipse *
 read_ellipseobject(FILE *fp)

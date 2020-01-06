@@ -1,8 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Parts Copyright (c) 1999 by Philippe Bekaert
- * Parts Copyright (c) 1999-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -14,6 +15,7 @@
  * and this permission notice remain intact.
  *
  */
+
 
 /*
  * gencgm.c: convert fig to clear text version-1 Computer Graphics Metafile
@@ -74,10 +76,11 @@
 #include <string.h>
 #include <math.h>
 #include <limits.h>
-#include "pi.h"
 
-#include "fig2dev.h"	/* includes "bool.h" */
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "fig2dev.h"	/* includes bool.h and object.h */
+//#include "object.h"	/* includes X11/xpm.h */
+#include "messages.h"
+#include "pi.h"
 
 #define	UNDEFVALUE	-100	/* undefined attribute value */
 #define	FILL_COLOR_INDEX 999	/* special color index for solid filled shapes.

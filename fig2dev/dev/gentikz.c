@@ -36,12 +36,13 @@
 #include <math.h>
 #include "pi.h"
 
-#include "fig2dev.h"	/* includes "bool.h" */
-#include "object.h"	/* does #include <X11/xpm.h> */
-#include "texfonts.h"		/* texfontnames[] */
+#include "fig2dev.h"	/* includes bool.h and object.h */
+//#include "object.h"	/* includes X11/xpm.h */
 #include "bound.h"
 #include "gentikz.h"
+#include "messages.h"
 #include "psfonts.h"
+#include "texfonts.h"		/* texfontnames[] */
 
 /* String arrays and structs */
 extern char	*ISO1toTeX[];	/* iso2tex.c */
