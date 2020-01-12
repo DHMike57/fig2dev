@@ -40,35 +40,44 @@
 #include "config.h"
 #endif
 
+#include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <math.h>
-#include <ctype.h>
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
 //#include "object.h"	/* includes X11/xpm.h */
 #include "messages.h"
 #include "pi.h"
 
-static void die(const char * msg) {
- fprintf(stderr, "fig2dev(shape): %s\n", msg);
- exit(-1);
-}
 
-static char*	 macroname=NULL;
+#define	SHAPE_LEN	16	/* length of the text buffer */
 
-static int MAX_POINTS=100;
+static char	*macroname = NULL;
+static bool	scaleset = false;
+static bool	centerset = false;
+static bool	was_horizontal = false;
+static double	centerpos = 0.0;
+static double	scaledim = 10.0;
+
+static int	lastx = 0;
+static int	lasty = 0;
+static int	startx = 0;
+static int	starty = 0;
+static bool	line_start = true;
+
+static int	MAX_POINTS=100;
 #define POINT_INC 100
-static int MAX_SHAPES=20;
-#define SHAPE_INC  20
-static int  MAX_SHAPEGROUPS=5;
+static int	MAX_SHAPES=20;
+#define SHAPE_INC 20
+static int	MAX_SHAPEGROUPS=5;
 #define SHAPEGROUP_INC 5
-
 static int	num_points = 0;
+
 struct lineseg {
   int x;
   int y;
@@ -105,6 +114,12 @@ typedef struct shapegroup shapegroup;
 static shapegroup *shapegroups;
 static int num_shapegroups=0;
 
+
+static void
+die(const char *msg) {
+	fprintf(stderr, "fig2dev(shape): %s\n", msg);
+	exit(EXIT_FAILURE);
+}
 
 static void
 alloc_arrays(void) {
@@ -161,7 +176,7 @@ static void finish_object(int lend) {
   num_shapes++;
 }
 
-int shapecomp(const void* s1, const void * s2) {
+static int shapecomp(const void* s1, const void * s2) {
   /* sorting the shapes in groups (same group identifier */
   return strcmp(((const shape*)s1)->groupname,((const shape*)s2)->groupname);
 }
@@ -213,14 +228,9 @@ genshape_option(char opt, char *optarg)
     break;
   default:
     put_msg(Err_badarg, opt, "shape");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 }
-
-static bool scaleset=false;
-static bool centerset=false;
-static double centerpos=0.0;
-static double scaledim=10.0;
 
 static bool widthref(char *comm) {
   /* return true if this object is the reference for the width */
@@ -239,41 +249,55 @@ static bool centerref(char *comm) {
 
 
 /* reads the first comment of an object, if valid */
-static char *
-get_comment(F_comment *comment)
-{ char *retval=NULL;
-  int maxlen=0;
-  if (comment==NULL) return NULL;
-  if (comment->comment==NULL) return NULL;
-#ifdef COM
-#undef COM
-#endif
-#define COM comment->comment
-  /* if we are behind this point, there is some comment to examine
-     we get everything up to the first illegal character (should be whitespace) */
-  if ((COM[0]=='+') || (COM[0]=='-')) maxlen=1; /* ignore the first character, if it is + or - */
-  while (isalnum(COM[maxlen])) maxlen++;
-  /* look for the first non-alphanumeric character, maybe the terminating 0 */
-  retval = strndup(COM, maxlen);
-  if (strcmp(retval,"")==0) {
-    /* no shape defining comment - free mem and return */
-    free(retval);
-    return NULL;
-  }
-  /* it is a shape defining comment
-     reject everything not starting with + or - or being special comment */
-  if ((retval[0]!='+') && (retval[0]!='-') && (!widthref(retval)) && (!heightref(retval)) && (!centerref(retval))) {
-     fprintf(stderr, "Comment \"%s\":\n", COM);
-     die("Illegal shape specification, must start with '+' or '-' or be 'center', 'width' or height'\n"
-	 "Use blank to start real comment. See documentation for explanation");
-  }
-  return retval;
+/*
+ * read a comment, and return a valid shape comment in *comm. The length of the
+ * *comm character array is given by len. If the shape comment does not fit into
+ * comm, malloc() an array and return its address in *comm.
+ */
+static void
+get_comment(char **restrict comm, size_t len, const F_comment *restrict comment)
+{
+	size_t	i = 0;
 
-#undef COM
+	if (comment == NULL || comment->comment == NULL) {
+		(*comm)[0] = '\0';
+		return;
+	}
+
+	/* copy the first character, if it is + or - */
+	if (comment->comment[0] == '+' || comment->comment[0] == '-') {
+		(*comm)[0] = comment->comment[0];
+		++i;
+	}
+
+	/* copy everything up to the first illegal character into *comm */
+	while (isalnum((unsigned char)comment->comment[i])) {
+		if (i < len - 1)
+			(*comm)[i] = comment->comment[i];
+		++i;	/* if too long, count the necessary length */
+	}
+
+	if (i >= len) {
+		if ((*comm = malloc(i + 1)) == NULL)
+			die(Err_mem);
+		memcpy(*comm, comment->comment, i);
+	}
+	(*comm)[i] = '\0';
+	fprintf(stderr, "*comm: %s, comment->comment: %s\n", *comm,
+			comment->comment);
+
+	/* reject invalid input */
+	if ((*comm)[0] != '\0' && (*comm)[0] != '+' && (*comm)[0] != '-' &&
+			!widthref(*comm) && !heightref(*comm) &&
+			!centerref(*comm)) {
+		fprintf(stderr, "Comment \"%s\": %s\n", comment->comment, *comm);
+		die("Illegal shape specification, must start with '+' or '-' "
+			"or be 'center', 'width' or height'\nUse blank to start"
+			" real comment. See documentation for explanation");
+	}
 }
 
 /* Adding lines */
-static bool was_horizontal=false;
 static void add_point(int x, int y, int x2, int y2, bool intersect) {
   if (num_points>=MAX_POINTS) {
     /* realloc the linesegments */
@@ -310,14 +334,6 @@ static void add_point(int x, int y, int x2, int y2, bool intersect) {
 }
 
 
-
-static int lastx=0;
-static int lasty=0;
-static int startx=0;
-static int starty=0;
-static bool line_start=true;
-
-
 static void start_line(char *groupid, int depth) {
   add_object(groupid, num_points, depth);
   line_start=true;
@@ -347,8 +363,7 @@ static void finish_line(void) {
 /** End of data structures **/
 
 
-
-int floatcomp(const void* y1, const void * y2) {
+static int floatcomp(const void* y1, const void * y2) {
   if (*((float*)y1)<*((float*)y2)) return -1;
   if (*((float*)y1)>*((float*)y2)) return +1;
   return 0;
@@ -367,20 +382,21 @@ genshape_start(F_compound *objects)
 /* if the user has set a drawing name, use this
    for the macro name, if not overridden from the commandline */
 
- }
+}
 
 
 void
 genshape_arc(F_arc *a)
 {
-  char *comm;
+  char comm_buf[SHAPE_LEN];
+  char *comm = comm_buf;
   int cx, cy, sx, sy, ex, ey;
   double r;
   double sa, ea;
   double alpha;
 
-  comm = get_comment(a->comments);
-  if (comm!=NULL) {
+  get_comment(&comm, sizeof(comm_buf), a->comments);
+  if (*comm != '\0') {
     cx = XZOOM(a->center.x);
     cy = YZOOM(a->center.y);
     sx = XZOOM(a->point[0].x);
@@ -408,20 +424,22 @@ genshape_arc(F_arc *a)
     }
        line_to(round(cx + r * cos(ea)), round(cy + r * sin(ea)));
     finish_line();
-    free(comm);
   }
+  if (comm != comm_buf)
+	  free(comm);
 }
 
 void
 genshape_ellipse(F_ellipse *e)
 {
-  char *comm;
+  char comm_buf[SHAPE_LEN];
+  char *comm = comm_buf;
   int x0, y0;
   double rx, ry;
   double angle, theta;
 
-  comm = get_comment(e->comments);
-  if (comm!=NULL) {
+  get_comment(&comm, sizeof(comm_buf), e->comments);
+  if (*comm != '\0') {
     x0 = XZOOM(e->center.x);
     y0 = YZOOM(e->center.y);
     rx = mag * e->radiuses.x / fscale;
@@ -436,21 +454,23 @@ genshape_ellipse(F_ellipse *e)
 		      + cos(angle) * ry * sin(theta)));
       }
       finish_line();
-      free(comm);
   }
+  if (comm != comm_buf)
+	  free(comm);
 }
 
 void
 genshape_line(F_line *l)
 {
-  char *comm;
+  char comm_buf[SHAPE_LEN];
+  char *comm = comm_buf;
   int xmin, xmax, ymin, ymax;
   int x, y, r, last_x, last_y;
   F_point *p;
   double theta;
 
-  comm = get_comment(l->comments);
-  if (comm!=NULL) {
+  get_comment(&comm, sizeof(comm_buf), l->comments);
+  if (*comm != '\0') {
     if (widthref(comm)) {
       /* The width of this line will be the reference */
       xmin=xmax=XZOOM(l->points->x);
@@ -465,7 +485,7 @@ genshape_line(F_line *l)
       } else {
 	 fprintf(stderr, "fig2dev(shape) Warning: Width of reference object=0 - ignored \n");
       }
-      return;
+      goto free;
       /* reference objects are *no* shapes */
     }
     if (heightref(comm)) {
@@ -482,7 +502,7 @@ genshape_line(F_line *l)
       } else {
 	 fprintf(stderr, "fig2dev(shape) Warning: Height of reference object=0 - ignored \n");
       }
-      return;
+      goto free;
       /* reference objects are *no* shapes */
     }
     if (centerref(comm)) {
@@ -496,7 +516,7 @@ genshape_line(F_line *l)
       /* this cannot fail */
       centerset=true;
       centerpos=(xmin+xmax)/2;
-      return;
+      goto free;
       /* reference objects are *no* shapes */
     }
     switch (l->type) {
@@ -575,32 +595,41 @@ genshape_line(F_line *l)
       finish_line();
       break;
     }
-    free(comm);
   }
+
+free:
+  if (comm != comm_buf)
+	  free(comm);
 }
 
 void
 genshape_text(F_text *t)
 {
-  char *comm;
+	char	comm_buf[SHAPE_LEN];
+	char	*comm = comm_buf;
 
-  comm = get_comment(t->comments);
-  if (comm != NULL) {
-    fprintf(stderr, "fig2dev(shape): TEXT can't be used as shape\n");
-  }
+	get_comment(&comm, sizeof(comm_buf), t->comments);
+	if (*comm != '\0') {
+		fputs("fig2dev(shape): TEXT cannot be used as shape\n", stderr);
+	}
+	if (comm != comm_buf)
+		free(comm);
 }
-/** and of the outer layer **/
+/** end of the outer layer **/
 
 
-bool between(float b1, float b2, float test) {
+static bool
+between(float b1, float b2, float test) {
   return (((b1<=test)  && (test<=b2)) || ((b2<=test)  && (test<=b1))) ;
 }
 
-bool between_exclude(float b1, float b2, float test) {
+static bool
+between_exclude(float b1, float b2, float test) {
   return (((b1<test)  && (test<b2)) || ((b2<test)  && (test<b1))) ;
 }
 
-bool between_int(int b1, int b2, int test) {
+static bool
+between_int(int b1, int b2, int test) {
   return (((b1<=test)  && (test<=b2)) || ((b2<=test)  && (test<=b1))) ;
 }
 
@@ -940,12 +969,14 @@ static void destroy_scanlines(scanline* scanlines, int num_yvalues) {
 }
 
 /* this is debugging stuff */
+/*
 void print_inside(float last_xvalue) {
   int i;
   fprintf(stderr, "%g: ",last_xvalue);
   for (i=0; i<num_shapes; i++) fprintf (stderr, "%d(%d) ", shapes[i].inside, shapes[i].depth);
   fprintf(stderr,"\n");
 }
+*/
 
 static void print_shape(int num_yvalues, scanline* scanlines) {
   int y_nr,i;

@@ -370,7 +370,7 @@ AS_IF([test "$tl_cv_func__setmode" = yes],
 # HAVE_STRSTR. Except possibly getopt(), any modern system should have these
 # functions, so all except one are obsolete checks.
 AC_REPLACE_FUNCS([getopt isascii strstr strchr strrchr strcasecmp strncasecmp \
-	strdup strndup])
+	strdup])
 
 # Place the replacement functions into this dir.
 AC_CONFIG_LIBOBJ_DIR([fig2dev/lib])
