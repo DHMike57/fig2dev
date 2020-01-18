@@ -29,7 +29,9 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <locale.h>
 /* In Windows, _setmode() is declared in <io.h>, O_BINARY in <fcntl.h>. It
  * accepts two arguments and sets file mode to text or binary. */
@@ -81,7 +83,7 @@ bool	bgspec = false;		/* flag to say -g was specified */
 bool support_i18n = false;
 #endif
 char	gif_transparent[20]="\0"; /* GIF transp color hex name (e.g. #ff00dd) */
-char	papersize[];		/* paper size */
+char	papersize[PAPERSZ_LEN];	/* paper size */
 char	boundingbox[64];	/* boundingbox */
 char	lang[40];		/* selected output language */
 RGB	background;		/* background (if specified by -g) */

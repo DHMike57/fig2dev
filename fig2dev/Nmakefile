@@ -81,7 +81,7 @@ CFLAGS = /I. /Idev /nologo /W1 /DWIN32 /D_BIND_TO_CURRENT_VCLIBS_VERSION=1 \
 # WINLIBS = ws2_32.lib	# ?
 # RESFLAGS = /i../include
 
-REPL_LIBS =
+REPL_LIBS = lib/getopt.c lib/getline.c
 
 FIG2DEV_SRCS = bound.c colors.c creationdate.c fig2dev.c free.c \
 	iso2tex.c localmath.c messages.c read.c read1_3.c trans_spline.c \

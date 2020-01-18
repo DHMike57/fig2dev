@@ -19,7 +19,7 @@ and this permission notice remain intact.
 
 #
 # configure.ac
-# Author: Thomas Loimer, 2015-2019.
+# Author: Thomas Loimer, 2015-2020.
 #
 
 dnl Define m4 variables for use in AC_INIT and AC_DEFINE below.
@@ -369,8 +369,8 @@ AS_IF([test "$tl_cv_func__setmode" = yes],
 # replacement, e.g., strstr.c, in the top srcdir. Sets, e.g.,
 # HAVE_STRSTR. Except possibly getopt(), any modern system should have these
 # functions, so all except one are obsolete checks.
-AC_REPLACE_FUNCS([getopt isascii strstr strchr strrchr strcasecmp strncasecmp \
-	strdup])
+AC_REPLACE_FUNCS([getline getopt isascii strstr strchr strrchr \
+	strcasecmp strncasecmp strdup])
 
 # Place the replacement functions into this dir.
 AC_CONFIG_LIBOBJ_DIR([fig2dev/lib])

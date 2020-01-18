@@ -20,14 +20,15 @@
 #include "config.h"
 #endif
 
+#include <ctype.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef	HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#include <ctype.h>
-#include <limits.h>
+#include <sys/stat.h>
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
 //#include "object.h"	/* includes X11/xpm.h */
@@ -36,6 +37,11 @@
 #include "messages.h"
 #include "read.h"
 #include "trans_spline.h"
+
+#ifndef HAVE_GETLINE
+extern ssize_t	getline(char **restrict line, size_t *restrict n,
+			FILE *restrict fp);
+#endif
 
 
 User_color	 user_colors[MAX_USR_COLS];		/* fig2dev.h */
@@ -101,7 +107,16 @@ The resolution (ppi) is stored in global "ppi"
 int
 read_fig(char *file_name, F_compound *obj)
 {
-	FILE	*fp;
+	FILE		*fp;
+	struct stat	sb;
+
+	if (stat(file_name, &sb))
+		return -3;
+	/* VisualStudo does not know S_ISREG */
+	if ((sb.st_mode & S_IFMT) != S_IFREG) {
+		put_msg("Not a regular file: %s", file_name);
+		return -1;
+	}
 
 	if ((fp = fopen(file_name, "r")) == NULL)
 		return -3;

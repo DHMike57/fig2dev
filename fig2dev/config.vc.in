@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -18,7 +18,7 @@
 
 /*
  * fig2dev/config.vc:  Set options for compilation with MS Visual Studio.
- * Author: Thomas Loimer, 2018.
+ * Author: Thomas Loimer, 2020.
  *
  */
 
@@ -85,6 +85,8 @@
  */
 
 #undef HAVE_GETHOSTNAME
+#undef HAVE_GETLINE
+#undef HAVE_GETOPT
 #undef HAVE_GETPWUID
 #undef HAVE_MKSTEMP
 #undef HAVE_STRINGS_H
@@ -98,11 +100,13 @@
 #define HAVE__BOOL 1
 #define HAVE__SETMODE 1
 
-/* Make POSIX functions accessible to MS Visual Studio. */
+/* POSIX compatibility */
 #define popen _popen
 #define pclose _pclose
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
+#define restrict __restrict
+#define ssize_t int
 
 /* Nasty hack - make the calls to signal() at least compilable under windows. */
 #define SIGPIPE SIGABRT

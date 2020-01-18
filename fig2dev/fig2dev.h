@@ -33,8 +33,9 @@
 
 #define round(x)	((int) ((x) + ((x >= 0)? 0.5: -0.5)))
 
-#define	NUM_STD_COLS	32
-#define	MAX_USR_COLS	512
+#define NUM_STD_COLS	32
+#define MAX_USR_COLS	512
+#define PAPERSZ_LEN	16
 
 #define NUMARROWS	30	/* Synchronize with arrow_shapes[] in bound.c */
 
@@ -97,7 +98,7 @@ extern bool	bgspec;		/* flag to say -g was specified */
 extern bool support_i18n;
 #endif
 extern char	gif_transparent[];/* GIF transp color hex name (e.g. #ff00dd) */
-extern char	papersize[16];	/* paper size */
+extern char	papersize[PAPERSZ_LEN];	/* paper size */
 extern char	boundingbox[];	/* boundingbox */
 extern char	lang[];		/* selected output language */
 extern const char	*Fig_color_names[]; /* hex names for Fig colors */
