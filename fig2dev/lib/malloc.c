@@ -19,7 +19,7 @@
 
 #include <stddef.h>
 
-void *malloc();
+void *malloc(size_t);
 
 /* Allocate an N-byte block of memory from the heap.
    If N is zero, allocate a 1-byte block.  */

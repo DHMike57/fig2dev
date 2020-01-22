@@ -43,9 +43,9 @@
 
 #include <stddef.h>
 
-void *realloc();
-void free();
-void *malloc();
+void *realloc(void *, size_t);
+void free(void *);
+void *malloc(size_t);
 
 void *
 rpl_realloc(void *p, size_t n)
