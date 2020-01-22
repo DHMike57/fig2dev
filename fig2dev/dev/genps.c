@@ -77,8 +77,9 @@
 extern int v2_flag, v21_flag, v30_flag;		/* read.c */
 
 #ifdef I18N
-extern bool support_i18n;  /* enable i18n support? */
-static bool enable_composite_font = false;
+extern bool	support_i18n;  /* enable i18n support? */
+static bool	enable_composite_font = false;
+static bool	append_find_composite(FILE *restrict out, FILE *restrict in);
 #endif /* I18N */
 
 #define		POINT_PER_INCH		72
@@ -90,7 +91,7 @@ static bool enable_composite_font = false;
 
 void		gen_ps_eps_option(char opt, char *optarg);
 static void	putword(int word, FILE *file);
-static void	append(char *infilename, FILE *outfile);
+static int	append(const char *restrict infilename, FILE *restrict outfile);
 static void	appendhex(char *infilename,FILE *outfile,int width,int height);
 
 static FILE	*saveofile;
@@ -483,8 +484,7 @@ genps_start(F_compound *objects)
 	char		 psize[20];
 
 	char		*libdir;
-	char		 filename[512], str[512];
-	FILE		*fp;
+	char		 filename[512];
 
 	/* make sure user isn't asking for both TIFF and ASCII preview */
 	if (tiffpreview && asciipreview) {
@@ -785,13 +785,9 @@ genps_start(F_compound *objects)
 	if (libdir != NULL) {
 		sprintf(filename, "%s/%s.ps", libdir, papersize);
 		/* get filename like "/usr/local/lib/fig2dev/A3.ps" and
-		   prepend it to the postscript code */
-		fp = fopen(filename, "rb");
-		if (fp != NULL) {
-			while (fgets(str, sizeof(str), fp))
-				fputs(str, tfp);
-			fclose(fp);
-		}
+		   prepend it to the postscript code;
+		   do not mind, if it does not work */
+		(void)append(filename, tfp);
 	}
 
 	fputs("%%BeginProlog\n", tfp);
@@ -846,7 +842,8 @@ genps_start(F_compound *objects)
 #ifdef I18N
 	if (support_i18n && iso_text_exist(objects)) {
 		char *libdir, *locale;
-		char localefile[512], str[512];
+		char localefile_buf[128];
+		char *localefile = localefile_buf;
 		FILE *fp;
 		libdir = getenv("FIG2DEV_LIBDIR");
 #ifdef I18N_DATADIR
@@ -859,19 +856,33 @@ genps_start(F_compound *objects)
 			      "fig2dev: LANG not defined; assuming C locale\n");
 			locale = "C";
 		}
-		sprintf(localefile, "%s/%s.ps", libdir, locale);
-		/* get filename like ``/usr/local/lib/fig2dev/japanese.ps'' */
-		fp = fopen(localefile, "rb");
-		if (fp == NULL) {
-			fprintf(stderr, "fig2dev: can not open file: %s\n",
-				localefile);
-		} else {
-			while (fgets(str, sizeof(str), fp)) {
-				if (strstr(str, "CompositeRoman"))
-					enable_composite_font = true;
-				fputs(str, tfp);
-			}
+		if (strlen(libdir) + strlen(locale) + 5 > sizeof localefile_buf)
+			localefile = malloc(strlen(libdir) + strlen(locale) + 5);
+		if (localefile != NULL) {
+			sprintf(localefile, "%s/%s.ps", libdir, locale);
+			/* get filename like
+			   ``/usr/local/lib/fig2dev/japanese.ps'' */
+			fp = fopen(localefile, "rb");
+			if (fp == NULL) {
+				fprintf(stderr, "fig2dev: can not open file: %s\n",
+						localefile);
+			} else {
+				enable_composite_font =
+					append_find_composite(tfp, fp);
+
+				if (ferror(tfp)) {
+					fputs("Error writing output file.\n",
+							stderr);
+					exit(EXIT_FAILURE);
+				}
+				if (ferror(fp)) {
+					fprintf(stderr,
+						"Error reading file %s.\n"
+						"The output might be broken.\n",
+						localefile);
+				}
 			fclose(fp);
+			}
 		}
 	}
 #endif /* I18N */
@@ -1044,7 +1055,6 @@ genps_end(void)
     int		i, page;
     const int	h = pageheight, w = pagewidth;
     int		epslen, tiflen;
-    int		status;
     struct stat	fstat;
 
     /* for multipage, translate and output objects for each page */
@@ -1103,7 +1113,10 @@ genps_end(void)
 	    fprintf(stderr, "Can not create temporary file %s.\n", tmpprev);
 	    fprintf(stderr, "No preview will be produced\n");
 	    /* Output the eps stored in tmpeps */
-	    append(tmpeps, tfp);
+	    if (append(tmpeps, tfp) == -1) {
+		fprintf(stderr, "Cannot open temp file %s\n", tmpeps);
+		exit(EXIT_FAILURE);
+	    }
 	    remove(tmpeps);
 	    asciipreview = tiffpreview = false;
 	} else {
@@ -1115,14 +1128,17 @@ genps_end(void)
 		    GSEXE, asciipreview ? "bit" :
 			(tiffcolor ? "tiff24nc" : "tifflzw"),
 		    width, height, tmpprev, tmpeps);
-	    if ((status = system(gscom)) != 0) {
+	    if (system(gscom) != 0) {
 		fprintf(stderr, "Error calling ghostscript: %s\n", gscom);
 #else
 		fputs("Ghostscript not available. ", stderr);
 #endif
 		fprintf(stderr, "No preview will be produced\n");
 		/* append the eps */
-		append(tmpeps, tfp);
+		if (append(tmpeps, tfp) == -1) {
+		    fprintf(stderr, "Cannot open temp file %s\n", tmpeps);
+		    exit(EXIT_FAILURE);
+		}
 		remove(tmpeps);
 		remove(tmpprev);
 		/* and cancel the preview */
@@ -1141,8 +1157,10 @@ genps_end(void)
 					width, height, 1, height);
 	    appendhex(tmpprev, tfp, width, height);
 	    fputs("%%EndPreview\n", tfp);
-	    append(tmpeps, tfp);
-
+	    if (append(tmpeps, tfp) == -1) {
+		fprintf(stderr, "Cannot open temp file %s\n", tmpeps);
+		exit(EXIT_FAILURE);
+	    }
 	    remove(tmpprev);
 	    remove(tmpeps);
 
@@ -1177,9 +1195,15 @@ genps_end(void)
 	    putc(0xFF, tfp);
 	    putc(0xFF, tfp);
 	    /* now copy eps out */
-	    append(tmpeps, tfp);
+	    if (append(tmpeps, tfp) == -1) {
+		fprintf(stderr, "Cannot open temp file %s\n", tmpeps);
+		exit(EXIT_FAILURE);
+	    }
 	    /* and finally, the tiff file */
-	    append(tmpprev, tfp);
+	    if (append(tmpprev, tfp) == -1) {
+		fprintf(stderr, "Cannot open temp file %s\n", tmpprev);
+		exit(EXIT_FAILURE);
+	    }
 	    putc('\n', tfp);
 
 	    remove(tmpprev);
@@ -1210,25 +1234,83 @@ putword(int word, FILE *file)
 	}
 }
 
-/* append file named in "infilename" to already open FILE "outfile" */
+/*
+ * append file named in "infilename" to already open FILE "outfile"
+ * Return 0 on sucess, -1 if "infilename" cannot be opened.
+ */
 
-static void
-append(char *infilename, FILE *outfile)
+static int
+append(const char *restrict infilename, FILE *restrict outfile)
 {
 	FILE	*infile;
-	char	buf[BUFSIZ+1];
-	int	len;
+	char	buf[BUFSIZ];
+	size_t	buf_len = sizeof buf;
+	size_t	chars;
 
-	if ((infile = fopen(infilename, "r")) == 0) {
-		fprintf(stderr, "Can not open temp file %s\n", infilename);
-		exit(1);
-	}
-	while (!feof(infile)) {
-		len = fread(buf, 1, BUFSIZ, infile);
-		fwrite(buf, len, 1, outfile);
-	}
+	if ((infile = fopen(infilename, "rb")) == 0)
+		return -1;
+
+	while ((chars = fread(buf, (size_t)1, buf_len, infile)) == buf_len &&
+			buf_len == fwrite(buf, (size_t)1, buf_len, outfile))
+		;
+	if (!ferror(outfile) && chars > 0)
+		fwrite(buf, (size_t)1, chars, outfile);
+
 	fclose(infile);
+	return 0;
 }
+
+#ifdef I18N
+/*
+ * Append open file in to open file out while searching for the string
+ * "CompositeRoman".  Return true if found, false otherwise.
+ */
+static bool
+append_find_composite(FILE *restrict out, FILE *restrict in)
+{
+	/*
+	 * Initially, the needle was passed as a function parameter. However,
+	 * Visual Studio cannot create an array of a size depending on a
+	 * function parameter (str[], below). Therefore, use the fixed needle
+	 * "CompositeRoman". Moreover, Visual Studio does not accept a const
+	 * qualified parameter as array size, but "sizeof ...".
+	 */
+	bool		found = false;
+	const char	needle[] = "CompositeRoman";
+	char		str[BUFSIZ + sizeof needle];
+	const size_t	needle_len = sizeof needle - 1;
+	const size_t	str_len = (size_t)BUFSIZ;
+	size_t		chars;
+
+	/* The needle could be split up between two consecutive buffers.
+	   Keep some margin and initialize it with spaces. */
+	for (chars = 0; chars < needle_len; ++chars)
+		str[chars] = ' ';
+	/* 0-terminate str, otherwise strstr() scans into unknown territory. */
+	str[BUFSIZ + needle_len] = '\0';
+
+	while ((chars = fread(str + needle_len, (size_t)1, str_len, in)) ==
+			str_len) {
+		if (!found && strstr(str, needle))
+			found = true;
+		memcpy(str, str + str_len, needle_len);
+		if (fwrite(str + needle_len, (size_t)1, str_len, out) !=
+				str_len)
+			break;
+	}
+	/* Copy the last, incomplete read. */
+	if (!ferror(out) && chars > 0) {
+		if (!found) {
+			str[needle_len + chars] = '\0';
+			if (strstr(str, needle))
+				found = true;
+		}
+		fwrite(str + needle_len, (size_t)1, chars, out);
+	}
+	return found;
+}
+#endif /* I18N */
+
 
 /* read file named in "infilename", converting the binary to hex and
    append to already open FILE "outfile".

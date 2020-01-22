@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-20201by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -226,7 +226,7 @@ genbitmaps_start(F_compound *objects)
 		}
 
 		/* netpbm programs are chatty; catch their output */
-		if ((errfile = xtmpfile(errfname)) == 0)
+		if ((errfile = xtmpfile(errfname)) == NULL)
 			fprintf(stderr, "Can't create error log file %s\n",
 				errfname);
 		else
@@ -266,6 +266,7 @@ genbitmaps_end(void)
 
 	/* wrap up the postscript output */
 	if (genps_end() != 0) {
+		/* but genps_end() does not return anything else than 0! */
 		pclose(tfp);
 		if (com != com_buf)
 			free(com);
@@ -283,17 +284,24 @@ genbitmaps_end(void)
 	if (status != 0) {
 		fputs("Error in ghostcript or netpbm command\n", stderr);
 		fprintf(stderr, "command was: %s\n", com);
+
 		if (errfile == NULL) {
 			fprintf(stderr,
 				"Error log file %s not available\n", errfname);
 		} else {
+			char	buf[256];
+			size_t	buf_len = sizeof buf;
+			size_t	chars;
+
 			fputs("Messages resulting:\n", stderr);
-			while (!feof(errfile)) {
-				if (fgets(com_buf, sizeof(com_buf), errfile) ==
-						NULL)
-					break;
-				fprintf(stderr, "  %s", com);
-			}
+			while ((chars = fread(buf, (size_t)1, buf_len, errfile))
+					== buf_len && buf_len ==
+					fwrite(buf, (size_t)1, buf_len, stderr))
+				;
+						/* stderr might be diverted */
+			if (chars > 0 && !ferror(stderr))
+				fwrite(buf, (size_t)1, chars, stderr);
+
 			fclose(errfile);
 			remove(errfname);
 		}

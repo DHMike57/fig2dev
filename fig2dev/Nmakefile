@@ -100,7 +100,7 @@ FIG2DEV_HEADERS = alloc.h bool.h bound.h colors.h creationdate.h drivers.h \
 	dev/genemf.h dev/genlatex.h dev/genps.h dev/gentikz.h dev/picfonts.h \
 	dev/picpsfonts.h dev/psencode.h dev/psfonts.h dev/psimage.h \
 	dev/psprolog.h dev/setfigfont.h dev/texfonts.h dev/tkpattern.h \
-	dev/xtmpfile.h
+	dev/xtmpfile.h lib/getline.h
 
 all : release
 

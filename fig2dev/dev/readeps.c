@@ -33,6 +33,10 @@
 #include "fig2dev.h"	/* includes bool.h and object.h */
 //#include "object.h"	/* includes X11/xpm.h */
 
+#ifndef HAVE_GETLINE
+#include "lib/getline.h"
+#endif
+
 /* for both procedures:
      return codes:  1 : success
 		    0 : failure
@@ -67,11 +71,16 @@ read_eps_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int* lly,
 		bool pdf_flag)
 {
 	(void)	filetype;
-	char	buf[BUFSIZ];
+	char	*line;
+	size_t	line_len = 256;
 	double	fllx, flly, furx, fury;
 	int	nested;
 	char	*c;
 
+	if ((line = malloc(line_len)) == NULL) {
+		fputs("Out of memory.\n", stderr);
+		return 0;
+	}
 	pic->bit_size.x = pic->bit_size.y = 0;
 	pic->subtype = P_EPS;
 
@@ -82,10 +91,10 @@ read_eps_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int* lly,
 	pic->bit_size.y = 10;
 	nested = 0;
 
-	while (fgets(buf, BUFSIZ, file) != NULL) {
+	while (getline(&line, &line_len, file) != -1) {
 	    /* look for /MediaBox for pdf file */
 	    if (pdf_flag) {
-		for (c = buf; (c = strchr(c,'/')); ++c) {
+		for (c = line; (c = strchr(c,'/')); ++c) {
 		    if (!strncmp(c, "/MediaBox", 9)) {
 			c = strchr(c, '[');
 			if (c && sscanf(c + 1, "%d %d %d %d",
@@ -102,8 +111,8 @@ read_eps_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int* lly,
 		    }
 		}
 		/* look for bounding box for EPS file */
-	    } else if (!nested && !strncmp(buf, "%%BoundingBox:", 14)) {
-		c = buf + 14;
+	    } else if (!nested && !strncmp(line, "%%BoundingBox:", 14)) {
+		c = line + 14;
 		/* skip past white space */
 		while (*c == ' ' || *c == '\t')
 		    ++c;
@@ -119,12 +128,13 @@ read_eps_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int* lly,
 		    pic->bit_size.y = (int) (fury-flly);
 		    break;
 		}
-	    } else if (!strncmp(buf, "%%Begin", 7)) {
+	    } else if (!strncmp(line, "%%Begin", 7)) {
 		++nested;
-	    } else if (nested && !strncmp(buf, "%%End", 5)) {
+	    } else if (nested && !strncmp(line, "%%End", 5)) {
 		--nested;
 	    }
 	}
+	free(line);
 	fprintf(tfp, "%% Begin Imported %s File: %s\n",
 				pdf_flag? "PDF" : "EPS", pic->file);
 	fprintf(tfp, "%%%%BeginDocument: %s\n", pic->file);

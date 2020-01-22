@@ -39,8 +39,7 @@
 #include "trans_spline.h"
 
 #ifndef HAVE_GETLINE
-extern ssize_t	getline(char **restrict line, size_t *restrict n,
-			FILE *restrict fp);
+#include "lib/getline.h"
 #endif
 
 
