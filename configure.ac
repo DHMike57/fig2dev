@@ -332,21 +332,11 @@ AC_TYPE_SSIZE_T
 #
 # Checks for library functions.
 #
-# Provide malloc.c in LIBOBJ_DIR below, otherwise AC_FUNC_MALLOC fails.
-AC_FUNC_MALLOC
-AC_FUNC_REALLOC
 
-# Check for functions and set, e.g., HAVE_FLOOR if found.
-# Check for gethostname, getpwuid or strerror and act accordingly
-# in the code. The other functions _must_ exist!
+# Check for functions and set, e.g., HAVE_STRERROR if found.
 # Assume that errno.h exists if strerror() is available. Otherwise, do
 # not use strerror() at all. Do not try to replace strerror() with the
 # obsolete sys_nerr, sys_errlist and the declaration "int errno".
-# isascii only occurs in readxbm.c. isascii is considered obsolete.
-# memmove: genps.c
-# memset: read.c, genemf.c, genpstricks.c, readpcx.c
-# genpstricks defines private is_alpha, to_lower, xstrdup, xmalloc
-# strtol: fig2dev.c
 # If getpwuid() is found, <pwd.h> is assumed to exist.
 AC_CHECK_FUNCS_ONCE([gethostname strerror getpwuid mkstemp fdopen])
 
