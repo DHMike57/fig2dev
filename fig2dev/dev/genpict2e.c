@@ -2223,11 +2223,12 @@ put_font(F_text *t)
 	}
 
 	if (psfont_text(t))
-	    fprintf(tfp, "\\usefont%s",
-		    texpsfonts[t->font <= MAX_PSFONT ? t->font + 1 : 0]);
+		fprintf(tfp, "\\usefont%s", texpsfonts[t->font <= MAX_PSFONT ?
+				t->font + 1 : 0]);
 	else
-	    fprintf(tfp, "\\normalfont%s ",
-		    texfonts[t->font <= MAX_FONT ? t->font : MAX_FONT - 1]);
+		/* Default psfont is -1, default texfont 0, also accept -1. */
+		fprintf(tfp, "\\normalfont%s ", texfonts[t->font <= MAX_FONT ?
+				(t->font >= 0 ? t->font : 0) : MAX_FONT - 1]);
 }
 
 void
