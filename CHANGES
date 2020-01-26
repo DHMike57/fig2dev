@@ -7,7 +7,8 @@ Patchlevel Xx (Xxx 20xx)
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	o Fix ticket #81.
-	o Do not allow ASCII NUL anywhere in input. Fixes ticket #80.
+	o Do not allow ASCII NUL anywhere in input.
+	  Fixes tickets #65, #68, #71, #73, #75, #80.
 	o Use getline() to improve input scanning.
 	  Fixes tickets #58, #59, #61, #62, #67, #78, #79.
 	o Correctly scan embedded pdfs for /MediaBox value.

@@ -1322,6 +1322,7 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 		}
 	    q->x = x;
 	    q->y = y;
+	    q->next = NULL;
 	    p->next = q;
 	    p = q;
 	    ++c;
