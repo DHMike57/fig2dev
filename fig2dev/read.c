@@ -178,8 +178,14 @@ read_objects(FILE *fp, F_compound *obj)
 		put_msg("Could not read input file.");
 		return -1;
 	}
-	/* seek to the end of the first line */
-	if (strchr(buf, '\n') == NULL) {
+
+	/* check for embedded '\0' */
+	if (strlen(buf) < sizeof buf - 1 && buf[strlen(buf) - 1] != '\n') {
+		put_msg("ASCII NUL ('\\0') character within the first line.");
+		exit(EXIT_FAILURE);
+	/* seek to the end of the first line
+	   (the only place, where '\0's are tolerated) */
+	} else if (buf[strlen(buf) - 1] != '\n') {
 		int	c;
 		do
 			c = fgetc(fp);
@@ -1398,6 +1404,15 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 	return s;
 }
 
+static void
+exit_on_ascii_NUL(const char *restrict line, size_t chars, int line_no)
+{
+	if (strlen(line) < (size_t)chars) {
+		put_msg("ASCII NUL ('\\0') in line %d.", line_no);
+		exit(EXIT_FAILURE);
+	}
+}
+
 static char *
 find_end(const char *str, int v30flag)
 {
@@ -1469,6 +1484,7 @@ read_textobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 
 		while ((chars = getline(line, line_len, fp)) != -1) {
 			++(*line_no);
+			exit_on_ascii_NUL(*line, chars, *line_no);
 			end = find_end(*line, v30_flag);
 			if (end) {
 				*end = '\0';
@@ -1640,6 +1656,7 @@ get_line(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		if (**line == '\n' || (**line == '\r' &&
 					chars == 2 && (*line)[1] == '\n'))
 			continue;
+		exit_on_ascii_NUL(*line, chars, *line_no);
 		/* remove newline and possibly a carriage return */
 		if ((*line)[chars-1] == '\n') {
 			chars -= (*line)[chars - 2] == '\r' ? 2 : 1;
