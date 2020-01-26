@@ -161,9 +161,9 @@ static struct depth_opts {
 
 static char	Usage[] =
 #ifdef I18N
-"Usage:\n %s -hV\n %s -L language [-s size] [-m scale] [-j] [input [output]]\n";
+"Usage:\n %1$s -hV\n %1$s -L language [-s size] [-m scale] [-j] [input [output]]\n";
 #else
-    "Usage:\n %s -hV\n %s -L language [-s size] [-m scale] [input [output]]\n";
+"Usage:\n %1$s -hV\n %1$s -L language [-s size] [-m scale] [input [output]]\n";
 #endif
 
 static int	 parse_gridspec(char *string, float *numer, float *denom,
@@ -208,8 +208,10 @@ get_args(int argc, char *argv[])
 	char	*grid, *p;
 	float	 numer, denom;
 
-	if (argc == 1)
-	    fprintf(stderr, Usage, prog, prog);
+	if (argc == 1) {
+		fprintf(stderr, Usage, prog);
+		exit(EXIT_SUCCESS);
+	}
 
 	/* print the version, for the comfort of the autotest tests */
 	if (!strcmp(argv[1], "--version")) {
