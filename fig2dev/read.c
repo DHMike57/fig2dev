@@ -1393,6 +1393,15 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 		free_splinestorage(s);
 		return NULL;
 	    }
+	    if (lx < INT_MIN || lx > INT_MAX || ly < INT_MIN || ly > INT_MAX ||
+		rx < INT_MIN || rx > INT_MAX || ry < INT_MIN || ry > INT_MAX) {
+		    /* do not care to clean up, we exit anyway
+		       cp->next = NULL;
+		       free_splinestorage(s);	*/
+		    put_msg("Spline control points out of range at line %d.",
+				    *line_no);
+		    exit(EXIT_FAILURE);
+	    }
 	    cq->lx = lx; cq->ly = ly;
 	    cq->rx = rx; cq->ry = ry;
 	    cp->next = cq;
