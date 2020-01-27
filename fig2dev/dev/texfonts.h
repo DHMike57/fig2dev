@@ -35,17 +35,21 @@ extern char		texfontsizes[];
 #define MAXFONTSIZE	42
 
 #ifdef NFSS
-#define TEXFAMILY(F)	(texfontfamily[((F) <= MAX_FONT) ? (F) : (MAX_FONT-1)])
-#define TEXSERIES(F)	(texfontseries[((F) <= MAX_FONT) ? (F) : (MAX_FONT-1)])
-#define TEXSHAPE(F)	(texfontshape[((F) <= MAX_FONT) ? (F) : (MAX_FONT-1)])
+#define TEXFAMILY(F)	texfontfamily[(F) <= MAX_FONT ? ((F) >= 0 ? (F) : 0) \
+						: MAX_FONT-1]
+#define TEXSERIES(F)	texfontseries[(F) <= MAX_FONT ? ((F) >= 0 ? (F) : 0) \
+						: MAX_FONT-1]
+#define TEXSHAPE(F)	texfontshape[(F) <= MAX_FONT ? ((F) >= 0 ? (F) : 0) \
+						: MAX_FONT-1]
 #endif
-#define TEXFONT(F)	(texfontnames[((F) <= MAX_FONT) ? (F) : (MAX_FONT-1)])
+#define TEXFONT(F)	texfontnames[(F) <= MAX_FONT ? ((F) >= 0 ? (F) : 0) \
+						: MAX_FONT-1]
 
 /*
 #define TEXFONTSIZE(S)	(texfontsizes[((S) <= MAXFONTSIZE) ? (int)(round(S))\
 							: (MAXFONTSIZE-1)])
 */
-#define TEXFONTSIZE(S)	(((S) <= MAXFONTSIZE) ? texfontsizes[(int)(round(S))] : (S))
+#define TEXFONTSIZE(S)	((S) <= MAXFONTSIZE ? texfontsizes[(int)round(S)] : (S))
 #define TEXFONTMAG(T)	TEXFONTSIZE(T->size*(rigid_text(T) ? 1.0 : fontmag))
 
 void setfigfont(F_text *text);		/* genepic.c */
