@@ -6,9 +6,9 @@ Patchlevel Xx (Xxx 20xx)
 
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
-	o Fix ticket #81.
-	o Do not allow ASCII NUL anywhere in input.
-	  Fixes tickets #65, #68, #71, #73, #75, #80.
+	o Accept text and ellipse angles only within -2*pi to 2*pi. Fixes #76.
+	o Allow -1 as default TeX font, not only 0. Fixes #71, #75, #81.
+	o Do not allow ASCII NUL anywhere in input. Fixes #65, #68, #73, #80.
 	o Use getline() to improve input scanning.
 	  Fixes tickets #58, #59, #61, #62, #67, #78, #79.
 	o Correctly scan embedded pdfs for /MediaBox value.

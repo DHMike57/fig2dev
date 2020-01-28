@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -94,7 +94,8 @@ typedef struct f_ellipse {
 #define INVALID_ELLIPSE(e)	\
 	e->type < T_ELLIPSE_BY_RAD || e->type > T_CIRCLE_BY_DIA ||	\
 	COMMON_PROPERTIES(e) || (e->direction != 1 && e->direction != 0) || \
-	e->radiuses.x == 0 || e->radiuses.y == 0
+	e->radiuses.x == 0 || e->radiuses.y == 0 || \
+	e->angle < -7. || e->angle > 7.
 
 typedef struct f_arc {
 	int			type;
@@ -243,7 +244,7 @@ typedef struct f_text {
 	t->type < T_LEFT_JUSTIFIED || t->type > T_RIGHT_JUSTIFIED ||	\
 	t->font < DEFAULT || t->font > MAX_PSFONT ||			\
 	t->flags < DEFAULT || t->flags >= 2 * HIDDEN_TEXT ||		\
-	t->height < 0 || t->length < 0
+	t->height < 0 || t->length < 0 || t->angle < -7. || t->angle > 7.
 
 typedef struct f_control {
 	double			lx, ly, rx, ry;	/* used by older versions*/
