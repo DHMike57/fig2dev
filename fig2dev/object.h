@@ -61,7 +61,7 @@ typedef struct f_comment {
 	o->style < SOLID_LINE || o->style > DASH_3_DOTS_LINE ||		\
 	o->thickness < 0 || o->depth < 0 || o->depth > 999 || 		\
 	o->fill_style < UNFILLED ||					\
-	o->fill_style > NUMSHADES + NUMTINTS + NUMPATTERNS ||		\
+	o->fill_style >= NUMSHADES + NUMTINTS + NUMPATTERNS ||		\
 	o->style_val < 0.0
 
 typedef struct f_ellipse {
