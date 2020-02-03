@@ -159,14 +159,15 @@ add_link(char *area)
 void
 genmap_start(F_compound *objects)
 {
+  char *basename_buf = NULL;
   char *basename;
   char *ref;
   int i;
 
   if (to != NULL) {
-    basename = (char *)malloc(strlen(to) + 1);
-    strcpy(basename, to);
-    for (i = strlen(basename) - 1; 0 < i; i--) {
+    basename_buf = strdup(to);
+    basename = basename_buf;
+    for (i = strlen(basename) - 1; 0 < i; --i) {
       if (basename[i] == '.') {
 	basename[i] = '\0';
 	break;
@@ -194,6 +195,8 @@ genmap_start(F_compound *objects)
 	    XZOOM(llx), YZOOM(lly), XZOOM(urx), YZOOM(ury), ref);
     add_link(buf);
   }
+  if (basename_buf)
+    free(basename_buf);
 }
 
 int
