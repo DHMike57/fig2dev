@@ -474,7 +474,7 @@ read_objects(FILE *fp, F_compound *obj)
 		    if ((c = read_compoundobject(fp, &line, &line_len,&line_no))
 				== NULL) {
 			free(line);
-			return -3;
+			return -1;
 		    }
 		    if (lc)
 			lc = (lc->next = c);
