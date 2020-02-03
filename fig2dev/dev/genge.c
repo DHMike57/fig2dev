@@ -56,7 +56,8 @@ static void	genge_ctl_spline(F_spline *s);
 				    /* color mapping		*/
 				    /* xfig	ge		*/
 
-static int	GE_COLORS[] = {	 1, /* black	black		*/
+static int	GE_COLORS[] = {  1, /* DEFAULT == black		*/
+				 1, /* black	black		*/
 				 8, /* blue	blue		*/
 				 7, /* green	green		*/
 				 6, /* cyan	cyan		*/
@@ -438,7 +439,7 @@ back_arrow(F_line *l)
 static void
 set_color(int col)
 {
-	fprintf(tfp,"c%02d ",GE_COLORS[col]);
+	fprintf(tfp,"c%02d ",GE_COLORS[col + 1]);
 }
 
 /* set fill if there is a fill style */
@@ -447,7 +448,7 @@ static void
 set_fill(int style, int color)
 {
 	if (style != UNFILLED)
-	    fprintf(tfp,"C%02d ",GE_COLORS[color]);
+	    fprintf(tfp,"C%02d ",GE_COLORS[color + 1]);
 }
 
 /*

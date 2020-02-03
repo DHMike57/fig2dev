@@ -261,3 +261,15 @@ AT_CHECK([fig2dev -L tikz -P big1.fig big1.tex && \
 	latex -halt-on-error big1.tex && latex -halt-on-error big2.tex
 ], 0, ignore)
 AT_CLEANUP
+
+
+AT_BANNER([Test other output languages.])
+
+AT_SETUP([allow default color in ge, cgm output, #72, #73])
+AT_KEYWORDS(cgm ge)
+AT_CHECK([fig2dev -L cgm $srcdir/data/line.fig
+], 0, ignore)
+AT_CHECK([fig2dev -L ge $srcdir/data/line.fig
+], 0, ignore)
+AT_CLEANUP
+

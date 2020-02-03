@@ -151,9 +151,11 @@ gencgm_start(F_compound *objects)
 {
   int	 i;
   char	*p, *figname;
+  char	*figname_buf = NULL;
 
   if (from) {
-	figname = strdup(from);
+	figname_buf = strdup(from);
+	figname = figname_buf;
 	p = strrchr(figname, '/');
 	if (p)
 	    figname = p+1;	/* remove path from name for comment in file */
@@ -255,6 +257,8 @@ gencgm_start(F_compound *objects)
     print_comments("% ",objects->comments, " %");
     fprintf(tfp,"%% %%\n");
   }
+  if (figname_buf)
+    free(figname_buf);
 }
 
 int
@@ -552,6 +556,8 @@ hatchindex(index)
 static void
 getrgb(int color, int *r, int *g, int *b)
 {
+  if (color < 0)	/* DEFAULT color is black */
+    color = 0;
   if (color < NUM_STD_COLS) {
     *r = stdcols[color].r * 255.;
     *g = stdcols[color].g * 255.;
