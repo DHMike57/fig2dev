@@ -711,6 +711,7 @@ read_compoundobject(FILE *fp, char **restrict line, size_t *line_len,
 		case OBJ_POLYLINE :
 		    if ((l = read_lineobject(fp, line, line_len, line_no)) ==
 				    NULL) {
+			free_compound(&com);
 			return NULL;
 			}
 #ifdef V4_0
@@ -733,6 +734,7 @@ read_compoundobject(FILE *fp, char **restrict line, size_t *line_len,
 		case OBJ_SPLINE :
 		    if ((s = read_splineobject(fp, line, line_len, line_no)) ==
 				    NULL) {
+			free_compound(&com);
 			return NULL;
 			}
 		    if (v32_flag){ /* s is a line */
@@ -749,6 +751,7 @@ read_compoundobject(FILE *fp, char **restrict line, size_t *line_len,
 		    break;
 		case OBJ_ELLIPSE :
 		    if ((e = read_ellipseobject(*line, *line_no)) == NULL) {
+			free_compound(&com);
 			return NULL;
 			}
 		    if (le)
@@ -759,6 +762,7 @@ read_compoundobject(FILE *fp, char **restrict line, size_t *line_len,
 		case OBJ_ARC :
 		    if ((a = read_arcobject(fp, line, line_len, line_no)) ==
 				    NULL) {
+			free_compound(&com);
 			return NULL;
 			}
 		    if (la)
@@ -769,6 +773,7 @@ read_compoundobject(FILE *fp, char **restrict line, size_t *line_len,
 		case OBJ_TEXT :
 		    if ((t = read_textobject(fp, line, line_len, line_no)) ==
 				    NULL) {
+			free_compound(&com);
 			return NULL;
 			}
 		    if (lt)
@@ -779,6 +784,7 @@ read_compoundobject(FILE *fp, char **restrict line, size_t *line_len,
 		case OBJ_COMPOUND :
 		    if ((c = read_compoundobject(fp, line, line_len, line_no))
 				    == NULL) {
+			free_compound(&com);
 			return NULL;
 			}
 		    if (lc)
@@ -790,6 +796,7 @@ read_compoundobject(FILE *fp, char **restrict line, size_t *line_len,
 		    return com;
 		default :
 		    put_msg("Wrong object code at line %d", *line_no);
+		    free_compound(&com);
 		    return NULL;
 		} /*  switch */
 	    }
