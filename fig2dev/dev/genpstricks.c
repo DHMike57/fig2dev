@@ -1856,7 +1856,8 @@ format_options(char *options, char *prefix, char *postfix, char *sqrb_init,
     else if (fill_style <= 40)
       /* shade or tint fill */
       sprintf(tmps, "fillstyle=solid,fillcolor=%s",
-	      shade_or_tint_name_after_declare_color(tmpc, fill_style, fill_color));
+	      shade_or_tint_name_after_declare_color(tmpc, fill_style,
+		      fill_color == DEFAULT ? CT_BLACK : fill_color));
     else {
       char *type = 0, *ps;
       int angle = 0;
