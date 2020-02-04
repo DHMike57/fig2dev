@@ -2,7 +2,7 @@ dnl Fig2dev: Translate Fig code to various Devices
 dnl Copyright (c) 1991 by Micah Beck
 dnl Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 dnl Parts Copyright (c) 1989-2015 by Brian V. Smith
-dnl Parts Copyright (c) 2015-2019 by Thomas Loimer
+dnl Parts Copyright (c) 2015-2020 by Thomas Loimer
 dnl
 dnl Any party obtaining a copy of these files is granted, free of charge, a
 dnl full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -175,6 +175,14 @@ AT_CHECK([fig2dev -L pict2e -P big1.fig big1.tex && \
 ], 0, ignore)
 AT_CLEANUP
 
+AT_SETUP([accept arc arrows with zero height, ticket #74])
+AT_KEYWORDS(pict2e)
+AT_CHECK([fig2dev -L pict2e <<EOF
+FIG_FILE_TOP
+5 1 0 1 0 7 50 -1 -1 0.0 0 0 1 0 0.0 0.0 600 0 0 600 -600 0
+	1 1 1.0 60.0 0.0
+EOF], 0, ignore)
+AT_CLEANUP
 
 AT_BANNER([Test svg output language.])
 AT_SETUP([compare patterns with template])

@@ -3,7 +3,7 @@
  * Copyright (c) 1985 Supoj Sutanthavibul
  * Copyright (c) 1991 Micah Beck
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 Thomas Loimer
+ * Parts Copyright (c) 2015-2020 Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -1095,9 +1095,8 @@ compute_arcarrow_angle(double x1, double y1, double x2, double y2,
 	r=sqrt(dx*dx+dy*dy);
 	h = (double) arrow->ht;
 	/* lines are made a little thinner in set_linewidth */
-	thick = (arrow->thickness <= THICK_SCALE) ?
-		    0.5* arrow->thickness :
-		    arrow->thickness - THICK_SCALE;
+	thick = arrow->thickness <= THICK_SCALE ?
+		0.5 * arrow->thickness : arrow->thickness - THICK_SCALE;
 	/* lpt is the amount the arrowhead extends beyond the end of the line */
 	lpt = thick/2.0/(arrow->wid/h/2.0);
 	/* add this to the length */
@@ -1107,6 +1106,8 @@ compute_arcarrow_angle(double x1, double y1, double x2, double y2,
 	if (h > 2.0*r) {
 	    arc_tangent_int(x1,y1,x2,y2,direction,x,y);
 	    return;
+	} else if (h < thick) {
+	    h = thick;
 	}
 
 	beta=atan2(dy,dx);
