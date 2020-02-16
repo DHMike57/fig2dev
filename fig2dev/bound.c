@@ -1102,12 +1102,10 @@ compute_arcarrow_angle(double x1, double y1, double x2, double y2,
 	/* add this to the length */
 	h += lpt;
 
-	/* radius too small for this method, use normal method */
-	if (h > 2.0*r) {
+	/* secant would be too large or too small */
+	if (h > 2.0*r || h < 0.01*r) {
 	    arc_tangent_int(x1,y1,x2,y2,direction,x,y);
 	    return;
-	} else if (h < thick) {
-	    h = thick;
 	}
 
 	beta=atan2(dy,dx);
