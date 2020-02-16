@@ -69,12 +69,9 @@ texfile(FILE *tx, char *in)
 
 	  case eepicemu:
 		to = eepicemu;
+		/* intentionally fall through */
 
 	  case eepic:
-#ifdef eemulation
-		to = eepicemu;
-#endif
-
 	  case epic:
 		fprintf(tx, "\\typeout{TransFig: figures in %s.}\n",
 							lname[(int)to]);
