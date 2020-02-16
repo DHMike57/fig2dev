@@ -1489,6 +1489,8 @@ read_textobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 
 		len = strlen(start);
 		start[len++] = '\n';	/* put back the newline */
+		start[len] = '\0';	/* and terminate the string,
+					   in case nothing else is found */
 
 		/* allocate plenty of space */
 		next = malloc(len + BUFSIZ);
@@ -1497,7 +1499,7 @@ read_textobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 			free(t);
 			return NULL;
 		}
-		memcpy(next, start, len);
+		memcpy(next, start, len + 1);
 
 		while ((chars = getline(line, line_len, fp)) != -1) {
 			++(*line_no);
@@ -1531,7 +1533,7 @@ read_textobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		len = end - start;
 		l = len;
 		while (c[l] != '\0') {
-			if (c[l] == '\\') {
+			if (c[l] == '\\' && c[l+1] != '\0') {
 				/* convert 3 digit octal value */
 				if (isdigit(c[l+1]) && c[l+2] != '\0' &&
 							c[l+3] != '\0') {
