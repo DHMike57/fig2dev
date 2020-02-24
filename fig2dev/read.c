@@ -1497,7 +1497,7 @@ read_textobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 			free(t);
 			return NULL;
 		}
-		memcpy(next, start, len + 1);
+		memcpy(next, start, len);
 		next[len] = '\0';	/* terminate the initial string,
 					   in case nothing else is found */
 
