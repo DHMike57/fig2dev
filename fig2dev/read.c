@@ -356,7 +356,7 @@ read_objects(FILE *fp, F_compound *obj)
 	    free(line);
 	    return -1;
 	}
-	if (ppi <= 0.) {
+	if (ppi <= 1.) {
 	    put_msg("Invalid resolution information (%g) at line %d.",
 		    ppi, line_no);
 	    free(line);
