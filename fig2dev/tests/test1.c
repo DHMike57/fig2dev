@@ -57,7 +57,7 @@ main(void)
 #ifdef I18N_DATADIR
 	n = strlen(i18ndir);
 	if (n + 10 > BUFSIZ) {
-		printf("File path too long, %ld > %d.\n", n + 10, BUFSIZ);
+		printf("File path too long, %zd > %d.\n", n + 10, BUFSIZ);
 		return -2;
 	}
 	memcpy(filepath, i18ndir, n);
