@@ -227,6 +227,11 @@ compute_closed_spline(F_spline *spline, float precision)
   if (!init_point_array(300, 200))
       return NULL;
 
+  if (!(spline->points /* p0 */ && spline->controls /* s0 */ &&
+	spline->points->next /* p1 */ && spline->controls->next /* s1 */ &&
+	spline->points->next->next && spline->controls->next->next/* p2, s2 */&&
+	spline->points->next->next->next && spline->controls->next->next->next))
+      return NULL;
   INIT_CONTROL_POINTS(spline, p0, s0, p1, s1, p2, s2, p3, s3);
   COPY_CONTROL_POINT(first, s_first, p0, s0);
 
