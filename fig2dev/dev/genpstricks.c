@@ -56,6 +56,10 @@
 #define bit(N) (1 << (N))
 #define PI (M_PI) /* use the same pi as everywhere else */
 
+#define SNPRINTF_EXIT(LEN, BUF, CMD)	do { if (CMD >= (int)(LEN)) { \
+		fprintf(stderr, "Unable to print:\n%s\n", BUF); exit(1); } } \
+		while (0)
+
 /* format used for double coordinates */
 #define DBL "%.4lf"
 
@@ -234,16 +238,24 @@ convert_pt_to_image_bb_in_place(F_point *pt)
 
 /* append a new string value onto a comma-separated list */
 static void
-append_to_comma_list(char **lst, char *val)
+append_to_comma_list(char **lst, size_t lst_len, char *val)
 {
   if (!val || !val[0])
     return;
   if (**lst) {
+    if (strlen(val) + strlen(*lst) + 2 >= lst_len) {
+	    fprintf(stderr, "Unable to print:\n%s,%s\n", *lst, val);
+	    exit(1);
+    }
     *lst += strlen(*lst);
     sprintf(*lst, ",%s", val);
-  }
-  else
+  } else {
+    if (strlen(val) + 1 >= lst_len) {
+	    fprintf(stderr, "Unable to print:\n%s\n", val);
+	    exit(1);
+    }
     strcpy(*lst, val);
+  }
 }
 
 /* character predicates; string.h is too non-compatible */
@@ -1549,8 +1561,8 @@ put_arrowhead_on_seg(F_point *tl, F_point *hd, double wid, double len,
 /* format terminator option strings, one for square
    bracket options and one for curly brackets */
 static void
-format_terminators(char *opts_sqrb, char *opts_curb, int flags, int ch_arrow,
-		F_arrow *arrow, int cap_style)
+format_terminators(char *opts_sqrb, size_t sqrb_len, char *opts_curb, int flags,
+		int ch_arrow, F_arrow *arrow, int cap_style)
 {
   double inset, length;
 
@@ -1614,13 +1626,16 @@ format_terminators(char *opts_sqrb, char *opts_curb, int flags, int ch_arrow,
       warn(W_TERMINATOR_ARROW);
       /* closest we can get to semicircle is centered disk */
       if (flags & FO_ARROW_SIZE)
-	sprintf(opts_sqrb, "dotsize="DBL" 2", cm_from_1200ths(arrow->ht));
+	SNPRINTF_EXIT(sqrb_len, opts_sqrb,
+		snprintf(opts_sqrb, sqrb_len, "dotsize="DBL" 2",
+			cm_from_1200ths(arrow->ht)));
       strcpy(opts_curb, arrow->style == HOLLOW_ARROW ? "o" : "*");
       return;
 
     case CIRCLE_ARROW:
       if (flags & FO_ARROW_SIZE)
-	sprintf(opts_sqrb, "dotsize="DBL" 2", cm_from_1200ths(arrow->ht));
+	SNPRINTF_EXIT(sqrb_len, opts_sqrb, snprintf(opts_sqrb, sqrb_len,
+				"dotsize="DBL" 2", cm_from_1200ths(arrow->ht)));
       strcpy(opts_curb, arrow->style == HOLLOW_ARROW ? "oo" : "**");
       return;
 
@@ -1633,7 +1648,8 @@ format_terminators(char *opts_sqrb, char *opts_curb, int flags, int ch_arrow,
       else {
 	/* t-bar centered on end */
 	if (flags & FO_ARROW_SIZE)
-	  sprintf(opts_sqrb, "tbarsize="DBL" 2", cm_from_1200ths(arrow->wid));
+	  SNPRINTF_EXIT(sqrb_len, opts_sqrb, snprintf(opts_sqrb, sqrb_len,
+			"tbarsize="DBL" 2", cm_from_1200ths(arrow->wid)));
 	strcpy(opts_curb, "|");
 	return;
       }
@@ -1649,9 +1665,9 @@ format_terminators(char *opts_sqrb, char *opts_curb, int flags, int ch_arrow,
       if (arrow->style == HOLLOW_ARROW)
 	warn(W_TERMINATOR_ARROW);
       if (flags & FO_ARROW_SIZE)
-	sprintf(opts_sqrb, "tbarsize="DBL" 2,bracketlength="DBL,
-		cm_from_1200ths(arrow->wid),
-		arrow->ht/arrow->wid);
+	SNPRINTF_EXIT(sqrb_len, opts_sqrb,
+	    snprintf(opts_sqrb, sqrb_len, "tbarsize="DBL" 2,bracketlength="DBL,
+			cm_from_1200ths(arrow->wid), arrow->ht/arrow->wid));
       sprintf(opts_curb, "%c", (ch_arrow == '<') ? '[' : ']');
       return;
 
@@ -1660,13 +1676,13 @@ format_terminators(char *opts_sqrb, char *opts_curb, int flags, int ch_arrow,
       goto simple_arrow;
     }
     if (flags & FO_ARROW_SIZE) {
-
-      sprintf(opts_sqrb, "arrowsize="DBL" 2,arrowlength=%.5lf,arrowinset=%.5lf",
-	      cm_from_1200ths(arrow->wid), length, inset);
+      SNPRINTF_EXIT(sqrb_len, opts_sqrb, snprintf(opts_sqrb, sqrb_len,
+			"arrowsize="DBL" 2,arrowlength=%.5lf,arrowinset=%.5lf",
+			cm_from_1200ths(arrow->wid), length, inset));
       if (arrow->style == HOLLOW_ARROW) {
 	/* warn user hollow arrows require additional package pstricks-add */
 	warn(W_HOLLOW_ARROW);
-	append_to_comma_list(&opts_sqrb, "ArrowFill=false");
+	append_to_comma_list(&opts_sqrb, sqrb_len, "ArrowFill=false");
       }
     }
   }
@@ -1731,15 +1747,16 @@ format_options(char *options, char *prefix, char *postfix, char *sqrb_init,
       style = -2;
     }
     else {
-      sprintf(tmps, "linewidth="DBL"",
-	      cm_from_1200ths(thickness) * Line_weight);
-      append_to_comma_list(&p_sqrb, tmps);
+      SNPRINTF_EXIT(sizeof tmps, tmps, snprintf(tmps, sizeof tmps,
+			      "linewidth="DBL"",
+			      cm_from_1200ths(thickness) * Line_weight));
+      append_to_comma_list(&p_sqrb, sizeof opts_sqrb, tmps);
     }
 
     switch (style) {
 
     case -2:
-      append_to_comma_list(&p_sqrb, "linestyle=none");
+      append_to_comma_list(&p_sqrb, sizeof opts_sqrb, "linestyle=none");
       break;
 
     case -1: /* default; use solid */
@@ -1747,52 +1764,49 @@ format_options(char *options, char *prefix, char *postfix, char *sqrb_init,
       break;
 
     case DOTTED_LINE:
-      sprintf(tmps, "linestyle=dotted,dotsep="DBL"",
-	      cm_from_80ths(style_val));
-      append_to_comma_list(&p_sqrb, tmps);
+      SNPRINTF_EXIT(sizeof tmps, tmps, snprintf(tmps, sizeof tmps,
+		    "linestyle=dotted,dotsep="DBL"", cm_from_80ths(style_val)));
+      append_to_comma_list(&p_sqrb, sizeof opts_sqrb, tmps);
       break;
 
     case DASH_LINE:
-      sprintf(tmps, "linestyle=dashed,dash="DBL" "DBL"",
-	      cm_from_80ths(style_val),
-	      cm_from_80ths(style_val));
-      append_to_comma_list(&p_sqrb, tmps);
+      SNPRINTF_EXIT(sizeof tmps, tmps, snprintf(tmps, sizeof tmps,
+		"linestyle=dashed,dash="DBL" "DBL"", cm_from_80ths(style_val),
+		cm_from_80ths(style_val)));
+      append_to_comma_list(&p_sqrb, sizeof opts_sqrb, tmps);
       break;
 
     case DASH_DOT_LINE:    /* normal dashes with small spaces */
       warn(W_DASH_DOT);
-      sprintf(tmps, "linestyle=dashed,dash="DBL" "DBL" "DBL" "DBL"",
-	      cm_from_80ths(style_val),
-	      cm_from_80ths(style_val)/2,
-	      2*cm_from_1200ths(thickness) * Line_weight,
-	      cm_from_80ths(style_val)/2);
-      append_to_comma_list(&p_sqrb, tmps);
+      SNPRINTF_EXIT(sizeof tmps, tmps, snprintf(tmps, sizeof tmps,
+		"linestyle=dashed,dash="DBL" "DBL" "DBL" "DBL"",
+		cm_from_80ths(style_val), cm_from_80ths(style_val)/2,
+		2*cm_from_1200ths(thickness) * Line_weight,
+		cm_from_80ths(style_val)/2));
+      append_to_comma_list(&p_sqrb, sizeof opts_sqrb, tmps);
       break;
 
     case DASH_2_DOTS_LINE: /* small dashes with normal spaces */
       warn(W_DASH_DOTS);
-      sprintf(tmps, "linestyle=dashed,dash="DBL" "DBL" "DBL" "DBL" "DBL" "DBL"",
-	      cm_from_80ths(style_val),
-	      cm_from_80ths(style_val)/3,
-	      2*cm_from_1200ths(thickness) * Line_weight,
-	      cm_from_80ths(style_val)/3,
-	      2*cm_from_1200ths(thickness) * Line_weight,
-	      cm_from_80ths(style_val)/3);
-      append_to_comma_list(&p_sqrb, tmps);
+      SNPRINTF_EXIT(sizeof tmps, tmps, snprintf(tmps, sizeof tmps,
+		"linestyle=dashed,dash="DBL" "DBL" "DBL" "DBL" "DBL" "DBL"",
+		cm_from_80ths(style_val), cm_from_80ths(style_val)/3,
+		2*cm_from_1200ths(thickness) * Line_weight,
+		cm_from_80ths(style_val)/3, 2*cm_from_1200ths(thickness) *
+		Line_weight, cm_from_80ths(style_val)/3));
+      append_to_comma_list(&p_sqrb, sizeof opts_sqrb, tmps);
       break;
 
     case DASH_3_DOTS_LINE: /* small dashes with small spaces */
       warn(W_DASH_DOTS);
-      sprintf(tmps, "linestyle=dashed,dash="DBL" "DBL" "DBL" "DBL" "DBL" "DBL" "DBL" "DBL,
-	      cm_from_80ths(style_val),
-	      cm_from_80ths(style_val)/4,
-	      2*cm_from_1200ths(thickness) * Line_weight,
-	      cm_from_80ths(style_val)/4,
-	      2*cm_from_1200ths(thickness) * Line_weight,
-	      cm_from_80ths(style_val)/4,
-	      2*cm_from_1200ths(thickness) * Line_weight,
-	      cm_from_80ths(style_val)/4);
-      append_to_comma_list(&p_sqrb, tmps);
+      SNPRINTF_EXIT(sizeof tmps, tmps, snprintf(tmps, sizeof tmps,
+	  "linestyle=dashed,dash="DBL" "DBL" "DBL" "DBL" "DBL" "DBL" "DBL" "DBL,
+	  cm_from_80ths(style_val), cm_from_80ths(style_val)/4,
+	  2*cm_from_1200ths(thickness) * Line_weight,
+	  cm_from_80ths(style_val)/4,
+	  2*cm_from_1200ths(thickness) * Line_weight,cm_from_80ths(style_val)/4,
+	  2*cm_from_1200ths(thickness)*Line_weight,cm_from_80ths(style_val)/4));
+      append_to_comma_list(&p_sqrb, sizeof opts_sqrb, tmps);
       break;
 
     default:
@@ -1818,7 +1832,7 @@ format_options(char *options, char *prefix, char *postfix, char *sqrb_init,
       case LJ_PSTOPTION:
 	prefix[0] = postfix[0] = '\0';
 	sprintf(tmps,  "linejoin=%d", join_style);
-	append_to_comma_list(&p_sqrb, tmps);
+	append_to_comma_list(&p_sqrb, sizeof opts_sqrb, tmps);
 	break;
       default:
 	fprintf(stderr, "bad Linejoin value %d\n", Linejoin);
@@ -1831,19 +1845,21 @@ format_options(char *options, char *prefix, char *postfix, char *sqrb_init,
 
   /* add cap style and optionally the arrows */
   if (flags & FO_LINE_TERM) {
-    format_terminators(tmps, tmpc, flags, '<', back_arrow, cap_style);
+    format_terminators(tmps, sizeof tmps, tmpc, flags, '<', back_arrow,
+		    cap_style);
     strcat(opts_curb, tmpc);
     strcat(opts_curb, "-");
-    format_terminators(tmps_alt, tmpc, flags, '>', fore_arrow, cap_style);
+    format_terminators(tmps_alt, sizeof tmps_alt, tmpc, flags, '>', fore_arrow,
+		    cap_style);
     strcat(opts_curb, tmpc);
     /* forward arrow parameters take precedence over back; can't have both */
-    append_to_comma_list(&p_sqrb, tmps_alt[0] == '\0' ? tmps : tmps_alt);
+    append_to_comma_list(&p_sqrb, sizeof opts_sqrb, tmps_alt[0] == '\0' ? tmps : tmps_alt);
   }
 
   /* deal with pen color */
   if ((flags & FO_PEN_COLOR) && pen_color != -1) {
     sprintf(tmps, "linecolor=%s", color_name_after_declare_color(pen_color));
-    append_to_comma_list(&p_sqrb, tmps);
+    append_to_comma_list(&p_sqrb, sizeof opts_sqrb, tmps);
   }
 
   if ((flags & FO_FILL) && fill_style != -1) {
@@ -1911,17 +1927,17 @@ format_options(char *options, char *prefix, char *postfix, char *sqrb_init,
       ps = tmps;
       if (fill_color != -1) {
 	sprintf(tmps_alt, "fillcolor=%s", color_name_after_declare_color(fill_color));
-	append_to_comma_list(&ps, tmps_alt);
+	append_to_comma_list(&ps, sizeof tmps, tmps_alt);
       }
       if (pen_color != -1) {
 	sprintf(tmps_alt, "hatchcolor=%s", color_name_after_declare_color(pen_color));
-	append_to_comma_list(&ps, tmps_alt);
+	append_to_comma_list(&ps, sizeof tmps, tmps_alt);
       }
       /* negative sign on angle for fig's strange clockwise system */
       sprintf(tmps_alt, "fillstyle=%s*,hatchangle=%.2lf", type, -(angle + hatch_angle_offset));
-      append_to_comma_list(&ps, tmps_alt);
+      append_to_comma_list(&ps, sizeof tmps, tmps_alt);
     }
-    append_to_comma_list(&p_sqrb, tmps);
+    append_to_comma_list(&p_sqrb, sizeof opts_sqrb, tmps);
   }
 
   if (opts_curb[0] && opts_sqrb[0])
