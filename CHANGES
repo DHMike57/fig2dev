@@ -6,6 +6,7 @@ Patchlevel Xx (Xxx 20xx)
 
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
+	o Reject negative text font sizes. Fixes ticket #86.
 	o Allow fig files ending without previous eol character. Fixes #83, #84.
 	o Accept text and ellipse angles only within -2*pi to 2*pi. Fixes #76.
 	o Allow -1 as default TeX font, not only 0. Fixes #71, #75, #81.

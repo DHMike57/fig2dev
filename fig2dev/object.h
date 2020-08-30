@@ -242,7 +242,7 @@ typedef struct f_text {
 
 #define INVALID_TEXT(t)	\
 	t->type < T_LEFT_JUSTIFIED || t->type > T_RIGHT_JUSTIFIED ||	\
-	t->font < DEFAULT || t->font > MAX_PSFONT ||			\
+	t->font < DEFAULT || t->font > MAX_PSFONT || t->size < 0.0 ||	\
 	t->flags < DEFAULT || t->flags >= 2 * HIDDEN_TEXT ||		\
 	t->height < 0 || t->length < 0 || t->angle < -7. || t->angle > 7.
 
