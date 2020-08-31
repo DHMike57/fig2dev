@@ -84,9 +84,9 @@ struct _arrow_shape arrow_shapes[NUMARROWS] = {	/* NUMARROWS def'd in fig2dev.h 
 	/* type 0 */
 	{ 3, 1, 0, 0, true, false, 2.15, {{-1,-0.5}, {0,0}, {-1,0.5}}, {{0,0}}},
 	/* place holder for what would be type 0 filled */
-	/*	values and at least one point required to silence
-		"missing field initializer" warning */
-	{ 0, 0, 0, 0, false, false, 0.0, {{0,0}}, {{0,0}}},
+	/* Make this a copy of the default arrow above. Maliciously crafted
+	   fig files might choose this arrow, hence provide a valid shape. */
+	{ 3, 1, 0, 0, true, false, 2.15, {{-1,-0.5}, {0,0}, {-1,0.5}}, {{0,0}}},
 	/* type 1a simple triangle */
 	{ 4, 1, 0, 2, true, false, 2.1,
 		{{-1.0,0.5}, {0,0}, {-1.0,-0.5}, {-1.0,0.5}}, {{0,0}}},
@@ -872,7 +872,7 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 	lpt = 0.0;
 	thk = THICKNESS(arrow->thickness);
 	if (tipmv > 0.0)
-	    lpt = thk * sqrt(wd*wd + tipmv*tipmv*len*len) / 2. / wd;
+	    lpt = thk * sqrt(wd*wd + tipmv*tipmv*len*len) / 2. / fabs(wd);
 	else if (tipmv == 0.0)
 	    lpt = thk / 2.0;	/* types which have blunt end */
 			    /* (Don't adjust those with tipmv < 0) */

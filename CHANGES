@@ -4,6 +4,10 @@ Version 3.2
 ===============================================================================
 Patchlevel Xx (Xxx 20xx)
 
+NEW FEATURES:
+	o Allow negative arrow widths. This might be useful for asymmetric arrow
+	  tips, which can thus be mirrored around the corresponding line.
+
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	o Reject negative text font sizes. Fixes ticket #86.
