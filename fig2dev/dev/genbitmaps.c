@@ -24,7 +24,8 @@
  *	Uses genps functions to generate PostScript output then calls
  *	ghostscript to convert it to the output language if ghostscript
  *	has a driver for that language, or to ppm if otherwise. If the
- *	latter, ppmtoxxx is then called to make the final xxx file.
+ *	latter, either ppmtoxx, convert or gm convert is then called to
+ *	make the final xxx file.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -39,6 +40,7 @@
 #include <limits.h>
 #include <math.h>
 
+#include "bool.h"
 #include "fig2dev.h"	/* includes bool.h and object.h */
 //#include "object.h"	/* includes X11/xpm.h */
 #include "colors.h"	/* lookup_X_color(), rgb2luminance() */
@@ -46,9 +48,44 @@
 #include "messages.h"
 #include "xtmpfile.h"
 
-		/* See below, "The largest command string..." */
-static char	com_buf[200 + L_xtmpnam + 256];
-static char	*com;
+/*
+ * The command to convert from eps to various image formats is obtained by first
+ * producing an appropriate format string. The format string expects the
+ * arguments width, height, gsdev, out, errfname. Here, antialias is
+ * ANTIALIAS printed to a string, and out points either to to, or to the empty
+ * string. The ghostscript output might be the final image, or the output is
+ * piped to various conversion commands.
+ */
+#define GS_CMD		GSEXE " -q -dSAFER -r80 -g%dx%d -sDEVICE=%s"
+/* will be printed to the string antialias */
+#define ANTIALIAS	" -dTextAlphaBits=%d -dGraphicsAlphaBits=%d"
+#define GS_TO		" -o '%s' -"
+#define GS_OUT		" -o %s- -"	/* out must be the empty string */
+#define GS_PIPE		" -o - -"
+/* the longest conversion string */
+#define CONVERT_MAX_LEN	81	/* make sure, the longest conversion pipe is
+				   shorter than one linelength */
+#define NET_TO		" >'%s'"
+#define NET_OUT		"%s"		/* out must be the empty string */
+#define ERR		" 2>%s"
+
+/* file format might be:
+ * |--------- GSCMD ----------|          | GS_TO  | ERR |
+ * GSEXE -q -g%dx%d -sDEVICE=%s antialias -o '%s' - 2>%s
+ *
+ * |--------- GSCMD ----------|          | GS_OUT | ERR |
+ * GSEXE -q -g%dx%d -sDEVICE=%s antialias -o %s- - 2>%s
+ *
+ * { |--------- GSCMD ----------|         |GS_PIPE| CONVERT|; }|NET_TO|ERR
+ * { GSEXE -q -g%dx%d -sDEVICE=%s antialias -o - - | CONVERT; } >'%s' 2>%s
+ *
+ * { |--------- GSCMD ----------|         |GS_PIPE| CONVERT|; }|END_OUT|ERR
+ * { GSEXE -q -g%dx%d -sDEVICE=%s antialias -o - - | CONVERT; }%s 2>%s
+ */
+
+static char	com_buf[sizeof GS_CMD ANTIALIAS GS_PIPE NET_TO ERR +
+							CONVERT_MAX_LEN + 80];
+static char	*com = com_buf;
 static FILE	*errfile;
 static char	errfname[L_xtmpnam] = "f2derrorXXXXXX";
 static int	jpeg_quality = 75;
@@ -100,7 +137,7 @@ genbitmaps_option(char opt, char *optarg)
 		sscanf(optarg, "%d", &smooth);
 		if (smooth != 0 && smooth != 1 && smooth != 2 && smooth != 4) {
 			fprintf(stderr, "fig2dev: bad value for -S option: %s, "
-					"should be 0, 2 or 4\n", optarg);
+					"should be 1, 2 or 4\n", optarg);
 			exit(1);
 		}
 		break;
@@ -113,6 +150,49 @@ genbitmaps_option(char opt, char *optarg)
 		put_msg(Err_badarg, opt, lang);
 		break;
 	}
+}
+
+/*
+ * Check functioning of netpbm programs with a 2x2 test image consisting of a
+ * white, a red, a blue, and a black pixel.
+ * Return value: true success, false failure.
+ */
+static bool
+has_netpbm(const char *cmd)
+{
+	FILE	      *f;
+	unsigned char img[] = "P6 2 2 255 \xff\xff\xff\xff\0\0\0\0\xff\0\0\0\n";
+
+	f = popen(cmd, "w");
+	if (f == NULL)
+		return false;
+
+	/* the terminating '\0' does not need to be written */
+	if (fwrite(img, sizeof img - 1, 1, f) != 1)
+		return false;
+
+	if (pclose(f) == 0)
+		return true;
+	else
+		return false;
+}
+
+static bool
+has_ImageMagick(void)
+{
+	if (system("convert -version") == 0)
+		return true;
+	else
+		return false;
+}
+
+static bool
+has_GraphicsMagick(void)
+{
+	if (system("gm version") == 0)
+		return true;
+	else
+		return false;
 }
 
 static void
@@ -130,122 +210,280 @@ genbitmaps_start(F_compound *objects)
 {
 #ifdef GSEXE /* bracket the entire function */
 	char	*gsdev;
+	char	fmt[sizeof GS_CMD ANTIALIAS GS_PIPE NET_TO ERR +
+							CONVERT_MAX_LEN + 6];
+	char	antialias[sizeof ANTIALIAS];
+	char	*gscmd = GS_CMD;
+	char	*gspipe = GS_PIPE;
+	char	*err;
+	char	*errname;
+	char	*out;
+	char	*gsend;
+	char	*netend;
+	char	*gimend;	/* GrapicsMagick, ImageMagick End */
 	int	n;
+	int	width;
+	int	height;
 
-	n = ceil(border_margin * THICK_SCALE);
+	n = (int)(border_margin * THICK_SCALE + 0.9);
 	llx -= n;	lly -= n;
 	urx += n;	ury += n;
+	width = (int)(mag * (urx - llx) / THICK_SCALE + 0.9),
+	height = (int)(mag * (ury - lly) / THICK_SCALE + 0.9);
 
-	/* start allocating ghostscript command string */
+
+	/* set the format strings of the final output, depending on
+	   whether it goes to a file or to stdout */
 	if (to)	{		/* equivalent to tfp != stdout */
-		fclose(tfp);	/* close the output file that main() opened */
-		n = strlen(to);
-	} else {
-		n = 0;
-	}
-
-	/*
-	 * The largest command string is, allowing for long long int, 19 digits
-	 * 12345678 10        20        30        40        50        602345
-	 * gswin32c -q -dSAFER -r80 -gINT_MAX890123456789xINT_MAX89012345678
-	 * 9 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sDEVICE=ppmraw -o - -
-	 * { ppmquant 256 | ppmtogif -transparent \#123456; } >f2derrorXXXXXX
-	 * + L_xtmpnam + strlen(to) = 197 chars + L_xtmnnam + strlen(to).
-	 */
-	if (n > 256 && (com = malloc(n + 200 + L_xtmpnam)) == NULL) {
-		fputs("Cannot allocate memory for ghostscript command string.\n",
-			stderr);
-		exit(EXIT_FAILURE);
-	} else {
-		com = com_buf;
-	}
-
-	/* start building up ghostscript command string */
-	n = sprintf(com, "%s -q -dSAFER -r80 -g%dx%d", GSEXE,
-			(int) ceil(mag * (urx-llx) / THICK_SCALE),
-			(int) ceil(mag * (ury-lly) / THICK_SCALE));
-
-	/*
-	 * Use ghostscript built-in drivers. In addition to these, ghostscript
-	 * has drivers for bmp (bmp256, bmp16m), pcx (pcx256), tiff (tiff24nc),
-	 * and png (png16m). But use the netpbm programs for the latter,
-	 * because the netpbm programs produce smaller files.
-	 */
-	gsdev = NULL;
-	if (strcmp(lang, "ppm") == 0) {
-		gsdev = "ppmraw";
-	} else if (strcmp(lang, "jpeg") == 0) {
-		gsdev = "jpeg";
-		n += sprintf(com + n, " -dJPEGQ=%d", jpeg_quality);
-	}
-
-	if (smooth > 1)
-		n += sprintf(com + n,
-			" -dTextAlphaBits=%d -dGraphicsAlphaBits=%d",
-			smooth, smooth);
-
-	if (gsdev) {
-		n += sprintf(com + n, " -sDEVICE=%s -o ", gsdev);
-		if (to)
-			sprintf(com + n, "'%s' -", to);
-		else
-			strcat(com + n, "- -");
-	} else {
-		/* let ghostscript convert to ppm */
-		n += sprintf(com + n, " -sDEVICE=ppmraw -o - - | ");
-
-		/* and add the pipe to the netpbm commands */
-		if (strcmp(lang, "gif") == 0) {
-			if (gif_transparent[0])
-				/* escape the first char of the
-				   transparent color (#) for the shell */
-				n += sprintf(com + n,
-			      "{ ppmquant 256 | ppmtogif -transparent \\%s; }",
-					gif_transparent);
-			else
-				n += sprintf(com + n,
-					"{ ppmquant 256 | ppmtogif; }");
-		} else if (strcmp(lang, "xbm") == 0) {
-			n += sprintf(com + n,
-				"{ ppmtopgm | pgmtopbm | pbmtoxbm; }");
-		} else if (strcmp(lang, "xpm") == 0) {
-			n += sprintf(com + n, "{ ppmquant 256 | ppmtoxpm; }");
-		} else if (strcmp(lang, "sld") == 0) {
-			n += sprintf(com + n, "ppmtoacad");
-		} else if (strcmp(lang, "pcx") == 0) {
-			n += sprintf(com + n, "ppmtopcx");
-		} else if (strcmp(lang, "png") == 0) {
-			n += sprintf(com + n, "pnmtopng");
-		} else if (strcmp(lang, "tiff") == 0) {
-			n += sprintf(com + n, "pnmtotiff");
-		} else {
-			fprintf(stderr,
-				"fig2dev: unsupported image format: %s\n",
-				lang);
+		if (strchr(to, '\'')) {
+			fprintf(stderr, "Cannot write to a file containing an "
+					"apostrophe (') in its name: %s\n", to);
 			exit(EXIT_FAILURE);
 		}
+		fclose(tfp);	/* close the output file that main() opened */
+		out = to;
+		gsend = GS_TO;
+		netend = NET_TO;
+		gimend = "'%s'";
+	} else {
+		out = "";
+		gsend = GS_OUT;
+		netend = NET_OUT;
+		gimend = "%s-";
+	}
 
-		/* netpbm programs are chatty; catch their output */
-		if ((errfile = xtmpfile(errfname)) == NULL)
-			fprintf(stderr, "Can't create error log file %s\n",
+	if (smooth)
+		sprintf(antialias, ANTIALIAS, smooth, smooth);
+	else
+		*antialias = '\0';
+
+	/* create a temporary file to catch standard error */
+	if ((errfile = xtmpfile(errfname)) == NULL) {
+		fprintf(stderr, "Can't create error log file %s\n",
 				errfname);
-		else
-			n += sprintf(com + n, " 2>%s", errfname);
+		err = "%s";	/* display errors on the terminal */
+		errname = "";
+	} else {
+		fclose(errfile);
+		err = ERR;
+		errname = errfname;
+	}
 
-		if (to)
-			sprintf(com + n, " >'%s'", to);
+	/* create the format string to produce the command string */
+	/*
+	 * The netpbm programs seem to count the colors, and produce the
+	 * smallest files. Therefore, prefer netpbm programs, then either
+	 * GraphicsMagick or Imagemagick, last ghostscript.
+	 */
+	if (!strcmp(lang, "ppm")) {
+		gsdev = "ppmraw";
+		sprintf(fmt, "%s%s%s%s", gscmd, antialias, gsend, err);
+	} else if (!strcmp(lang, "jpeg")) {
+		gsdev = "jpeg";
+		sprintf(fmt, "%s -dJPEGQ=%d%s%s%s", gscmd, jpeg_quality,
+				antialias, gsend, err);
+	} else if (!strcmp(lang, "gif")) {
+		gsdev = "ppmraw";
+		if (has_netpbm("{ ppmquant 256 | ppmtogif; } >/dev/null 2>&1")){
+			if (*gif_transparent)
+				sprintf(fmt, "{ %s%s%s | ppmquant 256 | "
+					   "ppmtogif -transparent==\\%s; }%s%s",
+					gscmd, antialias, gspipe,
+					gif_transparent, netend, err);
+			else
+				sprintf(fmt,
+				    "{ %s%s%s | ppmquant 256 | ppmtogif; }%s%s",
+					gscmd, antialias, gspipe, netend, err);
+		} else if (has_ImageMagick()) {
+			if (*gif_transparent)
+				sprintf(fmt, "{ %s%s%s | convert - -transparent"
+						"%s gif:%s; }%s", gscmd,
+						antialias, gspipe,
+						gif_transparent, gimend, err);
+			else
+				sprintf(fmt, "{ %s%s%s | convert - gif:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		} else if (has_GraphicsMagick()) {
+			if (*gif_transparent)
+				sprintf(fmt, "{ %s%s%s | gm convert - "
+						"-transparent %s gif:%s; }%s",
+						gscmd, antialias, gspipe,
+						gif_transparent, gimend, err);
+			else
+				sprintf(fmt,
+					"{ %s%s%s | gm convert - gif:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		} else {
+			fputs("fig2dev: Cannot write gif image.\n    Please "
+				"install one of the netpbm, GraphicsMagick or "
+				"ImageMagick packages.\n", stderr);
+			if (errfile)
+				remove(errfname);
+			exit(EXIT_FAILURE);
+		}
+	} else if (!strcmp(lang, "xbm")) {
+		gsdev = "ppmraw";
+		if (has_netpbm("{ ppmtopgm | pgmtopbm | pbmtoxbm; } "
+					">/dev/null 2>&1"))
+			sprintf(fmt,
+			     "{ %s%s%s | ppmtopgm | pgmtopbm | pbmtoxbm; }%s%s",
+					gscmd, antialias, gspipe, netend, err);
+		else if (has_GraphicsMagick())
+			sprintf(fmt, "{ %s%s%s | gm convert - xbm:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		else if (has_ImageMagick())
+			sprintf(fmt, "{ %s%s%s | convert - xbm:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		else {
+			fputs("fig2dev: Cannot write xbm image.\n    Please "
+				"install one of the netpbm, GraphicsMagick or "
+				"ImageMagick packages.\n", stderr);
+			if (errfile)
+				remove(errfname);
+			exit(EXIT_FAILURE);
+		}
+	} else if (!strcmp(lang, "xpm")) {
+		gsdev = "ppmraw";
+		if (has_netpbm("{ ppmquant 256 | ppmtoxpm; } >/dev/null 2>&1"))
+			sprintf(fmt,
+			     "{ %s%s%s | ppmquant 256 | ppmtoxpm; }%s%s",
+					gscmd, antialias, gspipe, netend, err);
+		else if (has_GraphicsMagick())
+			sprintf(fmt, "{ %s%s%s | gm convert - xpm:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		else if (has_ImageMagick())
+			sprintf(fmt, "{ %s%s%s | convert - xpm:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		else {
+			fputs("fig2dev: Cannot write xpm image.\n    Please "
+				"install one of the netpbm, GraphicsMagick or "
+				"ImageMagick packages.\n", stderr);
+			if (errfile)
+				remove(errfname);
+			exit(EXIT_FAILURE);
+		}
+	} else if (!strcmp(lang, "sld")) {
+		if (has_netpbm("ppmtoacad >/dev/null 2>&1")) {
+			gsdev = "ppmraw";
+			sprintf(fmt, "{ %s%s%s | ppmtoacad; }%s%s",
+					gscmd, antialias, gspipe, netend, err);
+		} else {
+			fputs("fig2dev: Need the ppmtoacad program to be able "
+					"to write sld output file.\n", stderr);
+			fputs("         Please install the netpbm package.\n",
+					stderr);
+			if (errfile)
+				remove(errfname);
+			exit(EXIT_FAILURE);
+		}
+	} else if (!strcmp(lang, "pcx")) {
+		if (has_netpbm("ppmtopcx >/dev/null 2>&1")) {
+			gsdev = "ppmraw";
+			sprintf(fmt, "{ %s%s%s | ppmtopcx; }%s%s",
+					gscmd, antialias, gspipe, netend, err);
+		} else if (has_ImageMagick()) {
+			gsdev = "ppmraw";
+			sprintf(fmt, "{ %s%s%s | convert - pcx:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		} else if (has_GraphicsMagick()) {
+			gsdev = "ppmraw";
+			sprintf(fmt, "{ %s%s%s | gm convert - pcx:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		} else {
+			gsdev = "pcx24b";
+			sprintf(fmt, "%s%s%s%s", gscmd, antialias, gsend, err);
+		}
+	} else if (!strcmp(lang, "png")) {
+		if (has_netpbm("pnmtopng >/dev/null 2>&1")) {
+			gsdev = "ppmraw";
+			sprintf(fmt, "{ %s%s%s | pnmtopng; }%s%s",
+					gscmd, antialias, gspipe, netend, err);
+		} else if (has_ImageMagick()) {
+			gsdev = "ppmraw";
+			sprintf(fmt, "{ %s%s%s | convert - png:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		} else if (has_GraphicsMagick()) {
+			gsdev = "ppmraw";
+			sprintf(fmt, "{ %s%s%s | gm convert - png:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		} else {
+			gsdev = "png16m";
+			sprintf(fmt, "%s%s%s%s", gscmd, antialias, gsend, err);
+		}
+	} else if (!strcmp(lang, "tiff")) {
+#define	NEW_PNMTOTIFF	"pnmtotiff -flate -output %s >/dev/null 2>&1"
+		char	netcmd[sizeof errfname + sizeof NEW_PNMTOTIFF];
+		/* In netpbm 10.67 and later, pnmtotiff has the "-output"
+		   option and accepts a pipe. */
+		if (*errname && sprintf(netcmd, NEW_PNMTOTIFF, errname) &&
+				has_netpbm(netcmd)) {
+			gsdev = "ppmraw";
+			if (to)
+				sprintf(fmt, "{ %s%s%s | pnmtotiff -flate "
+						"-output '%%s'; }%s",
+						gscmd, antialias, gspipe, err);
+			else
+				sprintf(fmt, "{ %s%s%s | pnmtotiff -flate;"
+						" }%%s%s",
+						gscmd, antialias, gspipe, err);
+		/* netpbm before 10.67 cannot write to a pipe */
+		} else if (to && sprintf(netcmd,
+					"pnmtotiff -flate >%s 2>/dev/null",
+								errname) &&
+				has_netpbm(netcmd)) {
+			gsdev = "ppmraw";
+			sprintf(fmt, "{ %s%s%s | pnmtotiff -flate %s; }%s",
+					gscmd, antialias, gspipe, netend, err);
+		} else if (has_ImageMagick()) {
+			gsdev = "ppmraw";
+			sprintf(fmt, "{ %s%s%s | "
+					"convert - -compress Zip tiff:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		} else if (has_GraphicsMagick()) {
+			gsdev = "ppmraw";
+			sprintf(fmt, "{ %s%s%s | gm convert - -compress Zip "
+					"tiff:%s; }%s",
+					gscmd, antialias, gspipe, gimend, err);
+		} else {
+			if (!to) {
+				fputs("Cannot write tiff output to a pipe. "
+					"Please specify an output file.\n",
+					stderr);
+				if (errfile)
+					remove(errfname);
+				exit(EXIT_FAILURE);
+			}
+			gsdev = "tiff24nc";
+			sprintf(fmt, "%s -sCompression=lzw%s%s%s",
+					gscmd, antialias, gsend, err);
+		}
+	} else {
+		fprintf(stderr, "fig2dev: unsupported image format: %s\n",
+				lang);
+			exit(EXIT_FAILURE);
+	}
+
+	/* write the command */
+	n = snprintf(com, sizeof com_buf, fmt,
+			width, height, gsdev, out, errname);
+	if ((size_t)n >= sizeof com_buf) {
+		if ((com = malloc((size_t)(n + 1))) == NULL) {
+			fputs("Out of memory.\n", stderr);
+			if (errfile)
+				remove(errfname);
+			exit(EXIT_FAILURE);
+		}
+		sprintf(com, fmt, width, height, gsdev, out, errname);
 	}
 
 	(void) signal(SIGPIPE, bitmaps_broken_pipe);
-	if ((tfp = popen(com, "w")) == 0) {
-		fprintf(stderr, "fig2dev: Can't open pipe to ghostscript\n");
+	if ((tfp = popen(com, "w")) == NULL) {
+		fprintf(stderr, "fig2dev: Cannot open pipe to ghostscript\n");
 		fprintf(stderr, "command was: %s\n", com);
 		if (com != com_buf)
 			free(com);
-		if (errfile) {
-			fclose(errfile);
+		if (errfile)
 			remove(errfname);
-		}
 		exit(EXIT_FAILURE);
 	}
 
@@ -271,7 +509,6 @@ genbitmaps_end(void)
 		if (com != com_buf)
 			free(com);
 		if (errfile) {
-			fclose(errfile);
 			remove(errfname);
 		}
 		return -1;
@@ -282,13 +519,10 @@ genbitmaps_end(void)
 	(void) signal(SIGPIPE, SIG_DFL);
 
 	if (status != 0) {
-		fputs("Error in ghostcript or netpbm command\n", stderr);
+		fputs("Error when creating bitmap output\n", stderr);
 		fprintf(stderr, "command was: %s\n", com);
 
-		if (errfile == NULL) {
-			fprintf(stderr,
-				"Error log file %s not available\n", errfname);
-		} else {
+		if (errfile) {
 			char	buf[256];
 			size_t	buf_len = sizeof buf;
 			size_t	chars;
@@ -302,8 +536,10 @@ genbitmaps_end(void)
 			if (chars > 0 && !ferror(stderr))
 				fwrite(buf, (size_t)1, chars, stderr);
 
-			fclose(errfile);
 			remove(errfname);
+		} else {	/* *errname == '\0' */
+			fprintf(stderr,
+				"Error log file %s not available\n", errfname);
 		}
 		if (com != com_buf)
 			free(com);
@@ -312,7 +548,6 @@ genbitmaps_end(void)
 
 	/* finally, remove the temporary file and the error file */
 	if (errfile) {
-		fclose(errfile);
 		remove(errfname);
 	}
 	if (com != com_buf)

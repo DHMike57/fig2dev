@@ -24,7 +24,8 @@ AT_BANNER([Create and embed bitmaps in fig-file.])
 
 AT_SETUP([gif])
 AT_KEYWORDS(bitmaps gif)
-AT_SKIP_IF([NO_GS || ! ppmtogif -version || ! ppmquant -version])
+AT_SKIP_IF([NO_GS || ! giftopnm -version || ! ppmtopcx -version || \
+	( ! ppmtogif -version && ! convert -version &&  ! gm version)])
 AT_CHECK([fig2dev -L gif $srcdir/data/line.fig line.gif && \
 	$SED '11 s/eps/gif/' $srcdir/data/boxwimg.fig | fig2dev -L eps
 ], 0, ignore)
@@ -40,7 +41,7 @@ AT_CLEANUP
 
 AT_SETUP([pcx])
 AT_KEYWORDS(bitmaps pcx)
-AT_SKIP_IF([NO_GS || ! ppmtopcx -version])
+AT_SKIP_IF([NO_GS])
 AT_CHECK([fig2dev -L pcx $srcdir/data/line.fig line.pcx && \
 	$SED '11 s/eps/pcx/' $srcdir/data/boxwimg.fig | fig2dev -L eps
 ], 0, ignore)
@@ -48,7 +49,7 @@ AT_CLEANUP
 
 AT_SETUP([png])
 AT_KEYWORDS(bitmaps png)
-AT_SKIP_IF([test -n "$WITH_PNG_TRUE" || NO_GS || ! pnmtopng -version])
+AT_SKIP_IF([test -n "$WITH_PNG_TRUE" || NO_GS])
 AT_CHECK([fig2dev -L png $srcdir/data/line.fig line.png && \
 	$SED '11 s/eps/png/' $srcdir/data/boxwimg.fig | fig2dev -L eps
 ], 0, ignore)
@@ -56,7 +57,7 @@ AT_CLEANUP
 
 AT_SETUP([png with smoothing])
 AT_KEYWORDS(bitmaps png smoothing)
-AT_SKIP_IF([test -n "$WITH_PNG_TRUE" || NO_GS || ! pnmtopng -version])
+AT_SKIP_IF([test -n "$WITH_PNG_TRUE" || NO_GS])
 AT_CHECK([fig2dev -L png -S 4 $srcdir/data/line.fig line.png && \
 	$SED '11 s/eps/png/' $srcdir/data/boxwimg.fig | fig2dev -L eps
 ], 0, ignore)
@@ -72,7 +73,7 @@ AT_CLEANUP
 
 AT_SETUP([tiff])
 AT_KEYWORDS(bitmaps tiff tif)
-AT_SKIP_IF([NO_GS || ! pnmtotiff -version])
+AT_SKIP_IF([NO_GS || ! tifftopnm -version || ! ppmtopcx -version])
 AT_CHECK([fig2dev -L tiff $srcdir/data/line.fig line.tif && \
 	$SED '11 s/eps/tif/' $srcdir/data/boxwimg.fig | fig2dev -L eps
 ], 0, ignore)
@@ -80,9 +81,8 @@ AT_CLEANUP
 
 AT_SETUP([xbm])
 AT_KEYWORDS(bitmaps xbm)
-# pgmtopbm -version exits with error; Assume, it exists, if the
-# other netpbm programs are there.
-AT_SKIP_IF([NO_GS || ! ppmtopgm -version || ! pbmtoxbm -version])
+AT_SKIP_IF([NO_GS || \
+	( ! pbmtoxbm -version && ! convert -version && ! gm version)])
 AT_CHECK([fig2dev -L xbm $srcdir/data/line.fig line.xbm && \
 	$SED '11 s/eps/xbm/' $srcdir/data/boxwimg.fig | fig2dev -L eps
 ], 0, ignore)
@@ -90,9 +90,8 @@ AT_CLEANUP
 
 AT_SETUP([xbm with smoothing])
 AT_KEYWORDS(bitmaps xbm smoothing)
-# pgmtopbm -version exits with error; Assume, it exists, if the
-# other netpbm programs are there.
-AT_SKIP_IF([NO_GS || ! ppmtopgm -version || ! pbmtoxbm -version])
+AT_SKIP_IF([NO_GS || \
+	( ! pbmtoxbm -version && ! convert -version && ! gm version)])
 AT_CHECK([fig2dev -L xbm -S 4 $srcdir/data/line.fig line.xbm && \
 	$SED '11 s/eps/xbm/' $srcdir/data/boxwimg.fig | fig2dev -L eps
 ], 0, ignore)
@@ -102,7 +101,8 @@ AT_SETUP([xpm])
 AT_KEYWORDS(bitmaps xpm)
 # Skip, if WITH_XPM_TRUE is set to '#'.
 AT_SKIP_IF([test -n "$WITH_XPM_TRUE"])
-AT_SKIP_IF([NO_GS || ! ppmquant -version || ! ppmtoxpm -version])
+AT_SKIP_IF([NO_GS || \
+	( ! pbmtoxbm -version && ! convert -version && ! gm version)])
 AT_CHECK([fig2dev -L xpm $srcdir/data/line.fig line.xpm && \
 	$SED '11 s/eps/xpm/' $srcdir/data/boxwimg.fig | fig2dev -L eps
 ], 0, ignore, ignore)
