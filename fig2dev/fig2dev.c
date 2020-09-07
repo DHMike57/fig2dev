@@ -82,10 +82,10 @@ bool	bgspec = false;		/* flag to say -g was specified */
 #ifdef I18N
 bool support_i18n = false;
 #endif
-char	gif_transparent[20]="\0"; /* GIF transp color hex name (e.g. #ff00dd) */
+char	gif_transparent[]="\0"; /* GIF transp color hex name (e.g. #ff00dd) */
 char	papersize[PAPERSZ_LEN];	/* paper size */
 char	boundingbox[64];	/* boundingbox */
-char	lang[40];		/* selected output language */
+char	lang[12];		/* selected output language */
 RGB	background;		/* background (if specified by -g) */
 float	grid_minor_spacing = 0.0; /* grid minor spacing (if any) */
 float	grid_major_spacing = 0.0; /* grid major spacing (if any) */
@@ -296,7 +296,8 @@ get_args(int argc, char *argv[])
 
 	    case 'L':			/* set output language */
 		/* save language for gen{gif,jpg,pcx,xbm,xpm,ppm,tif} */
-		strncpy(lang,optarg,sizeof(lang)-1);
+		strncpy(lang, optarg, sizeof(lang)-1);
+		lang[sizeof lang - 1] = '\0';
 		for (i = 0; *drivers[i].name; ++i)
 		    if (!strcmp(lang, drivers[i].name))
 			dev = drivers[i].dev;

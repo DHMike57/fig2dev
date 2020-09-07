@@ -97,7 +97,7 @@ extern bool	bgspec;		/* flag to say -g was specified */
 #ifdef I18N
 extern bool support_i18n;
 #endif
-extern char	gif_transparent[];/* GIF transp color hex name (e.g. #ff00dd) */
+extern char	gif_transparent[8];/* GIF transp color hex name (e.g. #ff00dd)*/
 extern char	papersize[PAPERSZ_LEN];	/* paper size */
 extern char	boundingbox[];	/* boundingbox */
 extern char	lang[];		/* selected output language */

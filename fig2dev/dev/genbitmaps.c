@@ -129,7 +129,15 @@ genbitmaps_option(char opt, char *optarg)
 		if (strcmp(lang, "gif") != 0)
 			fputs("-t option only allowed for GIF transparent "
 				"color; ignored\n", stderr);
-		(void) strcpy(gif_transparent, optarg);
+		if (strlen(optarg) >= sizeof gif_transparent) {
+			fprintf(stderr,
+				"fig2dev: invalid color specification %s\n",
+				gif_transparent);
+			fputs("         specify gif transparent color in "
+					"the form #rrggbb\n", stderr);
+			exit(EXIT_FAILURE);
+		}
+		(void)strcpy(gif_transparent, optarg);
 		transspec = true;
 		break;
 
