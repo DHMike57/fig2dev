@@ -68,7 +68,7 @@ xtmpfile(char *template)
 	/* prepend tmpdir to template, otherwise stay in current dir */
 #ifdef P_tmpdir
 	t = strlen(P_tmpdir);
-	if (n + t + 1 < (size_t)L_xtmpnam) {
+	if (n + t + 1 < sizeof buf) {
 		/* strcpy(buf, P_tmpdir "/"); */
 		memcpy(buf, P_tmpdir, t);
 		memcpy(buf + t, "/", (size_t)2);
@@ -80,12 +80,12 @@ xtmpfile(char *template)
 	 * (retrieved 2018-03-04).
 	 */
 	if ((p = (getenv("TMP") || getenv("TEMP"))) &&
-			(t = strlen(p)) + n + 1 < (size_t)L_xtmpnam) {
+			(t = strlen(p)) + n + 1 < sizeof buf) {
 		/* strcpy(buf, TMP||TEMP "/"); */
 		memcpy(buf, p, t);
 		memcpy(buf + t, "/", (size_t)2);
 #endif
-	} else if (n < (size_t)L_xtmpnam) {
+	} else if (n < sizeof buf) {
 		buf[0] = '\0';
 	} else {
 		fprintf(stderr, "Cannot create temporary file. "
@@ -111,10 +111,15 @@ xtmpfile(char *template)
 		srand((unsigned int)time(NULL));
 		seeded = true;
 	}
+	/* check if such random file name, by incidence, already exists */
 	for (i = 1; f == NULL && i < 9; ++i) {
-		sprintf(p, "%6x", (unsigned)(rand() & 0xffffff));
-		if (fopen(template, "rb") == NULL)
+		sprintf(p, "%.6x", (unsigned)(rand() & 0xffffff));
+		if ((f = fopen(template, "rb")) == NULL) {
 			f = fopen(template, mode);
+		} else {
+			fclose(f);
+			f = NULL;
+		}
 	}
 	return f;
 #endif
