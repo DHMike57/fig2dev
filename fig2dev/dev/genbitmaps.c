@@ -291,16 +291,25 @@ genbitmaps_start(F_compound *objects)
 		sprintf(fmt, "%s -dJPEGQ=%d%s%s%s", gscmd, jpeg_quality,
 				antialias, gsend, err);
 	} else if (!strcmp(lang, "gif")) {
+		/*
+		 * netpbm programs are rather verbose, hence they receive the
+		 * -quiet option. convert or gm convert are less verbose.
+		 * With -quiet they would suppress informational warning
+		 * messages. We keep those, they might be interesting.
+		 */
 		gsdev = "ppmraw";
-		if (has_netpbm("{ ppmquant 256 | ppmtogif; } >/dev/null 2>&1")){
+		/* ppmquant and ppmtogif both report the number of colors
+		   - keep them -quiet */
+		if (has_netpbm("{ ppmquant -quiet 256 | ppmtogif -quiet; } "
+					">/dev/null 2>&1")){
 			if (*gif_transparent)
-				sprintf(fmt, "{ %s%s%s | ppmquant 256 | "
-					   "ppmtogif -transparent==\\%s; }%s%s",
-					gscmd, antialias, gspipe,
+				sprintf(fmt, "{ %s%s%s | ppmquant -quiet 256 | "
+					   "ppmtogif -quiet -transparent==\\%s;"
+					   " }%s%s", gscmd, antialias, gspipe,
 					gif_transparent, netend, err);
 			else
-				sprintf(fmt,
-				    "{ %s%s%s | ppmquant 256 | ppmtogif; }%s%s",
+				sprintf(fmt, "{ %s%s%s | ppmquant -quiet 256 | "
+						"ppmtogif -quiet; }%s%s",
 					gscmd, antialias, gspipe, netend, err);
 		} else if (has_ImageMagick()) {
 			if (*gif_transparent)
@@ -352,9 +361,10 @@ genbitmaps_start(F_compound *objects)
 		}
 	} else if (!strcmp(lang, "xpm")) {
 		gsdev = "ppmraw";
-		if (has_netpbm("{ ppmquant 256 | ppmtoxpm; } >/dev/null 2>&1"))
+		/* ppmtoxpm reports the number of colors, keep -quiet */
+		if (has_netpbm("ppmtoxpm -quiet >/dev/null 2>&1"))
 			sprintf(fmt,
-			     "{ %s%s%s | ppmquant 256 | ppmtoxpm; }%s%s",
+			     "{ %s%s%s | ppmtoxpm -quiet; }%s%s",
 					gscmd, antialias, gspipe, netend, err);
 		else if (has_GraphicsMagick())
 			sprintf(fmt, "{ %s%s%s | gm convert - xpm:%s; }%s",
@@ -371,9 +381,9 @@ genbitmaps_start(F_compound *objects)
 			exit(EXIT_FAILURE);
 		}
 	} else if (!strcmp(lang, "sld")) {
-		if (has_netpbm("ppmtoacad >/dev/null 2>&1")) {
+		if (has_netpbm("ppmtoacad -quiet >/dev/null 2>&1")) {
 			gsdev = "ppmraw";
-			sprintf(fmt, "{ %s%s%s | ppmtoacad; }%s%s",
+			sprintf(fmt, "{ %s%s%s | ppmtoacad -quiet; }%s%s",
 					gscmd, antialias, gspipe, netend, err);
 		} else {
 			fputs("fig2dev: Need the ppmtoacad program to be able "
@@ -385,9 +395,10 @@ genbitmaps_start(F_compound *objects)
 			exit(EXIT_FAILURE);
 		}
 	} else if (!strcmp(lang, "pcx")) {
-		if (has_netpbm("ppmtopcx >/dev/null 2>&1")) {
+		/* ppmtopcx reports the number of colors */
+		if (has_netpbm("ppmtopcx -quiet >/dev/null 2>&1")) {
 			gsdev = "ppmraw";
-			sprintf(fmt, "{ %s%s%s | ppmtopcx; }%s%s",
+			sprintf(fmt, "{ %s%s%s | ppmtopcx -quiet; }%s%s",
 					gscmd, antialias, gspipe, netend, err);
 		} else if (has_ImageMagick()) {
 			gsdev = "ppmraw";
@@ -419,7 +430,7 @@ genbitmaps_start(F_compound *objects)
 			sprintf(fmt, "%s%s%s%s", gscmd, antialias, gsend, err);
 		}
 	} else if (!strcmp(lang, "tiff")) {
-#define	NEW_PNMTOTIFF	"pnmtotiff -flate -output %s >/dev/null 2>&1"
+#define	NEW_PNMTOTIFF	"pnmtotiff -quiet -flate -output %s >/dev/null 2>&1"
 		char	netcmd[sizeof errfname + sizeof NEW_PNMTOTIFF];
 		/* In netpbm 10.67 and later, pnmtotiff has the "-output"
 		   option and accepts a pipe. */
@@ -427,20 +438,19 @@ genbitmaps_start(F_compound *objects)
 				has_netpbm(netcmd)) {
 			gsdev = "ppmraw";
 			if (to)
-				sprintf(fmt, "{ %s%s%s | pnmtotiff -flate "
-						"-output '%%s'; }%s",
+				sprintf(fmt, "{ %s%s%s | pnmtotiff -quiet "
+						"-flate -output '%%s'; }%s",
 						gscmd, antialias, gspipe, err);
 			else
-				sprintf(fmt, "{ %s%s%s | pnmtotiff -flate;"
-						" }%%s%s",
+				sprintf(fmt, "{ %s%s%s | pnmtotiff -flate "
+						"-quiet; }%%s%s",
 						gscmd, antialias, gspipe, err);
 		/* netpbm before 10.67 cannot write to a pipe */
-		} else if (to && sprintf(netcmd,
-					"pnmtotiff -flate >%s 2>/dev/null",
-								errname) &&
+		} else if (to && sprintf(netcmd, "pnmtotiff -quiet -flate >%s "
+						"2>/dev/null", errname) &&
 				has_netpbm(netcmd)) {
 			gsdev = "ppmraw";
-			sprintf(fmt, "{ %s%s%s | pnmtotiff -flate %s; }%s",
+			sprintf(fmt, "{ %s%s%s | pnmtotiff -quiet -flate %s; }%s",
 					gscmd, antialias, gspipe, netend, err);
 		} else if (has_ImageMagick()) {
 			gsdev = "ppmraw";
