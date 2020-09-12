@@ -1,7 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -24,6 +26,12 @@
 #endif
 
 #include <stdio.h>
+#include <stdint.h>		/* INT16_MAX */
+#ifdef HAVE_STRERROR
+#include <string.h>
+#include <errno.h>
+#endif
+#include <stdlib.h>
 #include <sys/types.h>
 #include <limits.h>
 
@@ -33,53 +41,349 @@
 
 extern	int	_read_pcx(FILE *pcxfile, F_pic *pic);	/* readpcx.c */
 
-/* return codes:  1 : success
-		  0 : failure
-*/
+/*
+ * Return codes are mostly, but unfortunately not always,
+ *	1: success,
+ *	0: failure
+ */
 
+
+static int
+skip_comments_whitespace(FILE *file)
+{
+	int	c;
+
+	while ((c = fgetc(file)) != EOF) {
+		if (c == '#')
+			while ((c = fgetc(file)) != EOF && c != '\n')
+				;
+		if (c != ' ' && c != '\n' && c != '\r' && c != '\f' &&
+				c != '\t' && c != '\v')
+			break;
+	}
+	if (c == EOF) {
+		return EOF;
+	} else {
+		ungetc(c, file);
+		return 0;
+	}
+}
+
+static int
+read_8bitppm(FILE *file, unsigned char *restrict dst, unsigned int width,
+						unsigned int height)
+{
+	int		c[3];
+	unsigned int	w;
+
+	while (height-- > 0u) {
+		w = width;
+		while (w-- > 0u) {
+			if ((c[0] = fgetc(file)) == EOF ||
+					(c[1] = fgetc(file)) == EOF ||
+					(c[2] = fgetc(file)) == EOF)
+				return 0;
+			*(dst++) = (unsigned char)c[2];
+			*(dst++) = (unsigned char)c[1];
+			*(dst++) = (unsigned char)c[0];
+		}
+	}
+	return 1;
+}
+
+static void
+scale_to_255(unsigned char *restrict byte, unsigned maxval, unsigned rowbytes,
+		unsigned height)
+{
+	unsigned int	w;
+	const unsigned	rnd = maxval / 2;
+
+	while (height-- > 0u) {
+		w = rowbytes;
+		while (w-- > 0u) {
+			*byte = (*byte * 255u + rnd) / maxval;
+			++byte;
+		}
+	}
+}
+
+/*
+ * Read the next six bytes from file, which correspond to a rgb triplet with two
+ * bytes for each channel, and return the values scaled into the range 0--255.
+ */
+static int
+read6bytes(FILE *file, unsigned maxval, unsigned *r, unsigned *g, unsigned *b)
+{
+	int		c[6];
+	const uint32_t	rnd = maxval / 2;
+
+	if ((c[0] = fgetc(file)) == EOF || (c[1] = fgetc(file)) == EOF ||
+		   (c[2] = fgetc(file)) == EOF || (c[3] = fgetc(file)) == EOF ||
+		   (c[4] = fgetc(file)) == EOF || (c[5] = fgetc(file)) == EOF)
+		return -1;
+
+	/* scale to the range 0 - 255 */
+	/* two-byte ppm files have the most significant byte first */
+	*r = ((((uint32_t)c[0] << 8) + c[1]) * 255u + rnd) / maxval;
+	*g = ((((uint32_t)c[2] << 8) + c[3]) * 255u + rnd) / maxval;
+	*b = ((((uint32_t)c[4] << 8) + c[5]) * 255u + rnd) / maxval;
+
+	if (*r > 255u)
+		*r = 255u;
+	if (*g > 255u)
+		*g = 255u;
+	if (*b > 255u)
+		*b = 255u;
+
+	return 0;
+}
+
+static int
+read_16bitppm(FILE *file, unsigned char *restrict dst, unsigned int maxval,
+		unsigned int width, unsigned int height)
+{
+	unsigned int	w;
+	unsigned int	r, g, b;
+
+	while (height-- > 0u) {
+		w = width;
+		while (w-- > 0u) {
+			if (read6bytes(file, maxval, &r, &g, &b))
+				return 0;
+
+			*(dst++) = (unsigned char)b;
+			*(dst++) = (unsigned char)g;
+			*(dst++) = (unsigned char)r;
+		}
+	}
+	return 1;
+}
+
+static int
+read_asciippm(FILE *file, unsigned char *restrict dst, unsigned int width,
+						unsigned int height)
+{
+	int		c[3];
+	unsigned int	w;
+
+	while (height-- > 0u) {
+		w = width;
+		while (w-- > 0u) {
+			if (fscanf(file, " %u %u %u", c, c+1, c+2) != 3)
+				return 0;
+
+			if (c[0] > 255) c[0] = 255;
+			if (c[1] > 255) c[1] = 255;
+			if (c[2] > 255) c[2] = 255;
+
+			*(dst++) = (unsigned char)c[2];
+			*(dst++) = (unsigned char)c[1];
+			*(dst++) = (unsigned char)c[0];
+		}
+	}
+	return 1;
+}
+
+/*
+ * Read a ppm file encoded with ascii decimal numbers, and scale to
+ * the range 0--255. The function above, read_asciippm(), does not scale.
+ */
+static int
+read_ascii_max_ppm(FILE *file, unsigned char *restrict dst, unsigned int maxval,
+			unsigned int width, unsigned int height)
+{
+	int		c[3];
+	unsigned int	w;
+	const uint32_t	rnd = maxval / 2;
+
+	while (height-- > 0u) {
+		w = width;
+		while (w-- > 0u) {
+			if (fscanf(file, " %u %u %u", c, c+1, c+2) != 3)
+				return 0;
+
+			/* scale to the range 0--255 */
+			c[0] = ((uint32_t)c[0] * 255u + rnd) / maxval;
+			c[1] = ((uint32_t)c[1] * 255u + rnd) / maxval;
+			c[2] = ((uint32_t)c[2] * 255u + rnd) / maxval;
+			if (c[0] > 255) c[0] = 255;
+			if (c[1] > 255) c[1] = 255;
+			if (c[2] > 255) c[2] = 255;
+
+			*(dst++) = (unsigned char)c[2];
+			*(dst++) = (unsigned char)c[1];
+			*(dst++) = (unsigned char)c[0];
+		}
+	}
+	return 1;
+}
+
+static int
+_read_ppm(FILE *file, F_pic *pic)
+{
+	int		c;
+	int		magic;
+	int		stat = 0;		/* prime with failure */
+	unsigned int	height = 0u;
+	unsigned int	width = 0u;
+	unsigned int	rowbytes;
+	unsigned int	maxval = 0u;
+
+	/* get the magic number */
+	if ((c = fgetc(file)) == EOF || c != 'P')
+		return stat;
+	if ((magic = fgetc(file)) == EOF || (magic != '6' && magic != '3'))
+		return stat;
+
+	if (skip_comments_whitespace(file))
+		return stat;
+
+	if (fscanf(file, "%u", &width) != 1)
+		return stat;
+
+	if (skip_comments_whitespace(file))
+		return stat;
+
+	if (fscanf(file, "%u", &height) != 1 || width == 0u || height == 0u)
+		return stat;
+
+	if (skip_comments_whitespace(file))
+		return stat;
+
+	if (fscanf(file, "%u", &maxval) != 1 || maxval > 65535u || maxval == 0u)
+		return stat;
+
+	if (skip_comments_whitespace(file))
+		return stat;
+
+	if (width > INT16_MAX || height > INT16_MAX) { /* large enough */
+		fprintf(stderr, "fig2dev: PPM file %u x %u too large.\n",
+				width, height);
+		return stat;
+	}
+
+	rowbytes = width * 3u;
+	pic->bitmap = malloc(height * rowbytes);
+	if (pic->bitmap == NULL) {
+		fputs("fig2dev: Out of memory, could not read PPM file.\n",
+				stderr);
+		return stat;
+	}
+
+	if (magic == '6') {
+		if (maxval < 256u) {
+			stat = read_8bitppm(file, pic->bitmap, width, height);
+			if (maxval != 255u)
+				scale_to_255(pic->bitmap, maxval, rowbytes,
+						height);
+		} else {
+			stat = read_16bitppm(file, pic->bitmap, maxval,
+					width, height);
+		}
+	} else { /* magic == '3' */
+		if (maxval == 255u)
+			stat = read_asciippm(file, pic->bitmap, width, height);
+		else
+			stat = read_ascii_max_ppm(file, pic->bitmap, maxval,
+					width, height);
+	}
+
+	if (stat != 1) {
+		free(pic->bitmap);
+	} else {
+		pic->subtype = P_PPM;
+		pic->numcols = 2 << 24;
+		pic->bit_size.x = width;
+		pic->bit_size.y = height;
+	}
+
+	return stat;
+}
+
+/*
+ * Read a ppm by first calling ppmtopcx via popen(). If ppmtopcx does not exist,
+ * read the ppm in code, using _read_ppm(). Skip trying ImageMagick's convert or
+ * gm convert, because these do not optimize image files. ppmtopcx counts colors
+ * and, if possible, writes a file with a small color palette.
+ * filetype: 0 - real file, 1 - pipe
+ * Return: 0 failure, 1 success.
+ */
 int
 read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 {
-	(void)	filetype;
-	char	buf[BUFSIZ];
-	char	pcxname[L_xtmpnam + 17] = "f2dtmppcxXXXXXX";
-	FILE	*giftopcx;
+	(void)llx;
+	(void)lly;
 	int	stat;
 	size_t	size;
+	FILE	*f;
+	char	buf[BUFSIZ];
+	char	*cmd = buf;
+	char	*const cmd_fmt = "ppmtopcx -quiet >%s 2>/dev/null";
+	char	pcxname[L_xtmpnam] = "f2dtmppcxXXXXXX";
 
 	*llx = *lly = 0;
-	/* output PostScript comment */
-	fprintf(tfp, "%% Originally from a PPM File: %s\n\n", pic->file);
 
 	/* make name for temp output file */
-	if ((giftopcx = xtmpfile(pcxname)) == 0) {
+	if ((f = xtmpfile(pcxname)) == NULL) {
 		fprintf(stderr, "Cannot create temporary file %s\n", pcxname);
 		return 0;
 	}
-	/* make command to convert gif to pcx into temp file */
-	sprintf(buf, "ppmtopcx >%s 2>/dev/null", pcxname);
-	if ((giftopcx = popen(buf,"w" )) == 0) {
-		fprintf(stderr, "Cannot open pipe to giftoppm\n");
+
+	/* write the command for the pipe to ppmtopcx */
+	stat = snprintf(cmd, sizeof buf, cmd_fmt, pcxname);
+	if (stat < 0 ) {
+#ifdef HAVE_STRERROR
+		fprintf(stderr, "fig2dev: %s\n", strerror(errno));
+#else
+		fprintf(stderr, "fig2dev: I/O error, command: %s\n", cmd_fmt);
+#endif
 		remove(pcxname);
 		return 0;
+	} else if ((size_t)stat >= sizeof buf) {
+		cmd = malloc((size_t)stat);
+		if (cmd == NULL) {
+			fputs("fig2dev: Out of memory.\n", stderr);
+			remove(pcxname);
+			return 0;
+		}
+		sprintf(cmd, cmd_fmt,pcxname);
 	}
-	while ((size=fread(buf, 1, BUFSIZ, file)) != 0) {
-		fwrite(buf, size, 1, giftopcx);
-	}
-	/* close pipe */
-	pclose(giftopcx);
-	if ((giftopcx = fopen(pcxname, "rb")) == NULL) {
-		fprintf(stderr, "Cannot open temporary output file %s\n",
-			pcxname);
-		return 0;
-	}
-	/* now call _read_pcx to read the pcx file */
-	stat = _read_pcx(giftopcx, pic);
-	pic->transp = -1;
-	/* close file */
-	fclose(giftopcx);
-	/* remove temp file */
-	remove(pcxname);
 
-	return stat;
+	/* pipe to ppmtopcx */
+	if ((f = popen(cmd, "w"))) {
+		while ((size=fread(buf, 1, sizeof buf, file)) != 0)
+			fwrite(buf, size, 1, f);
+
+		/* close pipe */
+		stat = pclose(f);
+	} else {	/* f = NUll */
+		remove(pcxname);
+		stat = -1;
+	}
+
+	/* ppmtopcx succeeded */
+	if (stat == 0) {
+	       if ((f = fopen(pcxname, "rb"))) {
+		       fprintf(tfp, "%% Originally from a PPM File: %s\n\n",
+				       pic->file);
+		       stat = _read_pcx(f, pic);
+		       pic->transp = -1;
+		       fclose(f);
+	       } else {	/* f == NULL */
+		       fprintf(stderr, "Cannot open temporary output file %s\n",
+				       pcxname);
+		       stat = -1;
+	       }
+	       remove(pcxname);
+	}
+
+	if (stat == 1) {
+		return stat;
+	} else {
+		/* FIXME: This here expects a real file, but FILE *file
+		   might be a pipe! Implement a rewind_file() function, e.g.,
+		   for that file/pipe interface */
+		rewind(file);
+		return _read_ppm(file, pic);
+	}
 }

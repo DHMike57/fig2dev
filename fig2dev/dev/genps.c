@@ -1793,17 +1793,20 @@ genps_line(F_line *l)
 #endif /* HAVE_X11_XPM_H */
 
 		/* GIF, PCX, PNG, or JPEG file */
-		} else if (l->pic->subtype == P_GIF || l->pic->subtype == P_PCX
+		} else if (l->pic->subtype == P_GIF || l->pic->subtype == P_PNG
 				|| l->pic->subtype == P_JPEG
-				|| l->pic->subtype == P_PNG) {
+				|| l->pic->subtype == P_PCX
+				|| l->pic->subtype == P_PPM) {
 			if (l->pic->subtype == P_GIF)
 			    fputs("% GIF", tfp);
-			else if (l->pic->subtype == P_PCX)
-			    fputs("% PCX", tfp);
 			else if (l->pic->subtype == P_PNG)
 			    fputs("% PNG", tfp);
-			else
+			else if (l->pic->subtype == P_JPEG)
 			    fputs("% JPEG", tfp);
+			else if (l->pic->subtype == P_PCX)
+			    fputs("% PCX", tfp);
+			else
+			    fputs("% PPM", tfp);
 
 			fputs(" image follows:\n", tfp);
 			/* scale for size in bits */
