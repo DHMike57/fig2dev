@@ -29,12 +29,14 @@
 #include <stdio.h>
 #include <stdlib.h>	/* mkstemp(), rand(), getenv() */
 #include <string.h>	/* strcpy(), strlen() */
+#include <unistd.h>
+
 #if ! defined(HAVE_MKSTEMP) || ! defined(HAVE_FDOPEN)
 #include <time.h>
-#include <string.h>
 #include <limits.h>
 #include "bool.h"
 #endif
+
 #include "messages.h"
 #include "xtmpfile.h"
 
@@ -69,9 +71,10 @@ xtmpfile(char **pattern, size_t len)
 
 	/* find the temporary directory */
 #ifdef P_tmpdir
-	t = strlen(P_tmpdir);
-	if (t)
-		p = P_tmpdir;
+	if ((p = getenv("XFIGTMPDIR")) && !access(p, W_OK | X_OK) ||
+			(p = getenv("TMPDIR")) && !access(p, W_OK | X_OK) ||
+			(p = P_tmpdir) && !access(p, W_OK | X_OK))
+		t = strlen(p);
 	else
 		p = NULL;
 #else
@@ -81,9 +84,12 @@ xtmpfile(char **pattern, size_t len)
 	 * https://msdn.microsoft.com/en-us/library/aa364992(VS.85).aspx
 	 * (retrieved 2018-03-04).
 	 */
-	p = (getenv("TMP") || getenv("TEMP"));
-	if (p)
+	if ((p = getenv("XFIGTMPDIR")) && !access(p, W_OK | X_OK) ||
+			(p = getenv("TMP")) && !access(p, W_OK | X_OK) ||
+			(p = getenv("TEMP")) && !access(p, W_OK | X_OK))
 		t = strlen(p);
+	else
+		p = NULL;
 #endif
 
 	/* prepend the temporary directory */
