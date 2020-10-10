@@ -515,7 +515,7 @@ genbitmaps_end(void)
 		pclose(tfp);
 		if (com != com_buf)
 			free(com);
-		if (errfile) {
+		if (*errfname) {
 			remove(errfname);
 			if (errfname != errfname_buf)
 				free(errfname);
@@ -528,39 +528,35 @@ genbitmaps_end(void)
 	(void) signal(SIGPIPE, SIG_DFL);
 
 	if (status != 0) {
+		FILE	*f;
+
 		fputs("Error when creating bitmap output\n", stderr);
 		fprintf(stderr, "command was: %s\n", com);
 
-		if (errfile) {		/* FIXME: is closed by now */
+		if (*errfname && (f = fopen(errfname, "rb"))) {
 			char	buf[256];
 			size_t	buf_len = sizeof buf;
 			size_t	chars;
 
 			fputs("Messages resulting:\n", stderr);
-			while ((chars = fread(buf, (size_t)1, buf_len, errfile))
-					== buf_len && buf_len ==
-					fwrite(buf, (size_t)1, buf_len, stderr))
+			while ((chars = fread(buf, 1, buf_len, f)) == buf_len &&
+					buf_len == fwrite(buf, 1, buf_len,
+									stderr))
 				;
 						/* stderr might be diverted */
 			if (chars > 0 && !ferror(stderr))
 				fwrite(buf, (size_t)1, chars, stderr);
 
-			remove(errfname);
-		} else {	/* *errfname == '\0' */
-			fprintf(stderr,
-				"Error log file %s not available\n", errfname);
+			fclose(f);
 		}
-		if (com != com_buf)
-			free(com);
-		return -1;
 	}
 
-	/* finally, remove the temporary file and the error file */
-	if (errfile) {
-		remove(errfname);
-	}
 	if (com != com_buf)
 		free(com);
+	if (*errfname)
+		remove(errfname);
+	if (errfname != errfname_buf)
+		free(errfname);
 
 	return status;
 }
