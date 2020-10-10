@@ -35,8 +35,8 @@
 #include <sys/types.h>
 #include <limits.h>
 
-#include "fig2dev.h"
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "fig2dev.h"	/* includes <object.h> */
+//#include "object.h"	/* F_pic; does #include <X11/xpm.h> */
 #include "xtmpfile.h"
 
 extern	int	_read_pcx(FILE *pcxfile, F_pic *pic);	/* readpcx.c */
@@ -319,13 +319,16 @@ read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 	char	buf[BUFSIZ];
 	char	*cmd = buf;
 	char	*const cmd_fmt = "ppmtopcx -quiet >%s 2>/dev/null";
-	char	pcxname[L_xtmpnam] = "f2dtmppcxXXXXXX";
+	char	pcxname_buf[L_xtmpnam] = "f2dtmppcxXXXXXX";
+	char	*pcxname = pcxname_buf;
 
 	*llx = *lly = 0;
 
 	/* make name for temp output file */
-	if ((f = xtmpfile(pcxname)) == NULL) {
+	if ((f = xtmpfile(&pcxname, sizeof pcxname_buf)) == NULL) {
 		fprintf(stderr, "Cannot create temporary file %s\n", pcxname);
+		if (pcxname != pcxname_buf)
+			free(pcxname);
 		return 0;
 	}
 
@@ -338,12 +341,16 @@ read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 		fprintf(stderr, "fig2dev: I/O error, command: %s\n", cmd_fmt);
 #endif
 		remove(pcxname);
+		if (pcxname != pcxname_buf)
+			free(pcxname);
 		return 0;
 	} else if ((size_t)stat >= sizeof buf) {
 		cmd = malloc((size_t)stat);
 		if (cmd == NULL) {
 			fputs("fig2dev: Out of memory.\n", stderr);
 			remove(pcxname);
+			if (pcxname != pcxname_buf)
+				free(pcxname);
 			return 0;
 		}
 		sprintf(cmd, cmd_fmt,pcxname);
@@ -376,6 +383,9 @@ read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 	       }
 	       remove(pcxname);
 	}
+
+	if (pcxname != pcxname_buf)
+		free(pcxname);
 
 	if (stat == 1) {
 		return stat;

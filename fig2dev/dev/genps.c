@@ -61,7 +61,7 @@
 #include <locale.h>
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
-//#include "object.h"	/* includes X11/xpm.h */
+//#include "object.h"	/* includes X11/xpm.h; NUMSHADES, NUMTINTS */
 #include "bound.h"
 #include "colors.h"	/* lookup_X_color(), rgb2luminance() */
 #include "creationdate.h"
@@ -101,9 +101,11 @@ bool		asciipreview = false;	/* add ASCII preview? */
 bool		tiffpreview = false;	/* add a TIFF preview? */
 bool		tiffcolor = false;	/* color or b/w TIFF preview */
 		/* temp filename for eps when adding tiff preview */
-static char	tmpeps[L_xtmpnam + 17] = "f2dtmpepsXXXXXX";
+static char	tmpeps_buf[L_xtmpnam] = "f2dtmpepsXXXXXX";
 		/* temp filename for ASCII or tiff preview */
-static char	tmpprev[L_xtmpnam + 18] = "f2dtmpprevXXXXXX";
+static char	tmpprev_buf[L_xtmpnam] = "f2dtmpprevXXXXXX";
+static char	*tmpeps = tmpeps_buf;
+static char	*tmpprev = tmpprev_buf;
 static bool	anonymous = true;
 static bool	correct_font_size = false;
 int		pagewidth = -1;
@@ -489,7 +491,7 @@ genps_start(F_compound *objects)
 	/* make sure user isn't asking for both TIFF and ASCII preview */
 	if (tiffpreview && asciipreview) {
 	    fputs("Only one type of preview allowed: -A or -T/-C\n", stderr);
-	    exit(1);
+	    exit(EXIT_FAILURE);
 	}
 
 	/* if the user wants a TIFF preview, route the eps file
@@ -497,9 +499,11 @@ genps_start(F_compound *objects)
 	if (tiffpreview) {
 	    saveofile = tfp;
 	    /* make name for temp output file */
-	    if ((tfp = xtmpfile(tmpeps)) == 0) {
+	    if ((tfp = xtmpfile(&tmpeps, sizeof tmpeps_buf)) == NULL) {
 		fprintf(stderr, "Can not create temporary file %s\n", tmpeps);
 		fputs("No preview will be produced.\n", stderr);
+		if (tmpeps != tmpeps_buf)
+			free(tmpeps);
 		tfp = saveofile;
 		tiffpreview = false;
 	    }
@@ -761,9 +765,11 @@ genps_start(F_compound *objects)
 	if (asciipreview) {
 	    saveofile = tfp;
 	    /* make name for temp output file */
-	    if ((tfp = xtmpfile(tmpeps)) == 0) {
+	    if ((tfp = xtmpfile(&tmpeps, sizeof tmpeps_buf)) == NULL) {
 		fprintf(stderr, "Can not create temporary file %s.\n", tmpeps);
 		fputs("No preview will be produced.\n", stderr);
+		if (tmpeps != tmpeps_buf)
+			free(tmpeps);
 		asciipreview = false;
 		tfp = saveofile;
 	    }
@@ -1109,15 +1115,21 @@ genps_end(void)
 	tfp = saveofile;
 
 	/* make name for temp output file */
-	if ((saveofile = xtmpfile(tmpprev)) == 0) {	/* reuse saveofile */
+	if ((saveofile = xtmpfile(&tmpprev, sizeof tmpprev)) == NULL) {
 	    fprintf(stderr, "Can not create temporary file %s.\n", tmpprev);
 	    fprintf(stderr, "No preview will be produced\n");
+	    if (tmpprev != tmpprev_buf)
+		free(tmpprev);
 	    /* Output the eps stored in tmpeps */
 	    if (append(tmpeps, tfp) == -1) {
 		fprintf(stderr, "Cannot open temp file %s\n", tmpeps);
+		remove(tmpeps);
+		/* unnecessary: if (tmpeps != tmpeps_buf) free(tmpeps); */
 		exit(EXIT_FAILURE);
 	    }
 	    remove(tmpeps);
+	    if (tmpeps != tmpeps_buf)
+		free(tmpeps);
 	    asciipreview = tiffpreview = false;
 	} else {
 #ifdef GSEXE
@@ -1134,19 +1146,24 @@ genps_end(void)
 		fputs("Ghostscript not available. ", stderr);
 #endif
 		fprintf(stderr, "No preview will be produced\n");
+		remove(tmpprev);
+		if (tmpprev != tmpprev_buf)
+			free(tmpprev);
 		/* append the eps */
 		if (append(tmpeps, tfp) == -1) {
 		    fprintf(stderr, "Cannot open temp file %s\n", tmpeps);
+		    remove(tmpeps);
 		    exit(EXIT_FAILURE);
 		}
 		remove(tmpeps);
-		remove(tmpprev);
+		if (tmpeps != tmpeps_buf)
+			free(tmpeps);
 		/* and cancel the preview */
 		asciipreview = tiffpreview = false;
 #ifdef GSEXE
 	    }
 #endif
-	    fclose(saveofile);			/* reused saveofile */
+	    fclose(saveofile);
 	}
 	if (asciipreview) {
 	    --width;
@@ -1156,12 +1173,13 @@ genps_end(void)
 	    fprintf(tfp, "%%%%BeginPreview: %d %d %d %d\n",
 					width, height, 1, height);
 	    appendhex(tmpprev, tfp, width, height);
+	    remove(tmpprev);
 	    fputs("%%EndPreview\n", tfp);
 	    if (append(tmpeps, tfp) == -1) {
 		fprintf(stderr, "Cannot open temp file %s\n", tmpeps);
+		remove(tmpeps);
 		exit(EXIT_FAILURE);
 	    }
-	    remove(tmpprev);
 	    remove(tmpeps);
 
 	} else if (tiffpreview) {
@@ -1197,18 +1215,26 @@ genps_end(void)
 	    /* now copy eps out */
 	    if (append(tmpeps, tfp) == -1) {
 		fprintf(stderr, "Cannot open temp file %s\n", tmpeps);
+		remove(tmpprev);
+		remove(tmpeps);
 		exit(EXIT_FAILURE);
 	    }
+	    remove(tmpeps);
 	    /* and finally, the tiff file */
 	    if (append(tmpprev, tfp) == -1) {
 		fprintf(stderr, "Cannot open temp file %s\n", tmpprev);
+		remove(tmpprev);
+		remove(tmpeps);
 		exit(EXIT_FAILURE);
 	    }
+	    remove(tmpprev);
 	    putc('\n', tfp);
 
-	    remove(tmpprev);
-	    remove(tmpeps);
 	}
+	if (tmpeps != tmpeps_buf)
+		free(tmpeps);
+	if (tmpprev != tmpprev_buf)
+		free(tmpprev);
     }
     /* put any cleanup between %%Trailer and %EOF */
     fputs("%%Trailer\n", tfp);
@@ -1240,7 +1266,7 @@ putword(int word, FILE *file)
  */
 
 static int
-append(const char *restrict infilename, FILE *restrict outfile)
+append(const char *restrict infilename, FILE *outfile)
 {
 	FILE	*infile;
 	char	buf[BUFSIZ];

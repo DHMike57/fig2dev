@@ -42,7 +42,6 @@
 
 #include "bool.h"
 #include "fig2dev.h"	/* includes bool.h and object.h */
-//#include "object.h"	/* includes X11/xpm.h */
 #include "colors.h"	/* lookup_X_color(), rgb2luminance() */
 #include "genps.h"
 #include "messages.h"
@@ -87,7 +86,8 @@ static char	com_buf[sizeof GS_CMD ANTIALIAS GS_PIPE NET_TO ERR +
 							CONVERT_MAX_LEN + 80];
 static char	*com = com_buf;
 static FILE	*errfile;
-static char	errfname[L_xtmpnam] = "f2derrorXXXXXX";
+static char	errfname_buf[L_xtmpnam] = "f2derrorXXXXXX";
+static char	*errfname = errfname_buf;
 static int	jpeg_quality = 75;
 static int	border_margin = 0;
 static int	smooth = 0;
@@ -224,7 +224,6 @@ genbitmaps_start(F_compound *objects)
 	char	*gscmd = GS_CMD;
 	char	*gspipe = GS_PIPE;
 	char	*err;
-	char	*errname;
 	char	*out;
 	char	*gsend;
 	char	*netend;
@@ -266,16 +265,20 @@ genbitmaps_start(F_compound *objects)
 		*antialias = '\0';
 
 	/* create a temporary file to catch standard error */
-	if ((errfile = xtmpfile(errfname)) == NULL) {
+	if ((errfile = xtmpfile(&errfname, sizeof errfname_buf)) == NULL) {
 		fprintf(stderr, "Can't create error log file %s\n",
 				errfname);
+		if (errfname != errfname_buf)
+			free(errfname);
 		err = "%s";	/* display errors on the terminal */
-		errname = "";
+		*errfname = '\0';
 	} else {
 		fclose(errfile);
 		err = ERR;
-		errname = errfname;
 	}
+#define BITMAP_EXIT_FAILURE	if (*errfname) remove(errfname);	\
+				if (errfname != errfname_buf) free(errfname); \
+				exit(EXIT_FAILURE)
 
 	/* create the format string to produce the command string */
 	/*
@@ -334,9 +337,7 @@ genbitmaps_start(F_compound *objects)
 			fputs("fig2dev: Cannot write gif image.\n    Please "
 				"install one of the netpbm, GraphicsMagick or "
 				"ImageMagick packages.\n", stderr);
-			if (errfile)
-				remove(errfname);
-			exit(EXIT_FAILURE);
+			BITMAP_EXIT_FAILURE;
 		}
 	} else if (!strcmp(lang, "xbm")) {
 		gsdev = "ppmraw";
@@ -355,9 +356,7 @@ genbitmaps_start(F_compound *objects)
 			fputs("fig2dev: Cannot write xbm image.\n    Please "
 				"install one of the netpbm, GraphicsMagick or "
 				"ImageMagick packages.\n", stderr);
-			if (errfile)
-				remove(errfname);
-			exit(EXIT_FAILURE);
+			BITMAP_EXIT_FAILURE;
 		}
 	} else if (!strcmp(lang, "xpm")) {
 		gsdev = "ppmraw";
@@ -376,9 +375,7 @@ genbitmaps_start(F_compound *objects)
 			fputs("fig2dev: Cannot write xpm image.\n    Please "
 				"install one of the netpbm, GraphicsMagick or "
 				"ImageMagick packages.\n", stderr);
-			if (errfile)
-				remove(errfname);
-			exit(EXIT_FAILURE);
+			BITMAP_EXIT_FAILURE;
 		}
 	} else if (!strcmp(lang, "sld")) {
 		if (has_netpbm("ppmtoacad -quiet >/dev/null 2>&1")) {
@@ -390,9 +387,7 @@ genbitmaps_start(F_compound *objects)
 					"to write sld output file.\n", stderr);
 			fputs("         Please install the netpbm package.\n",
 					stderr);
-			if (errfile)
-				remove(errfname);
-			exit(EXIT_FAILURE);
+			BITMAP_EXIT_FAILURE;
 		}
 	} else if (!strcmp(lang, "pcx")) {
 		/* ppmtopcx reports the number of colors */
@@ -431,10 +426,10 @@ genbitmaps_start(F_compound *objects)
 		}
 	} else if (!strcmp(lang, "tiff")) {
 #define	NEW_PNMTOTIFF	"pnmtotiff -quiet -flate -output %s >/dev/null 2>&1"
-		char	netcmd[sizeof errfname + sizeof NEW_PNMTOTIFF];
+		char	netcmd[strlen(errfname) + sizeof NEW_PNMTOTIFF];
 		/* In netpbm 10.67 and later, pnmtotiff has the "-output"
 		   option and accepts a pipe. */
-		if (*errname && sprintf(netcmd, NEW_PNMTOTIFF, errname) &&
+		if (*errfname && sprintf(netcmd, NEW_PNMTOTIFF, errfname) &&
 				has_netpbm(netcmd)) {
 			gsdev = "ppmraw";
 			if (to)
@@ -447,7 +442,7 @@ genbitmaps_start(F_compound *objects)
 						gscmd, antialias, gspipe, err);
 		/* netpbm before 10.67 cannot write to a pipe */
 		} else if (to && sprintf(netcmd, "pnmtotiff -quiet -flate >%s "
-						"2>/dev/null", errname) &&
+						"2>/dev/null", errfname) &&
 				has_netpbm(netcmd)) {
 			gsdev = "ppmraw";
 			sprintf(fmt, "{ %s%s%s | pnmtotiff -quiet -flate %s; }%s",
@@ -467,9 +462,7 @@ genbitmaps_start(F_compound *objects)
 				fputs("Cannot write tiff output to a pipe. "
 					"Please specify an output file.\n",
 					stderr);
-				if (errfile)
-					remove(errfname);
-				exit(EXIT_FAILURE);
+				BITMAP_EXIT_FAILURE;
 			}
 			gsdev = "tiff24nc";
 			sprintf(fmt, "%s -sCompression=lzw%s%s%s",
@@ -478,20 +471,18 @@ genbitmaps_start(F_compound *objects)
 	} else {
 		fprintf(stderr, "fig2dev: unsupported image format: %s\n",
 				lang);
-			exit(EXIT_FAILURE);
+			BITMAP_EXIT_FAILURE;
 	}
 
 	/* write the command */
 	n = snprintf(com, sizeof com_buf, fmt,
-			width, height, gsdev, out, errname);
+			width, height, gsdev, out, errfname);
 	if ((size_t)n >= sizeof com_buf) {
 		if ((com = malloc((size_t)(n + 1))) == NULL) {
-			fputs("Out of memory.\n", stderr);
-			if (errfile)
-				remove(errfname);
-			exit(EXIT_FAILURE);
+			fputs(Err_mem, stderr);
+			BITMAP_EXIT_FAILURE;
 		}
-		sprintf(com, fmt, width, height, gsdev, out, errname);
+		sprintf(com, fmt, width, height, gsdev, out, errfname);
 	}
 
 	(void) signal(SIGPIPE, bitmaps_broken_pipe);
@@ -500,9 +491,7 @@ genbitmaps_start(F_compound *objects)
 		fprintf(stderr, "command was: %s\n", com);
 		if (com != com_buf)
 			free(com);
-		if (errfile)
-			remove(errfname);
-		exit(EXIT_FAILURE);
+		BITMAP_EXIT_FAILURE;
 	}
 
 	/* generate eps and not ps */
@@ -528,19 +517,21 @@ genbitmaps_end(void)
 			free(com);
 		if (errfile) {
 			remove(errfname);
+			if (errfname != errfname_buf)
+				free(errfname);
 		}
 		return -1;
 	}
 
 	status = pclose(tfp);
-	tfp = 0;	/* Otherwise main() tries to close tfp again */
+	tfp = NULL;	/* Otherwise main() tries to close tfp again */
 	(void) signal(SIGPIPE, SIG_DFL);
 
 	if (status != 0) {
 		fputs("Error when creating bitmap output\n", stderr);
 		fprintf(stderr, "command was: %s\n", com);
 
-		if (errfile) {
+		if (errfile) {		/* FIXME: is closed by now */
 			char	buf[256];
 			size_t	buf_len = sizeof buf;
 			size_t	chars;
@@ -555,7 +546,7 @@ genbitmaps_end(void)
 				fwrite(buf, (size_t)1, chars, stderr);
 
 			remove(errfname);
-		} else {	/* *errname == '\0' */
+		} else {	/* *errfname == '\0' */
 			fprintf(stderr,
 				"Error log file %s not available\n", errfname);
 		}

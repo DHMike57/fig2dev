@@ -16,5 +16,6 @@
  *
  */
 
+#include <stdio.h>
 #define L_xtmpnam 256
-extern FILE *xtmpfile(char *template);
+extern FILE *xtmpfile(char **pattern, size_t len);
