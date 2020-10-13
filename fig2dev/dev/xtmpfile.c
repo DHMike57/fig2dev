@@ -71,9 +71,9 @@ xtmpfile(char **pattern, size_t len)
 
 	/* find the temporary directory */
 #ifdef P_tmpdir
-	if ((p = getenv("XFIGTMPDIR")) && !access(p, W_OK | X_OK) ||
-			(p = getenv("TMPDIR")) && !access(p, W_OK | X_OK) ||
-			(p = P_tmpdir) && !access(p, W_OK | X_OK))
+	if (((p = getenv("XFIGTMPDIR")) && !access(p, W_OK | X_OK)) ||
+			((p = getenv("TMPDIR")) && !access(p, W_OK | X_OK)) ||
+			((p = P_tmpdir) && !access(p, W_OK | X_OK)))
 		t = strlen(p);
 	else
 		p = NULL;
