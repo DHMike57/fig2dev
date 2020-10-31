@@ -1,7 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Parts Copyright (c) 1989-2002 by Brian V. Smith
- * Parts Copyright (c) 2015-2017 by Thomas Loimer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -19,7 +21,6 @@
  *
  */
 
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -28,18 +29,20 @@
 
 #include "fig2dev.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
+#include "readpics.h"
 
 /* return codes:  1 : success
 		  0 : invalid file
 */
-
 int
-read_xpm(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
+read_xpm(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-	(void) filetype;
 
+	if (uncompressed_content(pic_stream))
+		return 0;
 	*llx = *lly = 0;
-	XpmReadFileToXpmImage(filename, &pic->xpmimage, NULL);
+
+	XpmReadFileToXpmImage(pic_stream->content, &pic->xpmimage, NULL);
 	pic->subtype = P_XPM;
 	pic->numcols = pic->xpmimage.ncolors;
 	pic->bit_size.x = pic->xpmimage.width;

@@ -48,9 +48,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef	HAVE_STRERROR
-#include <errno.h>
-#endif
 #include <math.h>
 #include <ctype.h>
 #include <limits.h>
@@ -252,7 +249,7 @@ extern int  read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
 #endif
 			/* this actually only reads the header info */
 extern int  read_jpg(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
-extern void JPEGtoPS(char *jpegfile, FILE *PSfile);
+extern void JPEGtoPS(FILE *f, FILE *PSfile);
 #ifdef HAVE_X11_XPM_H
 extern int  read_xpm(char *filename, int filetype,F_pic *pic,int *llx,int *lly);
 #endif
@@ -263,30 +260,30 @@ extern int  append_epsi(FILE *in, const char *filename, FILE *out);
 static	 struct hdr {
 	    char	*type;
 	    char	*bytes;
-	    int		 nbytes;
 	    int		(*readfunc)();
 	    bool	pipeok;
-	} headers[] = {	{"GIF", "GIF",			3, read_gif,	false},
+	    /* buf[12] below must be large enough for the file signature */
+	} headers[] = {	{"GIF", "GIF",			read_gif,	false},
 #ifdef V4_0
-			{"FIG", "#FIG",			4, read_figure,	true},
+			{"FIG", "#FIG",			read_figure,	true},
 #endif /* V4_0 */
-			{"PCX", "\012\005\001",		3, read_pcx,	true},
-			{"EPS", "%!",			2, read_eps,	true},
-			{"EPSI", "\xc5\xd0\xd3\xc6",	2, read_eps,	true},
-			{"PDF", "%PDF",			4, read_pdf,	true},
-			{"PPM", "P3",			2, read_ppm,	true},
-			{"PPM", "P6",			2, read_ppm,	true},
-			{"TIFF", "II*\000",		4, read_tif,	false},
-			{"TIFF", "MM\000*",		4, read_tif,	false},
-			{"XBM", "#define",		7, read_xbm,	true},
+			{"PCX", "\012\005\001",		read_pcx,	true},
+			{"EPS", "%!",			read_eps,	true},
+			{"EPSI", "\xc5\xd0\xd3\xc6",	read_eps,	true},
+			{"PDF", "%PDF",			read_pdf,	true},
+			{"PPM", "P3",			read_ppm,	true},
+			{"PPM", "P6",			read_ppm,	true},
+			{"TIFF", "II*\000",		read_tif,	false},
+			{"TIFF", "MM\000*",		read_tif,	false},
+			{"XBM", "#define",		read_xbm,	true},
 #ifdef HAVE_PNG_H
 			{"PNG", "\211\120\116\107\015\012\032\012",
-							8, read_png,	true},
+							read_png,	true},
 #endif
-			{"JPEG", "\377\330\377\340",	4, read_jpg,	true},
-			{"JPEG", "\377\330\377\341",	4, read_jpg,	true},
+			{"JPEG", "\377\330\377\340",	read_jpg,	true},
+			{"JPEG", "\377\330\377\341",	read_jpg,	true},
 #ifdef HAVE_X11_XPM_H
-			{"XPM", "/* XPM */",		9, read_xpm,	false},
+			{"XPM", "/* XPM */",		read_xpm,	false},
 #endif
 };
 
@@ -1456,8 +1453,6 @@ genps_line(F_line *l)
 	F_point		*p, *q;
 	int		 radius;
 	int		 i;
-	FILE		*picf;
-	char		 buf[512];
 	int		 xmin,xmax,ymin,ymax;
 	int		 pic_w, pic_h, img_w, img_h;
 	float		 hf_wid;
@@ -1536,9 +1531,9 @@ genps_line(F_line *l)
 		int		dx, dy, rotation;
 		int		pllx, plly, purx, pury;
 		int		i, j;
-		bool		found;
-		int		c;
-		char		*realname;
+		char		buf[12];
+		FILE		*picf;
+		struct xfig_stream	pic_stream;
 
 		dx = l->points->next->next->x - l->points->x;
 		dy = l->points->next->next->y - l->points->y;
@@ -1559,70 +1554,47 @@ genps_line(F_line *l)
 		else
 		    fputs("0 0 0 setrgbcolor\n", tfp);
 
+		init_stream(&pic_stream);
+
 		/* open the file and read a few bytes of the header
 		   to see what it is */
-		if ((picf=open_picfile(l->pic->file, &filtype, true, &realname))
-								== NULL) {
-			fprintf(stderr, "No such picture file: %s\n",
-				l->pic->file);
-			free(realname);
+		if ((picf = open_stream(l->pic->file, &pic_stream)) == NULL) {
+			put_msg("No such picture file: %s", l->pic->file);
+			free_stream(&pic_stream);
 			return;
 		}
 
-		for (i=0; i<15; ++i) {
-		    if ((c=getc(picf))==EOF)
-		    break;
-		    buf[i]=(char) c;
+		for (i = 0; i < (int)(sizeof buf); ++i) {
+			int	c;
+			if ((c = getc(picf)) == EOF)
+				break;
+			buf[i] = (char)c;
 		}
-		close_picfile(picf,filtype);
 
 		/* now find which header it is */
-		for (i = 0; i < (int)NUMHEADERS; ++i) {
-		    found = true;
-		    for (j=headers[i].nbytes-1; j>=0; --j)
-		    if (buf[j] != headers[i].bytes[j]) {
-			found = false;
-			break;
-		    }
-		    if (found)
-		    break;
+		for (i = 0; i < (int)(sizeof(headers)/sizeof(headers[0])); ++i)
+			if (!memcmp(buf, headers[i].bytes,
+						strlen(headers[i].bytes)))
+				break;
+
+		if (i == sizeof(headers) / sizeof(headers[0])) {
+			/* not found */
+			put_msg("%s: Unknown image format", l->pic->file);
+			close_stream(&pic_stream);
+			free_stream(&pic_stream);
+			return;
 		}
-		if (found) {
-		    if (headers[i].pipeok) {
-			free(realname);
-			/* open it again
-			   (it may be a pipe so we can't just rewind) */
-			picf = open_picfile(l->pic->file, &filtype,
-						headers[i].pipeok, &realname);
-			free(realname); /* not needed for a pipe */
-			/* and read it */
-			if (((*headers[i].readfunc)(picf,filtype, l->pic,
-							&pllx,&plly)) == 0) {
-			    fprintf(stderr,"%s: Bad %s format\n",
-						l->pic->file, headers[i].type);
-			    close_picfile(picf,filtype);
-			    return;	/* problem, return */
-			}
-			/* close file */
-			close_picfile(picf,filtype);
-		    } else {
-			/* routines that can't take a pipe (e.g. xpm) get
-			   the real filename */
-			if (((*headers[i].readfunc)(realname, filtype, l->pic,
-							&pllx, &plly)) == 0) {
-			    fprintf(stderr,"%s: Bad %s format\n",
-						l->pic->file, headers[i].type);
-			    free(realname);
-			    return;	/* problem, return */
-			}
-			free(realname);
-		    }
-		    /* Successful read */
-		} else {
-		    /* none of the above */
-		    fprintf(stderr, "%s: Unknown image format\n", l->pic->file);
-		    free(realname);
-		    return;
+		/* found */
+		/*
+		 * readfunc() expects an open file stream, positioned not at the
+		 * start of the stream. The stream remains open after returning.
+		 */
+		if (!headers[i].readfunc(l->pic, &pic_stream, &pllx, &plly)) {
+			put_msg("%s: Bad %s format", l->pic->file,
+					headers[i].type);
+			close_stream(&pic_stream);
+			free_stream(&pic_stream);
+			return;
 		}
 
 		/* If we have any of the following pic types, we need the ps
@@ -1818,7 +1790,7 @@ genps_line(F_line *l)
 			XpmFreeXpmImage(&l->pic->xpmimage);
 #endif /* HAVE_X11_XPM_H */
 
-		/* GIF, PCX, PNG, or JPEG file */
+		/* GIF, JPEG, PCX, PPM or PNG file */
 		} else if (l->pic->subtype == P_GIF || l->pic->subtype == P_PNG
 				|| l->pic->subtype == P_JPEG
 				|| l->pic->subtype == P_PCX
@@ -1838,8 +1810,9 @@ genps_line(F_line *l)
 			/* scale for size in bits */
 			fprintf(tfp, "%d %d sc\n", purx, pury);
 			if (l->pic->subtype == P_JPEG) {
-			    /* read and format the jpeg file for PS */
-			    JPEGtoPS(l->pic->file, tfp);
+				/* read and format the jpeg file for PS */
+				rewind_stream(&pic_stream);
+				JPEGtoPS(pic_stream.fp, tfp);
 			} else {
 			    /* GIF, PNG and PCX */
 			    if (l->pic->numcols > 256) {
@@ -1857,45 +1830,33 @@ genps_line(F_line *l)
 
 		/* EPS file */
 		} else if (l->pic->subtype == P_EPS) {
-		    int len;
 		    fputs("% EPS file follows:\n", tfp);
-		    picf = open_picfile(l->pic->file, &filtype, true,&realname);
-		    free(realname);
-		    if (picf == NULL) {
-#ifdef	HAVE_STRERROR
-			fprintf(stderr,
-				"Unable to open EPS file '%s': error: %s\n",
-				l->pic->file, strerror(errno));
-#else
-			fprintf(stderr, "Unable to open EPS file '%s'.\n",
-				l->pic->file);
-#endif
+		    if (!rewind_stream(&pic_stream)) {
+			err_msg("Unable to open EPS file '%s'");
 			fputs("gr\n", tfp);
 			return;
 		    }
-		    /* use read/write() calls in case of binary data! */
-		    /* but flush buffer first */
+
+		    /* flush buffer first */
 		    fflush(tfp);
 		    if (strcmp(headers[i].type, "EPSI") == 0) {
 			/* currently, if append_epsi() returns with an error,
 			   it did not write anything */
-			if (append_epsi(picf, l->pic->file, tfp))
+			if (append_epsi(pic_stream.fp, l->pic->file, tfp))
 			    fprintf(stderr, "Could not embed EPSI file %s.\n",
 					l->pic->file);
 		    } else {
-			while ((len = read(fileno(picf),buf,sizeof(buf))) > 0) {
-			    /* remove any %EOF or %%EOF in file */
-			    /* not really necessary - commented out
-			    while (removestr(buf,"\n%EOF\n",&len) != 0)
-				;
-			    while (removestr(buf,"\n%%EOF\n",&len) != 0)
-				;
-			    */
-			    write(fileno(tfp),buf,len);
-			}
+			size_t	len;
+			char	buffer[BUFSIZ];
+
+			while ((len = fread(buffer, 1, sizeof buffer,
+							pic_stream.fp)))
+				fwrite(buffer, 1, len, tfp);
 		    }
-		    close_picfile(picf,filtype);
 		}
+
+		close_stream(&pic_stream);
+		free_stream(&pic_stream);
 
 		/* if PIC object is EPS file, clean up stacks and dicts
 		 * before 'restore'ing vm

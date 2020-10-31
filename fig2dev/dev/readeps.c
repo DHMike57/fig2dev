@@ -32,6 +32,7 @@
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
 //#include "object.h"	/* includes X11/xpm.h */
+#include "readpics.h"
 
 #ifndef HAVE_GETLINE
 #include "lib/getline.h"
@@ -42,15 +43,15 @@
 		    0 : failure
 */
 
-static int	read_eps_pdf(FILE *file, int filetype, F_pic *pic,
-				int *llx, int* lly, bool pdf_flag);
+static int	read_eps_pdf(F_pic *pic,struct xfig_stream *restrict pic_stream,
+				int *llx, int *lly, bool pdf_flag);
 
 /* read a PDF file */
 
 int
-read_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
+read_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-    return read_eps_pdf(file,filetype,pic,llx,lly,true);
+    return read_eps_pdf(pic, pic_stream, llx, lly, true);
 }
 
 /* read an EPS file */
@@ -60,22 +61,24 @@ read_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 */
 
 int
-read_eps(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
+read_eps(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-    return read_eps_pdf(file,filetype,pic,llx,lly,false);
+    return read_eps_pdf(pic, pic_stream, llx, lly, false);
 }
 
 
 static int
-read_eps_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int* lly,
-		bool pdf_flag)
+read_eps_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream,
+		int *llx, int *lly, bool pdf_flag)
 {
-	(void)	filetype;
 	char	*line;
 	size_t	line_len = 256;
 	double	fllx, flly, furx, fury;
 	int	nested;
 	char	*c;
+
+	if (!rewind_stream(pic_stream))
+		return 0;
 
 	if ((line = malloc(line_len)) == NULL) {
 		fputs("Out of memory.\n", stderr);
@@ -91,7 +94,7 @@ read_eps_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int* lly,
 	pic->bit_size.y = 10;
 	nested = 0;
 
-	while (getline(&line, &line_len, file) != -1) {
+	while (getline(&line, &line_len, pic_stream->fp) != -1) {
 	    /* look for /MediaBox for pdf file */
 	    if (pdf_flag) {
 		for (c = line; (c = strchr(c,'/')); ++c) {

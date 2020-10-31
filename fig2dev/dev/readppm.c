@@ -27,16 +27,14 @@
 
 #include <stdio.h>
 #include <stdint.h>		/* INT16_MAX */
-#ifdef HAVE_STRERROR
-#include <string.h>
-#include <errno.h>
-#endif
 #include <stdlib.h>
 #include <sys/types.h>
 #include <limits.h>
 
 #include "fig2dev.h"	/* includes <object.h> */
 //#include "object.h"	/* F_pic; does #include <X11/xpm.h> */
+#include "messages.h"
+#include "readpics.h"
 #include "xtmpfile.h"
 
 extern	int	_read_pcx(FILE *pcxfile, F_pic *pic);	/* readpcx.c */
@@ -309,10 +307,8 @@ _read_ppm(FILE *file, F_pic *pic)
  * Return: 0 failure, 1 success.
  */
 int
-read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
+read_ppm(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-	(void)llx;
-	(void)lly;
 	int	stat;
 	size_t	size;
 	FILE	*f;
@@ -323,6 +319,9 @@ read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 	char	*pcxname = pcxname_buf;
 
 	*llx = *lly = 0;
+
+	if (!rewind_stream(pic_stream))
+		return 0;
 
 	/* make name for temp output file */
 	if ((f = xtmpfile(&pcxname, sizeof pcxname_buf)) == NULL) {
@@ -335,11 +334,7 @@ read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 	/* write the command for the pipe to ppmtopcx */
 	stat = snprintf(cmd, sizeof buf, cmd_fmt, pcxname);
 	if (stat < 0 ) {
-#ifdef HAVE_STRERROR
-		fprintf(stderr, "fig2dev: %s\n", strerror(errno));
-#else
-		fprintf(stderr, "fig2dev: I/O error, command: %s\n", cmd_fmt);
-#endif
+		err_msg("fig2dev, I/O error");
 		remove(pcxname);
 		if (pcxname != pcxname_buf)
 			free(pcxname);
@@ -358,7 +353,7 @@ read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 
 	/* pipe to ppmtopcx */
 	if ((f = popen(cmd, "w"))) {
-		while ((size=fread(buf, 1, sizeof buf, file)) != 0)
+		while ((size=fread(buf, 1, sizeof buf, pic_stream->fp)) != 0)
 			fwrite(buf, size, 1, f);
 
 		/* close pipe */
@@ -389,11 +384,10 @@ read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 
 	if (stat == 1) {
 		return stat;
-	} else {
-		/* FIXME: This here expects a real file, but FILE *file
-		   might be a pipe! Implement a rewind_file() function, e.g.,
-		   for that file/pipe interface */
-		rewind(file);
-		return _read_ppm(file, pic);
+	} else {	/* ppmtopcx failed */
+		f = rewind_stream(pic_stream);
+		if (f == NULL)
+			return stat;
+		return _read_ppm(f, pic);
 	}
 }

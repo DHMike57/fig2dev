@@ -1,8 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Parts Copyright (c) 1992 by Brian Boyter
- * Parts Copyright (c) 1992-2007 by Brian V. Smith
- * Parts Copyright (c) 2015-2017 by Thomas Loimer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -32,6 +33,7 @@
 #include "fig2dev.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "colors.h"	/* rgb2luminance() */
+#include "readpics.h"
 
 extern int _read_pcx(FILE *pcxfile, F_pic *pic);
 
@@ -40,13 +42,13 @@ extern int _read_pcx(FILE *pcxfile, F_pic *pic);
 */
 
 int
-read_pcx(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
+read_pcx(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-	(void)	filetype;
-
+	if (!rewind_stream(pic_stream))
+		return 0;
 	*llx = *lly = 0;
 	pic->transp = -1;
-	return _read_pcx(file, pic);
+	return _read_pcx(pic_stream->fp, pic);
 }
 
 /* pcx2ppm 1.2 - convert pcx to ppm
@@ -178,11 +180,6 @@ _read_pcx(FILE *pcxfile, F_pic *pic)
 	/* read palette */
 	switch(real_bpp) {
 	    case 1:
-		pic->cmap[RED][0] = pic->cmap[GREEN][0] = pic->cmap[BLUE][0] = 0;
-		pic->cmap[RED][1] = pic->cmap[GREEN][1] = pic->cmap[BLUE][1] = 255;
-		pic->numcols = 2;
-		break;
-
 	    case 2:
 	    case 3:
 	    case 4:

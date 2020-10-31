@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -31,9 +31,11 @@
 
 #include "bool.h"
 #include "object.h"
+#include "readpics.h"
 
 /* the function to be tested, in $(top_srcdir)/fig2dev/dev/readeps.c */
-extern int	read_pdf(FILE *file, int type, F_pic *pic, int *llx, int *lly);
+extern int	read_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream,
+			int *llx, int *lly);
 
 /* symbols that are needed when calling read_pdf() */
 int		urx = 0;
@@ -48,11 +50,6 @@ const struct _paperdef		/* from fig2dev.h */
 }	paperdef[1] = {{"letter", 8, 12}};
 
 
-void	put_msg(const char *fmt, const char *file, const char *size)
-{
-	fprintf(stderr, fmt, file, size);
-}
-
 int
 main(int argc, char *argv[])
 {
@@ -60,23 +57,31 @@ main(int argc, char *argv[])
 	int	llx = -1;
 	int	lly = -1;
 	FILE	*file;
+	struct xfig_stream	f;
 	F_pic	pic;
 
 	tfp = stdout;
 	pic.file = argv[1];
 
-	file = fopen(argv[1], "rb");
+	init_stream(&f);
+	file = open_stream(argv[1], &f);
 	if (file == NULL) {
 		fprintf(stderr, "Test file %s not found.\n", argv[1]);
+		close_stream(&f);
+		free_stream(&f);
 		exit(EXIT_FAILURE);
 	}
 
-	if (read_pdf(file, 0, &pic, &llx, &lly) == 1 &&
+	if (read_pdf(&pic, &f, &llx, &lly) == 1 &&
 			pic.bit_size.x != 10 && pic.bit_size.y != 10) {
 		fprintf(stdout, "read_pdf found: width = %d, height = %d\n",
 				pic.bit_size.x, pic.bit_size.y);
+		close_stream(&f);
+		free_stream(&f);
 		exit(EXIT_SUCCESS);
 	} else {
+		close_stream(&f);
+		free_stream(&f);
 		exit(EXIT_FAILURE);
 	}
 }

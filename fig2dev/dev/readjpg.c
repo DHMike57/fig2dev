@@ -1,8 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Parts Copyright (c) by Thomas Merz 1994-2002
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -33,18 +34,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-
-#include "fig2dev.h"	/* includes "bool.h" */
-#include "object.h"	/* does #include <X11/xpm.h> */
-#include "psimage.h"
-#include "creationdate.h"
 #ifdef HAVE__SETMODE	/* see fig2dev.c */
 #include <io.h>
 #include <fcntl.h>
 #endif
 
-extern void	 close_picfile(FILE *file, int type);
-extern FILE	*open_picfile(char *name, int *type,bool pipeok,char **retname);
+#include "fig2dev.h"	/* includes "bool.h" */
+#include "object.h"	/* does #include <X11/xpm.h> */
+#include "creationdate.h"
+#include "psimage.h"
+#include "readpics.h"
+
+/* FIXME: remove quiet, autorotate */
 
 int Margin	= 20;		/* safety margin */
 bool quiet	= false;	/* suppress informational messages */
@@ -54,7 +55,6 @@ extern	bool	AnalyzeJPEG(imagedata *image);
 extern	int	ASCII85Encode(FILE *in, FILE *out);
 extern	void	ASCIIHexEncode(FILE *in, FILE *out);
 
-static char buffer[BUFSIZ];
 static char *ColorSpaceNames[] = {"", "Gray", "", "RGB", "CMYK" };
 
 static imagedata image;
@@ -62,22 +62,18 @@ static imagedata image;
 /* only read the jpeg file header to get the pertinent info and put in pic struct */
 
 int
-read_jpg(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
+read_jpg(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-	(void)	filetype;
-
 	/* setup internal header */
 	image.mode	= ASCII85;	/* we won't use the BINARY mode */
 	image.dpi	= DPI_IGNORE;	/* ignore any DPI info from JPEG file */
 	image.adobe	= false;
-	image.fp	= file;
+	image.fp	= pic_stream->fp;
 	image.filename	= pic->file;
 
 	/* read image parameters and fill image struct */
-	if (!AnalyzeJPEG(&image)) {
-	    fprintf(stderr, "Error: '%s' is not a proper JPEG file!\n", image.filename);
+	if (!rewind_stream(pic_stream) || !AnalyzeJPEG(&image))
 	    return 0;
-	}
 
 	*llx = *lly = 0;
 	pic->transp = -1;
@@ -92,21 +88,17 @@ read_jpg(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
 	return 1;			/* all ok */
 }
 
+/* TODO: whitespace changes, re-indent */
 /* here's where we read the rest of the jpeg file and format for PS */
-
 void
-JPEGtoPS(char *jpegfile, FILE *PSfile) {
+JPEGtoPS(FILE *f, FILE *PSfile) {
   imagedata	*JPEG;
   size_t	 n;
-  int		 i, filtype;
-  char		 *realname;
+  int		 i;
   char		 date_buf[CREATION_TIME_LEN];
+  char		buffer[BUFSIZ];
 
   JPEG = &image;
-
-  /* reopen the file */
-  JPEG->fp = open_picfile(jpegfile, &filtype, true, &realname);
-  free(realname);
 
   /* produce EPS header comments */
   fprintf(PSfile, "%%!PS-Adobe-3.0 EPSF-3.0\n");
@@ -186,7 +178,7 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
 	    _setmode(fileno(PSfile), O_BINARY);	  /* continue in binary mode */
 	#endif
 	    /* copy data without change */
-	    while ((n = fread(buffer, 1, sizeof(buffer), JPEG->fp)) != 0)
+	    while ((n = fread(buffer, 1, sizeof(buffer), f)) != 0)
 	      fwrite(buffer, 1, n, PSfile);
 	#ifdef HAVE__SETMODE
 	    fflush(PSfile);			/* binary yet */
@@ -198,7 +190,7 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
 	    fprintf(PSfile, "\n");
 
 	    /* ASCII85 representation of image data */
-	    if (ASCII85Encode(JPEG->fp, PSfile)) {
+	    if (ASCII85Encode(f, PSfile)) {
 	      fprintf(stderr, "Error: internal problems with ASCII85Encode!\n");
 	      exit(1);
 	    }
@@ -206,12 +198,9 @@ JPEGtoPS(char *jpegfile, FILE *PSfile) {
 
 	case ASCIIHEX:
 	    /* hex representation of image data (useful for buggy dvips) */
-	    ASCIIHexEncode(JPEG->fp, PSfile);
+	    ASCIIHexEncode(f, PSfile);
 	    break;
     }
-
-    /* close the jpeg file */
-    close_picfile(JPEG->fp, filtype);
 }
 
 /* The following enum is stolen from the IJG JPEG library

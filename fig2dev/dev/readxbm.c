@@ -1,7 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Parts Copyright (c) 1989-2007 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -64,11 +66,12 @@
 
 #include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
+#include "readpics.h"
 
 #define MAX_SIZE 255
 
-int ReadFromBitmapFile (FILE *file, unsigned int *width, unsigned int *height,
-		unsigned char **data_ret);
+int	ReadFromBitmapFile (FILE *file, unsigned int *width,
+				unsigned int *height, unsigned char **data_ret);
 /* attempt to read a bitmap file */
 
 /* return codes:  1 : success
@@ -76,15 +79,17 @@ int ReadFromBitmapFile (FILE *file, unsigned int *width, unsigned int *height,
 */
 
 int
-read_xbm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly)
+read_xbm(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-    (void) filetype;
     int status;
     unsigned int x, y;
 
+    if (!rewind_stream(pic_stream))
+	return 0;
     *llx = *lly = 0;
+
     /* first try for a X Bitmap file format */
-    status = ReadFromBitmapFile(file, &x, &y, &pic->bitmap);
+    status = ReadFromBitmapFile(pic_stream->fp, &x, &y, &pic->bitmap);
     if (status == 1) {
 	pic->subtype = P_XBM;
 	pic->hw_ratio = (float) y / x;

@@ -1,7 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2020 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -46,7 +48,9 @@
 
 #include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"	/* does #include <X11/xpm.h> */
+#include "messages.h"
 #include "readpics.h"
+#include "xtmpfile.h"
 
 extern	int	 _read_pcx(FILE *pcxfile, F_pic *pic);		/* readpcx.c */
 static bool	 ReadColorMap(FILE *, unsigned int,
@@ -82,34 +86,49 @@ struct {
 */
 
 int
-read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
+read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-	char		 buf[512];
-	char		 *realname, *cmd;
-	FILE		*file, *giftopcx;
+	char		buf[BUFSIZ];
+	char		pcxname_buf[128] = "f2dpcxXXXXXX";
+	char		*pcxname = pcxname_buf;
+	char		*cmd = buf;
+	char		*cmd_fmt;
 	int		 i, stat;
 	int		 useGlobalColormap;
 	unsigned int	 bitPixel;
 	unsigned char	 c;
+	size_t		size;
 	char		 version[4];
 	unsigned char    transp[3]; /* RGB of transparent color (if any) */
+	FILE		*pcx;
+	FILE		*giftopcx;
 
-	/* open the file */
-	if ((file = open_picfile(filename,&filetype,false,&realname)) == NULL) {
-		free(realname);
-		fprintf(stderr,"No such GIF file: %s\n", filename);
+	if (!rewind_stream(pic_stream))
+		return 0;
+
+	/* command string to convert gif to pcx */
+	if (!system("{ giftopnm -version && ppmtopcx -version; } 2>/dev/null"))
+		cmd_fmt = "giftopnm -quiet | ppmtopcx -quiet >'%s'";
+	else if (!system("convert -version >/dev/null"))
+		cmd_fmt = "convert - pcx:'%s'";
+	else if (!system("gm -version >/dev/null"))
+		cmd_fmt = "gm convert - pcx:'%s'";
+	else {
+		fputs("Cannot read gif files.\n", stderr);
+		fputs("To read gif files, install either the netpbm, or the "
+				"imagemagick, or the graphicsmagick package.\n",
+				stderr);
 		return 0;
 	}
-
-	/* first read header to look for any transparent color extension */
 
 	*llx = *lly = 0;
 
-	if (! ReadOK(file,buf,6)) {
+	/* first read header to look for any transparent color extension */
+	if (! ReadOK(pic_stream->fp, buf, 6)) {
 		return 0;
 	}
 
-	if (strncmp((char*)buf,"GIF",3) != 0) {
+	if (strncmp((char*)buf, "GIF", 3) != 0) {
 		return 0;
 	}
 
@@ -117,13 +136,11 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 	version[3] = '\0';
 
 	if ((strcmp(version, "87a") != 0) && (strcmp(version, "89a") != 0)) {
-		free(realname);
 		fprintf(stderr,"Unknown GIF version %s\n",version);
 		return 0;
 	}
 
-	if (! ReadOK(file,buf,7)) {
-		free(realname);
+	if (! ReadOK(pic_stream->fp, buf, 7)) {
 		return 0;		/* failed to read screen descriptor */
 	}
 
@@ -135,8 +152,8 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 	GifScreen.AspectRatio     = (unsigned int) buf[6];
 
 	if (BitSet(buf[4], LOCALCOLORMAP)) {	/* Global Colormap */
-		if (!ReadColorMap(file,GifScreen.BitPixel,pic->cmap)) {
-			free(realname);
+		if (!ReadColorMap(pic_stream->fp, GifScreen.BitPixel,
+								pic->cmap)) {
 			return 0;	/* error reading global colormap */
 		}
 	}
@@ -145,8 +162,7 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 	Gif89.transparent =  -1;
 
 	for (;;) {
-		if (! ReadOK(file,&c,1)) {
-			free(realname);
+		if (! ReadOK(pic_stream->fp, &c, 1)) {
 			return 0;	/* EOF / read error on image data */
 		}
 
@@ -155,10 +171,10 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 		}
 
 		if (c == '!') {		/* Extension */
-		    if (! ReadOK(file,&c,1))
+		    if (! ReadOK(pic_stream->fp, &c, 1))
 			fprintf(stderr,
 				"GIF read error on extension function code\n");
-		    (void) DoGIFextension(file, c);
+		    (void) DoGIFextension(pic_stream->fp, c);
 		    continue;
 		}
 
@@ -166,8 +182,7 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 			continue;
 		}
 
-		if (! ReadOK(file,buf,9)) {
-			free(realname);
+		if (! ReadOK(pic_stream->fp, buf, 9)) {
 			return 0;      /* couldn't read left/top/width/height */
 		}
 
@@ -176,8 +191,7 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 		bitPixel = 1<<((buf[8]&0x07)+1);
 
 		if (! useGlobalColormap) {
-		    if (!ReadColorMap(file, bitPixel, pic->cmap)) {
-			free(realname);
+		    if (!ReadColorMap(pic_stream->fp, bitPixel, pic->cmap)) {
 			fprintf(stderr, "error reading local GIF colormap\n");
 			return 0;
 		    }
@@ -197,28 +211,48 @@ read_gif(char *filename, int filetype, F_pic *pic, int *llx, int *lly)
 	    transp[BLUE]  = pic->cmap[BLUE][pic->transp];
 	}
 
-	/* reposition the file at the beginning */
-	fseek(file, 0, SEEK_SET);
+	/* create a temporary file */
+	if ((pcx = xtmpfile(&pcxname, sizeof pcxname_buf)) == NULL) {
+		if (pcxname != pcxname_buf)
+			free(pcxname);
+		return 0;
+	}
 
 	/* now call giftopnm and ppmtopcx */
-	if ((cmd = malloc(strlen(realname) + 50)) == NULL) {
-		fputs("Not enough memory to store command string.\n", stderr);
-		free(realname);
+	if ((size = strlen(cmd_fmt) + strlen(pcxname) > sizeof buf) &&
+			(cmd = malloc(size - 1)) == NULL) {
+		if (pcxname != pcxname_buf)
+			free(pcxname);
 		return 0;
 	}
-	sprintf(cmd, "giftopnm -quiet %s | ppmtopcx -quiet 2>/dev/null",
-		realname);
-	free(realname);
-	if ((giftopcx = popen(cmd, "r")) == 0) {
-		fprintf(stderr, "Cannot open pipe from giftopnm | ppmtopcx.\n");
+	sprintf(cmd, cmd_fmt, pcxname);
+
+	giftopcx = popen(cmd, "w");
+	if (cmd != buf)
 		free(cmd);
+	if (giftopcx == NULL) {
+		err_msg("Cannot open pipe to convert gif to pcx");
+		unlink(pcxname);
 		return 0;
 	}
-	free(cmd);
-	/* now call _read_pcx to read the pcx file */
-	stat = _read_pcx(giftopcx, pic);
-	/* close file */
+
+	/* rewind gif stream */
+	if (!rewind_stream(pic_stream)) {
+		if (pcxname != pcxname_buf)
+			free(pcxname);
+		return 0;
+	}
+	while ((size = fread(buf, 1, sizeof buf, pic_stream->fp)) != 0)
+		fwrite(buf, size, 1, giftopcx);
 	pclose(giftopcx);
+
+	rewind(pcx);
+	/* now call _read_pcx to read the pcx file */
+	stat = _read_pcx(pcx, pic);
+
+	fclose(pcx);
+	if (pcxname != pcxname_buf)
+		free(pcxname);
 
 	/* now match original transparent colortable index with possibly new
 	   colortable from ppmtopcx */

@@ -24,6 +24,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include "readpics.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,25 +35,6 @@
 #include "fig2dev.h"	/* includes "bool.h" */
 #include "messages.h"
 #include "xtmpfile.h"
-
-/*
- * The xfig_stream struct either refers to a file, or to a pipe obtained by
- * uncompressing a compressed file. In addition, the uncompressed content
- * may be provided.
- */
-struct xfig_stream {
-	FILE	*fp;		/* NULL, if not open */
-	char	*name;		/* e.g., image.ppm */
-	char	*name_on_disk;	/* e.g., image.ppm.gz */
-	char	*content;	/* points to a regular file containing the
-				   uncompressed content of name */
-	const char *uncompress;	/* e.g., "gunzip -c", "", or NULL
-				   NULL if compression status is undecided */
-	char	name_buf[128];
-	char	name_on_disk_buf[128];
-	char	content_buf[128];
-	/* regular file, if *uncompress == '\0' */
-};
 
 /*
  * Open the file 'name' and return its type (real file=0, pipe=1) in 'type'.
@@ -176,7 +158,7 @@ close_picfile(FILE *file, int type)
 	pclose(file);
 }
 
-static void
+void
 init_stream(struct xfig_stream *restrict xf_stream)
 {
 	xf_stream->fp = NULL;

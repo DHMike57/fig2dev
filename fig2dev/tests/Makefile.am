@@ -4,7 +4,7 @@
 # Copyright (c) 1991 by Micah Beck
 # Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 # Parts Copyright (c) 1989-2015 by Brian V. Smith
-# Parts Copyright (c) 2015-2019 by Thomas Loimer
+# Parts Copyright (c) 2015-2020 by Thomas Loimer
 #
 # Any party obtaining a copy of these files is granted, free of charge, a
 # full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -57,8 +57,11 @@ if ENABLE_I18N
 test1_CPPFLAGS = -DI18N_DATADIR="\"$(i18ndir)\""
 endif
 
-test2_CPPFLAGS = -I$(top_srcdir)/fig2dev
-test2_LDADD = $(top_builddir)/fig2dev/dev/readeps.$(OBJEXT)
+test2_CPPFLAGS = -I$(top_srcdir)/fig2dev -I$(top_srcdir)/fig2dev/dev
+test2_LDADD = $(top_builddir)/fig2dev/dev/libdrivers.a \
+	$(top_builddir)/fig2dev/messages.$(OBJEXT)
+#test2_LDADD = $(top_builddir)/fig2dev/dev/readeps.$(OBJEXT) \
+#	$(top_builddir)/fig2dev/dev/readpics.$(OBJEXT)
 test2_DEPENDENCIES = $(test2_LDADD)
 
 
