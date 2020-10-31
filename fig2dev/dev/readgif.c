@@ -92,7 +92,7 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	char		pcxname_buf[128] = "f2dpcxXXXXXX";
 	char		*pcxname = pcxname_buf;
 	char		*cmd = buf;
-	char		*cmd_fmt;
+	static char	*cmd_fmt = NULL;
 	int		 i, stat;
 	int		 useGlobalColormap;
 	unsigned int	 bitPixel;
@@ -107,19 +107,25 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 		return 0;
 
 	/* command string to convert gif to pcx */
-	if (!system("{ giftopnm -version && ppmtopcx -version; } 2>/dev/null"))
-		cmd_fmt = "giftopnm -quiet | ppmtopcx -quiet >'%s'";
-	else if (!system("convert -version >/dev/null"))
-		cmd_fmt = "convert - pcx:'%s'";
-	else if (!system("gm -version >/dev/null"))
-		cmd_fmt = "gm convert - pcx:'%s'";
-	else {
-		fputs("Cannot read gif files.\n", stderr);
-		fputs("To read gif files, install either the netpbm, or the "
-				"imagemagick, or the graphicsmagick package.\n",
-				stderr);
-		return 0;
+
+	if (cmd_fmt == NULL) {
+		if (!system("{ giftopnm -version && ppmtopcx -version; } "
+								"2>/dev/null"))
+			cmd_fmt = "giftopnm -quiet | ppmtopcx -quiet >'%s'";
+		else if (!system("convert -version >/dev/null"))
+			cmd_fmt = "convert - pcx:'%s'";
+		else if (!system("gm -version >/dev/null"))
+			cmd_fmt = "gm convert - pcx:'%s'";
+		else {
+			cmd_fmt = "";
+			put_msg("Cannot read gif files.\n"
+	"To read gif files, install either the netpbm, or the imagemagick,\n"
+	"or the graphicsmagick package.");
+			return 0;
+		}
 	}
+	if (*cmd_fmt == '\0')
+		return 0;
 
 	*llx = *lly = 0;
 
@@ -136,7 +142,7 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	version[3] = '\0';
 
 	if ((strcmp(version, "87a") != 0) && (strcmp(version, "89a") != 0)) {
-		fprintf(stderr,"Unknown GIF version %s\n",version);
+		put_msg("Unknown GIF version %s", version);
 		return 0;
 	}
 
@@ -228,13 +234,17 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	sprintf(cmd, cmd_fmt, pcxname);
 
 	giftopcx = popen(cmd, "w");
-	if (cmd != buf)
-		free(cmd);
 	if (giftopcx == NULL) {
-		err_msg("Cannot open pipe to convert gif to pcx");
+		err_msg("Cannot convert gif to pcx, %s", cmd);
 		unlink(pcxname);
+		if (pcxname != pcxname_buf)
+			free(pcxname);
+		if (cmd != buf)
+			free(cmd);
 		return 0;
 	}
+	if (cmd != buf)
+		free(cmd);
 
 	/* rewind gif stream */
 	if (!rewind_stream(pic_stream)) {
