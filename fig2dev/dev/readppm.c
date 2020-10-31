@@ -161,7 +161,7 @@ static int
 read_asciippm(FILE *file, unsigned char *restrict dst, unsigned int width,
 						unsigned int height)
 {
-	int		c[3];
+	unsigned int	c[3];
 	unsigned int	w;
 
 	while (height-- > 0u) {
@@ -190,7 +190,7 @@ static int
 read_ascii_max_ppm(FILE *file, unsigned char *restrict dst, unsigned int maxval,
 			unsigned int width, unsigned int height)
 {
-	int		c[3];
+	uint32_t	c[3];
 	unsigned int	w;
 	const uint32_t	rnd = maxval / 2;
 

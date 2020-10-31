@@ -145,7 +145,8 @@ _read_pcx(FILE *pcxfile, F_pic *pic)
 	if (real_bpp==1 || real_bpp==4)
 	    bytemax=(1<<30); */	/* we use a 'y<h' test instead for these files */
 
-	if ((pic->bitmap=malloc(w*(h+2)*bytepp))==NULL)
+	/* dispbyte() seems to reach beyond a line - malloc() a bit more */
+	if ((pic->bitmap=malloc((w < 8 ? 8 : w)*(h+2)*bytepp))==NULL)
 	    return 0;
 
 	/* need this if more than one bitplane */
