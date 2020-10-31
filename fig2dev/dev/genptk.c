@@ -391,40 +391,36 @@ genptk_line(F_line *l)
 static void
 drawBitmap(F_line *l)
 {
-	char	stfp[1024];
-	double	dx, dy;
-	F_pic	*p;
-	unsigned char	buf[16];
-	FILE	*fd;
-	int	filtype;	/* file (0) or pipe (1) */
-	int	stat;
-	char	*xname;
-	char    isphoto;
+	char			stfp[1024];
+	double			dx, dy;
+	F_pic			*p;
+	unsigned char		buf[16];
+	int			stat;
+	char    		isphoto;
+	struct xfig_stream	pic_stream;
 
 	p = l->pic;
 
 	dx = l->points->next->next->x - l->points->x;
 	dy = l->points->next->next->y - l->points->y;
 	if (!(dx >= 0. && dy >= 0.))
-		fputs("drawBitmap: rotated bitmaps not supprted by Tk.\n",
-				stderr);
+		put_msg("drawBitmap: rotated bitmaps not supported by Tk.");
 
 	/* see if supported image format first */
 
-	fd = open_picfile(p->file, &filtype, true, &xname);
-	free(xname);	/* not needed */
-	if (fd == NULL) {
-		fprintf(stderr, "drawBitmap: can't open bitmap file %s\n",
-				p->file);
+	init_stream(&pic_stream);
+	if (open_stream(p->file, &pic_stream) == NULL) {
+		put_msg("drawBitmap: cannot open bitmap file %s", p->file);
+		free_stream(&pic_stream);
 		return;
 	}
 
 	/* read header */
-	stat = ReadOK(fd,buf,6);
-	close_picfile(fd,filtype);
+	stat = ReadOK(pic_stream.fp, buf, 6);
 	if (!stat) {
-		fprintf(stderr, "drawBitmap: Bitmap file %s too short\n",
-				p->file);
+		put_msg("drawBitmap: bitmap file %s too short", p->file);
+		close_stream(&pic_stream);
+		free_stream(&pic_stream);
 		return;
 	}
 
@@ -476,9 +472,10 @@ drawBitmap(F_line *l)
 	} else {
 		/* Try for an X Bitmap file format. */
 		unsigned int dummy;		/* Thomas Loimer, 2015-12 */
-		rewind(fd);
+		rewind_stream(&pic_stream);
 		/* return values width, height obviously not used */
-		if (ReadFromBitmapFile(fd, &dummy, &dummy, &p->bitmap)) {
+		if (ReadFromBitmapFile(pic_stream.fp, &dummy, &dummy,
+								&p->bitmap)) {
 			sprintf(stfp, "%s->createBitmap(qw/%fi %fi -anchor nw",
 					canvas, X(l->points->x), Y(l->points->y));
 			niceLine(stfp);
@@ -498,10 +495,11 @@ drawBitmap(F_line *l)
 			sprintf(stfp, ");\n");
 			niceLine(stfp);
 		} else
-			fputs("Only X bitmap, TIFF, JPEG, PPM and GIF picture "
-				"objects are supported in Tk canvases.\n",
-					stderr);
+			put_msg("Only X bitmap, TIFF, JPEG, PPM and GIF picture"
+				" objects are supported in Tk canvases.");
 	}
+	close_stream(&pic_stream);
+	free_stream(&pic_stream);
 }
 
 /*

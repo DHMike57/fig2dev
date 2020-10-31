@@ -709,7 +709,8 @@ static void moveto();
 #endif
 
 #ifdef HAVE_PNG_H
-extern int  read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
+extern int	read_png(F_pic *pic, struct xfig_stream *restrict pic_stream,
+			 int *llx, int *lly);
 #endif
 
 /* Piece of code to avoid unnecessary attribute changes */
@@ -2395,10 +2396,8 @@ picbox(F_line *l)
 {
     EMRSTRETCHDIBITS em_sd;
     BITMAPINFO bmi;
-    char buf[16], *realname;
-    int filtype;
+    char buf[16];
     int dx, dy;
-    FILE *picf;
     int img_w, img_h;
     int rotation;
     size_t bsize, coltabsize;
@@ -2407,6 +2406,7 @@ picbox(F_line *l)
     static RGBQUAD coltab[256];
     unsigned u;
     int flip;
+    struct xfig_stream	pic_stream;
 
     dx = l->points->next->next->x - l->points->x;
     dy = l->points->next->next->y - l->points->y;
@@ -2420,18 +2420,19 @@ picbox(F_line *l)
     else if (dy < 0 && dx >= 0)
        rotation = 90;
 
-    picf = open_picfile(l->pic->file, &filtype, true, &realname);
-    free(realname);	/* not used */
-    if (picf == NULL) {
-	fprintf(stderr, "fig2dev: %s: No such picture file\n", l->pic->file);
+    init_stream(&pic_stream);
+
+    if (open_stream(l->pic->file, &pic_stream) == NULL) {
+	put_msg("fig2dev: %s: No such picture file", l->pic->file);
+	free_stream(&pic_stream);
 	return;
     }
-    if (fread(buf, (size_t) 16, (size_t) 1, picf) != 1) {
-	fprintf(stderr, "fig2dev: %s: short read\n", l->pic->file);
-	close_picfile(picf, filtype);
+    if (fread(buf, (size_t) 16, (size_t) 1, pic_stream.fp) != 1) {
+	put_msg("fig2dev: %s: short read\n", l->pic->file);
+	close_stream(&pic_stream);
+	free_stream(&pic_stream);
 	return;
     }
-    close_picfile(picf, filtype);
 
     memset(&em_sd, 0, sizeof(EMRSTRETCHDIBITS));
     em_sd.emr.iType = htofl(EMR_STRETCHDIBITS);
@@ -2440,23 +2441,25 @@ picbox(F_line *l)
     bmi.bmiHeader.biSize = htofl(sizeof(BITMAPINFOHEADER));
 
 #ifdef HAVE_PNG_H
-    if (strncmp(buf, "\211\120\116\107\015\012\032\012", (size_t) 8) == 0) {
+    if (strncmp(buf, "\211\120\116\107\015\012\032\012", 8) == 0) {
 	/* png file */
 	int pllx, plly;
-	picf = open_picfile(l->pic->file, &filtype, true, &realname);
-	free(realname);		/* not used */
-	if (picf == NULL) {
-	    perror(l->pic->file);
+	if (rewind_stream(&pic_stream) == NULL) {
+		err_msg("fig2dev: error rewinding image file %s", l->pic->file);
+		free_stream(&pic_stream);
+		return;
+	}
+	if (read_png(l->pic, &pic_stream, &pllx, &plly) == 0) {
+	    put_msg("fig2dev: %s: illegal format", l->pic->file);
+	    close_stream(&pic_stream);
+	    free_stream(&pic_stream);
 	    return;
 	}
-	if (read_png(picf, filtype, l->pic, &pllx, &plly) == 0) {
-	    fprintf(stderr, "fig2dev: %s: illegal format\n", l->pic->file);
-	    close_picfile(picf, filtype);
-	    return;
-	}
-	close_picfile(picf, filtype);
     }
 #endif
+    close_stream(&pic_stream);
+    free_stream(&pic_stream);
+
     if (l->pic->subtype == P_GIF || l->pic->subtype == P_PCX ||
 	l->pic->subtype == P_JPEG || l->pic->subtype == P_PNG) {
 
@@ -2565,8 +2568,7 @@ picbox(F_line *l)
 
 	/* need 4 byte align, but the size of EMF bitmap is 4 byte aligned */
     } else {
-	fprintf(stderr, "fig2dev: %s: emf: unsupported picture format\n",
-	    l->pic->file);
+	put_msg("fig2dev: %s: emf: unsupported picture format", l->pic->file);
 	return;
     }
 }/* end picbox */

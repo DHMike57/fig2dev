@@ -54,8 +54,10 @@ extern FILE	*rewind_stream(struct xfig_stream *restrict xf_stream);
 extern int	uncompressed_content(struct xfig_stream *restrict xf_stream);
 extern void	free_stream(struct xfig_stream *restrict xf_stream);
 
+/*
 extern FILE	*open_picfile(char *name, int *type, bool pipeok,
 				char **retname);
 extern void	close_picfile(FILE *file, int type);
 
+*/
 #endif /* READPICS_H */

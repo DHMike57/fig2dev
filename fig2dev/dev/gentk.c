@@ -1,6 +1,5 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Copyright (c) 1998 by Mike Markowski
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
@@ -387,36 +386,35 @@ gentk_line(F_line *l)
 static void
 drawBitmap(F_line *l)
 {
-	char	stfp[256];
-	double	dx, dy;
-	F_pic	*p;
-	unsigned char	buf[16];
-	FILE	*fd;
-	int	filtype;	/* file (0) or pipe (1) */
-	int	stat;
-	char	*xname;
+	char			stfp[256];
+	double			dx, dy;
+	F_pic			*p;
+	unsigned char		buf[16];
+	int			stat;
+	struct xfig_stream	pic_stream;
 
 	p = l->pic;
 
 	dx = l->points->next->next->x - l->points->x;
 	dy = l->points->next->next->y - l->points->y;
 	if (!(dx >= 0. && dy >= 0.))
-		fprintf(stderr, "Rotated images not supported by Tk.\n");
+		put_msg("Rotated images not supported by Tk.");
 
 	/* see if GIF first */
 
-	fd = open_picfile(p->file, &filtype, true, &xname);
-	free(xname);	/* not needed */
-	if (fd == NULL) {
-		fprintf(stderr, "Can't open image file %s\n", p->file);
+	init_stream(&pic_stream);
+	if (open_stream(p->file, &pic_stream) == NULL) {
+		put_msg("Cannot open image file %s", p->file);
+		free_stream(&pic_stream);
 		return;
 	}
 
 	/* read header */
-	stat = ReadOK(fd,buf,7);
+	stat = ReadOK(pic_stream.fp, buf, 7);
 	if (!stat) {
-		fprintf(stderr, "Image file %s too short\n", p->file);
-		close_picfile(fd, filtype);
+		put_msg("Image file %s too short", p->file);
+		close_stream(&pic_stream);
+		free_stream(&pic_stream);
 		return;
 	}
 
@@ -428,7 +426,6 @@ drawBitmap(F_line *l)
 		/* first make a name without the suffix */
 		char	*pname, *dot;
 
-		close_picfile(fd,filtype);
 		pname = strdup(p->file);
 		if ((dot=strchr(pname,'.')))
 			*dot='\0';
@@ -443,8 +440,9 @@ drawBitmap(F_line *l)
 	} else {
 		/* Try for an X Bitmap file format. */
 		unsigned int dummy;
-		rewind(fd);
-		if (ReadFromBitmapFile(fd, &dummy, &dummy, &p->bitmap)) {
+		rewind_stream(&pic_stream);
+		if (ReadFromBitmapFile(pic_stream.fp, &dummy, &dummy,
+								&p->bitmap)) {
 			sprintf(stfp, "%s create bitmap %fi %fi -anchor nw",
 					canvas,
 					X(l->points->x), Y(l->points->y));
@@ -465,10 +463,11 @@ drawBitmap(F_line *l)
 			}
 			fputc('\n', tfp);
 		} else
-			fprintf(stderr, "Only X bitmap and GIF picture objects "
-					"are supported in Tk canvases.\n");
-		close_picfile(fd,filtype);
+			put_msg("Only X bitmap and GIF picture objects "
+					"are supported in Tk canvases.");
 	}
+	close_stream(&pic_stream);
+	free_stream(&pic_stream);
 }
 
 /*
