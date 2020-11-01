@@ -44,12 +44,70 @@ int	read_eps(F_pic *pic, struct xfig_stream *restrict pic_stream,
 */
 
 /*
+ * Scan a pdf-file for a /MediaBox specification. The FILE pointer file must
+ * point to an open file-stream located close to the start of the file.
+ * Return 0 on success, -1 on failure.
+ */
+static int
+scan_mediabox(FILE *file, int *llx, int *lly, int *urx, int *ury)
+{
+	/*
+	 * The line length of pdfs should not exceed 256 characters. However, in
+	 * pdfs, the line end character might be a carriage return, while
+	 * fgets() reads lines ended by newlines.
+	 */
+	char	buf[512];
+	char	*s;
+	int	ret = -1;	/* prime with failure */
+	double	lx, ly, ux, uy;
+
+	while (fgets(buf, sizeof buf, file) != NULL) {
+		if ((s = strstr(buf, "/MediaBox"))) {
+			s = strchr(s, '[');
+			if (s && sscanf(s + 1, "%lf %lf %lf %lf",
+						&lx, &ly, &ux, &uy) == 4) {
+				*llx = (int)floor(lx);
+				*lly = (int)floor(ly);
+				*urx = (int)ceil(ux);
+				*ury = (int)ceil(uy);
+				ret = 0;
+			}
+			/* do not search for a second occurrence of /MediaBox */
+			break;
+		}
+	}
+
+	return ret;
+}
+
+/*
  * Read a PDF file.
  */
 int
 read_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-    return read_eps(pic, pic_stream, llx, lly);
+	int	urx, ury;
+
+	/*
+	 * read_pdf() is called from genps.c, where the first 12 bytes were
+	 * read. Take the risk, do not rewind, and continue to search for the
+	 * /MediaBox.
+	 *	if (!rewind_stream(pic_stream))
+	 *		return 0;
+	 */
+
+	pic->subtype = P_EPS;
+
+	if (scan_mediabox(pic_stream->fp, llx, lly, &urx, &ury)) {
+		*llx = 0;
+		*lly = 0;
+		pic->bit_size.x = 10;
+		pic->bit_size.y = 10;
+	} else {
+		pic->bit_size.x = urx - *llx;
+		pic->bit_size.y = ury - *lly;
+	}
+	return 1;
 }
 
 /*
