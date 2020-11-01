@@ -44,9 +44,178 @@ int	read_eps(F_pic *pic, struct xfig_stream *restrict pic_stream,
 */
 
 /*
+ * Call ghostscript.
+ * Return an open file stream for reading,
+ *   *out = popen({exenew, exeold}, "r");
+ * The user must call pclose(out) after calling gsexe(&out,...).
+ * Use exenew for gs > 9.49, exeold otherwise.
+ * Return 0 for success, -1 on failure to call ghostscript.
+ *
+ * Copied from xfig/src/u_ghostscript.c.
+ */
+static int
+gsexe(FILE **out, bool *isnew, char *exenew, char *exeold)
+{
+#define	old_version	1
+#define	new_version	2
+#define no_version	0
+	static int	version = no_version;
+	const int	failure = -1;
+	char		*exe;
+	FILE		*fp;
+
+
+	if (version == no_version) {
+		int		n;
+		int		stat;
+		double		rev;
+		char		*cmd = GSEXE " --version";
+
+		/* get the ghostscript version */
+		fp = popen(cmd, "r");
+		if (fp == NULL)
+			return failure;
+
+		/* scan for the ghostscript version */
+		/* Currently, gsexe() is only called from gsexe_mediabox(), and
+		 * the locale is already set to C in read_pdf. If this changes,
+		 * make sure to have here the C or POSIX locale. */
+		n = fscanf(fp, "%lf", &rev);
+		stat = pclose(fp);
+		if (n != 1 || stat != 0)
+			return failure;
+
+		if (rev > 9.49) {
+			exe = exenew;
+			version = new_version;
+			*isnew = true;
+		} else {
+			exe = exeold;
+			version = old_version;
+			*isnew = false;
+		}
+	} else { /* version == no_version */
+		if (version == new_version) {
+			exe = exenew;
+			*isnew = true;
+		} else {
+			exe = exeold;
+			*isnew = false;
+		}
+	}
+#undef new_version
+#undef old_version
+#undef no_version
+
+	if ((*out = popen(exe, "r")) == NULL)
+		return failure;
+
+	return 0;
+}
+
+/*
+ * Call ghostscript to extract the /MediaBox from the pdf given in file.
+ * Command line, for gs >= 9.50,
+ *    gs -q -dNODISPLAY --permit-file-read=in.pdf -c \
+ *	"(in.pdf) (r) file runpdfbegin 1 pdfgetpage /MediaBox pget pop == quit"
+ * gs < 9.50:
+ *    gs -q -dNODISPLAY -dNOSAFER -c \
+ *	"(in.pdf) (r) file runpdfbegin 1 pdfgetpage /MediaBox pget pop == quit"
+ * The command line was found, and modified a bit, at
+ *https://stackoverflow.com/questions/2943281/using-ghostscript-to-get-page-size
+ * Beginning with gs 9.50, "-dSAFER" is the default, and permission to access
+ * files must be explicitly given with the --permit-file-{read,write,..}
+ * options. Before gs 9.50, "-dNOSAFER" is the default.
+ *
+ * Return 0 on success, -1 on failure, -2 for a ghostscript-error.
+ *
+ * Copied from xfig/src/u_ghostscript.c.
+ */
+static int
+gsexe_mediabox(char *file, int *llx, int *lly, int *urx, int *ury)
+{
+	bool	isnew;
+	int	n;
+	int	stat;
+	size_t	len;
+	char	*fmt;
+	char	exenew_buf[256];
+	char	exeold_buf[sizeof exenew_buf];
+	char	*exenew;
+	char	*exeold;
+	double	bb[4] = { 0.0, 0.0, -1.0, -1.0 };
+	FILE	*gs_output;
+
+	exenew = GSEXE " -q -dNODISPLAY '--permit-file-read=%s' -c '(%s) (r) "
+		"file runpdfbegin 1 pdfgetpage /MediaBox pget pop == quit'";
+	exeold = GSEXE " -q -dNODISPLAY -c '(%s) (r) "
+		"file runpdfbegin 1 pdfgetpage /MediaBox pget pop == quit'";
+
+	/* malloc() buffers for the command line, if necessary */
+	fmt = exenew;
+	len = strlen(exenew) + 2 * strlen(file) - 3;
+	if (len > sizeof exenew_buf) {
+		if ((exenew = malloc(len)) == NULL)
+			return -1;
+	} else {
+		exenew = exenew_buf;
+	}
+	sprintf(exenew, fmt, file, file);
+
+	fmt = exeold;
+	len = strlen(exeold) + strlen(file) - 1;
+	if (len > sizeof exeold_buf) {
+		if ((exeold = malloc(len)) == NULL) {
+			if (exenew != exenew_buf)
+				free(exenew);
+			return -1;
+		}
+	} else {
+		exeold = exeold_buf;
+	}
+	sprintf(exeold, fmt, file);
+
+	/* call ghostscript */
+	stat = gsexe(&gs_output, &isnew, exenew, exeold);
+
+	if (exenew != exenew_buf)
+		free(exenew);
+	if (exeold != exeold_buf)
+		free(exeold);
+
+	if (stat != 0) {
+		err_msg("Cannot open pipe with command:\n%s",
+				isnew ? exenew : exeold);
+		return -1;
+	}
+
+	/* scan the output */
+	n = fscanf(gs_output, "[%lf %lf %lf %lf]", bb, bb+1, bb+2, bb+3);
+	stat = pclose(gs_output);
+	if (n != 4 || stat != 0) {
+		if (stat) {
+			err_msg("Error calling ghostscript. Command:\n%s",
+				isnew ? exenew : exeold);
+			return -2;
+		} else {
+			return -1;
+		}
+	}
+
+	*llx = (int)floor(bb[0]);
+	*lly = (int)floor(bb[1]);
+	*urx = (int)ceil(bb[2]);
+	*ury = (int)ceil(bb[3]);
+
+	return 0;
+}
+
+/*
  * Scan a pdf-file for a /MediaBox specification. The FILE pointer file must
  * point to an open file-stream located close to the start of the file.
  * Return 0 on success, -1 on failure.
+ *
+ * Copied from xfig/src/u_ghostscript.c.
  */
 static int
 scan_mediabox(FILE *file, int *llx, int *lly, int *urx, int *ury)
@@ -82,6 +251,8 @@ scan_mediabox(FILE *file, int *llx, int *lly, int *urx, int *ury)
 
 /*
  * Read a PDF file.
+ * Return codes: 1 - success,
+ *		 0 - failure.
  */
 int
 read_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
@@ -103,6 +274,12 @@ read_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 		*lly = 0;
 		pic->bit_size.x = 10;
 		pic->bit_size.y = 10;
+		if (uncompressed_content(pic_stream))
+			return 0;
+		if (gsexe_mediabox(pic_stream->content, llx, lly, &urx, &ury))
+			return 0;
+		pic->bit_size.x = urx - *llx;
+		pic->bit_size.y = ury - *lly;
 	} else {
 		pic->bit_size.x = urx - *llx;
 		pic->bit_size.y = ury - *lly;
@@ -112,6 +289,8 @@ read_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 
 /*
  * Read an EPS file.
+ * Return codes: 1 - success,
+ *		 0 - failure.
  */
 int
 read_eps(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
