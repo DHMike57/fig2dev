@@ -32,114 +32,75 @@
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
 //#include "object.h"	/* includes X11/xpm.h */
+#include "messages.h"
 #include "readpics.h"
 
-#ifndef HAVE_GETLINE
-#include "lib/getline.h"
-#endif
+int	read_eps(F_pic *pic, struct xfig_stream *restrict pic_stream,
+		int *llx, int *lly);
 
 /* for both procedures:
      return codes:  1 : success
 		    0 : failure
 */
 
-static int	read_eps_pdf(F_pic *pic,struct xfig_stream *restrict pic_stream,
-				int *llx, int *lly, bool pdf_flag);
-
-/* read a PDF file */
-
+/*
+ * Read a PDF file.
+ */
 int
 read_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-    return read_eps_pdf(pic, pic_stream, llx, lly, true);
+    return read_eps(pic, pic_stream, llx, lly);
 }
 
-/* read an EPS file */
-
-/* return codes:  PicSuccess (1) : success
-		  FileInvalid (-2) : invalid file
-*/
-
+/*
+ * Read an EPS file.
+ */
 int
 read_eps(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-    return read_eps_pdf(pic, pic_stream, llx, lly, false);
-}
-
-
-static int
-read_eps_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream,
-		int *llx, int *lly, bool pdf_flag)
-{
-	char	*line;
-	size_t	line_len = 256;
-	double	fllx, flly, furx, fury;
+	char	buf[300];
 	int	nested;
-	char	*c;
 
 	if (!rewind_stream(pic_stream))
 		return 0;
 
-	if ((line = malloc(line_len)) == NULL) {
-		fputs("Out of memory.\n", stderr);
-		return 0;
-	}
 	pic->bit_size.x = pic->bit_size.y = 0;
 	pic->subtype = P_EPS;
 
-	/* give some initial values for bounding in case none is found */
+	/* give some initial values for bounding box in case none is found */
 	*llx = 0;
 	*lly = 0;
 	pic->bit_size.x = 10;
 	pic->bit_size.y = 10;
-	nested = 0;
 
-	while (getline(&line, &line_len, pic_stream->fp) != -1) {
-	    /* look for /MediaBox for pdf file */
-	    if (pdf_flag) {
-		for (c = line; (c = strchr(c,'/')); ++c) {
-		    if (!strncmp(c, "/MediaBox", 9)) {
-			c = strchr(c, '[');
-			if (c && sscanf(c + 1, "%d %d %d %d",
-				    llx, lly, &urx, &ury) < 4) {
-			    *llx = *lly = 0;
-			    urx = paperdef[0].width*72;
-			    ury = paperdef[0].height*72;
-			    fprintf(stderr, "Bad MediaBox in imported PDF file %s, assuming %s size",
-				    pic->file, metric? "A4" : "Letter" );
+	/* scan for the bounding box */
+	nested = 0;
+	while (fgets(buf, sizeof buf, pic_stream->fp) != NULL) {
+		if (!nested && !strncmp(buf, "%%BoundingBox:", 14)) {
+			/* make sure doesn't say (atend) */
+			if (!strstr(buf, "(atend)")) {
+				double       rllx, rlly, rurx, rury;
+
+				if (sscanf(strchr(buf, ':') + 1,
+						"%lf %lf %lf %lf", &rllx, &rlly,
+						&rurx,&rury) < 4) {
+					put_msg("Bad EPS file: %s", pic->file);
+					return 0;
+				}
+				*llx = floor(rllx);
+				*lly = floor(rlly);
+				pic->bit_size.x = (int)(rurx - rlly);
+				pic->bit_size.y = (int)(rury - rlly);
+				break;
 			}
-			pic->bit_size.x = urx - (*llx);
-			pic->bit_size.y = ury - (*lly);
-			break;
-		    }
+		} else if (!strncmp(buf, "%%Begin", 7)) {
+			++nested;
+		} else if (nested && !strncmp(buf, "%%End", 5)) {
+			--nested;
 		}
-		/* look for bounding box for EPS file */
-	    } else if (!nested && !strncmp(line, "%%BoundingBox:", 14)) {
-		c = line + 14;
-		/* skip past white space */
-		while (*c == ' ' || *c == '\t')
-		    ++c;
-		if (strncmp(c, "(atend)", 7)) {	/* make sure not an (atend) */
-		    if (sscanf(c, "%lf %lf %lf %lf",
-				&fllx, &flly, &furx, &fury) < 4) {
-			fprintf(stderr,"Bad EPS bitmap file: %s\n", pic->file);
-			return 0;
-		    }
-		    *llx = (int) floor(fllx);
-		    *lly = (int) floor(flly);
-		    pic->bit_size.x = (int) (furx-fllx);
-		    pic->bit_size.y = (int) (fury-flly);
-		    break;
-		}
-	    } else if (!strncmp(line, "%%Begin", 7)) {
-		++nested;
-	    } else if (nested && !strncmp(line, "%%End", 5)) {
-		--nested;
-	    }
 	}
-	free(line);
-	fprintf(tfp, "%% Begin Imported %s File: %s\n",
-				pdf_flag? "PDF" : "EPS", pic->file);
+
+	fprintf(tfp, "%% Begin Imported EPS File: %s\n", pic->file);
 	fprintf(tfp, "%%%%BeginDocument: %s\n", pic->file);
 	fputs("%\n", tfp);
 	return 1;
