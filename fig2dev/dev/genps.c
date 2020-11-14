@@ -254,6 +254,7 @@ extern void JPEGtoPS(FILE *f, FILE *PSfile);
 extern int  read_xpm(char *filename, int filetype,F_pic *pic,int *llx,int *lly);
 #endif
 extern int  append_epsi(FILE *in, const char *filename, FILE *out);
+extern int  pdftops();
 
 /* headers for various image files */
 
@@ -1829,7 +1830,8 @@ genps_line(F_line *l)
 			}
 
 		/* EPS file */
-		} else if (l->pic->subtype == P_EPS) {
+		} else if (l->pic->subtype == P_EPS &&
+				strcmp(headers[i].type, "PDF")) {
 		    fputs("% EPS file follows:\n", tfp);
 		    if (!rewind_stream(&pic_stream)) {
 			err_msg("Unable to open EPS file '%s'");
@@ -1853,6 +1855,10 @@ genps_line(F_line *l)
 							pic_stream.fp)))
 				fwrite(buffer, 1, len, tfp);
 		    }
+		} else if (!strcmp(headers[i].type, "PDF")) {
+		  fputs("% PDF file converted to EPS follows:\n", tfp);
+		  fflush(tfp);
+		  pdftops(&pic_stream, tfp);
 		}
 
 		close_stream(&pic_stream);

@@ -265,7 +265,7 @@ scan_mediabox(FILE *file, int *llx, int *lly, int *urx, int *ury)
 }
 
 /*
- * Read a PDF file.
+ * Get the bounding box of a PDF file.
  * Return codes: 1 - success,
  *		 0 - failure.
  */
@@ -356,6 +356,139 @@ read_eps(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	fprintf(tfp, "%%%%BeginDocument: %s\n", pic->file);
 	fputs("%\n", tfp);
 	return 1;
+}
+
+static int
+has_pdftops(void)
+{
+	static int	res = -1;
+	if (res != -1)
+		return res;
+	if (system("pdftops -v 2>/dev/null"))
+		res = 0;
+	else
+		res = 1;
+	return res;
+}
+
+static int
+has_pdftocairo(void)
+{
+	static int	res = -1;
+	if (res != -1)
+		return res;
+	if (system("pdftocairo -v 2>/dev/null"))
+		res = 0;
+	else
+		res = 1;
+	return res;
+}
+
+#ifdef GSEXE
+static int
+has_gs(void)
+{
+	static int	res = -1;
+	if (res != -1)
+		return res;
+	if (system(GSEXE " -v >/dev/null"))
+		res = 0;
+	else
+		res = 1;
+	return res;
+}
+#endif
+
+/*
+ * Convert a pdf to eps, and write the resulting pdf to the output stream.
+ * Return 0 on success, -1 on failure.
+ */
+int
+pdftops(struct xfig_stream *restrict pic_stream, FILE *out)
+{
+	char	cmd_buf[256];
+	char 	*cmd = cmd_buf;
+	char	buf[BUFSIZ];
+	char	*cmd_fmt;
+	int	ret = 0;
+	size_t	size;
+	FILE	*f;
+
+	if (uncompressed_content(pic_stream))
+		return -1;
+
+	if (strchr(pic_stream->content, '\'')) {
+		put_msg("Cannot read a pdf file containing an apostrophe (') "
+				"in its name: %s\nPlease re-name the file.",
+				pic_stream->content);
+		return -1;
+	}
+
+	/*
+	 * Convert a pdf to eps, using the first available of the following:
+	 *   pdftops -q -f 1 -l 1 -eps in.pdf -
+	 *   pdftocairo -q -f 1 -l 1 -eps in.pdf -
+	 *   gs -q -dSAFER -sDEVICE=eps2write -sPageList=1 -o - in.pdf
+	 * Only pdftops uses the original /MediaBox as the BoundingBox in the
+	 * resulting pfd. The other two crop the BoundingBox to the smallest box
+	 * containing all the ink on the paper.
+	 */
+	if (has_pdftops())
+		cmd_fmt = "pdftops -q -f 1 -l 1 -eps '%s' -";
+	else if (has_pdftocairo())
+		cmd_fmt = "pdftocairo -q -f 1 -l 1 -eps '%s' -";
+#ifdef GSEXE
+	else if (has_gs())
+		cmd_fmt = GSEXE
+			" -q -dSAFER -sDEVICE=eps2write -sPageList=1 -o - '%s'";
+#endif
+	else {
+		static bool	reported = false;
+		if (!reported) {
+			put_msg("Cannot convert a pdf to eps.\nPlease install "
+	"either pdftops or pdftocairo from the poppler-utils package,\n"
+#ifdef GSEXE
+	"or the ghostscript program."
+#endif
+			);
+			reported = true;
+		}
+		return -1;
+	}
+
+	size = sizeof cmd_fmt + strlen(pic_stream->content) - 2;
+	if (size > sizeof cmd_buf && (cmd = malloc(size)) == NULL) {
+		put_msg(Err_mem);
+		return -1;
+	}
+	sprintf(cmd, cmd_fmt, pic_stream->content);
+	if ((f = popen(cmd, "r")) == NULL) {
+		err_msg("Cannot convert pdf to eps");
+		put_msg("Command: %s", cmd);
+		if (cmd != cmd_buf)
+			free(cmd);
+		return -1;
+	}
+	while ((size = fread(buf, 1, sizeof buf, f)) &&
+			fwrite(buf, 1, size, out) == size)
+		;
+	if (ferror(f)) {
+		err_msg("Could not read from pipe %s", cmd);
+		ret = -1;
+	}
+	if (ferror(tfp)) {
+		err_msg("Cannot write to output");
+		ret = -1;
+	}
+	if (pclose(f)) {
+		err_msg("Failed to convert pdf to eps");
+		put_msg("Command: %s", cmd);
+		ret = -1;
+	}
+	if (cmd != cmd_buf)
+		free(cmd);
+
+	return ret;
 }
 
 

@@ -286,6 +286,7 @@ rewind_stream(struct xfig_stream *restrict xf_stream)
  * Have xf_stream->content either point to a regular file containing the
  * uncompressed content of xf_stream->name, or to xf_stream->name_on_disk, if
  * name_on_disk is not compressed.
+ * Return 0 on succes, -1 on failure.
  * Use after a call to open_stream():
  *	struct xfig_stream	xf_stream;
  *	open_stream(name, &xf_stream);
@@ -307,6 +308,10 @@ uncompressed_content(struct xfig_stream *restrict xf_stream)
 		xf_stream->content = xf_stream->name_on_disk;
 		return 0;
 	}
+
+	/* return early, if uncompressed_content was already called */
+	if (*xf_stream->uncompress)
+		return 0;
 
 	/* create a temporary file */
 	strcpy(xf_stream->content, "f2dXXXXXX");
