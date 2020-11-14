@@ -888,6 +888,8 @@ genps_start(F_compound *objects)
 			fclose(fp);
 			}
 		}
+		if (localefile != localefile_buf)
+			free(localefile);
 	}
 #endif /* I18N */
 
