@@ -34,6 +34,7 @@
 #include "fig2dev.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "genps.h"
+#include "messages.h"
 
 /*
  * The ghostscript command line.
@@ -43,12 +44,17 @@
  * The default, -dAutoFilterColorImages=true is fine for e.g., png and jpg.
  * -o also sets -dBATCH -dNOPAUSE
  */
+#ifdef GSEXE
 #define	GSFMT	GSEXE " -q -dSAFER -sAutoRotatePages=None -sDEVICE=pdfwrite " \
 			"-dPDFSETTINGS=/prepress -o '%s' -"
+#else
+#define GSFMT
+#endif
 
 /* String buffer for the ghostscript command. 82 chars for the filename */
 static char	com_buf[sizeof GSFMT + 80];
 static char	*com = com_buf;
+
 
 void
 genpdf_option(char opt, char *optarg)
@@ -79,6 +85,7 @@ pdf_broken_pipe(int sig)
 void
 genpdf_start(F_compound *objects)
 {
+#ifdef GSEXE
 	int	len;
 	char	*ofile;
 
@@ -110,6 +117,11 @@ genpdf_start(F_compound *objects)
 		exit(EXIT_FAILURE);
 	}
 	genps_start(objects);
+#else /* GSEXE */
+	put_msg("This fig2dev is compiled without ghostscript support.\n"
+			"Cannot create pdf output.");
+	exit(EXIT_FAILURE);
+#endif
 }
 
 int
@@ -129,12 +141,10 @@ genpdf_end(void)
 	/* we've already closed the original output file */
 	tfp = 0;	/* so main() does not close tfp again */
 	if (status != 0) {
-		fprintf(stderr, "Error in ghostcript command\n");
-		fprintf(stderr, "command was: %s\n", com);
+		err_msg("Error in ghostcript command,\n  %s", com);
 		status = -1;
 	} else {
 		(void)signal(SIGPIPE, SIG_DFL);
-		status = 0;
 	}
 
 	if (com != com_buf)

@@ -55,7 +55,11 @@
  * string. The ghostscript output might be the final image, or the output is
  * piped to various conversion commands.
  */
+#ifdef GSEXE
 #define GS_CMD		GSEXE " -q -dSAFER -r80 -g%dx%d -sDEVICE=%s"
+#else
+#define GS_CMD
+#endif
 /* will be printed to the string antialias */
 #define ANTIALIAS	" -dTextAlphaBits=%d -dGraphicsAlphaBits=%d"
 #define GS_TO		" -o '%s' -"
@@ -85,7 +89,9 @@
 static char	com_buf[sizeof GS_CMD ANTIALIAS GS_PIPE NET_TO ERR +
 							CONVERT_MAX_LEN + 80];
 static char	*com = com_buf;
+#ifdef GSEXE
 static FILE	*errfile;
+#endif
 static char	errfname_buf[L_xtmpnam] = "f2derrorXXXXXX";
 static char	*errfname = errfname_buf;
 static int	jpeg_quality = 75;
@@ -160,6 +166,7 @@ genbitmaps_option(char opt, char *optarg)
 	}
 }
 
+#ifdef GSEXE
 /*
  * Check functioning of netpbm programs with a 2x2 test image consisting of a
  * white, a red, a blue, and a black pixel.
@@ -212,6 +219,7 @@ bitmaps_broken_pipe(int sig)
 	fprintf(stderr, "command was: %s\n", com);
 	exit(EXIT_FAILURE);
 }
+#endif /* GSEXE */
 
 void
 genbitmaps_start(F_compound *objects)

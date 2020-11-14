@@ -89,8 +89,11 @@ AC_PROG_SED
 # gswin32, for Dos or Windows 3 it is called gs386. Ancient enough.
 AC_CHECK_PROGS([GSEXE],[gs gswin32c gsos2 gswin32 gs386])
 AC_ARG_VAR([GSEXE], [ghostscript command])
-AC_DEFINE_UNQUOTED([GSEXE], ["$GSEXE"],
-	[Define to the name of the ghostscript command.])
+# If ghostscript is not found, GSEXE is set to the empty string.
+# However, we do "#ifdef GSEXE" etc., hence undef GSEXE, if empty.
+AS_IF([test "x$GSEXE" != x],dnl
+    [AC_DEFINE_UNQUOTED([GSEXE], ["$GSEXE"],
+	[Define to the name of the ghostscript command.])])dnl
 
 #
 # Checks for libraries.

@@ -43,6 +43,8 @@ int	read_eps(F_pic *pic, struct xfig_stream *restrict pic_stream,
 		    0 : failure
 */
 
+#ifdef GSEXE
+
 /*
  * Call ghostscript.
  * Return an open file stream for reading,
@@ -83,7 +85,7 @@ gsexe(FILE **out, bool *isnew, char *exenew, char *exeold)
 		n = fscanf(fp, "%lf", &rev);
 		stat = pclose(fp);
 		if (n != 1 || stat != 0)
-			return failure;
+			return stat == 0 ? failure : stat;
 
 		if (rev > 9.49) {
 			exe = exenew;
@@ -135,6 +137,7 @@ static int
 gsexe_mediabox(char *file, int *llx, int *lly, int *urx, int *ury)
 {
 	bool	isnew;
+	static bool has_gs = true;
 	int	n;
 	int	stat;
 	size_t	len;
@@ -150,6 +153,9 @@ gsexe_mediabox(char *file, int *llx, int *lly, int *urx, int *ury)
 		"file runpdfbegin 1 pdfgetpage /MediaBox pget pop == quit'";
 	exeold = GSEXE " -q -dNODISPLAY -c '(%s) (r) "
 		"file runpdfbegin 1 pdfgetpage /MediaBox pget pop == quit'";
+
+	if (!has_gs)
+		return -1;
 
 	/* malloc() buffers for the command line, if necessary */
 	fmt = exenew;
@@ -184,6 +190,13 @@ gsexe_mediabox(char *file, int *llx, int *lly, int *urx, int *ury)
 		free(exeold);
 
 	if (stat != 0) {
+		if (stat == 127) {
+			put_msg("Could not call ghostscript executable, " GSEXE
+					".\nPlease install ghostscript to embed"
+					" pdf files into a fig document.");
+			has_gs = false;
+			return -1;
+		}
 		err_msg("Cannot open pipe with command:\n%s",
 				isnew ? exenew : exeold);
 		return -1;
@@ -209,6 +222,8 @@ gsexe_mediabox(char *file, int *llx, int *lly, int *urx, int *ury)
 
 	return 0;
 }
+
+#endif /* GSEXE */
 
 /*
  * Scan a pdf-file for a /MediaBox specification. The FILE pointer file must
@@ -270,16 +285,16 @@ read_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	pic->subtype = P_EPS;
 
 	if (scan_mediabox(pic_stream->fp, llx, lly, &urx, &ury)) {
-		*llx = 0;
-		*lly = 0;
-		pic->bit_size.x = 10;
-		pic->bit_size.y = 10;
+#ifdef GSEXE
 		if (uncompressed_content(pic_stream))
 			return 0;
 		if (gsexe_mediabox(pic_stream->content, llx, lly, &urx, &ury))
 			return 0;
 		pic->bit_size.x = urx - *llx;
 		pic->bit_size.y = ury - *lly;
+#else
+		return 0;
+#endif
 	} else {
 		pic->bit_size.x = urx - *llx;
 		pic->bit_size.y = ury - *lly;
