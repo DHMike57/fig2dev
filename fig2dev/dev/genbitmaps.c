@@ -195,7 +195,7 @@ has_netpbm(const char *cmd)
 static bool
 has_ImageMagick(void)
 {
-	if (system("convert -version") == 0)
+	if (system("convert -version >/dev/null") == 0)
 		return true;
 	else
 		return false;
@@ -204,7 +204,7 @@ has_ImageMagick(void)
 static bool
 has_GraphicsMagick(void)
 {
-	if (system("gm version") == 0)
+	if (system("gm version >/dev/null") == 0)
 		return true;
 	else
 		return false;
