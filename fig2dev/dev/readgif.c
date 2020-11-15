@@ -223,12 +223,19 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 			free(pcxname);
 		return 0;
 	}
+#define REMOVE_PCXFILE			\
+	do {				\
+		fclose(pcx);		\
+		unlink(pcxname);	\
+		if (pcxname != pcxname_buf) \
+			free(pcxname);	\
+	} while (0)
+
 
 	/* now call giftopnm and ppmtopcx */
 	if ((size = strlen(cmd_fmt) + strlen(pcxname) > sizeof buf) &&
 			(cmd = malloc(size - 1)) == NULL) {
-		if (pcxname != pcxname_buf)
-			free(pcxname);
+		REMOVE_PCXFILE;
 		return 0;
 	}
 	sprintf(cmd, cmd_fmt, pcxname);
@@ -236,9 +243,7 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	giftopcx = popen(cmd, "w");
 	if (giftopcx == NULL) {
 		err_msg("Cannot convert gif to pcx, %s", cmd);
-		unlink(pcxname);
-		if (pcxname != pcxname_buf)
-			free(pcxname);
+		REMOVE_PCXFILE;
 		if (cmd != buf)
 			free(cmd);
 		return 0;
@@ -248,21 +253,23 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 
 	/* rewind gif stream */
 	if (!rewind_stream(pic_stream)) {
-		if (pcxname != pcxname_buf)
-			free(pcxname);
+		REMOVE_PCXFILE;
 		return 0;
 	}
 	while ((size = fread(buf, 1, sizeof buf, pic_stream->fp)) != 0)
 		fwrite(buf, size, 1, giftopcx);
-	pclose(giftopcx);
+
+	if (pclose(giftopcx)) {
+		err_msg("Could not read gif file '%s'", pic_stream->name);
+		REMOVE_PCXFILE;
+		return 0;
+	}
 
 	rewind(pcx);
 	/* now call _read_pcx to read the pcx file */
 	stat = _read_pcx(pcx, pic);
 
-	fclose(pcx);
-	if (pcxname != pcxname_buf)
-		free(pcxname);
+	REMOVE_PCXFILE;
 
 	/* now match original transparent colortable index with possibly new
 	   colortable from ppmtopcx */
