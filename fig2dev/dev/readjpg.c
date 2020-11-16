@@ -45,15 +45,9 @@
 #include "psimage.h"
 #include "readpics.h"
 
-/* FIXME: remove quiet, autorotate */
-
-int Margin	= 20;		/* safety margin */
-bool quiet	= false;	/* suppress informational messages */
-bool autorotate = false;	/* disable automatic rotation */
-
 extern	bool	AnalyzeJPEG(imagedata *image);
-extern	int	ASCII85Encode(FILE *in, FILE *out);
-extern	void	ASCIIHexEncode(FILE *in, FILE *out);
+extern	int	ASCII85Encode(FILE *in, FILE *out);	/* asc85ec.c */
+extern	void	ASCIIHexEncode(FILE *in, FILE *out);	/* asc85ec.c */
 
 static char *ColorSpaceNames[] = {"", "Gray", "", "RGB", "CMYK" };
 
@@ -153,8 +147,8 @@ JPEGtoPS(FILE *f, FILE *PSfile) {
    * compensate for the color inversion in the PostScript code
    */
   if (JPEG->adobe && JPEG->components == 4) {
-    if (!quiet)
-	fprintf(stderr, "Note: Adobe-conforming CMYK file - applying workaround for color inversion.\n");
+	/* fprintf(stderr, "Note: Adobe-conforming CMYK file - applying"
+				" workaround for color inversion.\n"); */
     fprintf(PSfile, "	  /Decode [1 0 1 0 1 0 1 0]\n");
   }else {
     fprintf(PSfile, "	  /Decode [0 1");
@@ -208,8 +202,6 @@ JPEGtoPS(FILE *f, FILE *PSfile) {
  * This table contains far too many names since jpeg2ps
  * is rather simple-minded about markers
  */
-
-extern bool quiet;
 
 typedef enum {		/* JPEG marker codes			*/
   M_SOF0  = 0xc0,	/* baseline DCT				*/
