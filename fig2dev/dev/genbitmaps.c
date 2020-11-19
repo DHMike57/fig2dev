@@ -92,7 +92,7 @@ static char	*com = com_buf;
 #ifdef GSEXE
 static FILE	*errfile;
 #endif
-static char	errfname_buf[L_xtmpnam] = "f2derrorXXXXXX";
+static char	errfname_buf[128] = "f2derrorXXXXXX";
 static char	*errfname = errfname_buf;
 static int	jpeg_quality = 75;
 static int	border_margin = 0;

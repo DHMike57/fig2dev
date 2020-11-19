@@ -98,9 +98,9 @@ bool		asciipreview = false;	/* add ASCII preview? */
 bool		tiffpreview = false;	/* add a TIFF preview? */
 bool		tiffcolor = false;	/* color or b/w TIFF preview */
 		/* temp filename for eps when adding tiff preview */
-static char	tmpeps_buf[L_xtmpnam] = "f2dtmpepsXXXXXX";
+static char	tmpeps_buf[128] = "f2depsXXXXXX";
 		/* temp filename for ASCII or tiff preview */
-static char	tmpprev_buf[L_xtmpnam] = "f2dtmpprevXXXXXX";
+static char	tmpprev_buf[128] = "f2dprevXXXXXX";
 static char	*tmpeps = tmpeps_buf;
 static char	*tmpprev = tmpprev_buf;
 static bool	anonymous = true;
@@ -1115,7 +1115,7 @@ genps_end(void)
 	tfp = saveofile;
 
 	/* make name for temp output file */
-	if ((saveofile = xtmpfile(&tmpprev, sizeof tmpprev)) == NULL) {
+	if ((saveofile = xtmpfile(&tmpprev, sizeof tmpprev_buf)) == NULL) {
 	    fprintf(stderr, "Can not create temporary file %s.\n", tmpprev);
 	    fprintf(stderr, "No preview will be produced\n");
 	    if (tmpprev != tmpprev_buf)

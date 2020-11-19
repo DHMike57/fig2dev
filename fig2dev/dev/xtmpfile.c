@@ -94,7 +94,7 @@ xtmpfile(char **pattern, size_t len)
 
 	/* prepend the temporary directory */
 	if (p) {
-		char	str_buf[L_xtmpnam];
+		char	str_buf[256];
 		char	*str = str_buf;
 		size_t	n;
 

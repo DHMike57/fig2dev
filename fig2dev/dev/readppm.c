@@ -316,7 +316,7 @@ read_ppm(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	char	buf[BUFSIZ];
 	char	*cmd = buf;
 	char	*const cmd_fmt = "ppmtopcx -quiet >%s 2>/dev/null";
-	char	pcxname_buf[L_xtmpnam] = "f2dpcxXXXXXX";
+	char	pcxname_buf[128] = "f2dpcxXXXXXX";
 	char	*pcxname = pcxname_buf;
 
 	*llx = *lly = 0;
