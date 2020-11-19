@@ -90,8 +90,8 @@ file_on_disk(char *restrict name, char *restrict *found, size_t len,
 	size_t		name_len;
 	char		*suffix;
 	struct stat	status;
-	static const char empty[] = "";
-	static const char *filetypes[][2] = {
+	static const char	empty[] = "";
+	static char *const	filetypes[][2] = {
 		/* sorted by popularity? */
 #define FILEONDISK_ADD	5	/* must be max(strlen(filetypes[0][])) + 1 */
 		{ ".gz",	"gunzip -c" },
@@ -302,6 +302,7 @@ uncompressed_content(struct xfig_stream *restrict xf_stream)
 	int		len;
 	char		command_buf[256];
 	char		*command = command_buf;
+	char *const	uncompress_fmt = "%s '%s' >%s";
 	FILE		*f;
 
 	if (*xf_stream->uncompress == '\0') {
@@ -322,23 +323,20 @@ uncompressed_content(struct xfig_stream *restrict xf_stream)
 		return ret;
 
 	/* uncompress to a temporary file */
-#define	UNCOMPRESS_FMT	"%s '%s' >%s"
-	len = snprintf(command, sizeof command_buf, UNCOMPRESS_FMT,
+	len = snprintf(command, sizeof command_buf, uncompress_fmt,
 			xf_stream->uncompress, xf_stream->name_on_disk,
 			xf_stream->content);
-	if (len < 0) {
-		err_msg("Unable to write command string, " UNCOMPRESS_FMT,
-			    xf_stream->uncompress, xf_stream->name_on_disk,
-			    xf_stream->content);
-		return ret;
-	}
 	if (len >= (int)(sizeof command_buf)) {
 		if ((command = malloc(len + 1)) == NULL) {
 			put_msg(Err_mem);
 			return ret;
 		}
-		sprintf(command, UNCOMPRESS_FMT, xf_stream->uncompress,
+		len = sprintf(command, uncompress_fmt, xf_stream->uncompress,
 				xf_stream->name_on_disk, xf_stream->uncompress);
+	}
+	if (len < 0) {
+		err_msg("Unable to write command to uncompress file");
+		return ret;
 	}
 
 	if (system(command) == 0)

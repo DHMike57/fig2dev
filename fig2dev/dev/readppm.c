@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdint.h>		/* INT16_MAX */
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <limits.h>
 
@@ -315,7 +316,7 @@ read_ppm(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	char	buf[BUFSIZ];
 	char	*cmd = buf;
 	char	*const cmd_fmt = "ppmtopcx -quiet >%s 2>/dev/null";
-	char	pcxname_buf[L_xtmpnam] = "f2dtmppcxXXXXXX";
+	char	pcxname_buf[L_xtmpnam] = "f2dpcxXXXXXX";
 	char	*pcxname = pcxname_buf;
 
 	*llx = *lly = 0;
@@ -331,24 +332,21 @@ read_ppm(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 		return 0;
 	}
 
-	/* write the command for the pipe to ppmtopcx */
-	stat = snprintf(cmd, sizeof buf, cmd_fmt, pcxname);
-	if (stat < 0 ) {
+	/* write the command for the pipe to cmd */
+	size = sizeof cmd_fmt + strlen(pcxname) - 2;
+	if (size > sizeof buf && (cmd = malloc(size)) == NULL) {
+		put_msg(Err_mem);
+		remove(pcxname);
+		if (pcxname != pcxname_buf)
+			free(pcxname);
+		return 0;
+	}
+	if (sprintf(cmd, cmd_fmt, pcxname) < 0) {
 		err_msg("fig2dev, I/O error");
 		remove(pcxname);
 		if (pcxname != pcxname_buf)
 			free(pcxname);
 		return 0;
-	} else if ((size_t)stat >= sizeof buf) {
-		cmd = malloc((size_t)stat);
-		if (cmd == NULL) {
-			fputs("fig2dev: Out of memory.\n", stderr);
-			remove(pcxname);
-			if (pcxname != pcxname_buf)
-				free(pcxname);
-			return 0;
-		}
-		sprintf(cmd, cmd_fmt,pcxname);
 	}
 
 	/* pipe to ppmtopcx */

@@ -48,7 +48,7 @@
 #define	GSFMT	GSEXE " -q -dSAFER -sAutoRotatePages=None -sDEVICE=pdfwrite " \
 			"-dPDFSETTINGS=/prepress -o '%s' -"
 #else
-#define GSFMT
+#define GSFMT	""
 #endif
 
 /* String buffer for the ghostscript command. 82 chars for the filename */
@@ -86,7 +86,7 @@ void
 genpdf_start(F_compound *objects)
 {
 #ifdef GSEXE
-	int	len;
+	size_t	len;
 	char	*ofile;
 
 	/* divert output from ps driver to the pipe into ghostscript */
@@ -98,22 +98,21 @@ genpdf_start(F_compound *objects)
 		ofile = "-";
 	}
 
-	len = snprintf(com, sizeof com_buf, GSFMT, ofile);
-	if (len < 0) {
-		fputs("fig2dev: error when creating ghostscript command\n",
-				stderr);
+	/* write command for conversion to pdf */
+	len = sizeof GSFMT + strlen(ofile) - 2;
+	if (len > sizeof com_buf && (com = malloc(len)) == NULL) {
+		put_msg(Err_mem);
 		exit(EXIT_FAILURE);
-	} else if ((size_t)len >= sizeof com_buf &&
-			(com = malloc((size_t)(len + 1))) == NULL) {
-	       fputs("Cannot allocate memory for ghostscript command string.\n",
-			stderr);
+	}
+	if (sprintf(com, GSFMT, ofile) < 0) {
+		err_msg("fig2dev: error when creating ghostscript command");
 		exit(EXIT_FAILURE);
 	}
 
 	(void) signal(SIGPIPE, pdf_broken_pipe);
 	if ((tfp = popen(com, "w")) == 0) {
-		fprintf(stderr, "fig2dev: Cannot open pipe to ghostscript\n");
-		fprintf(stderr, "command was: %s\n", com);
+		err_msg("fig2dev: Cannot open pipe to ghostscript");
+		put_msg("Command was: %s", com);
 		exit(EXIT_FAILURE);
 	}
 	genps_start(objects);

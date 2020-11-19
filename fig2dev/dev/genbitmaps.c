@@ -485,12 +485,16 @@ genbitmaps_start(F_compound *objects)
 	/* write the command */
 	n = snprintf(com, sizeof com_buf, fmt,
 			width, height, gsdev, out, errfname);
-	if ((size_t)n >= sizeof com_buf) {
+	if (n >= (int)(sizeof com_buf)) {
 		if ((com = malloc((size_t)(n + 1))) == NULL) {
-			fputs(Err_mem, stderr);
+			put_msg(Err_mem);
 			BITMAP_EXIT_FAILURE;
 		}
-		sprintf(com, fmt, width, height, gsdev, out, errfname);
+		n = sprintf(com, fmt, width, height, gsdev, out, errfname);
+	}
+	if (n < 0) {
+		err_msg("Cannot write command for conversion to bitmap");
+		BITMAP_EXIT_FAILURE;
 	}
 
 	(void) signal(SIGPIPE, bitmaps_broken_pipe);
