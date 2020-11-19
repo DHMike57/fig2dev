@@ -299,6 +299,10 @@ read_pdf(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 		pic->bit_size.x = urx - *llx;
 		pic->bit_size.y = ury - *lly;
 	}
+	fprintf(tfp, "%% Begin Imported PDF File, converted to EPS: %s\n",
+			pic->file);
+	fprintf(tfp, "%%%%BeginDocument: %s\n", pic->file);
+	fputs("%\n", tfp);
 	return 1;
 }
 
