@@ -2,7 +2,7 @@ dnl Fig2dev: Translate Fig code to various Devices
 dnl Copyright (c) 1991 by Micah Beck
 dnl Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 dnl Parts Copyright (c) 1989-2015 by Brian V. Smith
-dnl Parts Copyright (c) 2015-2018 by Thomas Loimer
+dnl Parts Copyright (c) 2015-2020 by Thomas Loimer
 dnl
 dnl Any party obtaining a copy of these files is granted, free of charge, a
 dnl full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -239,4 +239,16 @@ AT_CLEANUP
 AT_SETUP([find /MediaBox in pdf file])
 AT_KEYWORDS(pdf)
 AT_CHECK(["$abs_builddir"/test2 "$srcdir/data/cross.pdf"], 0, ignore)
+AT_CLEANUP
+
+AT_SETUP([pdf])
+AT_KEYWORDS(pdf)
+AT_SKIP_IF([NO_GS])
+AT_CHECK([fig2dev -L pdf <<EOF
+FIG_FILE_TOP
+2 5 0 1 0 -1 50 -1 -1 0.000 0 0 -1 0 0 5
+	0 $srcdir/data/cross.pdf
+	 75 75 585 75 585 285 75 285 75 75
+EOF
+], 0, ignore)
 AT_CLEANUP
