@@ -130,8 +130,7 @@ AT_SETUP([absolute path in fig file, pipe ok])
 AT_KEYWORDS(readpics fullpath imgpipe)
 # if the path contains '%', the sed-command below fails
 AT_SKIP_IF([echo $abs_srcdir | $FGREP %])
-AT_CHECK([cp $srcdir/data/line.eps $abs_builddir/data/img.eps && \
-	$SED "11 s%line%$abs_builddir/data/img%" $srcdir/data/boxwimg.fig | \
+AT_CHECK([$SED "11 s%line%$abs_srcdir/data/line%" $srcdir/data/boxwimg.fig | \
 		fig2dev -L eps
 ],0,ignore)
 AT_CLEANUP
