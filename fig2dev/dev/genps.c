@@ -73,6 +73,32 @@
 #include "psprolog.h"
 extern int v2_flag, v21_flag, v30_flag;		/* read.c */
 
+/*
+ * These function declarations really should be in header files.
+ * But they are only used once, here in genps.c.
+ */
+#define READ_SIGNATURE \
+	F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx, int *lly
+extern int  read_gif(READ_SIGNATURE);
+extern int  read_pcx(READ_SIGNATURE);
+extern int  read_eps(READ_SIGNATURE);
+extern int  read_pdf(READ_SIGNATURE);
+extern int  read_ppm(READ_SIGNATURE);
+extern int  read_tif(READ_SIGNATURE);
+extern int  read_xbm(READ_SIGNATURE);
+#ifdef HAVE_PNG_H
+extern int  read_png(READ_SIGNATURE);
+#endif
+extern int  read_jpg(READ_SIGNATURE);
+#ifdef HAVE_X11_XPM_H
+extern int  read_xpm(READ_SIGNATURE);
+#endif
+#undef READ_SIGNATURE
+
+extern void JPEGtoPS(FILE *f, FILE *PSfile);
+extern int  append_epsi(FILE *in, const char *filename, FILE *out);
+extern int  pdftops();
+
 #ifdef I18N
 extern bool	support_i18n;  /* enable i18n support? */
 static bool	enable_composite_font = false;
@@ -236,25 +262,6 @@ static bool	useabsolutecoo = false;
 
 static void	do_split(); /* new procedure to split different depths' objects */
 			    /* but only as comment */
-int	filtype;
-extern int  read_gif(char *filename, int filetype,F_pic *pic,int *llx,int *lly);
-extern int  read_pcx(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
-extern int  read_eps(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
-extern int  read_pdf(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
-extern int  read_ppm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
-extern int  read_tif(char *filename ,int filetype,F_pic *pic,int *llx,int *lly);
-extern int  read_xbm(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
-#ifdef HAVE_PNG_H
-extern int  read_png(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
-#endif
-			/* this actually only reads the header info */
-extern int  read_jpg(FILE *file, int filetype, F_pic *pic, int *llx, int *lly);
-extern void JPEGtoPS(FILE *f, FILE *PSfile);
-#ifdef HAVE_X11_XPM_H
-extern int  read_xpm(char *filename, int filetype,F_pic *pic,int *llx,int *lly);
-#endif
-extern int  append_epsi(FILE *in, const char *filename, FILE *out);
-extern int  pdftops();
 
 /* headers for various image files */
 
