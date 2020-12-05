@@ -322,7 +322,7 @@ static char *warnings[] = {
   /*12 */ "BMEPS returned non-0 exit code; picture conversion to eps probably failed (exit code 17).",
   /*13 */ "Non-EPS picture paths were converted to the eps image directory.",
   /*14 */ "Pictures were converted and placed in the eps image directory.",
-  /*15 */ "Subsituted LaTeX font for PS.  Use -v to see details.",
+  /*15 */ "Substituted LaTeX font for PS.  Use -v to see details.",
   /*16 */ "Image scaled to page.",
   /*17 */ "Setting unit requires \\psset{unit=X}\\newlength\\unit\\setlength\\unit{X}.",
   /*18 */ "Linejoins depend on PSTricks version. Use -t option to ensure compatibility.",
