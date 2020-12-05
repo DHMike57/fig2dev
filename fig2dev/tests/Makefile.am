@@ -40,17 +40,6 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	} >'$(srcdir)/package.m4'
 
 check_PROGRAMS = test1 test2
-# test1 called malloc(). AC_FUNC_MALLOC may replace malloc() by rpl_malloc()
-# which is defined in malloc.o. The latter is contained in $(LIBOBJS) in
-# ${LIBOBJDIR}. Specifically, ./configure CFLAGS="-fsanitize=address" causes
-# this replacment. Unfortunately, using test1_LDADD, causes make distcheck to
-# fail, because both this Makefile and the one in .. try to clean
-# ../libs/.deps/*.Po on make distcheck, when ./configure is used with
-# --enable-dependency-tracking, which is the default. Using
-# EXTRA_test1_DEPENDENCIES = $(LIBOBJS) also failed.
-#
-# Uncomment the line below, when using CFLAGS=-fsanitize=address
-#test1_LDADD = $(LIBOBJS)
 
 # keep the definitions below in sync with those in ../dev/Makefile.am
 if ENABLE_I18N
@@ -64,6 +53,8 @@ test2_LDADD = $(top_builddir)/fig2dev/dev/libdrivers.a \
 #	$(top_builddir)/fig2dev/dev/readpics.$(OBJEXT)
 test2_DEPENDENCIES = $(test2_LDADD)
 
+$(top_builddir)/fig2dev/dev/libdrivers.a:
+	cd $(top_builddir)/fig2dev/dev && $(MAKE) $(AM_MAKEFLAGS) libdrivers.a
 
 check-local: atconfig $(TESTSUITE) atlocal
 	$(SHELL) '$(TESTSUITE)' INSTALLCHECK=no $(TESTSUITEFLAGS)
