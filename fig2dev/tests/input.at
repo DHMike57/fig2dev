@@ -78,6 +78,8 @@ AT_BANNER([Find and decompress embedded image files.])
 # fig2dev searches relative to the location of the fig-file.
 # A pipe is alright for translation to eps, but not for translation
 # to tiff.
+# "pipe ok" and "no pipe" in AT_SETUP refers to whether the image is of
+# a type which fig2dev internally can read from a pipe, or not.
 
 m4_define([NO_GZIP],[! gunzip --version || ! gzip --version])
 
@@ -95,8 +97,9 @@ AT_SETUP([name in fig file img.Z, file img.Z, no pipe])
 AT_KEYWORDS(readpics Z imgfile)
 AT_SKIP_IF([NO_GZIP || NO_GS || ! pnmtotiff -version])
 AT_CHECK([gzip -q -c $srcdir/data/line.eps >line.eps.Z && \
-	$SED '11 s/eps/eps.Z/' $srcdir/data/boxwimg.fig | fig2dev -L tiff
-],0,ignore-nolog)
+	$SED '11 s/eps/eps.Z/' $srcdir/data/boxwimg.fig >boxwimg.fig && \
+	fig2dev -L tiff boxwimg.fig b.tif
+])
 AT_CLEANUP
 
 AT_SETUP([name in fig file img, file img.gz, pipe ok])
@@ -111,10 +114,9 @@ AT_CLEANUP
 AT_SETUP([name in fig file img, file img.z, no pipe])
 AT_KEYWORDS(readpics z imgfile)
 AT_SKIP_IF([NO_GZIP || NO_GS || ! pnmtotiff -version])
-# Use cat, so fig2dev looks in the current dir, not in $srcdir/data
 AT_CHECK([gzip -q -c $srcdir/data/line.eps >line.eps.z && \
-	cat $srcdir/data/boxwimg.fig | fig2dev -L tiff
-],0,ignore-nolog)
+	cp $srcdir/data/boxwimg.fig . && fig2dev -L tiff boxwimg.fig b.tif
+])
 AT_CLEANUP
 
 AT_SETUP([name in fig file img, file img.Z, pipe ok])
