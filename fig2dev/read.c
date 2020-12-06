@@ -22,6 +22,7 @@
 
 #include <ctype.h>
 #include <limits.h>
+#include <stddef.h>	/* ptrdiff_t */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
