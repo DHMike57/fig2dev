@@ -29,6 +29,7 @@
 #include "fig2dev.h"
 #include "object.h"	/* does #include <X11/xpm.h> */
 #include "colors.h"	/* rgb2luminance() */
+#include "messages.h"
 #include "readpics.h"
 
 /* return codes:  1 : success
@@ -38,20 +39,15 @@
 int
 read_png(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
-    unsigned int    i, j;
-    png_structp	    png_ptr;
-    png_infop	    info_ptr;
-    png_infop	    end_info;
-    png_uint_32	    w, h, rowsize;
+    int    i;
     int		    bit_depth, color_type, interlace_type;
     int		    compression_type, filter_type;
+    png_uint_32	    j, w, h;
+    png_structp	    png_ptr;
+    png_infop	    info_ptr;
+    size_t	    row_bytes;
     png_bytep	   *row_pointers;
-    unsigned char  *ptr;
-    int		    num_palette;
-    png_colorp	    palette;
     double          gamma;
-    png_color_16p   file_background;
-    png_color_16    png_background;
 
     if (!rewind_stream(pic_stream))
 	return 0;
@@ -69,16 +65,19 @@ read_png(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	return 0;
     }
 
-    end_info = png_create_info_struct(png_ptr);
-    if (!end_info) {
-	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
-	return 0;
-    }
+    /*
+     * According to the png specification,
+     * http://www.w3.org/TR/2003/REC-PNG-20031110, all chunks which are of
+     * interest here must appear before the image data. Hence, a second info
+     * pointer, end_info, is not needed. The latter would be created similarly
+     * to info_ptr above,  end_info = png_create_info_struct(png_ptr),
+     * but _after_ reading the image data, I believe.
+     */
 
     /* set long jump here */
     if (setjmp(png_jmpbuf(png_ptr))) {
 	/* if we get here there was a problem reading the file */
-	png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
 	return 0;
     }
 
@@ -95,138 +94,165 @@ read_png(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
     if (png_get_gAMA(png_ptr, info_ptr, &gamma))
 	png_set_gamma(png_ptr, 2.2, gamma);
     else
-	png_set_gamma(png_ptr, 2.2, 0.45);
+	png_set_gamma(png_ptr, 2.2, 0.45455);
 
-    if (png_get_bKGD(png_ptr, info_ptr, &file_background))
-	/* set the background to the one supplied */
-	png_set_background(png_ptr, file_background,
-		PNG_BACKGROUND_GAMMA_FILE, 1, 1.0);
-    else {
-	/* blend the canvas background using the alpha channel */
+    /* force to 8-bits per pixel if less than 8
+       this works both for palette and rgb images */
+    if (bit_depth < 8)
+	png_set_packing(png_ptr);
+
+    /* reduce 16 bit to 8 bit */
+    if (bit_depth == 16)
+#ifdef PNG_READ_SCALE_16_TO_8_SUPPORTED
+	png_set_scale_16(png_ptr);
+#else
+	png_set_strip_16(png_ptr);
+#endif
+
+    /*
+     * Image data is transformed to 8 bit rgb data, or to indexed data with
+     * maximum 256 color map entries. The data always has 1 byte per pixel,
+     * regardless of bit_depth. Alpha channels are removed by compositing
+     * with a background. For the application of transformations, the matrix at
+     * line 1800 of file libpng-manual.txt was most useful. We are interested in
+     * conversions to, as is denoted there, "0" - grayscale, "2" - rgb color.
+     * Palette images are basically not transformed (except transparency color
+     * blending?).
+     */
+
+    /* color png */
+    if (color_type & PNG_COLOR_MASK_COLOR) {
+	/* strip 16-bit RGB values down to 8-bit
+	   pngs with a palette have a maximum bit_depth of 8 */
+	if (bit_depth == 16)
+#ifdef PNG_READ_SCALE_16_TO_8_SUPPORTED
+		png_set_scale_16(png_ptr);
+#else
+		png_set_strip_16(png_ptr);
+#endif
+
+	/* user wants grayscale, map to gray */
+	if (grayonly) {
+
+	    /* this works for palette as well as rgb image data;
+	       creates 8 bit grayscale data */
+	    png_set_rgb_to_gray(png_ptr, 1, 0.3, 0.59);
+	    /* default is: 0.2126 * r + 0.7152 * g + 0.0722 * b */
+
+	    /* add a grayscale palette */
+	    for (i = 0; i < 256; ++i)
+		pic->cmap[RED][i] = pic->cmap[GREEN][i] = pic->cmap[BLUE][i] =
+			(unsigned char)i;
+	    pic->numcols = 256;
+	/* else, copy a color palette */
+	} else if (color_type & PNG_COLOR_MASK_PALETTE) {
+	    int		num_palette;
+	    png_colorp	palette;
+
+	    if (png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette)) {
+		for (i = 0; i < num_palette; ++i) {
+		    pic->cmap[RED][i]   = palette[i].red;
+		    pic->cmap[GREEN][i] = palette[i].green;
+		    pic->cmap[BLUE][i]  = palette[i].blue;
+		}
+		pic->numcols = num_palette;
+	    } else {
+		png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+		put_msg("Could not read color palette of png image %s.",
+			pic->file);
+		return 0;
+	    }
+	} else {
+	    /* set order to BGR (default is RGB) */
+	    png_set_bgr(png_ptr);
+	    /* RGB png images can have bit_depths of 8 or 16 */
+	    pic->numcols = 1 << 24;
+	}
+
+    /* grayscale images */
+    } else { /* color_type & PNG_COLOR_MASK_COLOR */
+
+	/* write the grayscale as indexed image, produce the colormap */
+	for (i = 0; i < 1<<bit_depth; ++i)
+		pic->cmap[RED][i] = pic->cmap[GREEN][i] = pic->cmap[BLUE][i] =
+			(unsigned char)(i * 255 / ((1<<bit_depth) - 1));
+		/* (1<<bit_depth) - 1 is either 1, 3, 15 or 255 for bit depths
+						of 1, 2, 4 or 8, respectively */
+	pic->numcols = 1 << bit_depth;
+    }
+
+    /* if the png has an alpha channel, composite the background */
+    if (color_type & PNG_COLOR_MASK_ALPHA) {
+	png_color_16p	file_background;
+	png_color_16	png_background;
+
 	if (bgspec) {
+	    /* blend with the user-supplied background color */
 	    png_background.red   = background.red >> 8;
 	    png_background.green = background.green >> 8;
 	    png_background.blue  = background.blue >> 8;
 	    png_background.gray  = 0;
+	    png_set_background(png_ptr, &png_background,
+		    PNG_BACKGROUND_GAMMA_SCREEN, 0, 2.2);
 	} else {
-	    /* no background specified by user, use white */
-	    png_background.red = png_background.green =
-		png_background.blue = png_background.gray  = 255;
-	}
-	png_set_background(png_ptr, &png_background, PNG_BACKGROUND_GAMMA_SCREEN, 0, 2.2);
-    }
-
-    /* set order to BGR (default is RGB) */
-    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-	png_set_bgr(png_ptr);
-
-    /* if user wants grayscale (-N) then map to gray */
-    if (grayonly &&
-	(color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA))
-	    png_set_rgb_to_gray(png_ptr, 1, 0.3, 0.59);
-
-    /* strip 16-bit RGB values down to 8-bit */
-    if (bit_depth == 16)
-	png_set_strip_16(png_ptr);
-
-    /* force to 8-bits per pixel if less than 8 */
-    if (bit_depth < 8)
-	png_set_packing(png_ptr);
-
-    /* dither rgb files down to 8 bit palette */
-    num_palette = 0;
-    pic->transp = -1;
-    if (color_type & PNG_COLOR_MASK_COLOR) {
-	png_uint_16p	histogram;
-
-	if (png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette)) {
-	    png_get_hIST(png_ptr, info_ptr, &histogram);
-#if (PNG_LIBPNG_VER_MAJOR > 1 || \
-		(PNG_LIBPNG_VER_MAJOR == 1 && (PNG_LIBPNG_VER_MINOR > 4))) \
-	|| defined(png_set_quantize)
-	    png_set_quantize(png_ptr, palette, num_palette, 256, histogram, 0);
-#else
-	    png_set_dither(png_ptr, palette, num_palette, 256, histogram, 0);
-#endif
+	    if (png_get_bKGD(png_ptr, info_ptr, &file_background)) {
+		/* use the background supplied in the png file */
+		png_set_background(png_ptr, file_background,
+			PNG_BACKGROUND_GAMMA_FILE, 1, 1.0);
+	    } else {
+		/* use white */
+		png_background.red = png_background.green =
+		    png_background.blue = png_background.gray = 255;
+		png_set_background(png_ptr, &png_background,
+			PNG_BACKGROUND_GAMMA_SCREEN, 0, 2.2);
+	    }
 	}
     }
-    if (color_type == PNG_COLOR_TYPE_GRAY ||
-		    color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
-	/* expand to full range */
-	png_set_expand(png_ptr);
-	/* make a gray colormap */
-	num_palette = 256;
-	for (i = 0; i < (unsigned) num_palette; ++i)
-	    pic->cmap[RED][i] = pic->cmap[GREEN][i] = pic->cmap[BLUE][i] = i;
-    } else {
-	/* transfer the palette to the object's colormap */
-	for (i=0; i < (unsigned) num_palette; ++i) {
-	    pic->cmap[RED][i]   = palette[i].red;
-	    pic->cmap[GREEN][i] = palette[i].green;
-	    pic->cmap[BLUE][i]  = palette[i].blue;
-	    /* if user wants grayscale (-N) then map to gray */
-	    if (grayonly)
-		pic->cmap[RED][i] = pic->cmap[GREEN][i] = pic->cmap[BLUE][i] =
-		    (int) (rgb2luminance(pic->cmap[RED][i]/255.0,
-					pic->cmap[GREEN][i]/255.0,
-					pic->cmap[BLUE][i]/255.0)*255.0);
-	}
-    }
-    rowsize = w;
-    if (color_type == PNG_COLOR_TYPE_RGB ||
-	color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-	    rowsize = w*3;
+    /* done with transformations */
 
-    /* allocate the row pointers and rows */
-    row_pointers = (png_bytep *) malloc(h*sizeof(png_bytep));
-    for (i=0; i<h; ++i) {
-	if ((row_pointers[i] = malloc(rowsize)) == NULL) {
-	    for (j=0; j<i; ++j)
-		free(row_pointers[j]);
-	    free(row_pointers);
-	    return 0;
-	}
+    /* allocate memory for the image */
+    png_read_update_info(png_ptr, info_ptr);	/* re-compute row_bytes */
+    row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+
+    if (h > PNG_UINT_32_MAX / sizeof(png_byte)) {
+	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+	put_msg("PNG image %s is too tall to process in memory.", pic->file);
+	return 0;
     }
+    if (row_bytes > PNG_UINT_32_MAX) {
+	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+	put_msg("PNG image %s is too wide to process in memory.", pic->file);
+	return 0;
+    }
+    if (h > PNG_SIZE_MAX / row_bytes) {
+	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+	put_msg("PNG image %s would be too large.", pic->file);
+	return 0;
+    }
+
+    pic->bitmap = malloc(h * row_bytes);
+    if (pic->bitmap == NULL) {
+	png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
+	put_msg(Err_mem);
+	return 0;
+    }
+    row_pointers = malloc(h * sizeof(png_bytep));
+    for (j = 0; j < h; ++j)
+	row_pointers[j] = pic->bitmap + j * row_bytes;
 
     /* finally, read the file */
     png_read_image(png_ptr, row_pointers);
 
-    /* allocate the bitmap */
-    if ((pic->bitmap=malloc(rowsize*h))==NULL) {
-	    for (i=0; i<h; ++i)
-		    free(row_pointers[i]);
-	    free(row_pointers);
-	    return 0;
-    }
-
-    /* copy it to our bitmap */
-    ptr = pic->bitmap;
-    for (i=0; i<h; ++i) {
-	memcpy(ptr, row_pointers[i], rowsize);
-	ptr += rowsize;
-    }
-    /* put in width, height */
-    pic->bit_size.x = w;
-    pic->bit_size.y = h;
-
-    if (color_type == PNG_COLOR_TYPE_RGB ||
-		    color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-	/* no palette */
-	pic->numcols = 2<<16;
-    } else {
-	pic->numcols = num_palette;
-    }
-
     /* clean up */
-    png_read_end(png_ptr, end_info);
-    png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-    for (i=0; i<h; ++i)
-	free(row_pointers[i]);
+    png_read_end(png_ptr, (png_infop)NULL);
+    png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
     free(row_pointers);
 
+    /* put in width, height */
     pic->subtype = P_PNG;
+    pic->bit_size.x = w;
+    pic->bit_size.y = h;
     pic->hw_ratio = (float) pic->bit_size.y / pic->bit_size.x;
 
-    /* success */
     return 1;
 }
