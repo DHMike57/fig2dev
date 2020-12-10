@@ -54,7 +54,8 @@ $F2psDict /mtrx matrix put\n\
   4 -2 roll dup 1 exch sub 3 -1 roll mul add srgb}\n\
   bind def\n\
 /shd {dup dup currentrgbcolor 4 -2 roll mul 4 -2 roll mul\n\
-  4 -2 roll mul srgb} bind def\n"
+  4 -2 roll mul srgb} bind def\n\
+/xfig_image {image Data flushfile} def\n"
 
 #define		FILL_PAT01	"\
 % left30\n\

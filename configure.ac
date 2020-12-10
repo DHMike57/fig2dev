@@ -100,6 +100,7 @@ AS_IF([test "x$GSEXE" != x],dnl
 #
 AC_SEARCH_LIBS([cos], [m])
 
+
 #
 # Checks for header files.
 #
@@ -139,6 +140,16 @@ AC_CHECK_HEADER([sys/param.h], [], [headers_missing=yes
 # by them: <pwd.h> by getpwuid(), <errno.h> by strerror(). Really,
 # strerror() is not defined in errno.h, but it is save to assume that
 # errno.h exists if strerror() is found.
+
+# Check for header files and libraries
+dnl First search for the header, only then search for the libs. The other way
+dnl round, the library found would be prepended to LIBS, unnecessarily.
+AC_CHECK_HEADER([zlib.h],
+    [AC_SEARCH_LIBS([deflate], [z],
+	[AC_DEFINE([HAVE_ZLIB_H], 1,
+	    [Define to 1 if you have the zlib library and <zlib.h> header.])])],
+    [], [AC_INCLUDES_DEFAULT])
+
 
 #
 # Check user options.

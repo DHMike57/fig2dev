@@ -5,6 +5,8 @@ Version 3.2
 Patchlevel Xx (Xxx 20xx)
 
 NEW FEATURES:
+	o Use deflate to embed image data into eps output, often substantially
+	  reducing file size.
 	o Embed pdf files into ps output by converting the pdf to eps.
 	o Allow negative arrow widths. This might be useful for asymmetric arrow
 	  tips, which can thus be mirrored around the corresponding line.
