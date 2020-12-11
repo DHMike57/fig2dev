@@ -360,15 +360,7 @@ convertremainder(FILE *out, unsigned char *in, unsigned len)
 	}
 }
 
-/*
- * FIXME: Same signature for ascii85encode, deflate_ascii85encode
- *		- no need for bytes_per_line
- *		- remove pic->file from deflate_ascii
- *		- add pic->file to error message
- *		- enable indexed images without zlib
- */
-
-static void
+static int
 ascii85encode(FILE *out, unsigned char *in, size_t len)
 {
 	size_t		i, n;
@@ -384,13 +376,13 @@ ascii85encode(FILE *out, unsigned char *in, size_t len)
 		fputc('\n', out);
 		if (ferror(out)) {
 			err_msg("Error writing one line of encoded data");
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 	}
 
 	/* quick return */
 	if ((n = len - lines * bytes_per_line) == 0)
-		return;
+		return 0;
 
 	/* write remaining groups of four */
 	for (i = 0; i < n / 4; ++i)
@@ -402,8 +394,9 @@ ascii85encode(FILE *out, unsigned char *in, size_t len)
 
 	if (ferror(out)) {
 		err_msg("Error writing encoded data");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
+	return 0;
 }
 
 #ifdef HAVE_ZLIB_H
@@ -411,20 +404,13 @@ ascii85encode(FILE *out, unsigned char *in, size_t len)
  * Write the deflated and ascii85 encoded bitmap data to out.
  */
 static int
-deflate_ascii85encode(FILE *out, F_pic *pic)
+deflate_ascii85encode(FILE *out, unsigned char *in, size_t len)
 {
 	int		ret;
 	int		flush;
-	int		bytes_per_pixel;
-	size_t		avail_in;
 	z_stream	strm;
 	unsigned char	buf[16384]; /* IMPORTANT, that this is a multiple of 4!
 				     * Nice, if a multiple of 16*4, see above */
-
-	if (pic->numcols >256)
-		bytes_per_pixel = 3;
-	else
-		bytes_per_pixel = 1;
 
 	/*
 	 * Initialize the zlib state object.
@@ -437,30 +423,33 @@ deflate_ascii85encode(FILE *out, F_pic *pic)
 			Z_BEST_COMPRESSION,	/* 0 - 9, default 6 */
 			Z_DEFLATED,		/* method, must be Z_DEFLATED */
 			MAX_WBITS,		/* window size, max here */
-			MAX_MEM_LEVEL,		/* allocated memory for compr.*/
+			MAX_MEM_LEVEL,		/* allocated memory for
+						   compression, use maximum */
 			Z_RLE); /* compression strategy used for png data */
 	if (ret != Z_OK) {
-		put_msg("Unable to initialize compression of image %s.\n"
-				"Zlib error = %d", pic->file, ret);
+		put_msg("Unable to initialize compression.");
+		if (strm.msg)
+			put_msg("Zlib error: %s", strm.msg);
+		else
+			put_msg("Zlib error = %d", ret);
 		return ret;
 	}
 
 	/* Assign input and output for compression. */
-	strm.next_in = pic->bitmap;
+	strm.next_in = in;
 	strm.next_out = buf;
 	strm.avail_out = (unsigned) sizeof buf;
 
 	/*
 	 * strm.avail_in is of type unsigned int, hence it can hold a maximum
-	 * number of UINT_MAX (= ZLIB_IN_MAX, see above), equal 4 GiB. */
-	avail_in = pic->bit_size.x * pic->bit_size.y * bytes_per_pixel;
-	if (avail_in > ZLIB_IN_MAX) {
+	 * number of UINT_MAX (= ZLIB_IN_MAX, see above) bytes, equal 4 GiB. */
+	if (len > ZLIB_IN_MAX) {
 		flush = Z_NO_FLUSH;
 		strm.avail_in = ZLIB_IN_MAX;
-		avail_in -= strm.avail_in;
+		len -= strm.avail_in;
 	} else {
 		flush = Z_FINISH;
-		strm.avail_in = avail_in;
+		strm.avail_in = len;
 	}
 
 	/*
@@ -476,26 +465,25 @@ deflate_ascii85encode(FILE *out, F_pic *pic)
 		strm.next_out = buf;
 		if (flush != Z_FINISH) {
 			unsigned	possible = ZLIB_IN_MAX - strm.avail_in;
-			if (possible > avail_in) {
-				strm.avail_in += avail_in;
+			if (possible > len) {
+				strm.avail_in += len;
 				flush = Z_FINISH;
 			} else {
 				strm.avail_in = ZLIB_IN_MAX;
-				avail_in -= possible;
+				len -= possible;
 			}
 		}
 	}
 	if (ret == Z_STREAM_ERROR) {
 		if (strm.msg)
-			put_msg("Error while compressing image %s: %s",
-					pic->file, strm.msg);
+			put_msg("Error while compressing image: %s", strm.msg);
 		else
-			put_msg("Error while compressing image %s.", pic->file);
-		return -2;
+			put_msg("Error while compressing image.");
+		return Z_STREAM_ERROR;
 	}
 	if (ret == Z_BUF_ERROR && strm.avail_out == 0) {
 		put_msg("An unexpected error occured, avail_out == 0 && "
-			"ret == Z_BUF_ERROR. Please report this error.");
+			"ret == Z_BUF_ERROR.\nPlease report this error.");
 	}
 	/* output the remainder */
 	if (ret == Z_STREAM_END && strm.avail_out != 0)
@@ -504,18 +492,35 @@ deflate_ascii85encode(FILE *out, F_pic *pic)
 	/* clean up */
 	if (deflateEnd(&strm) != Z_OK) {
 		if (strm.msg)
-			put_msg("An error occurred after compression of image "
-					"%s:\n  %s.", pic->file, strm.msg);
+			put_msg("Error after compression of image: %s.",
+					strm.msg);
 		else
-			put_msg("An error occurred after compression of "
-					"image %s.", pic->file);
+			put_msg("Error after compression of image.");
 	}
 	return 0;
 }
 #endif	/* HAVE_ZLIB_H */
 
+static void
+write_data(FILE *out, char *name, unsigned char *in, size_t len)
+{
+#ifdef HAVE_ZLIB_H
+	if (deflate_ascii85encode(out, in, len)) {
+		put_msg("Could not compress image %s.", name);
+		exit(EXIT_FAILURE);
+	}
+#else
+	if (ascii85encode(out, in, len)) {
+		put_msg("Could not embed image %s.", name);
+		exit(EXIT_FAILURE);
+	}
+#endif
+	/* Output end of data marker for the ascii85 encoded stream */
+	fputs("~>\n", out);
+}
+
 /*
- * the image dictionary string is needed two times,
+ * the image dictionary string is needed twice,
  * here and in indexed_image() below
  */
 #ifdef HAVE_ZLIB_H
@@ -538,16 +543,8 @@ write_rgbimage(FILE *out, F_pic *pic)
 			pic->bit_size.x, pic->bit_size.y, pic->bit_size.y);
 			/* gcc warned: %1$d not ISO C */
 
-#ifdef HAVE_ZLIB_H
-	if (deflate_ascii85encode(out, pic))
-		/* error messages already written by deflate_ascii85encode() */
-		exit(EXIT_FAILURE);
-#else
-	ascii85encode(out, pic->bitmap,
-				(size_t)pic->bit_size.x * pic->bit_size.y * 3);
-#endif
-	/* Output end of data marker for the ascii85 encoded stream */
-	fputs("~>\n", out);
+	write_data(out, pic->file, pic->bitmap,
+			(size_t)pic->bit_size.x * pic->bit_size.y * 3);
 }
 
 static void
@@ -560,12 +557,12 @@ indexed_image(FILE *out, F_pic *pic)
 		"[ /Indexed /DeviceRGB %d\n <", pic->numcols - 1);
 	/* write the hex-encoded colormap */
 	fprintf(out, "%.2x%.2x%.2x", pic->cmap[RED][i], pic->cmap[GREEN][i],
-			pic->cmap[BLUE][i]); 
+			pic->cmap[BLUE][i]);
 	for (i = 1; i < pic->numcols; ++i) {
 		if (i % 11 == 0)
 			fputs("\n ", out);
 		fprintf(out, " %.2x%.2x%.2x", pic->cmap[RED][i],
-				pic->cmap[GREEN][i], pic->cmap[BLUE][i]); 
+				pic->cmap[GREEN][i], pic->cmap[BLUE][i]);
 	}
 	fputs(">\n] setcolorspace\n", out);
 	/* continue with image dictionary */
@@ -577,14 +574,14 @@ indexed_image(FILE *out, F_pic *pic)
 		" >> xfig_image\n", pic->bit_size.x, pic->bit_size.y,
 			pic->bit_size.x, pic->bit_size.y, pic->bit_size.y);
 
-	deflate_ascii85encode(out, pic);
-	fputs("~>\n", out);
+	write_data(out, pic->file, pic->bitmap,
+			(size_t)pic->bit_size.x * pic->bit_size.y);
 }
 
 
-/***********************************/
-/* The main procedures start here. */
-/***********************************/
+/******************************/
+/* main procedures start here */
+/******************************/
 
 void
 geneps_option(char opt, char *optarg)
@@ -1890,13 +1887,10 @@ genps_line(F_line *l)
 			return;
 		}
 
-		/* If we have any of the following pic types, we need the ps
-		   encoder. Gifs are embedded as P_PCX, see readgif.c, hence
-		   P_GIF does not occur. PSencode() only manages 256 colors. */
-		if ((l->pic->subtype == P_XPM || l->pic->subtype == P_PCX ||
-			l->pic->subtype == P_PNG) && l->pic->numcols <= 256 &&
-			!psencode_header_done)
-		    /* PSencode_header() FIXME*/;
+		/* PSencode() only manages 256 colors. */
+		if (l->pic->subtype == P_XPM && l->pic->numcols <= 256 &&
+				!psencode_header_done)
+			PSencode_header();
 
 		/* If we have a GIF with a transparent color, we need the
 		   transparentimage code.  Actually, the GIF has been changed
@@ -2083,7 +2077,6 @@ genps_line(F_line *l)
 			XpmFreeXpmImage(&l->pic->xpmimage);
 #endif /* HAVE_X11_XPM_H */
 
-		/* GIF, JPEG, PCX, PPM or PNG file */
 		} else if (l->pic->subtype == P_GIF || l->pic->subtype == P_PNG
 				|| l->pic->subtype == P_JPEG
 				|| l->pic->subtype == P_PCX
@@ -2107,22 +2100,10 @@ genps_line(F_line *l)
 				rewind_stream(&pic_stream);
 				JPEGtoPS(pic_stream.fp, tfp);
 			} else {
-			    /* GIF, PNG and PCX */
-			    if (l->pic->numcols > 256) {
-				/* 24-bit image, write rgb values */
+			    if (l->pic->numcols > 256)
 				    write_rgbimage(tfp, l->pic);
-				/*(void) PSrgbimage(tfp, img_w, img_h,
-					l->pic->bitmap); */
-			    } else {
-				/* now write out the image data in a
-				   compressed form */
+			    else
 				    indexed_image(tfp, l->pic);
-				/* (void) PSencode(img_w, img_h, l->pic->transp,
-					l->pic->numcols, l->pic->cmap[RED],
-					l->pic->cmap[GREEN], l->pic->cmap[BLUE],
-					l->pic->bitmap);
-				 */
-			    }
 			}
 
 		/* EPS file */
