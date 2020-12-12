@@ -72,20 +72,15 @@ static int
 read_8bitppm(FILE *file, unsigned char *restrict dst, unsigned int width,
 						unsigned int height)
 {
-	int		c[3];
 	unsigned int	w;
 
 	while (height-- > 0u) {
-		w = width;
-		while (w-- > 0u) {
-			if ((c[0] = fgetc(file)) == EOF ||
-					(c[1] = fgetc(file)) == EOF ||
-					(c[2] = fgetc(file)) == EOF)
-				return 0;
-			*(dst++) = (unsigned char)c[2];
-			*(dst++) = (unsigned char)c[1];
-			*(dst++) = (unsigned char)c[0];
-		}
+		w = width * 3u;
+		while (w-- > 0u)
+			*(dst++) = (unsigned char)fgetc(file);
+		/* check error condition after each row */
+		if (feof(file) || ferror(file))
+			return 0;
 	}
 	return 1;
 }
@@ -106,54 +101,25 @@ scale_to_255(unsigned char *restrict byte, unsigned maxval, unsigned rowbytes,
 	}
 }
 
-/*
- * Read the next six bytes from file, which correspond to a rgb triplet with two
- * bytes for each channel, and return the values scaled into the range 0--255.
- */
-static int
-read6bytes(FILE *file, unsigned maxval, unsigned *r, unsigned *g, unsigned *b)
-{
-	int		c[6];
-	const uint32_t	rnd = maxval / 2;
-
-	if ((c[0] = fgetc(file)) == EOF || (c[1] = fgetc(file)) == EOF ||
-		   (c[2] = fgetc(file)) == EOF || (c[3] = fgetc(file)) == EOF ||
-		   (c[4] = fgetc(file)) == EOF || (c[5] = fgetc(file)) == EOF)
-		return -1;
-
-	/* scale to the range 0 - 255 */
-	/* two-byte ppm files have the most significant byte first */
-	*r = ((((uint32_t)c[0] << 8) + c[1]) * 255u + rnd) / maxval;
-	*g = ((((uint32_t)c[2] << 8) + c[3]) * 255u + rnd) / maxval;
-	*b = ((((uint32_t)c[4] << 8) + c[5]) * 255u + rnd) / maxval;
-
-	if (*r > 255u)
-		*r = 255u;
-	if (*g > 255u)
-		*g = 255u;
-	if (*b > 255u)
-		*b = 255u;
-
-	return 0;
-}
-
 static int
 read_16bitppm(FILE *file, unsigned char *restrict dst, unsigned int maxval,
 		unsigned int width, unsigned int height)
 {
-	unsigned int	w;
-	unsigned int	r, g, b;
+	unsigned	w;
+	unsigned	c;
+	const unsigned	rnd = maxval / 2;
 
 	while (height-- > 0u) {
-		w = width;
+		w = width * 3u;
 		while (w-- > 0u) {
-			if (read6bytes(file, maxval, &r, &g, &b))
-				return 0;
-
-			*(dst++) = (unsigned char)b;
-			*(dst++) = (unsigned char)g;
-			*(dst++) = (unsigned char)r;
+			c = ((((unsigned)fgetc(file) << 8) +
+				(unsigned)fgetc(file)) * 255u + rnd) / maxval;
+			if (c > 255u)
+				c = 255u;
+			*(dst++) = (unsigned char)c;
 		}
+		if (feof(file) || ferror(file))
+			return 0;
 	}
 	return 1;
 }
@@ -162,22 +128,17 @@ static int
 read_asciippm(FILE *file, unsigned char *restrict dst, unsigned int width,
 						unsigned int height)
 {
-	unsigned int	c[3];
+	unsigned int	c;
 	unsigned int	w;
 
 	while (height-- > 0u) {
-		w = width;
+		w = width * 3u;
 		while (w-- > 0u) {
-			if (fscanf(file, " %u %u %u", c, c+1, c+2) != 3)
+			if (fscanf(file, "%u", &c) != 1)
 				return 0;
-
-			if (c[0] > 255) c[0] = 255;
-			if (c[1] > 255) c[1] = 255;
-			if (c[2] > 255) c[2] = 255;
-
-			*(dst++) = (unsigned char)c[2];
-			*(dst++) = (unsigned char)c[1];
-			*(dst++) = (unsigned char)c[0];
+			if (c > 255u)
+				c = 255u;
+			*(dst++) = (unsigned char)c;
 		}
 	}
 	return 1;
@@ -191,27 +152,20 @@ static int
 read_ascii_max_ppm(FILE *file, unsigned char *restrict dst, unsigned int maxval,
 			unsigned int width, unsigned int height)
 {
-	uint32_t	c[3];
+	unsigned int	c;
 	unsigned int	w;
-	const uint32_t	rnd = maxval / 2;
+	const unsigned	rnd = maxval / 2;
 
 	while (height-- > 0u) {
-		w = width;
+		w = width * 3u;
 		while (w-- > 0u) {
-			if (fscanf(file, " %u %u %u", c, c+1, c+2) != 3)
+			if (fscanf(file, "%u", &c) != 1)
 				return 0;
-
 			/* scale to the range 0--255 */
-			c[0] = ((uint32_t)c[0] * 255u + rnd) / maxval;
-			c[1] = ((uint32_t)c[1] * 255u + rnd) / maxval;
-			c[2] = ((uint32_t)c[2] * 255u + rnd) / maxval;
-			if (c[0] > 255) c[0] = 255;
-			if (c[1] > 255) c[1] = 255;
-			if (c[2] > 255) c[2] = 255;
-
-			*(dst++) = (unsigned char)c[2];
-			*(dst++) = (unsigned char)c[1];
-			*(dst++) = (unsigned char)c[0];
+			c = ((c * 255u) + rnd) / maxval;
+			if (c > 255u)
+				c = 255u;
+			*(dst++) = (unsigned char)c;
 		}
 	}
 	return 1;
@@ -291,7 +245,7 @@ _read_ppm(FILE *file, F_pic *pic)
 		free(pic->bitmap);
 	} else {
 		pic->subtype = P_PPM;
-		pic->numcols = 2 << 24;
+		pic->numcols = 1 << 24;
 		pic->bit_size.x = width;
 		pic->bit_size.y = height;
 	}

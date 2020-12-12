@@ -163,8 +163,6 @@ read_png(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 		return 0;
 	    }
 	} else {
-	    /* set order to BGR (default is RGB) */
-	    png_set_bgr(png_ptr);
 	    /* RGB png images can have bit_depths of 8 or 16 */
 	    pic->numcols = 1 << 24;
 	}

@@ -293,7 +293,7 @@ dispbyte(unsigned char *ptr,int *xp,int *yp,int c,int w,int h,
 		break;
 
 	  case 24:
-		*(ptr+((*yp)*w+*xp)*3+(2-(*planep)))=c;
+		*(ptr+((*yp)*w+*xp)*3+*planep)=c;
 		(*xp)++;
 		if (*xp>=w) {
 		    (*xp)=0;

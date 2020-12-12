@@ -65,7 +65,7 @@ AT_CLEANUP
 
 AT_SETUP([ppm])
 AT_KEYWORDS(bitmaps ppm)
-AT_SKIP_IF([NO_GS || ! ppmtopcx -version])
+AT_SKIP_IF([NO_GS])
 AT_CHECK([fig2dev -L ppm $srcdir/data/line.fig line.ppm && \
 	$SED '11 s/eps/ppm/' $srcdir/data/boxwimg.fig | fig2dev -L eps
 ], 0, ignore)
@@ -73,7 +73,8 @@ AT_CLEANUP
 
 AT_SETUP([tiff])
 AT_KEYWORDS(bitmaps tiff tif)
-AT_SKIP_IF([NO_GS || ! tifftopnm -version || ! ppmtopcx -version])
+AT_SKIP_IF([NO_GS || ((! tifftopnm -version || ! ppmtopcx -version) &&
+				! convert -version &&  ! gm version)])
 AT_CHECK([fig2dev -L tiff $srcdir/data/line.fig line.tif && \
 	$SED '11 s/eps/tif/' $srcdir/data/boxwimg.fig | fig2dev -L eps
 ], 0, ignore)
