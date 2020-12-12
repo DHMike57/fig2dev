@@ -32,7 +32,7 @@
 #include <signal.h>
 
 #include "fig2dev.h"
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "object.h"
 #include "genps.h"
 #include "messages.h"
 

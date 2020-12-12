@@ -63,7 +63,7 @@
 #endif
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
-//#include "object.h"	/* includes X11/xpm.h; NUMSHADES, NUMTINTS */
+//#include "object.h"	/* NUMSHADES, NUMTINTS */
 #include "bound.h"
 #include "colors.h"	/* lookup_X_color(), rgb2luminance() */
 #include "creationdate.h"
@@ -95,9 +95,7 @@ extern int  read_xbm(READ_SIGNATURE);
 extern int  read_png(READ_SIGNATURE);
 #endif
 extern int  read_jpg(READ_SIGNATURE);
-#ifdef HAVE_X11_XPM_H
 extern int  read_xpm(READ_SIGNATURE);
-#endif
 #undef READ_SIGNATURE
 
 extern void JPEGtoPS(FILE *f, FILE *PSfile);
@@ -173,10 +171,6 @@ static bool approx_spline_exist(F_compound *ob);
 static void draw_gridline(float x1, float y1, float x2, float y2);
 static void genps_itp_spline(F_spline *s);
 static void genps_ctl_spline(F_spline *s);
-#ifdef HAVE_X11_XPM_H
-static void convert_xpm_colors(unsigned char cmap[3][MAXCOLORMAPSIZE],
-		XpmColor *coltabl, int ncols);
-#endif
 
 #define SHADEVAL(F)	1.0*(F)/(NUMSHADES-1)
 #define TINTVAL(F)	1.0*(F-NUMSHADES+1)/NUMTINTS
@@ -295,9 +289,7 @@ static	 struct hdr {
 #endif
 			{"JPEG", "\377\330\377\340",	read_jpg,	true},
 			{"JPEG", "\377\330\377\341",	read_jpg,	true},
-#ifdef HAVE_X11_XPM_H
 			{"XPM", "/* XPM */",		read_xpm,	false},
-#endif
 };
 
 #define NUMHEADERS	(sizeof(headers)/sizeof(headers[0]))
@@ -2037,50 +2029,11 @@ genps_line(F_line *l)
 			    fputs("\n", tfp);
 			}
 
-#ifdef HAVE_X11_XPM_H
-		/* XPM file */
-		} else if (l->pic->subtype == P_XPM) {
-			XpmColor *coltabl;
-			unsigned char *cdata, *cp;
-			unsigned int  *dp;
-
-			/* start with width and height */
-			img_w = l->pic->xpmimage.width;
-			img_h = l->pic->xpmimage.height;
-			fputs("% Pixmap image follows:\n", tfp);
-			/* scale for size in bits */
-			fprintf(tfp, "%d %d sc\n", purx, pury);
-			/* modify colortable entries to make consistent */
-			coltabl = l->pic->xpmimage.colorTable;
-			/* convert the colors to rgb constituents */
-			convert_xpm_colors(l->pic->cmap,coltabl,
-					l->pic->xpmimage.ncolors);
-			/* and convert the integer data to unsigned char */
-			dp = l->pic->xpmimage.data;
-			if ((cdata = malloc(img_w*img_h*sizeof(unsigned char)))
-					== NULL) {
-				fputs("can't allocate space for XPM image\n",
-					stderr);
-				return;
-			}
-			cp = cdata;
-			for (i=0; i<img_w*img_h; ++i)
-			    *cp++ = (unsigned char) *dp++;
-
-			/* now write out the image data in a compressed form */
-			(void) PSencode(img_w, img_h, -1,
-					l->pic->xpmimage.ncolors,
-					l->pic->cmap[RED], l->pic->cmap[GREEN],
-					l->pic->cmap[BLUE], cdata);
-			/* and free up the space */
-			free(cdata);
-			XpmFreeXpmImage(&l->pic->xpmimage);
-#endif /* HAVE_X11_XPM_H */
-
 		} else if (l->pic->subtype == P_GIF || l->pic->subtype == P_PNG
 				|| l->pic->subtype == P_JPEG
 				|| l->pic->subtype == P_PCX
-				|| l->pic->subtype == P_PPM) {
+				|| l->pic->subtype == P_PPM
+				|| l->pic->subtype == P_XPM) {
 			if (l->pic->subtype == P_GIF)
 			    fputs("% GIF", tfp);
 			else if (l->pic->subtype == P_PNG)
@@ -2089,6 +2042,8 @@ genps_line(F_line *l)
 			    fputs("% JPEG", tfp);
 			else if (l->pic->subtype == P_PCX)
 			    fputs("% PCX", tfp);
+			else if (l->pic->subtype == P_XPM)
+			    fputs("% XPM", tfp);
 			else
 			    fputs("% PPM", tfp);
 
@@ -2150,7 +2105,7 @@ genps_line(F_line *l)
 		}
 
 		/* restore vm and gsave */
-		fputs("restore grestore\n", tfp);
+		fputs("rs gr\n", tfp);
 		fputs("%\n", tfp);
 		fprintf(tfp, "%% End Imported PIC File: %s\n", l->pic->file);
 		if (l->pic->subtype == P_EPS)
@@ -3016,42 +2971,6 @@ approx_spline_exist(F_compound *ob)
 
 	return false;
 	}
-
-#ifdef HAVE_X11_XPM_H
-
-/* lookup the named colors referenced in the colortable passed */
-/* total colors in the table are "ncols" */
-/* This is called from the XPM image import section above */
-
-/* lookup color names and return rgb values from X11
-   RGB database file (e.g. /usr/lib/X11/rgb.txt) */
-
-static void
-convert_xpm_colors(unsigned char cmap[3][MAXCOLORMAPSIZE], XpmColor *coltabl, int ncols)
-{
-	int	i;
-	char	*name;
-	RGB	rgb;
-
-	/* look through each entry in the colortable for the named colors */
-	for (i=0; i<ncols; i++) {
-	    name = (coltabl+i)->c_color;
-	    /* get the rgb values from the name */
-	    if (lookup_X_color(name, &rgb) < 0)
-		fprintf(stderr,"Can't parse color '%s', using black.\n",name);
-	    cmap[RED][i] = (unsigned char) (rgb.red>>8);
-	    cmap[GREEN][i] = (unsigned char) (rgb.green>>8);
-	    cmap[BLUE][i] = (unsigned char) (rgb.blue>>8);
-	    /* if user wants grayscale (-N) then pass through ppmtopgm too */
-	    if (grayonly)
-		cmap[RED][i] = cmap[GREEN][i] = cmap[BLUE][i] =
-		    (int) (rgb2luminance(cmap[RED][i]/255.0,
-					cmap[GREEN][i]/255.0,
-					cmap[BLUE][i]/255.0)*255.0);
-	}
-}
-
-#endif /* HAVE_X11_XPM_H */
 
 /*
  * We must start new figure if the current

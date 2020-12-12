@@ -274,52 +274,6 @@ AC_ARG_WITH(rgbfile, [AS_HELP_STRING([--with-rgbfile=<path>],
 AC_DEFINE_UNQUOTED([RGB_FILE], ["$withval"],dnl
 	[Define to the full path of the X color database file.])
 
-# If with-xpm is true, search for the X11 include and library paths,
-# then search for libXpm, then search for X11/xpm.h. If all are found,
-# regardless of whether --x-includes and --x-libraries are set on the
-# commandline or not, use xpm. Isolate the necessary CPPFLAGS, LDFLAGS
-# and LIBS into XCPPFLAGS, XLDFLAGS and XLIBS.
-# Note: Under cygwin, xpm may be provided by /lib/noX/libXpm,
-# /usr/include/noX/xpm.h and /usr/include/noX/X11/xpm.h
-# AC_PATH_X finds the location of the X header files and libraries. Sets
-# x_libraries and x_includes to NONE, not the empty string, if none are
-# found. Otherwise, sets x_includes to the parent of the X11 header
-# dir, i.e., the headers must be included with, e.g, #include
-# <X11/xpm.h>. A simple #include <xpm.h> would no work.
-AC_ARG_WITH(xpm, [AS_HELP_STRING([--without-xpm],
-	[disable reading xpm-images (default: enable)])],
-    [],[with_xpm=try])
-AS_IF([test "x$with_xpm" != xno],
-    [save_LDFLAGS="$LDFLAGS"
-    AC_PATH_X
-    AS_IF([test "x$no_x" != xyes],
-	[#LDFLAGS="$LDFLAGS -L$x_libraries"
-	AS_IF([test -n "$x_libraries"],
-	    [XLDFLAGS="-L$x_libraries"
-	    AS_IF([test -n "$LDFLAGS"],
-		[LDFLAGS="$LDFLAGS $XLDFLAGS"],
-		[LDFLAGS="$XLDFLAGS"])])])
-    save_LIBS="$LIBS"
-    AC_SEARCH_LIBS([XpmReadFileToXpmImage], [Xpm],
-	[save_CPPFLAGS="$CPPFLAGS"
-	XLIBS="-lXpm"
-	# CPPFLAGS="$CPPFLAGS -I$x_includes"
-	AS_IF([test -n "$x_includes"],
-	    [XCPPFLAGS="-I$x_includes"
-	    AS_IF([test -n "$CPPFLAGS"],
-		[CPPFLAGS="$CPPFLAGS $XCPPFLAGS"],
-		[CPPFLAGS="$XCPPFLAGS"])])
-	AC_CHECK_HEADER([X11/xpm.h],
-	    [AC_DEFINE([HAVE_X11_XPM_H], 1,
-		    [Define to 1 if you have the <X11/xpm.h> header file.])],
-	    [], [AC_INCLUDES_DEFAULT])
-	CPPFLAGS="$save_CPPFLAGS"])
-    LIBS="$save_LIBS"
-    LDFLAGS="$save_LDFLAGS"])
-AM_CONDITIONAL([WITH_XPM], [test "x$ac_cv_header_X11_xpm_h" = xyes])
-AC_SUBST([XCPPFLAGS])
-AC_SUBST([XLDFLAGS])
-AC_SUBST([XLIBS])
 
 #
 # Checks for typedefs, structures, and compiler characteristics.

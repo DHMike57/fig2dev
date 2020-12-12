@@ -29,7 +29,7 @@
 
 #include "fig2dev.h"	/* includes object.h */
 #include "alloc.h"
-//#include "object.h"	/* includes X11/xpm.h */
+//#include "object.h"
 #include "free.h"
 #include "messages.h"
 

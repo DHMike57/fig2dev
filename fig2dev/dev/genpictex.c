@@ -39,7 +39,7 @@
 #endif
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
-//#include "object.h"	/* includes X11/xpm.h */
+//#include "object.h"
 #include "creationdate.h"
 #include "genlatex.h"
 #include "localmath.h"

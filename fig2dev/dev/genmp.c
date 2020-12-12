@@ -140,7 +140,7 @@
 #endif
 
 #include "fig2dev.h"
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "object.h"
 #include "texfonts.h"
 #include "setfigfont.h"
 #include "bound.h"

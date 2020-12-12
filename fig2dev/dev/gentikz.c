@@ -37,7 +37,7 @@
 #include "pi.h"
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
-//#include "object.h"	/* includes X11/xpm.h */
+//#include "object.h"
 #include "bound.h"
 #include "gentikz.h"
 #include "messages.h"

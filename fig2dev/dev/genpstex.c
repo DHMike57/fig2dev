@@ -49,7 +49,7 @@
 #include <ctype.h>
 
 #include "fig2dev.h"
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "object.h"
 
 extern double rad2deg;
 

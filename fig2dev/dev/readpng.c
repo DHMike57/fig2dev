@@ -27,7 +27,7 @@
 #include <png.h>
 
 #include "fig2dev.h"
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "object.h"
 #include "colors.h"	/* rgb2luminance() */
 #include "messages.h"
 #include "readpics.h"

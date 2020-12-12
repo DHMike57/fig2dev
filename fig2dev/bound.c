@@ -46,7 +46,7 @@
 #include "pi.h"
 
 #include "fig2dev.h"	/* includes "bool.h" */
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "object.h"
 #include "bound.h"
 #include "localmath.h"
 

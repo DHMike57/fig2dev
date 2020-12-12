@@ -65,7 +65,7 @@
 #include <ctype.h>
 
 #include "fig2dev.h"	/* includes "bool.h" */
-#include "object.h"	/* does #include <X11/xpm.h> */
+#include "object.h"
 #include "readpics.h"
 
 #define MAX_SIZE 255

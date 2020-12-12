@@ -4,7 +4,7 @@
 # Copyright (c) 1991 by Micah Beck
 # Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 # Parts Copyright (c) 1989-2015 by Brian V. Smith
-# Parts Copyright (c) 2015-2019 by Thomas Loimer
+# Parts Copyright (c) 2015-2020 by Thomas Loimer
 #
 # Any party obtaining a copy of these files is granted, free of charge, a
 # full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -51,7 +51,7 @@ libdrivers_a_SOURCES = asc85ec.c genbitmaps.c genbox.c gencgm.c gendxf.c \
     gensvg.c gentextyl.c gentikz.h gentikz.c gentk.c gentpic.c picfonts.h \
     picpsfonts.h psencode.h psencode.c psfonts.h psfonts.c psimage.h \
     psprolog.h readeps.c readgif.c readjpg.c readpcx.c readpics.h readpics.c \
-    readppm.c readtif.c readxbm.c texfonts.h texfonts.c setfigfont.h \
+    readppm.c readtif.c readxbm.c readxpm.c texfonts.h texfonts.c setfigfont.h \
     setfigfont.c tkpattern.h tkpattern.c xtmpfile.h xtmpfile.c
 
 # These contain PACKAGE_VERSION, hence depend on $(CONFIG_HEADER) = config.h.
@@ -59,9 +59,4 @@ genps.o gensvg.o genemf.o gengbx.o genmp.o genpictex.o gentk.o: $(CONFIG_HEADER)
 
 if WITH_PNG
 libdrivers_a_SOURCES += readpng.c
-endif
-
-if WITH_XPM
-libdrivers_a_SOURCES += readxpm.c
-AM_CPPFLAGS += $(XCPPFLAGS)
 endif

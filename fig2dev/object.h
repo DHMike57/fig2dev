@@ -19,10 +19,6 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#ifdef HAVE_X11_XPM_H
-#include <X11/xpm.h>
-#endif
-
 #define		BLACK_COLOR	0
 #define		WHITE_COLOR	7
 
@@ -181,9 +177,6 @@ typedef struct f_pic {
 	char			*file;
 	int			flipped;
 	unsigned char		*bitmap;
-#ifdef HAVE_X11_XPM_H
-	XpmImage		xpmimage;		/* for Xpm images */
-#endif
 	unsigned char		cmap[3][MAXCOLORMAPSIZE]; /* for color files */
 	int			numcols;	/* number of colors in cmap */
 	int			transp; /* transparent color (-1 if none) for GIFs */

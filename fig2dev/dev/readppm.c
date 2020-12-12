@@ -33,7 +33,7 @@
 #include <limits.h>
 
 #include "fig2dev.h"	/* includes <object.h> */
-//#include "object.h"	/* F_pic; does #include <X11/xpm.h> */
+//#include "object.h"	/* F_pic */
 #include "messages.h"
 #include "readpics.h"
 #include "xtmpfile.h"

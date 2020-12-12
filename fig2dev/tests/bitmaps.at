@@ -100,8 +100,6 @@ AT_CLEANUP
 
 AT_SETUP([xpm])
 AT_KEYWORDS(bitmaps xpm)
-# Skip, if WITH_XPM_TRUE is set to '#'.
-AT_SKIP_IF([test -n "$WITH_XPM_TRUE"])
 AT_SKIP_IF([NO_GS || \
 	( ! pbmtoxbm -version && ! convert -version && ! gm version)])
 AT_CHECK([fig2dev -L xpm $srcdir/data/line.fig line.xpm && \

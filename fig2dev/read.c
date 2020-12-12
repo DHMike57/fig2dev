@@ -32,7 +32,7 @@
 #include <sys/stat.h>
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
-//#include "object.h"	/* includes X11/xpm.h */
+//#include "object.h"
 #include "alloc.h"
 #include "free.h"
 #include "messages.h"
@@ -1090,11 +1090,6 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	    }
 	    l->pic->transp = -1;
 	    l->pic->bitmap = NULL;
-#ifdef HAVE_X11_XPM_H
-	    /* initialize l->pic->xpmimage by (ab)using a
-	       public libxpm-function */
-	    XpmCreateXpmImageFromBuffer("", &l->pic->xpmimage, NULL);
-#endif
 
 	    if ((chars = get_line(fp, line, line_len, line_no)) < 0 ||
 			  sscanf(*line, "%d %n", &l->pic->flipped, &pos) != 1) {

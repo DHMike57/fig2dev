@@ -29,11 +29,6 @@ SUBDIRS += tests
 
 EXTRA_DIST = fig2ps2tex.csh config.vc Nmakefile
 
-if WITH_XPM
-AM_CPPFLAGS = $(XCPPFLAGS)
-AM_LDFLAGS = $(XLDFLAGS)
-endif
-
 bin_PROGRAMS = fig2dev
 
 fig2dev_SOURCES = alloc.h bool.h bound.h bound.c colors.h colors.c \
@@ -50,9 +45,6 @@ fig2dev.$(OBJEXT): $(CONFIG_HEADER)
 ## LIBOBJS may contain, e.g., strstr.o, since configure.ac contains
 ## AC_REPLACE_FUNCS(strstr) -- but usually LIBOBJS will be empty
 fig2dev_LDADD = $(LIBOBJS) dev/libdrivers.a
-if WITH_XPM
-fig2dev_LDADD += $(XLIBS)
-endif
 
 dist_bin_SCRIPTS = fig2ps2tex pic2tpic
 
