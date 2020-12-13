@@ -47,7 +47,6 @@ read_pcx(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	if (!rewind_stream(pic_stream))
 		return 0;
 	*llx = *lly = 0;
-	pic->transp = -1;
 	return _read_pcx(pic_stream->fp, pic);
 }
 

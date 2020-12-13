@@ -101,7 +101,6 @@ read_tif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 
 	/* now call _read_pcx to read the pcx file */
 	stat = _read_pcx(tiftopcx, pic);
-	pic->transp = -1;
 	/* close the pipe */
 	pclose(tiftopcx);
 

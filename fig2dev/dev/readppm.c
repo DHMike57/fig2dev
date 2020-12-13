@@ -321,7 +321,6 @@ read_ppm(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 		       fprintf(tfp, "%% Originally from a PPM File: %s\n\n",
 				       pic->file);
 		       stat = _read_pcx(f, pic);
-		       pic->transp = -1;
 		       fclose(f);
 	       } else {	/* f == NULL */
 		       fprintf(stderr, "Cannot open temporary output file %s\n",

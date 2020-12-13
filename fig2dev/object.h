@@ -177,9 +177,14 @@ typedef struct f_pic {
 	char			*file;
 	int			flipped;
 	unsigned char		*bitmap;
-	unsigned char		cmap[3][MAXCOLORMAPSIZE]; /* for color files */
+	unsigned char		cmap[3][MAXCOLORMAPSIZE];
 	int			numcols;	/* number of colors in cmap */
-	int			transp; /* transparent color (-1 if none) for GIFs */
+	/*
+	 * Transparency: Pixels are either fully transparent or fully opaque.
+	 * Transparent pixels are given either by colormap entry, transp[0] > 0
+	 *  && transp[1] == -1, or by rgb value, all transp[i] > 0.
+	 */
+	int			transp[3];	/* transparent index/color */
 	float			hw_ratio;
 	struct f_pos		bit_size;
 #ifdef V4_0

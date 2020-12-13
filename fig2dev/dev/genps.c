@@ -524,16 +524,23 @@ write_data(FILE *out, char *name, unsigned char *in, size_t len)
 static void
 write_rgbimage(FILE *out, F_pic *pic)
 {
-	fprintf(out,
-		"/Data currentfile /ASCII85Decode filter def\n"
-		"/DeviceRGB setcolorspace\n"
-		" << /ImageType 1 /Width %d /Height %d\n"
-		"    /ImageMatrix [ %d 0 0 -%d 0 %d ]\n"
-		DATASOURCE
-		"    /BitsPerComponent 8 /Decode [0 1 0 1 0 1]\n"
-		" >> xfig_image\n", pic->bit_size.x, pic->bit_size.y,
-			pic->bit_size.x, pic->bit_size.y, pic->bit_size.y);
-			/* gcc warned: %1$d not ISO C */
+	fputs(		"/Data currentfile /ASCII85Decode filter def\n"
+			"/DeviceRGB setcolorspace\n", out);
+	if (pic->transp[0] == -1) {	/* no transparency */
+		fputs(	" << /ImageType 1\n", out);
+	} else {			/* transparency by color key masking */
+		fputs(	" << /ImageType 4\n", out);
+		fprintf(out, "    /MaskColor [ %d %d %d ]\n", pic->transp[0],
+					pic->transp[1], pic->transp[2]);
+	}
+	/* gcc warned: %1$d not ISO C */
+	fprintf(out,	"    /Width %d /Height %d\n"
+			"    /ImageMatrix [ %d 0 0 -%d 0 %d ]\n",
+				pic->bit_size.x, pic->bit_size.y,
+			     pic->bit_size.x, pic->bit_size.y, pic->bit_size.y);
+	fputs(		DATASOURCE
+			"    /BitsPerComponent 8 /Decode [0 1 0 1 0 1]\n"
+			" >> xfig_image\n", out);
 
 	write_data(out, pic->file, pic->bitmap,
 			(size_t)pic->bit_size.x * pic->bit_size.y * 3);
@@ -545,8 +552,8 @@ indexed_image(FILE *out, F_pic *pic)
 	int	i = 0;
 
 	fprintf(out,
-		"/Data currentfile /ASCII85Decode filter def\n"
-		"[ /Indexed /DeviceRGB %d\n <", pic->numcols - 1);
+			"/Data currentfile /ASCII85Decode filter def\n"
+			"[ /Indexed /DeviceRGB %d\n <", pic->numcols - 1);
 	/* write the hex-encoded colormap */
 	fprintf(out, "%.2x%.2x%.2x", pic->cmap[RED][i], pic->cmap[GREEN][i],
 			pic->cmap[BLUE][i]);
@@ -556,15 +563,21 @@ indexed_image(FILE *out, F_pic *pic)
 		fprintf(out, " %.2x%.2x%.2x", pic->cmap[RED][i],
 				pic->cmap[GREEN][i], pic->cmap[BLUE][i]);
 	}
-	fputs(">\n] setcolorspace\n", out);
+	fputs(		">\n] setcolorspace\n", out);
 	/* continue with image dictionary */
-	fprintf(out,
-		" << /ImageType 1 /Width %d /Height %d\n"
-		"    /ImageMatrix [ %d 0 0 -%d 0 %d ]\n"
-		DATASOURCE
-		"    /BitsPerComponent 8 /Decode [0 255]\n"
-		" >> xfig_image\n", pic->bit_size.x, pic->bit_size.y,
-			pic->bit_size.x, pic->bit_size.y, pic->bit_size.y);
+	if (pic->transp[0] == -1) {	/* fully opaque image */
+		fputs(	" << /ImageType 1\n", out);
+	} else {			/* transparent color */
+		fputs(	" << /ImageType 4\n", out);
+		fprintf(out, "    /MaskColor [ %d ]\n", pic->transp[0]);
+	}
+	fprintf(out,	"    /Width %d /Height %d\n"
+			"    /ImageMatrix [ %d 0 0 -%d 0 %d ]\n",
+				pic->bit_size.x, pic->bit_size.y,
+			     pic->bit_size.x, pic->bit_size.y, pic->bit_size.y);
+	fputs(		DATASOURCE
+			"    /BitsPerComponent 8 /Decode [0 255]\n"
+			" >> xfig_image\n", out);
 
 	write_data(out, pic->file, pic->bitmap,
 			(size_t)pic->bit_size.x * pic->bit_size.y);
@@ -1884,13 +1897,6 @@ genps_line(F_line *l)
 				!psencode_header_done)
 			PSencode_header();
 
-		/* If we have a GIF with a transparent color, we need the
-		   transparentimage code.  Actually, the GIF has been changed
-		   to PCX, but we still have the information */
-		if (l->pic->subtype == P_PCX && l->pic->transp != -1 &&
-				!transp_header_done)
-		    PStransp_header();
-
 		/* width, height of image bits (unrotated) */
 		img_w = l->pic->bit_size.x;
 		img_h = l->pic->bit_size.y;
@@ -1996,7 +2002,8 @@ genps_line(F_line *l)
 		    fputs("/showpage {} def\n/setpagedevice {pop} def\n", tfp);
 		}
 
-		/* XBM file */
+
+		/* embed the image */
 		if (l->pic->subtype == P_XBM) {
 			unsigned char	*bit;
 			int		 cwid;

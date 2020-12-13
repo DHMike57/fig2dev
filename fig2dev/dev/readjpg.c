@@ -70,7 +70,6 @@ read_jpg(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	    return 0;
 
 	*llx = *lly = 0;
-	pic->transp = -1;
 	pic->bit_size.x = image.width;
 	pic->bit_size.y = image.height;
 

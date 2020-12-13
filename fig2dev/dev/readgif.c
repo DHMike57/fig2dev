@@ -64,7 +64,7 @@ static int	 GetDataBlock(FILE *, unsigned char *);
 
 #define LM_to_uint(a,b)			(((b)<<8)|(a))
 
-struct {
+struct _GifScreen {
 	unsigned int	Width;
 	unsigned int	Height;
 	unsigned int	BitPixel;
@@ -72,7 +72,7 @@ struct {
 	unsigned int	ColorResolution;
 	unsigned int	Background;
 	unsigned int	AspectRatio;
-} GifScreen;
+};
 
 struct {
 	int	transparent;
@@ -102,6 +102,7 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	unsigned char    transp[3]; /* RGB of transparent color (if any) */
 	FILE		*pcx;
 	FILE		*giftopcx;
+	struct _GifScreen	GifScreen;
 
 	if (!rewind_stream(pic_stream))
 		return 0;
@@ -209,12 +210,12 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	fprintf(tfp, "%% Originally from a GIF File: %s\n\n", pic->file);
 
 	/* save transparent indicator */
-	pic->transp = Gif89.transparent;
+	pic->transp[0] = Gif89.transparent;
 	/* and RGB values */
-	if (pic->transp != -1) {
-	    transp[RED]   = pic->cmap[RED][pic->transp];
-	    transp[GREEN] = pic->cmap[GREEN][pic->transp];
-	    transp[BLUE]  = pic->cmap[BLUE][pic->transp];
+	if (pic->transp[0] != -1) {
+	    transp[RED]   = pic->cmap[RED][pic->transp[0]];
+	    transp[GREEN] = pic->cmap[GREEN][pic->transp[0]];
+	    transp[BLUE]  = pic->cmap[BLUE][pic->transp[0]];
 	}
 
 	/* create a temporary file */
@@ -273,15 +274,17 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 
 	/* now match original transparent colortable index with possibly new
 	   colortable from ppmtopcx */
-	if (pic->transp != -1) {
+	if (pic->transp[0] != -1) {
 	    for (i=0; i<pic->numcols; i++) {
 		if (pic->cmap[RED][i]   == transp[RED] &&
 		    pic->cmap[GREEN][i] == transp[GREEN] &&
-		    pic->cmap[BLUE][i]  == transp[BLUE])
+		    pic->cmap[BLUE][i]  == transp[BLUE]) {
+			pic->transp[0] = i;
 			break;
+		}
 	    }
-	    if (i < pic->numcols)
-		pic->transp = i;
+	    if (i == pic->numcols)	/* not found? */
+		pic->transp[0] = -1;
 	}
 
 	return stat;
