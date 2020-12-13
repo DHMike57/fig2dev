@@ -53,10 +53,6 @@
 #include "xtmpfile.h"
 
 extern	int	 _read_pcx(FILE *pcxfile, F_pic *pic);		/* readpcx.c */
-static bool	 ReadColorMap(FILE *, unsigned int,
-				unsigned char cmap[3][MAXCOLORMAPSIZE]);
-static bool	 DoGIFextension(FILE *, int);
-static int	 GetDataBlock(FILE *, unsigned char *);
 
 #define LOCALCOLORMAP		0x80
 #define	ReadOK(file,buffer,len)	(fread(buffer, len, 1, file) != 0)
@@ -74,12 +70,17 @@ struct _GifScreen {
 	unsigned int	AspectRatio;
 };
 
-struct {
+struct _Gif89 {
 	int	transparent;
 	int	delayTime;
 	int	inputFlag;
 	int	disposal;
-} Gif89 = { -1, -1, -1, 0 };
+} Gif89;
+
+static bool	 ReadColorMap(FILE *, unsigned int,
+				unsigned char cmap[3][MAXCOLORMAPSIZE]);
+static bool	 DoGIFextension(FILE *, struct _Gif89 *, int);
+static int	 GetDataBlock(FILE *, unsigned char *);
 
 /* return codes:  1 : success
 		  0 : invalid file
@@ -102,6 +103,7 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	unsigned char    transp[3]; /* RGB of transparent color (if any) */
 	FILE		*pcx;
 	FILE		*giftopcx;
+	struct _Gif89	Gif89 = { -1, -1, -1, 0};
 	struct _GifScreen	GifScreen;
 
 	if (!rewind_stream(pic_stream))
@@ -181,7 +183,7 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 		    if (! ReadOK(pic_stream->fp, &c, 1))
 			fprintf(stderr,
 				"GIF read error on extension function code\n");
-		    (void) DoGIFextension(pic_stream->fp, c);
+		    (void)DoGIFextension(pic_stream->fp, &Gif89, c);
 		    continue;
 		}
 
@@ -310,7 +312,7 @@ ReadColorMap(FILE *fd, unsigned int number,
 }
 
 static bool
-DoGIFextension(FILE *fd, int label)
+DoGIFextension(FILE *fd, struct _Gif89 *Gif89, int label)
 {
 	static unsigned char buf[256];
 	char	    *str;
@@ -331,11 +333,11 @@ DoGIFextension(FILE *fd, int label)
 	    case 0xf9:		/* Graphic Control Extension */
 		str = "Graphic Control Extension";
 		(void) GetDataBlock(fd, (unsigned char*) buf);
-		Gif89.disposal    = (buf[0] >> 2) & 0x7;
-		Gif89.inputFlag   = (buf[0] >> 1) & 0x1;
-		Gif89.delayTime   = LM_to_uint(buf[1],buf[2]);
+		Gif89->disposal    = (buf[0] >> 2) & 0x7;
+		Gif89->inputFlag   = (buf[0] >> 1) & 0x1;
+		Gif89->delayTime   = LM_to_uint(buf[1],buf[2]);
 		if ((buf[0] & 0x1) != 0)
-			Gif89.transparent = buf[3];
+			Gif89->transparent = buf[3];
 
 		while (GetDataBlock(fd, buf) != 0)
 			;
@@ -352,8 +354,6 @@ DoGIFextension(FILE *fd, int label)
 	return false;
 }
 
-int	ZeroDataBlock = false;
-
 static int
 GetDataBlock(FILE *fd, unsigned char *buf)
 {
@@ -363,8 +363,6 @@ GetDataBlock(FILE *fd, unsigned char *buf)
 	if (! ReadOK(fd,&count,1)) {
 		return -1;
 	}
-
-	ZeroDataBlock = count == 0;
 
 	/* error in reading DataBlock */
 	if ((count != 0) && (! ReadOK(fd, buf, count))) {

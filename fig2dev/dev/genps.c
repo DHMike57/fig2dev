@@ -69,7 +69,6 @@
 #include "creationdate.h"
 #include "messages.h"
 #include "pi.h"
-#include "psencode.h"
 #include "psfonts.h"
 #include "readpics.h"
 #include "xtmpfile.h"
@@ -1891,11 +1890,6 @@ genps_line(F_line *l)
 			free_stream(&pic_stream);
 			return;
 		}
-
-		/* PSencode() only manages 256 colors. */
-		if (l->pic->subtype == P_XPM && l->pic->numcols <= 256 &&
-				!psencode_header_done)
-			PSencode_header();
 
 		/* width, height of image bits (unrotated) */
 		img_w = l->pic->bit_size.x;
