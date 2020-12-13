@@ -525,12 +525,16 @@ write_rgbimage(FILE *out, F_pic *pic)
 {
 	fputs(		"/Data currentfile /ASCII85Decode filter def\n"
 			"/DeviceRGB setcolorspace\n", out);
-	if (pic->transp[0] == -1) {	/* no transparency */
+
+	if (pic->num_transp == NO_TRANSPARENCY ||
+			/* != TRANSP_COLOR should not happen */
+			pic->num_transp != TRANSP_COLOR) {
 		fputs(	" << /ImageType 1\n", out);
 	} else {			/* transparency by color key masking */
 		fputs(	" << /ImageType 4\n", out);
-		fprintf(out, "    /MaskColor [ %d %d %d ]\n", pic->transp[0],
-					pic->transp[1], pic->transp[2]);
+		fprintf(out, "    /MaskColor [ %d %d %d ]\n",
+				pic->transp_col[RED], pic->transp_col[GREEN],
+				pic->transp_col[BLUE]);
 	}
 	/* gcc warned: %1$d not ISO C */
 	fprintf(out,	"    /Width %d /Height %d\n"
@@ -564,11 +568,14 @@ indexed_image(FILE *out, F_pic *pic)
 	}
 	fputs(		">\n] setcolorspace\n", out);
 	/* continue with image dictionary */
-	if (pic->transp[0] == -1) {	/* fully opaque image */
+	if (pic->num_transp == NO_TRANSPARENCY ||
+			pic->num_transp == TRANSP_COLOR) { /* colormap only! */
 		fputs(	" << /ImageType 1\n", out);
 	} else {			/* transparent color */
-		fputs(	" << /ImageType 4\n", out);
-		fprintf(out, "    /MaskColor [ %d ]\n", pic->transp[0]);
+		fputs(	" << /ImageType 4\n    /MaskColor [ ", out);
+		for (i = 0; i < pic->num_transp; ++i)
+			fprintf(out, "%d ", pic->transp_cols[i]);
+		fputs("]\n", out);
 	}
 	fprintf(out,	"    /Width %d /Height %d\n"
 			"    /ImageMatrix [ %d 0 0 -%d 0 %d ]\n",

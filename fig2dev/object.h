@@ -55,7 +55,7 @@ typedef struct f_comment {
 
 #define COMMON_PROPERTIES(o)						\
 	o->style < SOLID_LINE || o->style > DASH_3_DOTS_LINE ||		\
-	o->thickness < 0 || o->depth < 0 || o->depth > 999 || 		\
+	o->thickness < 0 || o->depth < 0 || o->depth > 999 ||		\
 	o->fill_style < UNFILLED ||					\
 	o->fill_style >= NUMSHADES + NUMTINTS + NUMPATTERNS ||		\
 	o->style_val < 0.0
@@ -158,11 +158,13 @@ typedef struct f_line {
 	(l->type == T_ARC_BOX && l->radius < 0)
 
 /* for colormap */
-
 #define		RED	0
 #define		GREEN	1
 #define		BLUE	2
-
+/* transparency: an index into the colormap: num_transp > 0, otherwise */
+#define		NO_TRANSPARENCY    0
+#define		TRANSP_COLOR	 (-1)	/* transparent color given as
+					   rgb triplet */
 typedef struct f_pic {
 	int			subtype;
 #define		P_EPS	0		/* EPS picture type */
@@ -180,11 +182,13 @@ typedef struct f_pic {
 	unsigned char		cmap[3][MAXCOLORMAPSIZE];
 	int			numcols;	/* number of colors in cmap */
 	/*
-	 * Transparency: Pixels are either fully transparent or fully opaque.
-	 * Transparent pixels are given either by colormap entry, transp[0] > 0
-	 *  && transp[1] == -1, or by rgb value, all transp[i] > 0.
+	 * Png images can have a number of color map entries, or one color,
+	 * given as rgb triplet, that should be transparent. A full alpha
+	 * channel with partial transparency cannot be handled.
 	 */
-	int			transp[3];	/* transparent index/color */
+	int			num_transp;
+	unsigned char		transp_col[3];
+	unsigned char		*transp_cols;
 	float			hw_ratio;
 	struct f_pos		bit_size;
 #ifdef V4_0

@@ -179,33 +179,90 @@ read_png(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	pic->numcols = 1 << bit_depth;
     }
 
-    /* if the png has an alpha channel, composite the background */
-    if (color_type & PNG_COLOR_MASK_ALPHA) {
-	png_color_16p	file_background;
-	png_color_16	png_background;
+    /* transparency */
+    /* transparency given as color value in a tRNS chunk */
+    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) {
+	    unsigned char	*trans_alpha;
+	    int			num_trans;
+	    png_color_16p	trans_color;
 
-	if (bgspec) {
-	    /* blend with the user-supplied background color */
-	    png_background.red   = background.red >> 8;
-	    png_background.green = background.green >> 8;
-	    png_background.blue  = background.blue >> 8;
-	    png_background.gray  = 0;
-	    png_set_background(png_ptr, &png_background,
-		    PNG_BACKGROUND_GAMMA_SCREEN, 0, 2.2);
-	} else {
+	    png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &num_trans,
+			    &trans_color);
+
+	    if (color_type && PNG_COLOR_MASK_PALETTE) {
+		    pic->transp_cols = pic->transp_col;
+		    if (num_trans > 3 && (pic->transp_cols = malloc(num_trans))
+				    == NULL)
+			    num_trans = 3;
+		    for (i = 0; i < num_trans; ++i)
+			    pic->transp_cols[i] = trans_alpha[i];
+		    pic->num_transp = num_trans;
+	    } else { /* tRNS must have returned a RGB value */
+		    if (color_type & PNG_COLOR_MASK_COLOR) {
+			    if (bit_depth == 16) {
+				    pic->transp_col[RED] =
+					    ((int)trans_color->red + 0x80) >> 8;
+				    pic->transp_col[GREEN] =
+					    ((int)trans_color->green + 0x80)>>8;
+				    pic->transp_col[BLUE] =
+					    ((int)trans_color->blue + 0x80) >>8;
+			    } else {
+				    pic->transp_col[RED] = trans_color->red;
+				    pic->transp_col[GREEN] = trans_color->green;
+				    pic->transp_col[BLUE] = trans_color->blue;
+			    }
+		    } else { /* GRAYSCALE */
+			    if (bit_depth == 16) {
+				    pic->transp_col[RED] =
+					    pic->transp_col[GREEN] =
+					    pic->transp_col[BLUE] =
+						    trans_color->gray >> 8;
+			    } else { /* 1, 2, 4, or 8 bit_depth; */
+				    int      mul = 255 / ((1 << bit_depth) - 1);
+				    pic->transp_col[RED] =
+					    pic->transp_col[GREEN] =
+					    pic->transp_col[BLUE] =
+						    trans_color->gray * mul;
+			    }
+		    }
+		    pic->num_transp = TRANSP_COLOR;
+	    }
+    /* Full transparency, a png with an alpha channel. Composite with an
+     * background, and set the background color as the transparent color. */
+    } else if (color_type & PNG_COLOR_MASK_ALPHA) {
+	    png_color_16p	file_background;
+	    png_color_16	png_background;
+
 	    if (png_get_bKGD(png_ptr, info_ptr, &file_background)) {
-		/* use the background supplied in the png file */
-		png_set_background(png_ptr, file_background,
-			PNG_BACKGROUND_GAMMA_FILE, 1, 1.0);
+		    /* use the background supplied in the png file */
+		    png_set_background(png_ptr, file_background,
+				    PNG_BACKGROUND_GAMMA_FILE, 1, 1.0);
+		    pic->transp_col[RED] = file_background->red;
+		    pic->transp_col[GREEN] = file_background->green;
+		    pic->transp_col[BLUE] = file_background->blue;
+	    } else if (bgspec) {
+		    /* blend with the user-supplied background color */
+		    png_background.red   = pic->transp_col[RED] =
+			    background.red >> 8;
+		    png_background.green = pic->transp_col[GREEN] =
+			    background.green >> 8;
+		    png_background.blue  = pic->transp_col[BLUE] =
+			    background.blue >> 8;
+		    png_background.gray  = 0;
+		    png_set_background(png_ptr, &png_background,
+				    PNG_BACKGROUND_GAMMA_SCREEN, 0, 2.2);
 	    } else {
 		/* use white */
-		png_background.red = png_background.green =
-		    png_background.blue = png_background.gray = 255;
-		png_set_background(png_ptr, &png_background,
-			PNG_BACKGROUND_GAMMA_SCREEN, 0, 2.2);
+		    png_background.red = png_background.green =
+			    png_background.blue = png_background.gray =
+			    pic->transp_col[RED] = pic->transp_col[GREEN] =
+			    pic->transp_col[BLUE] = 255;
+		    png_set_background(png_ptr, &png_background,
+				    PNG_BACKGROUND_GAMMA_SCREEN, 0, 2.2);
 	    }
-	}
+	    pic->num_transp = TRANSP_COLOR;
     }
+
     /* done with transformations */
 
     /* allocate memory for the image */

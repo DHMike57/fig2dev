@@ -1089,7 +1089,7 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		return NULL;
 	    }
 	    /* initialize as fully opaque image */
-	    l->pic->transp[0] = l->pic->transp[1] = -1;
+	    l->pic->num_transp = NO_TRANSPARENCY;
 	    l->pic->bitmap = NULL;
 
 	    if ((chars = get_line(fp, line, line_len, line_no)) < 0 ||

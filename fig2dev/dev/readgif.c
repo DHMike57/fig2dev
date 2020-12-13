@@ -212,12 +212,15 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	fprintf(tfp, "%% Originally from a GIF File: %s\n\n", pic->file);
 
 	/* save transparent indicator */
-	pic->transp[0] = Gif89.transparent;
-	/* and RGB values */
-	if (pic->transp[0] != -1) {
-	    transp[RED]   = pic->cmap[RED][pic->transp[0]];
-	    transp[GREEN] = pic->cmap[GREEN][pic->transp[0]];
-	    transp[BLUE]  = pic->cmap[BLUE][pic->transp[0]];
+	if (Gif89.transparent != -1) {
+		pic->num_transp = 1;
+		pic->transp_cols = pic->transp_col; /* abuse transp_col array */
+		pic->transp_cols[0] = Gif89.transparent;
+		transp[RED]   = pic->cmap[RED][pic->transp_cols[0]];
+		transp[GREEN] = pic->cmap[GREEN][pic->transp_cols[0]];
+		transp[BLUE]  = pic->cmap[BLUE][pic->transp_cols[0]];
+	} else {
+		pic->num_transp = NO_TRANSPARENCY;
 	}
 
 	/* create a temporary file */
@@ -276,17 +279,17 @@ read_gif(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 
 	/* now match original transparent colortable index with possibly new
 	   colortable from ppmtopcx */
-	if (pic->transp[0] != -1) {
+	if (pic->num_transp != NO_TRANSPARENCY) {
 	    for (i=0; i<pic->numcols; i++) {
 		if (pic->cmap[RED][i]   == transp[RED] &&
 		    pic->cmap[GREEN][i] == transp[GREEN] &&
 		    pic->cmap[BLUE][i]  == transp[BLUE]) {
-			pic->transp[0] = i;
+			pic->transp_cols[0] = i;
 			break;
 		}
 	    }
 	    if (i == pic->numcols)	/* not found? */
-		pic->transp[0] = -1;
+		pic->num_transp = NO_TRANSPARENCY;
 	}
 
 	return stat;
