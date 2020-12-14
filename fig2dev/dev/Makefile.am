@@ -44,7 +44,7 @@ endif
 ## libraries do not need LDFLAGS - they need not be linked
 ## libdrivers_a_LIBADD is appended to the link-command
 
-libdrivers_a_SOURCES = asc85ec.c genbitmaps.c genbox.c gencgm.c gendxf.c \
+libdrivers_a_SOURCES = asc85ec.c encode.c encode.h genbitmaps.c genbox.c gencgm.c gendxf.c \
     genemf.h genemf.c genepic.c gengbx.c genge.c genibmgl.c genlatex.h \
     genlatex.c genmap.c genmf.c genmp.c genpdf.c genpic.c genpict2e.c \
     genpictex.c genps.h genps.c genpstex.c genpstricks.c genptk.c genshape.c \

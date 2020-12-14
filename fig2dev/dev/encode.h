@@ -16,23 +16,17 @@
  *
  */
 
-#ifndef GENPS_H
-#define GENPS_H
+#ifndef ENCODE_H
+#define ENCODE_H
 
-#include "bool.h"
-#include "object.h"
+#if defined HAVE_CONFIG_H && !defined VERSION
+#include "config.h"
+#endif
+#include <stdio.h>
 
-extern bool	epsflag;	/* to distinguish PS and EPS */
-extern bool	pdfflag;	/* to distinguish PDF and PS/EPS */
+extern int	ascii85encode(FILE *out, unsigned char *in, size_t len);
+#ifdef HAVE_ZLIB_H
+extern int	deflate_ascii85encode(FILE *out, unsigned char *in, size_t len);
+#endif
 
-extern void	gen_ps_eps_option(char opt, char *optarg);
-extern void	genps_start(F_compound *objects);
-extern int	genps_end(void);
-extern void	genps_grid(float major, float minor);
-extern void	genps_arc(F_arc *a);
-extern void	genps_ellipse(F_ellipse *e);
-extern void	genps_line(F_line *l);
-extern void	genps_spline(F_spline *s);
-extern void	genps_text(F_text *t);
-
-#endif /* GENPS_H */
+#endif

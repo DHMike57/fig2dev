@@ -38,8 +38,8 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include "genps.h"
 
-#include <stddef.h>	/* UINT_MAX */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,16 +57,13 @@
 #include <pwd.h>
 #endif
 #include <locale.h>
-#ifdef HAVE_ZLIB_H
-#include <zlib.h>
-#define	ZLIB_IN_MAX	UINT_MAX	/* maximum size zlib can read at once */
-#endif
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
 //#include "object.h"	/* NUMSHADES, NUMTINTS */
 #include "bound.h"
 #include "colors.h"	/* lookup_X_color(), rgb2luminance() */
 #include "creationdate.h"
+#include "encode.h"
 #include "messages.h"
 #include "pi.h"
 #include "psfonts.h"
@@ -75,116 +72,138 @@
 
 /* include the PostScript preamble, patterns etc */
 #include "psprolog.h"
-extern int v2_flag, v21_flag, v30_flag;		/* read.c */
+
+extern int	v2_flag, v21_flag, v30_flag;		/* read.c */
+#ifdef I18N
+extern bool	support_i18n;				/* fig2dev.c */
+#endif
+
+/* exported symbols */
+bool		epsflag = false;	/* to distinguish PS and EPS */
+bool		pdfflag = false;	/* to distinguish PDF and PS/EPS */
 
 /*
- * These function declarations really should be in header files.
- * But they are only used once, here in genps.c.
+ * The procedures to embed image files into ps code are defined in a number of
+ * source files (readgif.c, readjpg.c, readeps.c,...). These procedures could
+ * simply be included here in genps.c, which would result in an overwhelmingly
+ * big file. Reading procedures are separated into their respective files, but
+ * since they are used only here, the functions are declared here and separate
+ * header files are not written.
  */
 #define READ_SIGNATURE \
 	F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx, int *lly
-extern int  read_gif(READ_SIGNATURE);
-extern int  read_pcx(READ_SIGNATURE);
+/* readeps.c */
 extern int  read_eps(READ_SIGNATURE);
 extern int  read_pdf(READ_SIGNATURE);
-extern int  read_ppm(READ_SIGNATURE);
-extern int  read_tif(READ_SIGNATURE);
-extern int  read_xbm(READ_SIGNATURE);
+extern int  append_epsi(FILE *in, const char *filename, FILE *out);
+extern int  pdftops(struct xfig_stream *restrict pic_stream, FILE *out);
+/* readgif.c */
+extern int  read_gif(READ_SIGNATURE);
+/* readjpg.c */
+extern int  read_jpg(READ_SIGNATURE);
+extern void JPEGtoPS(FILE *f, FILE *PSfile);
+/* readpcx.c */
+extern int  read_pcx(READ_SIGNATURE);
+/* readpng.c */
 #ifdef HAVE_PNG_H
 extern int  read_png(READ_SIGNATURE);
 #endif
-extern int  read_jpg(READ_SIGNATURE);
+/* readppm.c */
+extern int  read_ppm(READ_SIGNATURE);
+/* readtif.c */
+extern int  read_tif(READ_SIGNATURE);
+/* readxbm.c */
+extern int  read_xbm(READ_SIGNATURE);
+/* readxpm.c */
 extern int  read_xpm(READ_SIGNATURE);
 #undef READ_SIGNATURE
 
-extern void JPEGtoPS(FILE *f, FILE *PSfile);
-extern int  append_epsi(FILE *in, const char *filename, FILE *out);
-extern int  pdftops();
-
 #ifdef I18N
-extern bool	support_i18n;  /* enable i18n support? */
 static bool	enable_composite_font = false;
 static bool	append_find_composite(FILE *restrict out, FILE *restrict in);
-#endif /* I18N */
+#endif
 
 #define		POINT_PER_INCH		72
 #define		ULIMIT_FONT_SIZE	300
-
 /* In order that gridlines have maximum depth */
 #define		MAXDEPTH		999
 #define		min(a, b)		(((a) < (b)) ? (a) : (b))
+#define		SHADEVAL(F)		1.0*(F)/(NUMSHADES-1)
+#define		TINTVAL(F)		1.0*(F-NUMSHADES+1)/NUMTINTS
+#define		NEEDS_CLIPPING(obj)	((obj->for_arrow || obj->back_arrow) &&\
+							obj->thickness > 0)
 
-void		gen_ps_eps_option(char opt, char *optarg);
-static void	putword(int word, FILE *file);
-static int	append(const char *restrict infilename, FILE *restrict outfile);
-static void	appendhex(char *infilename,FILE *outfile,int width,int height);
+/* variables obtained from command line options */
+static bool	anonymous = true;
+static bool	asciipreview = false;	/* add ASCII preview? */
+static bool	tiffpreview = false;	/* add a TIFF preview? */
+static bool	tiffcolor = false;	/* color or b/w TIFF preview */
+static int	border_margin = 0;
+static bool	correct_font_size = false;
+static int	pagewidth = -1;
+static int	pageheight = -1;
+static bool	useabsolutecoo = false;
+static int	xoff=0;
+static int	yoff=0;
 
-static FILE	*saveofile;
-bool		epsflag = false;	/* to distinguish PS and EPS */
-bool		pdfflag = false;	/* to distinguish PDF and PS/EPS */
-bool		asciipreview = false;	/* add ASCII preview? */
-bool		tiffpreview = false;	/* add a TIFF preview? */
-bool		tiffcolor = false;	/* color or b/w TIFF preview */
-		/* temp filename for eps when adding tiff preview */
-static char	tmpeps_buf[128] = "f2depsXXXXXX";
-		/* temp filename for ASCII or tiff preview */
+static FILE	*saveofile; /* temp filename for eps when adding tiff preview */
+static char	tmpeps_buf[128] = "f2depsXXXXXX"; /* temp filename for
+						     ASCII or tiff preview */
 static char	tmpprev_buf[128] = "f2dprevXXXXXX";
 static char	*tmpeps = tmpeps_buf;
 static char	*tmpprev = tmpprev_buf;
-static bool	anonymous = true;
-static bool	correct_font_size = false;
-int		pagewidth = -1;
-int		pageheight = -1;
-int		width, height;
-int		xoff=0;
-int		yoff=0;
+static int	width, height;
 static double	cur_thickness = 0.0;
 static int	cur_joinstyle = 0;
 static int	cur_capstyle = 0;
-int		pages;
-int		no_obj = 0;
-static int	border_margin = 0;
+static int	pages;
+static int	no_obj = 0;
 static float	fllx, flly, furx, fury;
+static double	scalex, scaley;
+static double	origx, origy;
+static double	userorigx, userorigy;
+static double	userwidthx, userwidthy;
 
 /* arrowhead arrays */
-F_pos		bpoints[50], fpoints[50];
-int		nbpoints, nfpoints;
-F_pos		bfillpoints[50], ffillpoints[50], clippoints[50];
-int		nbfillpoints, nffillpoints, nclippoints;
-int		fpntx1, fpnty1;	/* first point of object */
-int		fpntx2, fpnty2;	/* second point of object */
-int		lpntx1, lpnty1;	/* last point of object */
-int		lpntx2, lpnty2;	/* second-to-last point of object */
-
-static void fill_area(int fill, int pen_color, int fill_color);
-static void clip_arrows(F_line *obj, int objtype);
-static void draw_arrow(F_arrow *arrow, F_pos *points, int npoints,
-		F_pos *fillpoints, int nfillpoints, int col);
-static void encode_all_fonts(F_compound *ob);
-static void set_linewidth(double w);
-static void genps_std_colors(void);
-static void genps_usr_colors(void);
-static bool iso_text_exist(F_compound *ob);
-static bool ellipse_exist(F_compound *ob);
-static bool approx_spline_exist(F_compound *ob);
-static void draw_gridline(float x1, float y1, float x2, float y2);
-static void genps_itp_spline(F_spline *s);
-static void genps_ctl_spline(F_spline *s);
-
-#define SHADEVAL(F)	1.0*(F)/(NUMSHADES-1)
-#define TINTVAL(F)	1.0*(F-NUMSHADES+1)/NUMTINTS
-
+static F_pos	bpoints[50], fpoints[50];
+static int	nbpoints, nfpoints;
+static F_pos	bfillpoints[50], ffillpoints[50], clippoints[50];
+static int	nbfillpoints, nffillpoints, nclippoints;
+static int	fpntx1, fpnty1;	/* first point of object */
+static int	fpntx2, fpnty2;	/* second point of object */
+static int	lpntx1, lpnty1;	/* last point of object */
+static int	lpntx2, lpnty2;	/* second-to-last point of object */
 /*
- *  Static variables for variant meps:
+ *  Static variables for variant methods:
  *   fig_number has the "current" figure number which has been created.
  *   last_depth remembers the last level number processed
  *	   (we need a sufficiently large initial value)
 */
-static int fig_number=0;
-static int last_depth=MAXDEPTH+4;
+static int	fig_number = 0;
+static int	last_depth = MAXDEPTH + 4;
+
+/* local procedures */
+static int	append(const char *restrict infilename, FILE *restrict outfile);
+static void	appendhex(char *infilename,FILE *outfile,int width,int height);
+static bool	approx_spline_exist(F_compound *ob);
+static void	do_split(int actual_depth);/* split different depths' objects */
+					   /* but only as comment */
+static void	clip_arrows(F_line *obj, int objtype);
+static void	draw_arrow(F_arrow *arrow, F_pos *points, int npoints,
+				F_pos *fillpoints, int nfillpoints, int col);
+static void	draw_gridline(float x1, float y1, float x2, float y2);
+static bool	ellipse_exist(F_compound *ob);
+static void	encode_all_fonts(F_compound *ob);
+static void	fill_area(int fill, int pen_color, int fill_color);
+static void	genps_ctl_spline(F_spline *s);
+static void	genps_itp_spline(F_spline *s);
+static void	genps_std_colors(void);
+static void	genps_usr_colors(void);
+static bool	iso_text_exist(F_compound *ob);
+static void	putword(int word, FILE *file);
+static void	set_linewidth(double w);
 
 /* define the standard 32 colors */
-
 struct	_rgb {
 	double r, g, b;
 } rgbcols[NUM_STD_COLS] = {
@@ -243,26 +262,16 @@ static char	*psfontnames[] = {
 		* ppi/(correct_font_size? (metric ? 72*80/76.2 : 72): 80))
 
 /* define the fill patterns */
-char	*fill_def[NUMPATTERNS] = {
-		FILL_PAT01,FILL_PAT02,FILL_PAT03,FILL_PAT04,
-		FILL_PAT05,FILL_PAT06,FILL_PAT07,FILL_PAT08,
-		FILL_PAT09,FILL_PAT10,FILL_PAT11,FILL_PAT12,
-		FILL_PAT13,FILL_PAT14,FILL_PAT15,FILL_PAT16,
-		FILL_PAT17,FILL_PAT18,FILL_PAT19,FILL_PAT20,
-		FILL_PAT21,FILL_PAT22,
+static char	*fill_def[NUMPATTERNS] = {
+	FILL_PAT01,FILL_PAT02,FILL_PAT03,FILL_PAT04,
+	FILL_PAT05,FILL_PAT06,FILL_PAT07,FILL_PAT08,
+	FILL_PAT09,FILL_PAT10,FILL_PAT11,FILL_PAT12,
+	FILL_PAT13,FILL_PAT14,FILL_PAT15,FILL_PAT16,
+	FILL_PAT17,FILL_PAT18,FILL_PAT19,FILL_PAT20,
+	FILL_PAT21,FILL_PAT22,
 };
 
-static double	scalex, scaley;
-static double	origx, origy;
-static double	userorigx, userorigy;
-static double	userwidthx, userwidthy;
-static bool	useabsolutecoo = false;
-
-static void	do_split(); /* new procedure to split different depths' objects */
-			    /* but only as comment */
-
 /* headers for various image files */
-
 static	 struct hdr {
 	    char	*type;
 	    char	*bytes;
@@ -292,205 +301,11 @@ static	 struct hdr {
 };
 
 #define NUMHEADERS	(sizeof(headers)/sizeof(headers[0]))
-#define NEEDS_CLIPPING(obj)	((obj->for_arrow || obj->back_arrow) && \
-					obj->thickness > 0)
+
 
 /******************************/
 /* various methods start here */
 /******************************/
-
-/***** ASCII85 Encoding *****/
-
-/*
- * Convert the next four bytes, writing five chars.
- */
-static int
-convertfourbytes(FILE *out, unsigned char *in)
-{
-	const unsigned long	power85[4] = {85L*85*85*85, 85L*85*85, 85L*85,
-						85L};
-	int			i, o;
-	unsigned long		word;
-
-	word = ((unsigned long)(((unsigned int)(*in) << 8) + *(in+1)) << 16) +
-		(((unsigned int)(*(in+2)) << 8) + *(in+3));
-	if (word == 0) {
-		fputc('z', out);
-		return 1;
-	} else {
-		for (i = 0; i < 4; ++i) {
-			o = (char)(word / power85[i]);
-			word -= o * power85[i];
-			fputc(o + '!', out);
-		}
-		fputc(word + '!', out);
-		return 5;
-	}
-}
-
-/*
- * Convert the remaining 1 to 3 bytes.
- */
-static void
-convertremainder(FILE *out, unsigned char *in, unsigned len)
-{
-	const unsigned long	power85[4] = {85L*85*85*85, 85L*85*85, 85L*85,
-						85L};
-	int			o;
-	unsigned		i;
-	unsigned long		word;
-
-
-	word = (unsigned long)(*in) << 24;
-	for (i = 1; i < len; ++i)
-		word += (unsigned long)(*(in+i)) << 8 * (3 - i);
-	for (i = 0; i < len + 1; ++i) {
-		o = (int)(word / power85[i]);
-		word -= o * power85[i];
-		fputc(o + '!', out);
-	}
-}
-
-static int
-ascii85encode(FILE *out, unsigned char *in, size_t len)
-{
-	size_t		i, n;
-	size_t		lines;
-				/* this yields 16 * 5 = 80 chars in a line */
-	const size_t	bytes_per_line = 16 * 4;
-
-	/* write full lines */
-	lines = len / bytes_per_line;
-	for (n = 0; n < lines; ++n) {
-		for (i = 0; i < 16; ++i)
-			convertfourbytes(out, in + n * bytes_per_line + i * 4);
-		fputc('\n', out);
-		if (ferror(out)) {
-			err_msg("Error writing one line of encoded data");
-			return -1;
-		}
-	}
-
-	/* quick return */
-	if ((n = len - lines * bytes_per_line) == 0)
-		return 0;
-
-	/* write remaining groups of four */
-	for (i = 0; i < n / 4; ++i)
-		convertfourbytes(out, in + lines * bytes_per_line + i * 4);
-
-	/* write remainder */
-	if ((n -= i * 4) > 0)
-		convertremainder(out, in + lines * bytes_per_line + i * 4, n);
-
-	if (ferror(out)) {
-		err_msg("Error writing encoded data");
-		return -1;
-	}
-	return 0;
-}
-
-#ifdef HAVE_ZLIB_H
-/*
- * Write the deflated and ascii85 encoded bitmap data to out.
- */
-static int
-deflate_ascii85encode(FILE *out, unsigned char *in, size_t len)
-{
-	int		ret;
-	int		flush;
-	z_stream	strm;
-	unsigned char	buf[16384]; /* IMPORTANT, that this is a multiple of 4!
-				     * Nice, if a multiple of 16*4, see above */
-
-	/*
-	 * Initialize the zlib state object.
-	 * See zlib.h and the example zpipe.c.
-	 */
-	strm.zalloc = Z_NULL;	/* Have zlib use the standard system malloc().*/
-	strm.zfree = Z_NULL;	/* Have zlib use the standard system free(). */
-	strm.opaque = Z_NULL;	/* Not used, passed to zalloc() and zfree(). */
-	ret = deflateInit2(&strm,
-			Z_BEST_COMPRESSION,	/* 0 - 9, default 6 */
-			Z_DEFLATED,		/* method, must be Z_DEFLATED */
-			MAX_WBITS,		/* window size, max here */
-			MAX_MEM_LEVEL,		/* allocated memory for
-						   compression, use maximum */
-			Z_RLE); /* compression strategy used for png data */
-	if (ret != Z_OK) {
-		put_msg("Unable to initialize compression.");
-		if (strm.msg)
-			put_msg("Zlib error: %s", strm.msg);
-		else
-			put_msg("Zlib error = %d", ret);
-		return ret;
-	}
-
-	/* Assign input and output for compression. */
-	strm.next_in = in;
-	strm.next_out = buf;
-	strm.avail_out = (unsigned) sizeof buf;
-
-	/*
-	 * strm.avail_in is of type unsigned int, hence it can hold a maximum
-	 * number of UINT_MAX (= ZLIB_IN_MAX, see above) bytes, equal 4 GiB. */
-	if (len > ZLIB_IN_MAX) {
-		flush = Z_NO_FLUSH;
-		strm.avail_in = ZLIB_IN_MAX;
-		len -= strm.avail_in;
-	} else {
-		flush = Z_FINISH;
-		strm.avail_in = len;
-	}
-
-	/*
-	 * Start compression.
-	 * Loop, as long as the output buffer can be completely filled.
-	 * This rests on the assumption that deflate() writes a number of
-	 * completely filled output buffers, and only the last one is probably
-	 * partially filled.
-	 */
-	while ((ret = deflate(&strm, flush)) == Z_OK && strm.avail_out == 0){
-		ascii85encode(out, buf, sizeof buf);
-		strm.avail_out = (unsigned) sizeof buf;
-		strm.next_out = buf;
-		if (flush != Z_FINISH) {
-			unsigned	possible = ZLIB_IN_MAX - strm.avail_in;
-			if (possible > len) {
-				strm.avail_in += len;
-				flush = Z_FINISH;
-			} else {
-				strm.avail_in = ZLIB_IN_MAX;
-				len -= possible;
-			}
-		}
-	}
-	if (ret == Z_STREAM_ERROR) {
-		if (strm.msg)
-			put_msg("Error while compressing image: %s", strm.msg);
-		else
-			put_msg("Error while compressing image.");
-		return Z_STREAM_ERROR;
-	}
-	if (ret == Z_BUF_ERROR && strm.avail_out == 0) {
-		put_msg("An unexpected error occured, avail_out == 0 && "
-			"ret == Z_BUF_ERROR.\nPlease report this error.");
-	}
-	/* output the remainder */
-	if (ret == Z_STREAM_END && strm.avail_out != 0)
-		ascii85encode(out, buf, sizeof buf - strm.avail_out);
-
-	/* clean up */
-	if (deflateEnd(&strm) != Z_OK) {
-		if (strm.msg)
-			put_msg("Error after compression of image: %s.",
-					strm.msg);
-		else
-			put_msg("Error after compression of image.");
-	}
-	return 0;
-}
-#endif	/* HAVE_ZLIB_H */
 
 static void
 write_data(FILE *out, char *name, unsigned char *in, size_t len)
