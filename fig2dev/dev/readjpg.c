@@ -41,20 +41,62 @@
 
 #include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"
+#include "encode.h"
 #include "creationdate.h"
-#include "psimage.h"
+#include "messages.h"
 #include "readpics.h"
 
-extern	bool	AnalyzeJPEG(imagedata *image);
-extern	int	ASCII85Encode(FILE *in, FILE *out);	/* asc85ec.c */
-extern	void	ASCIIHexEncode(FILE *in, FILE *out);	/* asc85ec.c */
+/* data output mode: binary, ascii85, hex-ascii */
+typedef enum { BINARY, ASCII85, ASCIIHEX } DATAMODE;
 
-static char *ColorSpaceNames[] = {"", "Gray", "", "RGB", "CMYK" };
+static struct imagedata {
+  FILE     *fp;			/* file pointer for jpeg file		*/
+  char     *filename;		/* name of image file			*/
+  int      width;		/* pixels per line			*/
+  int      height;		/* rows					*/
+  int      components;		/* number of color components		*/
+  int      bits_per_component;	/* bits per color component		*/
+  float    dpi;			/* image resolution in dots per inch	*/
+  DATAMODE mode;		/* output mode: 8bit, ascii, ascii85	*/
+  bool  adobe;			/* image includes Adobe comment marker	*/
+} image;
 
-static imagedata image;
+#define	DPI_IGNORE (float) (-1.0)  /* dummy value for imagedata.dpi	*/
+#define DPI_USE_FILE ((float) 0.0) /* dummy value for imagedata.dpi	*/
 
-/* only read the jpeg file header to get the pertinent info and put in pic struct */
+static	bool	AnalyzeJPEG(void);
 
+/*
+ * Read data from in, ascii85 encode it, and write to out.
+ */
+static	int
+write_ascii85(FILE *in, FILE *out)
+{
+	unsigned char	buf[65536];	/* MUST be a multiple of 4 */
+	size_t		n;
+
+	while (!feof(in)) {
+		n = fread(buf, 1, sizeof buf, in);
+		if (ferror(in)) {
+			err_msg("Error reading jpg file");
+			return -1;
+		}
+		if (ascii85encode(out, buf, n)) {
+			put_msg("Error when writing jpeg data to "
+					"PostScript output.");
+			return -1;
+		}
+	}
+	/* end of data marker */
+	fputs("~>\n", out);
+	return 0;
+}
+
+
+/*
+ * read the jpeg file header to get the pertinent info and
+ * put it in pic struct
+ */
 int
 read_jpg(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 {
@@ -66,7 +108,7 @@ read_jpg(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 	image.filename	= pic->file;
 
 	/* read image parameters and fill image struct */
-	if (!rewind_stream(pic_stream) || !AnalyzeJPEG(&image))
+	if (!rewind_stream(pic_stream) || !AnalyzeJPEG())
 	    return 0;
 
 	*llx = *lly = 0;
@@ -85,24 +127,23 @@ read_jpg(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 /* here's where we read the rest of the jpeg file and format for PS */
 void
 JPEGtoPS(FILE *f, FILE *PSfile) {
-  imagedata	*JPEG;
   size_t	 n;
   int		 i;
   char		 date_buf[CREATION_TIME_LEN];
   char		buffer[BUFSIZ];
+  char *const	ColorSpaceNames[] = {"", "Gray", "", "RGB", "CMYK" };
 
-  JPEG = &image;
 
   /* produce EPS header comments */
   fprintf(PSfile, "%%!PS-Adobe-3.0 EPSF-3.0\n");
   fprintf(PSfile, "%%%%Creator: jpeg2ps %s by Thomas Merz\n", PACKAGE_VERSION);
-  fprintf(PSfile, "%%%%Title: %s\n", JPEG->filename);
+  fprintf(PSfile, "%%%%Title: %s\n", image.filename);
   if (creation_date(date_buf))
     fprintf(PSfile, "%%%%CreationDate: %s\n", date_buf);
   fprintf(PSfile, "%%%%BoundingBox: %d %d %d %d\n",
-		   0, 0, JPEG->width, JPEG->height);
+		   0, 0, image.width, image.height);
   fprintf(PSfile, "%%%%DocumentData: %s\n",
-		  JPEG->mode == BINARY ? "Binary" : "Clean7Bit");
+		  image.mode == BINARY ? "Binary" : "Clean7Bit");
   fprintf(PSfile, "%%%%LanguageLevel: 2\n");
   fprintf(PSfile, "%%%%EndComments\n");
   fprintf(PSfile, "%%%%BeginProlog\n");
@@ -111,7 +152,7 @@ JPEGtoPS(FILE *f, FILE *PSfile) {
   fprintf(PSfile, "/languagelevel where {pop languagelevel 2 lt}");
   fprintf(PSfile, "{true} ifelse {\n");
   fprintf(PSfile, "  (JPEG file '%s' needs PostScript Level 2!",
-		  JPEG->filename);
+		  image.filename);
   fprintf(PSfile, "\\n) dup print flush\n");
   fprintf(PSfile, "  /Helvetica findfont 20 scalefont setfont ");
   fprintf(PSfile, "100 100 moveto show showpage stop\n");
@@ -120,9 +161,9 @@ JPEGtoPS(FILE *f, FILE *PSfile) {
   fprintf(PSfile, "save\n");
   fprintf(PSfile, "/RawData currentfile ");
 
-  if (JPEG->mode == ASCIIHEX)		 /* hex representation... */
+  if (image.mode == ASCIIHEX)		 /* hex representation... */
     fprintf(PSfile, "/ASCIIHexDecode filter ");
-  else if (JPEG->mode == ASCII85)	 /* ...or ASCII85	  */
+  else if (image.mode == ASCII85)	 /* ...or ASCII85	  */
     fprintf(PSfile, "/ASCII85Decode filter ");
   /* else binary mode: don't use any additional filter! */
 
@@ -132,26 +173,26 @@ JPEGtoPS(FILE *f, FILE *PSfile) {
   fprintf(PSfile, ">> /DCTDecode filter def\n");
 
   fprintf(PSfile, "/Device%s setcolorspace\n",
-		  ColorSpaceNames[JPEG->components]);
+		  ColorSpaceNames[image.components]);
   fprintf(PSfile, "{ << /ImageType 1\n");
-  fprintf(PSfile, "	/Width %d\n", JPEG->width);
-  fprintf(PSfile, "	/Height %d\n", JPEG->height);
+  fprintf(PSfile, "	/Width %d\n", image.width);
+  fprintf(PSfile, "	/Height %d\n", image.height);
   fprintf(PSfile, "	/ImageMatrix [ %d 0 0 %d 0 %d ]\n",
-		  JPEG->width, -JPEG->height, JPEG->height);
+		  image.width, -image.height, image.height);
   fprintf(PSfile, "	/DataSource Data\n");
   fprintf(PSfile, "	/BitsPerComponent %d\n",
-		  JPEG->bits_per_component);
+		  image.bits_per_component);
 
   /* workaround for color-inverted CMYK files produced by Adobe Photoshop:
    * compensate for the color inversion in the PostScript code
    */
-  if (JPEG->adobe && JPEG->components == 4) {
+  if (image.adobe && image.components == 4) {
 	/* fprintf(stderr, "Note: Adobe-conforming CMYK file - applying"
 				" workaround for color inversion.\n"); */
     fprintf(PSfile, "	  /Decode [1 0 1 0 1 0 1 0]\n");
   }else {
     fprintf(PSfile, "	  /Decode [0 1");
-    for (i = 1; i < JPEG->components; i++)
+    for (i = 1; i < image.components; i++)
       fprintf(PSfile," 0 1");
     fprintf(PSfile, "]\n");
   }
@@ -162,10 +203,10 @@ JPEGtoPS(FILE *f, FILE *PSfile) {
   fprintf(PSfile, "  restore\n");
   fprintf(PSfile, "} exec");
 
-  switch (JPEG->mode) {
+  switch (image.mode) {
 	case BINARY:
 	    /* important: ONE blank and NO newline */
-	    fprintf(PSfile, " ");
+	    fputc(' ', PSfile);
 	#ifdef HAVE__SETMODE
 	    fflush(PSfile);		  /* up to now we have CR/NL mapping */
 	    _setmode(fileno(PSfile), O_BINARY);	  /* continue in binary mode */
@@ -180,26 +221,34 @@ JPEGtoPS(FILE *f, FILE *PSfile) {
 	    break;
 
 	case ASCII85:
-	    fprintf(PSfile, "\n");
-
-	    /* ASCII85 representation of image data */
-	    if (ASCII85Encode(f, PSfile)) {
-	      fprintf(stderr, "Error: internal problems with ASCII85Encode!\n");
-	      exit(1);
-	    }
+	    fputc('\n', PSfile);
+	    if (write_ascii85(f, PSfile))
+	      exit(EXIT_FAILURE);
 	    break;
 
-	case ASCIIHEX:
-	    /* hex representation of image data (useful for buggy dvips) */
-	    ASCIIHexEncode(f, PSfile);
+	case ASCIIHEX:	/* this code is never called */
+	    fputc('\n', PSfile);
+	    while (!feof(f)) {
+		    int		j;
+		    n = fread(buffer, 1, sizeof buffer, f);
+		    for (i = 0; i < (int)(n / 80); ++i) {
+			    int	j = 0;
+			    while (j++ < 80)
+				    fprintf(PSfile, "%.2hhx",
+							*(buffer + i * 80 + j));
+			    fputc('\n', PSfile);
+		    }
+		    while ((j = i * 80) < (int)n)
+				    fprintf(PSfile, "%.2hhx", *(buffer + j));
+	    }
+	    /* end of data marker */
+	    fputs(">\n", PSfile);
 	    break;
     }
 }
 
 /* The following enum is stolen from the IJG JPEG library
  * Comments added by tm
- * This table contains far too many names since jpeg2ps
- * is rather simple-minded about markers
  */
 
 typedef enum {		/* JPEG marker codes			*/
@@ -212,7 +261,6 @@ typedef enum {		/* JPEG marker codes			*/
   M_SOF6  = 0xc6,	/* differential progressive DCT		*/
   M_SOF7  = 0xc7,	/* differential lossless		*/
 
-  M_JPG   = 0xc8,	/* JPEG extensions			*/
   M_SOF9  = 0xc9,	/* extended sequential DCT		*/
   M_SOF10 = 0xca,	/* progressive DCT			*/
   M_SOF11 = 0xcb,	/* lossless (sequential)		*/
@@ -220,10 +268,6 @@ typedef enum {		/* JPEG marker codes			*/
   M_SOF13 = 0xcd,	/* differential sequential DCT		*/
   M_SOF14 = 0xce,	/* differential progressive DCT		*/
   M_SOF15 = 0xcf,	/* differential lossless		*/
-
-  M_DHT   = 0xc4,	/* define Huffman tables		*/
-
-  M_DAC   = 0xcc,	/* define arithmetic conditioning table	*/
 
   M_RST0  = 0xd0,	/* restart				*/
   M_RST1  = 0xd1,	/* restart				*/
@@ -236,33 +280,9 @@ typedef enum {		/* JPEG marker codes			*/
 
   M_SOI   = 0xd8,	/* start of image			*/
   M_EOI   = 0xd9,	/* end of image				*/
-  M_SOS   = 0xda,	/* start of scan			*/
-  M_DQT   = 0xdb,	/* define quantization tables		*/
-  M_DNL   = 0xdc,	/* define number of lines		*/
-  M_DRI   = 0xdd,	/* define restart interval		*/
-  M_DHP   = 0xde,	/* define hierarchical progression	*/
-  M_EXP   = 0xdf,	/* expand reference image(s)		*/
 
   M_APP0  = 0xe0,	/* application marker, used for JFIF	*/
-  M_APP1  = 0xe1,	/* application marker			*/
-  M_APP2  = 0xe2,	/* application marker			*/
-  M_APP3  = 0xe3,	/* application marker			*/
-  M_APP4  = 0xe4,	/* application marker			*/
-  M_APP5  = 0xe5,	/* application marker			*/
-  M_APP6  = 0xe6,	/* application marker			*/
-  M_APP7  = 0xe7,	/* application marker			*/
-  M_APP8  = 0xe8,	/* application marker			*/
-  M_APP9  = 0xe9,	/* application marker			*/
-  M_APP10 = 0xea,	/* application marker			*/
-  M_APP11 = 0xeb,	/* application marker			*/
-  M_APP12 = 0xec,	/* application marker			*/
-  M_APP13 = 0xed,	/* application marker			*/
   M_APP14 = 0xee,	/* application marker, used by Adobe	*/
-  M_APP15 = 0xef,	/* application marker			*/
-
-  M_JPG0  = 0xf0,	/* reserved for JPEG extensions		*/
-  M_JPG13 = 0xfd,	/* reserved for JPEG extensions		*/
-  M_COM   = 0xfe,	/* comment				*/
 
   M_TEM   = 0x01,	/* temporary use			*/
 
@@ -312,8 +332,8 @@ next_marker(FILE *fp) { /* look for next JPEG Marker  */
 
 /* analyze JPEG marker */
 
-bool
-AnalyzeJPEG(imagedata *image) {
+static bool
+AnalyzeJPEG() {
   int b, c, unit;
   unsigned long i, length = 0;
 #define APP_MAX 255
@@ -321,7 +341,7 @@ AnalyzeJPEG(imagedata *image) {
   bool SOF_done = false;
 
   /* process JPEG markers */
-  while (!SOF_done && (c = next_marker(image->fp)) != M_EOI) {
+  while (!SOF_done && (c = next_marker(image.fp)) != M_EOI) {
     switch (c) {
       case M_ERROR:
 	fprintf(stderr, "Error: unexpected end of JPEG file!\n");
@@ -342,21 +362,21 @@ AnalyzeJPEG(imagedata *image) {
       /* this below is supported in PostScript level 2 */
       case M_SOF0:
       case M_SOF1:
-	length = get_2bytes(image->fp);    /* read segment length  */
+	length = get_2bytes(image.fp);    /* read segment length  */
 
-	image->bits_per_component = getc(image->fp);
-	image->height		  = (int) get_2bytes(image->fp);
-	image->width		  = (int) get_2bytes(image->fp);
-	image->components	  = getc(image->fp);
+	image.bits_per_component = getc(image.fp);
+	image.height		  = (int) get_2bytes(image.fp);
+	image.width		  = (int) get_2bytes(image.fp);
+	image.components	  = getc(image.fp);
 
 	SOF_done = true;
 	break;
 
       case M_APP0:		/* check for JFIF marker with resolution */
-	length = get_2bytes(image->fp);
+	length = get_2bytes(image.fp);
 
 	for (i = 0; i < length-2; i++) {	/* get contents of marker */
-	  b = getc(image->fp);
+	  b = getc(image.fp);
 	  if (i < APP_MAX)			/* store marker in appstring */
 	    appstring[i] = (unsigned char) b;
 	}
@@ -371,44 +391,44 @@ AnalyzeJPEG(imagedata *image) {
 #define DOTS_PER_INCH	1	/* JFIF unit byte: dots per inch     */
 #define DOTS_PER_CM	2	/* JFIF unit byte: dots per cm	     */
 
-	if (image->dpi == DPI_USE_FILE && length >= 14 &&
+	if (image.dpi == DPI_USE_FILE && length >= 14 &&
 	    !strncmp((const char *)appstring, "JFIF", 4)) {
 	  unit = appstring[7];			/* resolution unit */
 						/* resolution value */
-	  image->dpi = (float) ((appstring[8]<<8) + appstring[9]);
+	  image.dpi = (float) ((appstring[8]<<8) + appstring[9]);
 
-	  if (image->dpi == 0.0) {
-	    image->dpi = DPI_USE_FILE;
+	  if (image.dpi == 0.0) {
+	    image.dpi = DPI_USE_FILE;
 	    break;
 	  }
 
 	  switch (unit) {
 	    /* tell the caller we didn't find a resolution value */
 	    case ASPECT_RATIO:
-	      image->dpi = DPI_USE_FILE;
+	      image.dpi = DPI_USE_FILE;
 	      break;
 
 	    case DOTS_PER_INCH:
 	      break;
 
 	    case DOTS_PER_CM:
-	      image->dpi *= (float) 2.54;
+	      image.dpi *= (float) 2.54;
 	      break;
 
 	    default:				/* unknown ==> ignore */
 	      fprintf(stderr,
 		"Warning: JPEG file contains unknown JFIF resolution unit - ignored!\n");
-	      image->dpi = DPI_IGNORE;
+	      image.dpi = DPI_IGNORE;
 	      break;
 	  }
 	}
 	break;
 
       case M_APP14:				/* check for Adobe marker */
-	length = get_2bytes(image->fp);
+	length = get_2bytes(image.fp);
 
 	for (i = 0; i < length-2; i++) {	/* get contents of marker */
-	  b = getc(image->fp);
+	  b = getc(image.fp);
 	  if (i < APP_MAX)			/* store marker in appstring */
 	    appstring[i] = (unsigned char) b;
 	}
@@ -417,7 +437,7 @@ AnalyzeJPEG(imagedata *image) {
 	 * to contain the string "Adobe" at the start of the APP14 marker.
 	 */
 	if (length >= 12 && !strncmp((const char *) appstring, "Adobe", 5))
-	  image->adobe = true;			/* set Adobe flag */
+	  image.adobe = true;			/* set Adobe flag */
 
 	break;
 
@@ -435,31 +455,31 @@ AnalyzeJPEG(imagedata *image) {
 	break;
 
       default:			/* skip variable length markers */
-	length = get_2bytes(image->fp);
+	length = get_2bytes(image.fp);
 	for (length -= 2; length > 0; length--)
-	  (void) getc(image->fp);
+	  (void) getc(image.fp);
 	break;
     }
   }
 
   /* do some sanity checks with the parameters */
-  if (image->height <= 0 || image->width <= 0 || image->components <= 0) {
+  if (image.height <= 0 || image.width <= 0 || image.components <= 0) {
     fprintf(stderr, "Error: DNL marker not supported in PostScript Level 2!\n");
     return false;
   }
 
   /* some broken JPEG files have this but they print anyway... */
-  if (length != (unsigned int) (image->components * 3 + 8))
+  if (length != (unsigned int) (image.components * 3 + 8))
     fprintf(stderr, "Warning: SOF marker has incorrect length - ignored!\n");
 
-  if (image->bits_per_component != 8) {
-    fprintf(stderr, "Error: %d bits per color component ", image->bits_per_component);
+  if (image.bits_per_component != 8) {
+    fprintf(stderr, "Error: %d bits per color component ", image.bits_per_component);
     fprintf(stderr, "not supported in PostScript level 2!\n");
     return false;
   }
 
-  if (image->components!=1 && image->components!=3 && image->components!=4) {
-    fprintf(stderr, "Error: unknown color space (%d components)!\n", image->components);
+  if (image.components!=1 && image.components!=3 && image.components!=4) {
+    fprintf(stderr, "Error: unknown color space (%d components)!\n", image.components);
     return false;
   }
 

@@ -55,7 +55,7 @@ convertfourbytes(FILE *out, unsigned char *in)
 		return 1;
 	} else {
 		for (i = 0; i < 4; ++i) {
-			o = (char)(word / power85[i]);
+			o = (int)(word / power85[i]);
 			word -= o * power85[i];
 			fputc(o + '!', out);
 		}
@@ -91,6 +91,8 @@ convertremainder(FILE *out, unsigned char *in, unsigned len)
  * Write data provided in in, of length len, ascii85-encoded to out.
  * If called multiple times, "len" should be a multiple of 4.
  * Otherwise, a remainder is written that ends an ascii85 encoded stream.
+ * Return 0 on success, -1 on failure.
+ * For -1, err_msg(), retrieving errno, is already called.
  */
 int
 ascii85encode(FILE *out, unsigned char *in, size_t len)

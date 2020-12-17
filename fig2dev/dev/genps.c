@@ -373,12 +373,12 @@ indexed_image(FILE *out, F_pic *pic)
 			"/Data currentfile /ASCII85Decode filter def\n"
 			"[ /Indexed /DeviceRGB %d\n <", pic->numcols - 1);
 	/* write the hex-encoded colormap */
-	fprintf(out, "%.2x%.2x%.2x", pic->cmap[RED][i], pic->cmap[GREEN][i],
-			pic->cmap[BLUE][i]);
+	fprintf(out, "%.2hhx%.2hhx%.2hhx", pic->cmap[RED][i],
+			pic->cmap[GREEN][i], pic->cmap[BLUE][i]);
 	for (i = 1; i < pic->numcols; ++i) {
 		if (i % 11 == 0)
 			fputs("\n ", out);
-		fprintf(out, " %.2x%.2x%.2x", pic->cmap[RED][i],
+		fprintf(out, " %.2hhx%.2hhx%.2hhx", pic->cmap[RED][i],
 				pic->cmap[GREEN][i], pic->cmap[BLUE][i]);
 	}
 	fputs(		">\n] setcolorspace\n", out);
