@@ -62,7 +62,7 @@ xtmpfile(char **pattern, size_t len)
 	const char	mode[] = "wb+";
 	int		i;
 	size_t		t;
-	char 		*p;
+	char		*p;
 #if ! defined(HAVE_MKSTEMP) || ! defined(HAVE_FDOPEN)
 	FILE		*f = NULL;
 	static bool	seeded = false;

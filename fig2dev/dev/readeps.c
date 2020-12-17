@@ -411,7 +411,7 @@ int
 pdftops(struct xfig_stream *restrict pic_stream, FILE *out)
 {
 	char	cmd_buf[256];
-	char 	*cmd = cmd_buf;
+	char	*cmd = cmd_buf;
 	char	buf[BUFSIZ];
 	char	*cmd_fmt;
 	int	ret = 0;
