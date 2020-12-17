@@ -303,13 +303,13 @@ ReadColorMap(FILE *fd, unsigned int number,
 	unsigned char	rgb[3];
 
 	for (i = 0; i < number; ++i) {
-	    if (! ReadOK(fd, rgb, sizeof(rgb))) {
-		fprintf(stderr,"bad GIF colormap\n" );
-		return false;
-	    }
-	    cmap[RED][i]   = rgb[RED];
-	    cmap[GREEN][i] = rgb[GREEN];
-	    cmap[BLUE][i]  = rgb[BLUE];
+		if (! ReadOK(fd, rgb, sizeof(rgb))) {
+			fprintf(stderr,"bad GIF colormap\n" );
+			return false;
+		}
+		cmap[RED][i]   = rgb[RED];
+		cmap[GREEN][i] = rgb[GREEN];
+		cmap[BLUE][i]  = rgb[BLUE];
 	}
 	return true;
 }
@@ -321,19 +321,19 @@ DoGIFextension(FILE *fd, struct _Gif89 *Gif89, int label)
 	char	    *str;
 
 	switch (label) {
-	    case 0x01:		/* Plain Text Extension */
+	case 0x01:		/* Plain Text Extension */
 		str = "Plain Text Extension";
 		break;
-	    case 0xff:		/* Application Extension */
+	case 0xff:		/* Application Extension */
 		str = "Application Extension";
 		break;
-	    case 0xfe:		/* Comment Extension */
+	case 0xfe:		/* Comment Extension */
 		str = "Comment Extension";
 		while (GetDataBlock(fd, buf) != 0) {
 			; /* GIF comment */
 		}
 		return false;
-	    case 0xf9:		/* Graphic Control Extension */
+	case 0xf9:		/* Graphic Control Extension */
 		str = "Graphic Control Extension";
 		(void) GetDataBlock(fd, (unsigned char*) buf);
 		Gif89->disposal    = (buf[0] >> 2) & 0x7;
@@ -345,7 +345,7 @@ DoGIFextension(FILE *fd, struct _Gif89 *Gif89, int label)
 		while (GetDataBlock(fd, buf) != 0)
 			;
 		return false;
-	    default:
+	default:
 		str = (char *) buf;
 		sprintf(str, "UNKNOWN (0x%02x)", label);
 		break;
