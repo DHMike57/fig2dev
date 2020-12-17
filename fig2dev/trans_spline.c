@@ -24,7 +24,6 @@
 
 #include "fig2dev.h"	/* includes bool.h and object.h*/
 //#include "object.h"
-#include "alloc.h"
 #include "free.h"
 #include "messages.h"
 #include "trans_spline.h"

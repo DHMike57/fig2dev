@@ -23,12 +23,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <png.h>
 
 #include "fig2dev.h"
 #include "object.h"
-#include "colors.h"	/* rgb2luminance() */
 #include "messages.h"
 #include "readpics.h"
 

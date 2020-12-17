@@ -44,7 +44,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <limits.h>
 
 #include "fig2dev.h"	/* includes "bool.h" */
 #include "object.h"

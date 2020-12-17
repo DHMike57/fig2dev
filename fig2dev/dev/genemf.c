@@ -68,7 +68,6 @@
 #include "config.h"
 #endif
 
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -77,7 +76,6 @@
 #endif
 #include <ctype.h>
 #include <math.h>
-#include <limits.h>
 #if defined(I18N) && defined(HAVE_ICONV)
 #include <iconv.h>
 #endif

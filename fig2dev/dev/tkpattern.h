@@ -23,6 +23,8 @@
  *
  */
 
+#include "object.h"
+
 extern struct tkpattern {
 	const int		width;
 	const int		height;

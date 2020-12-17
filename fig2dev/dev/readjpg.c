@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #ifdef HAVE__SETMODE	/* see fig2dev.c */
 #include <io.h>
 #include <fcntl.h>

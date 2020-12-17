@@ -29,8 +29,6 @@
 #include <stdint.h>		/* INT16_MAX */
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <limits.h>
 
 #include "fig2dev.h"	/* includes <object.h> */
 //#include "object.h"	/* F_pic */

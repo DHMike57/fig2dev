@@ -32,7 +32,6 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#include "fig2dev.h"	/* includes "bool.h" */
 #include "messages.h"
 #include "xtmpfile.h"
 

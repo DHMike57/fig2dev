@@ -46,7 +46,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 
 #include "fig2dev.h"
 #include "object.h"

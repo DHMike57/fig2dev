@@ -27,7 +27,7 @@
 #endif
 #include "encode.h"
 
-#include <stddef.h>	/* UINT_MAX */
+#include <limits.h>	/* UINT_MAX */
 #include <stdio.h>
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>

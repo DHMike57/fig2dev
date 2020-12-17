@@ -36,9 +36,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <ctype.h>
-#include <limits.h>
-#include <math.h>
 
 #include "bool.h"
 #include "fig2dev.h"	/* includes bool.h and object.h */

@@ -34,7 +34,6 @@
 #include <strings.h>
 #endif
 #include <math.h>
-#include <limits.h>
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
 //#include "object.h"

@@ -37,7 +37,7 @@
 
 #include <stdio.h>
 
-#include "fig2dev.h"	/* includes "bool.h" */
+#include "bool.h"
 
 bool FontSizeOnly = false;
 

@@ -51,7 +51,6 @@
 #endif
 #include <math.h>
 #include <ctype.h>
-#include <limits.h>
 #include <sys/stat.h>	/* struct stat */
 #ifdef HAVE_GETPWUID
 #include <pwd.h>

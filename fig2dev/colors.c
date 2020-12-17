@@ -27,7 +27,6 @@
 #include <strings.h>
 #endif
 
-#include "pi.h"
 #include "fig2dev.h"	/* includes "bool.h" */
 
 struct color_db {
