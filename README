@@ -33,22 +33,16 @@ Fig2dev and its companion xfig are available from
 Runtime Requirements
 ********************
 
-o As of version 3.2.0 (final), fig2dev has taken over the translating of Fig
-  to the bitmap formats (ACAD, GIF, JPEG, XPM, XBM, PCX, TIFF).
-  In the past, xfig itself rendered the bitmap formats.  This change was made
-  to have a more consistent look and better fonts.  First, the Fig file is
-  translated to PostScript, then ghostscript is used to render the image to
-  the final format in the case of JPEG, PCX and TIFF, or to PPM (portable
-  pixmap) after which the appropriate ppmtoXXX filter is used to get ACAD, GIF,
-  XPM and XBM.  If smoothing is done (-S option) when jpeg output is used, the
-  "ppmtojpeg" program must be installed from the netpbm package.
+o To translate Fig to any bitmap format (GIF, JPEG, TIFF, PNG, XPM, and others),
+  first the Fig file is translated to PostScript and then ghostscript is called
+  to render the image to the final format, or to PPM. The conversion from PPM to
+  the final format is either done with an appropriate ppmtoXXX filter from the
+  netpbm programs, or with convert from the ImageMagick package, or with gm
+  convert from the GraphicsMagick package.
 
-  o You need the netpbm package version 9.1 (or later), which you can find at
-    http://download.sourceforge.net/netpbm
+  o You need ghostscript, and
 
-  o You will also need ghostscript, which can be found on ftp.cs.wisc.edu in
-    /ghost/aladdin, *AND* it must be compiled with the pcx256, jpeg, png256,
-    ppmraw and tiff24nc drivers.
+  o either the netpbm programs, or ImageMagick , or GraphicsMagick.
 
 o To use the -a (binary) option for CGM export, the ralcgm program is
   required. This is available from ftp://ftp.cc.rl.ac.uk/pub/graphics/ralcgm/

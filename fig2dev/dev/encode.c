@@ -216,7 +216,7 @@ deflate_ascii85encode(FILE *out, unsigned char *in, size_t len)
 		return Z_STREAM_ERROR;
 	}
 	if (ret == Z_BUF_ERROR && strm.avail_out == 0) {
-		put_msg("An unexpected error occured, avail_out == 0 && "
+		put_msg("An unexpected error occurred, avail_out == 0 && "
 			"ret == Z_BUF_ERROR.\nPlease report this error.");
 	}
 	/* output the remainder */
