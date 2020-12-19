@@ -2,7 +2,7 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
-Patchlevel Xx (Xxx 20xx)
+Patchlevel 8 (Dec 2020)
 
 NEW FEATURES:
 	o Use deflate to embed image data into eps output, often substantially
