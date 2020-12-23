@@ -22,8 +22,8 @@ dnl Thus, configure.ac can remain unchanged between different versions.
 dnl The values in this file are set by update_version_m4 if
 dnl ./configure is called with --enable_versioning.
 
-m4_define([FIG_VERSION], [3.2.8])
+m4_define([FIG_VERSION], [3.2.8-dev])
 
 dnl AC_INIT does not have access to shell variables.
 dnl Therefore, define RELEASEDATE as a macro.
-m4_define([RELEASEDATE], [Dez 2020])
+m4_define([RELEASEDATE], [Dec 2020])

@@ -30,7 +30,6 @@
 #include "config.h"
 #endif
 
-#include <endian.h>
 
 typedef unsigned char  uchar;
 typedef unsigned short TCHAR;
