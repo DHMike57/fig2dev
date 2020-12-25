@@ -27,6 +27,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_SYS_TYPES_H		/* ssize_t; MacOS 10.6 does not include  */
+#include <sys/types.h>		/* sys/types.h, if stdio.h is included.  */
+#endif
 
 ssize_t
 getline(char **restrict line, size_t *restrict n, FILE *restrict fp)
