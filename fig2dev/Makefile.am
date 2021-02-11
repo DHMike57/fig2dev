@@ -20,6 +20,8 @@
 
 
 MAINTAINERCLEANFILES = Makefile.in
+DISTCLEANFILES = config.vc
+CLEANFILES = config.log
 
 SUBDIRS = dev
 if ENABLE_I18N
@@ -27,7 +29,10 @@ SUBDIRS += i18n
 endif
 SUBDIRS += tests
 
-EXTRA_DIST = fig2ps2tex.csh config.vc Nmakefile
+EXTRA_DIST = fig2ps2tex.csh config.vc config.vc.in Nmakefile
+
+config.vc: $(srcdir)/config.vc.in $(top_builddir)/config.status
+	$(top_builddir)/config.status --file=$@:"$(srcdir)/config.vc.in"
 
 bin_PROGRAMS = fig2dev
 

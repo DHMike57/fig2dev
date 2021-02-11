@@ -22,8 +22,10 @@
 # testsuite and package.m4 must be distributed, hence they are
 # written into the source tree
 TESTSUITE = $(srcdir)/testsuite
-EXTRA_DIST = testsuite package.m4 $(TESTSUITE_AT) atlocal.in data
 TESTSUITE_AT = testsuite.at bitmaps.at input.at output.at read.at
+EXTRA_DIST = testsuite package.m4 $(TESTSUITE_AT) atlocal.in data/arrows.eps \
+	data/arrows.fig data/boxwimg.fig data/cross.pdf data/fillswclip.fig  \
+	data/line.eps data/line.fig data/patterns.fig data/text_w_ascii0.fig
 
 # ??
 DISTCLEANFILES = atconfig

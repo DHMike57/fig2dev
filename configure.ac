@@ -345,7 +345,6 @@ AC_CONFIG_FILES([Makefile
 		man/Makefile
 		man/fig2dev.1
 		fig2dev/Makefile
-		fig2dev/config.vc
 		fig2dev/dev/Makefile
 		fig2dev/i18n/Makefile
 		fig2dev/tests/Makefile
