@@ -72,8 +72,6 @@ AC_SUBST([RELEASE_DATE], "RELEASEDATE")
 # Checks for programs.
 #
 AC_PROG_CC
-# Use ISO Standard C, currently C99.
-AC_PROG_CC_STDC
 # Needed to pack the convenience library fig2dev/dev/fig2dev.a
 AC_PROG_RANLIB
 AM_PROG_AR
