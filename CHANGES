@@ -2,6 +2,13 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
+Patchlevel 8a (Mar 2021)
+
+BUGS FIXED:
+	o Allow closed splines with three points.
+	o Fix build under Darwin.
+
+-------------------------------------
 Patchlevel 8 (Dec 2020)
 
 NEW FEATURES:

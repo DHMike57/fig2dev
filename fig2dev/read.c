@@ -1358,8 +1358,11 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 	    free_splinestorage(s);
 	    /* skip to end of line */
 	    skip_line(fp);
-	    if (l == NULL)
+	    if (l == NULL) {
+		put_msg("Unable to convert spline to line at line %d.",
+				  *line_no);
 		return NULL;
+	    }
 	    return (F_spline *)l;   /* return the new line */
 	  }
 
