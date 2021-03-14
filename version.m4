@@ -2,7 +2,7 @@ dnl Fig2dev: Translate Fig code to various Devices
 dnl Copyright (c) 1991 by Micah Beck
 dnl Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 dnl Parts Copyright (c) 1989-2015 by Brian V. Smith
-dnl Parts Copyright (c) 2015-2020 by Thomas Loimer
+dnl Parts Copyright (c) 2015-2021 by Thomas Loimer
 dnl
 dnl Any party obtaining a copy of these files is granted, free of charge, a
 dnl full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -22,8 +22,8 @@ dnl Thus, configure.ac can remain unchanged between different versions.
 dnl The values in this file are set by update_version_m4 if
 dnl ./configure is called with --enable_versioning.
 
-m4_define([FIG_VERSION], [3.2.8-dev])
+m4_define([FIG_VERSION], [3.2.8a])
 
 dnl AC_INIT does not have access to shell variables.
 dnl Therefore, define RELEASEDATE as a macro.
-m4_define([RELEASEDATE], [Dec 2020])
+m4_define([RELEASEDATE], [Mar 2021])
