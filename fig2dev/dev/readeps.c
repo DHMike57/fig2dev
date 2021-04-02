@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2021 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -85,7 +85,8 @@ gsexe(FILE **out, bool *isnew, char *exenew, char *exeold)
 		n = fscanf(fp, "%lf", &rev);
 		stat = pclose(fp);
 		if (n != 1 || stat != 0)
-			return stat == 0 ? failure : stat;
+			return stat == 0 ? failure : (WIFEXITED(stat) ?
+						WEXITSTATUS(stat) : failure);
 
 		if (rev > 9.49) {
 			exe = exenew;

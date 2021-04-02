@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2021 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -253,12 +253,17 @@ close_stream(struct xfig_stream *restrict xf_stream)
 	} else {
 		/* a pipe */
 		char	trash[BUFSIZ];
+		int	status;
 		/* for a pipe, must read everything or
 		   we'll get a broken pipe message */
 		while (fread(trash, (size_t)1, (size_t)BUFSIZ, xf_stream->fp) ==
 				(size_t)BUFSIZ)
 			;
-		return pclose(xf_stream->fp);
+		status = pclose(xf_stream->fp);
+		if (WIFEXITED(status))
+			return WEXITSTATUS(status);
+		else
+			return -1;
 	}
 }
 

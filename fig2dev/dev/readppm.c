@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2021 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -326,6 +326,8 @@ read_ppm(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 		       stat = -1;
 	       }
 	       remove(pcxname);
+	} else {
+		stat = -1;
 	}
 
 	if (pcxname != pcxname_buf)
