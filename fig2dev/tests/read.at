@@ -2,7 +2,7 @@ dnl Fig2dev: Translate Fig code to various Devices
 dnl Copyright (c) 1991 by Micah Beck
 dnl Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 dnl Parts Copyright (c) 1989-2015 by Brian V. Smith
-dnl Parts Copyright (c) 2015-2020 by Thomas Loimer
+dnl Parts Copyright (c) 2015-2021 by Thomas Loimer
 dnl
 dnl Any party obtaining a copy of these files is granted, free of charge, a
 dnl full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -121,7 +121,7 @@ EOF
 ])
 AT_CLEANUP
 
-AT_SETUP([remove arrows tips from single point])
+AT_SETUP([remove arrow tips from single point])
 AT_KEYWORDS(read.c polyline)
 AT_CHECK([fig2dev -L pict2e <<EOF
 FIG_FILE_TOP
@@ -131,6 +131,19 @@ FIG_FILE_TOP
 	0 0
 EOF
 ],0,ignore,[A single point with a forward arrow - remove the arrow.
+A single point with a backward arrow - remove the arrow.
+])
+AT_CLEANUP
+
+AT_SETUP([remove arrow tips on polygon with single point])
+AT_KEYWORDS(read.c polygon)
+AT_CHECK([fig2dev -L svg <<EOF
+FIG_FILE_TOP
+2 3 0 1 -1 -1 50 -1 -1 0. 0 0 0 0 1 1
+	0 0 2. 120. 240.
+	0 0
+EOF
+],0,ignore,[A polygon with 1 points at line 12 - convert to a polyline.
 A single point with a backward arrow - remove the arrow.
 ])
 AT_CLEANUP
