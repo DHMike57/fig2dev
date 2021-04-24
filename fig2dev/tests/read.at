@@ -136,7 +136,7 @@ A single point with a backward arrow - remove the arrow.
 AT_CLEANUP
 
 AT_SETUP([remove arrow tips on polygon with single point])
-AT_KEYWORDS(read.c polygon)
+AT_KEYWORDS(read.c polygon svg)
 AT_CHECK([fig2dev -L svg <<EOF
 FIG_FILE_TOP
 2 3 0 1 -1 -1 50 -1 -1 0. 0 0 0 0 1 1

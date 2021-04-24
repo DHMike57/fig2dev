@@ -231,6 +231,17 @@ AT_CHECK([SOURCE_DATE_EPOCH=1483564881 fig2dev -L svg \
 		- $builddir/data/fillswclip.svg])
 AT_CLEANUP
 
+AT_SETUP([truncated sub/superscript, tickets #113, #117])
+AT_KEYWORDS(read.c svg)
+AT_CHECK([fig2dev -L svg <<EOF
+#FIG 2
+1200 2
+4 2 0 0 1 0 0 0 6 110 376 0 0 ^
+4 2 0 0 1 0 0 0 6 110 376 0 200 ^{
+EOF
+], 0, ignore)
+AT_CLEANUP
+
 
 AT_BANNER([Test tikz output language.])
 

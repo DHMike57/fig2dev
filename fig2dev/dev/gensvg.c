@@ -3,7 +3,7 @@
  * Parts Copyright (c) 2002 by Anthony Starks
  * Parts Copyright (c) 2002-2006 by Martin Kroeker
  * Parts Copyright (c) 2002-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2021 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -1005,7 +1005,7 @@ gensvg_text(F_text *t)
 #endif
 		for (cp = (unsigned char *)t->cstring; *cp; cp++) {
 			ch = *cp;
-			if (( supsub == 2 &&ch == '}' ) || supsub==1) {
+			if ((supsub == 2 && ch == '}') || supsub==1) {
 #ifdef NOSUPER
 				fprintf(tfp,"</tspan><tspan dy=\"%d\">",-dy);
 				old_dy=-dy;
@@ -1019,6 +1019,8 @@ gensvg_text(F_text *t)
 				}
 			}
 			if (ch == '_' || ch == '^') {
+				if (*(cp + 1) == '\0')
+					break;
 				supsub=1;
 #ifdef NOSUPER
 				if (dy != 0)
@@ -1043,6 +1045,8 @@ gensvg_text(F_text *t)
 				++cp;
 				ch = *cp;
 				if (ch == '{' ) {
+					if (*(cp + 1) == '\0')
+						break;
 					supsub=2;
 					++cp;
 					ch = *cp;
