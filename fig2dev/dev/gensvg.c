@@ -1173,7 +1173,7 @@ svg_arrows(int line_thickness, F_arrow *for_arrow, F_arrow *back_arrow,
 	return true;
     }
 
-    if (for_arrow) {
+    if (for_arrow && fnpoints > 1) {
 	fputs("<!-- Forward arrow", tfp);
 	arrow_path(for_arrow, forw2, pen_color, fnpoints, fpoints,
 		fnfillpoints, ffillpoints
@@ -1182,7 +1182,7 @@ svg_arrows(int line_thickness, F_arrow *for_arrow, F_arrow *back_arrow,
 #endif
 		);
     }
-    if (back_arrow) {
+    if (back_arrow && bnpoints > 1) {
 	fputs("<!-- Backward arrow", tfp);
 	arrow_path(back_arrow, back2, pen_color, bnpoints, bpoints,
 		bnfillpoints, bfillpoints
