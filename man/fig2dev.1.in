@@ -690,6 +690,7 @@ renders patterns by filling the respective area with the pen-color at 25%
 intensity, i.e., a 75% tint of the pen-color.
 The PICT2E driver allows one to choose any font available to the LaTeX engine,
 including PostScript fonts.
+TeX an PostScript fonts may appear together in the same document.
 
 .TP
 .B \-b borderwidth
@@ -1235,8 +1236,8 @@ you which packages are needed.  In the document body, include the
 figure with "\fB\\input{pstfile}\fR" where
 .B pstfile.tex
 is the output file.  Use the
-.B XFig special
-flag to have text passed as-is to LaTeX.  For non-special text,
+.B XFig TeX text
+flag to have text passed as-is to LaTeX.  For non-TeX text,
 the same mechanism as the LaTeX and epic driver mechanism is used
 to match font specs, but this is imprecise.
 
@@ -1399,14 +1400,14 @@ The default is \fIrm\fR.
 Set the line thickness. \fIlwidth\fR must be a value between 1 and 12.
 
 .SH TIKZ OPTIONS
-TIKZ is a powerful frontend to the Portable Graphics Format (PGF)
-developed by Till Tantau, now at the University of Lübeck.
-TIKZ was developed to be as platform-independent as possible, i.e.,
-tikz-code can be processed with plain TeX, pdftex, xetex, LaTeX, ConTeX,
-pdflatex, lualatex, or combinations of LaTeX + dvips, LaTeX + dvipdfm or others.
-The TIKZ-code emitted by \fIfig2dev\fR tries to maintain this portability.
-For instance, a tikz-picture is commenced  with \\tikzpicture (TeX-style), to
-not exclude any processing engine.  However, the stand-alone file produced with
+TIKZ is a powerful frontend to the Portable Graphics Format (PGF) for TeX/LaTeX.
+To use figures created by the TIKZ driver in a LaTeX document, use
+"\fB\\usepackage{tikz}\fR" and, depending on the contents of your figure,
+"\fB\\usetikzlibrary{arrows.meta, bending}\fR" and
+"\fB\\usetikzlibrary{patterns}\fR" in the document preamble.
+Simply \\input or copy the output file into the TeX-document.
+TIKZ files produced by \fIfig2dev\fR may be included into a plain TeX document.
+However, the stand-alone file produced with
 the \fB\-P\fR option must be processed with a LaTeX-engine.
 In addition, font-commands may require a LaTeX engine.
 
@@ -1482,11 +1483,11 @@ See also \fB\-F\fR (no font properties).
 
 .TP
 .B \-P
-Pagemode, generate a stand-alone LaTeX-file as \fIout-file\fR. The document
-produced from the
-LaTeX-file will have the paper size equal to the figure's
-bounding box (but see the \fB\-b\fR option to add a margin).
-The generated LaTeX-file calls the package "geometry.sty" to set the paper size.
+Pagemode, generate a stand-alone LaTeX-file as \fIout-file\fR.
+Run \fIout-file\fR through LaTeX to generate a pdf or eps of the figure.
+The document produced from \fIout-file\fR will have the paper size equal to the
+figure's bounding box (but see the \fB\-b\fR option to add a margin).
+The package "geometry.sty" is used in \fIout-file\fR to set the paper size.
 
 .TP
 .B \-T
