@@ -322,7 +322,7 @@ genbitmaps_start(F_compound *objects)
 		} else if (has_ImageMagick()) {
 			if (*gif_transparent)
 				sprintf(fmt, "{ %s%s%s | convert - -transparent"
-						"%s gif:%s; }%s", gscmd,
+						" %s gif:%s; }%s", gscmd,
 						antialias, gspipe,
 						gif_transparent, gimend, err);
 			else
