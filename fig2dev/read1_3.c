@@ -159,6 +159,7 @@ read_arcobject(FILE *fp)
 	a->pen = 0;
 	a->for_arrow = NULL;
 	a->back_arrow = NULL;
+	a->comments = NULL;
 	a->next = NULL;
 	n = fscanf(fp,
 		" %d %d %d %lf %d %d %d %d %d %lf %lf %d %d %d %d %d %d\n",
