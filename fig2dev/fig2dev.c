@@ -420,13 +420,13 @@ main(int argc, char *argv[])
 
 	/* read the Fig file */
 
-	if (from)
+	if (from && strcmp(from, "-"))
 		status = read_fig(from, &objects);
 	else
 		status = readfp_fig(stdin, &objects);
 	if (status != 0) {
 		if (status == -3) {
-			if (from)
+			if (from && strcmp(from, "-"))
 				err_msg("File \"%s\" is not accessible", from);
 			else
 				err_msg("Input error");
@@ -438,7 +438,7 @@ main(int argc, char *argv[])
 	grid_minor_spacing = mult * grid_minor_spacing * ppi;
 	grid_major_spacing = mult * grid_major_spacing * ppi;
 
-	if (to == NULL)
+	if (to == NULL || !strcmp(to, "-"))
 		tfp = stdout;
 	else {
 		if (strcmp(to + strlen(to) - 4, ".fig") == 0 ){

@@ -30,6 +30,24 @@ AT_CHECK([fig2dev -L ge $srcdir/data/line.fig nice.figure.fig
 ])
 AT_CLEANUP
 
+AT_SETUP([Use "-" for stdin])
+AT_KEYWORDS(diversions)
+AT_CHECK([fig2dev -Leps - out.eps <$srcdir/data/line.fig
+],0)
+AT_CLEANUP
+
+AT_SETUP([Use "-" for stdout])
+AT_KEYWORDS(diversions)
+AT_CHECK([fig2dev -Leps $srcdir/data/line.fig - >out.eps
+],0)
+AT_CLEANUP
+
+AT_SETUP([Use "- -" for stdin and stdout])
+AT_KEYWORDS(diversions)
+AT_CHECK([fig2dev -Leps - - <$srcdir/data/line.fig >out.eps
+],0)
+AT_CLEANUP
+
 
 AT_BANNER([Parse color specifications (test lookup_X_color() in colors.c)])
 

@@ -42,7 +42,13 @@ The default
 .I fig-file
 and
 .I out-file
-are standard input and standard output, respectively
+are standard input and standard output, respectively.
+A minus (-) in place of
+.I fig-file
+or
+.I out-file
+also denotes either standard input or standard output.
+
 .LP
 Xfig (Facility for Interactive Generation of figures) is a screen-oriented
 tool which runs under the X Window System, and

@@ -2,6 +2,14 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
+Patchlevel Xx (Xxx 2021)
+
+NEW FEATURES:
+	o On the command line, a minus (-) as input or output file name refers
+	  to standard input or standard output.
+
+-------------------------------------
+BUGS FIXED:
 Patchlevel 8a (Mar 2021)
 
 BUGS FIXED:

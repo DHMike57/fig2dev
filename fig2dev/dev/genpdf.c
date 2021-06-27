@@ -93,7 +93,7 @@ genpdf_start(F_compound *objects)
 
 	/* divert output from ps driver to the pipe into ghostscript */
 	/* but first close the output file that main() opened */
-	if (tfp != stdout) {	/* equivalent to to != NULL */
+	if (tfp != stdout) {
 		fclose(tfp);
 		ofile = to;
 	} else {

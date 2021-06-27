@@ -246,7 +246,7 @@ genbitmaps_start(F_compound *objects)
 
 	/* set the format strings of the final output, depending on
 	   whether it goes to a file or to stdout */
-	if (to)	{		/* equivalent to tfp != stdout */
+	if (tfp != stdout) {
 		if (strchr(to, '\'')) {
 			fprintf(stderr, "Cannot write to a file containing an "
 					"apostrophe (') in its name: %s\n", to);

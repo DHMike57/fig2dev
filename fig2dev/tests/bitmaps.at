@@ -107,7 +107,7 @@ AT_CHECK([fig2dev -L xpm $srcdir/data/line.fig line.xpm && \
 ], 0, ignore, ignore)
 AT_CLEANUP
 
-AT_BANNER([Creation of temporary files.])
+AT_BANNER([Creation of temporary files and diversions.])
 
 # Embedding EPS with ascii or tiff-preview creates a temporary file.
 
@@ -124,6 +124,20 @@ AT_KEYWORDS(bitmaps tmpfile eps-tiff)
 AT_SKIP_IF([NO_GS])
 AT_CHECK([fig2dev -L eps -T $srcdir/data/line.fig line-tiff.eps
 ], 0, ignore)
+AT_CLEANUP
+
+AT_SETUP([eps with tiff preview, use "-" for stdin])
+AT_KEYWORDS(diversions)
+AT_SKIP_IF([NO_GS])
+AT_CHECK([fig2dev -Leps -T - out.eps <$srcdir/data/line.fig
+],0)
+AT_CLEANUP
+
+AT_SETUP([create ppm, use "-" for stdin])
+AT_KEYWORDS(diversions)
+AT_SKIP_IF([NO_GS])
+AT_CHECK([fig2dev -Lppm - out.ppm <$srcdir/data/line.fig
+],0)
 AT_CLEANUP
 
 AT_BANNER([Embed postscript variants.])
