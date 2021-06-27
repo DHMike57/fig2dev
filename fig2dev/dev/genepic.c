@@ -4,7 +4,7 @@
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2021 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -242,7 +242,8 @@ double	DashScale;
 int	EllipseCmd=0;
 int	UseBox=BoxTypeNone;
 int	DashType=Normal;
-char	*Preamble="\\documentstyle[epic,eepic]{article}\n\\pagestyle{empty}\\begin{document}\n\\begin{center}\n";
+char
+*Preamble="\\documentclass{minimal}\n\\usepackage{epic,eepic}\\pagestyle{empty}\n\\begin{document}\\begin{center}\n";
 char	*Postamble="\\end{center}\n\\end{document}\n";
 int	VarWidth=false;
 int	DashStretch=30;
@@ -397,7 +398,7 @@ genepic_start(F_compound *objects)
 	break;
     }
     if (PageMode) {
-	fputs(Preamble, stdout);
+	fputs(Preamble, tfp);
     }
 
     if (linew_spec)
@@ -445,7 +446,7 @@ genepic_end(void)
     if (DashStretch)
       fprintf(tfp, "}\n");
     if (PageMode)
-	fputs(Postamble, stdout);
+	fputs(Postamble, tfp);
 
     /* all ok */
     return 0;
