@@ -55,13 +55,19 @@ free_stream(struct xfig_stream *restrict xf_stream)
 			err_msg("Cannot remove temporary file %s",
 					xf_stream->content);
 		}
-		if (xf_stream->content != xf_stream->content_buf)
+		if (xf_stream->content != xf_stream->content_buf) {
 			free(xf_stream->content);
+			xf_stream->content = xf_stream->content_buf;
+		}
 	}
-	if (xf_stream->name != xf_stream->name_buf)
+	if (xf_stream->name != xf_stream->name_buf) {
 		free(xf_stream->name);
-	if (xf_stream->name_on_disk != xf_stream->name_on_disk_buf)
+		xf_stream->name = xf_stream->name_buf;
+	}
+	if (xf_stream->name_on_disk != xf_stream->name_on_disk_buf) {
 		free(xf_stream->name_on_disk);
+		xf_stream->name_on_disk = xf_stream->name_on_disk_buf;
+	}
 }
 
 /*
@@ -124,8 +130,9 @@ file_on_disk(char *restrict name, char *restrict *found, size_t len,
 	if (stat(name, &status)) {
 		/* File not found. Now try, whether a file with one of
 		   the known suffices appended exists. */
-		if (len < name_len + FILEONDISK_ADD && (*found =
-				malloc(name_len + FILEONDISK_ADD)) == NULL) {
+		if (len > name_len && len < name_len + FILEONDISK_ADD &&
+				(*found = malloc(name_len + FILEONDISK_ADD))
+				== NULL) {
 			put_msg(Err_mem);
 			return -1;
 		}
