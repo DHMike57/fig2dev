@@ -166,4 +166,16 @@ EOF
 ],0,ignore,ignore)
 AT_CLEANUP
 
+AT_SETUP([non-existing file with suffix (.Z), ticket #126])
+AT_KEYWORDS(readpics)
+AT_CHECK([fig2dev -Leps <<EOF
+FIG_FILE_TOP
+2 5 0 1 0 -1 50 -1 -1 0.0 0 0 -1 0 0 5
+	0 non-existing.Z
+	 0 0 100 0 100 60 0 60 0 0
+EOF
+],0,ignore,[No such picture file: non-existing.Z
+])
+AT_CLEANUP
+
 m4_undefine([NO_GZIP])

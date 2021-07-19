@@ -219,7 +219,7 @@ open_stream(char *restrict name, struct xfig_stream *restrict xf_stream)
 		return NULL;
 	}
 
-	if (*xf_stream->uncompress) {
+	if (xf_stream->uncompress && *xf_stream->uncompress) {
 		/* a compressed file */
 		char	command_buf[256];
 		char	*command = command_buf;
