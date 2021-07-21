@@ -1379,20 +1379,14 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 	    return s;
 	}
 	/* Read controls from older versions */
-	/* keep track of newlines for line counter */
-	count_lines_correctly(fp, line_no);
-	if ((n = fscanf(fp, "%lf%lf%lf%lf", &lx, &ly, &rx, &ry)) != 4) {
-	    put_msg(Err_incomp, "spline", *line_no);
-	    free_splinestorage(s);
-	    return NULL;
-	}
+	/* Add a dummy point, to not repeat here part of the loop below.
+	   Remove this dummy point further below. */
 	if (NULL == (s->controls = Control_malloc(cp))) {
 	    put_msg(Err_mem);
 	    free_splinestorage(s);
 	    return NULL;
 	}
-	cp->lx = lx; cp->ly = ly;
-	cp->rx = rx; cp->ry = ry;
+	++c;
 	while (--c) {
 	    /* keep track of newlines for line counter */
 	    count_lines_correctly(fp, line_no);
@@ -1422,6 +1416,11 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 	    cp->next = cq;
 	    cp = cq;
 	}
+	/* temporarily use cp->next to delete the first, dummy point */
+	cp->next = s->controls;
+	s->controls = s->controls->next;
+	free(cp->next);
+
 	cp->next = NULL;
 
 	/* skip to the end of the line */
