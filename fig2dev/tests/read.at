@@ -350,6 +350,18 @@ EOF
 ])
 AT_CLEANUP
 
+AT_SETUP([ignore splines with one point in format 2, #129])
+AT_KEYWORDS([read.c])
+AT_CHECK([fig2dev -L box <<EOF
+#FIG 2
+1200 2
+3 1 2 0 1 0 0 7 0 0 0
+600 0 9999 0
+EOF
+], 1, ignore, [Incomplete spline object at line 4.
+])
+AT_CLEANUP
+
 AT_SETUP([accept closed splines with three points])
 AT_KEYWORDS([read.c])
 AT_CHECK([fig2dev -L box <<EOF

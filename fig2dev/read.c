@@ -1340,6 +1340,11 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 	    ++c;
 	    }
 	p->next = NULL;
+	if (c < 2) {
+		put_msg(Err_incomp, "spline", *line_no);
+		free_splinestorage(s);
+		return NULL;
+	}
 	s->comments = attach_comments();	/* attach any comments */
 
 	if (v32_flag) {
