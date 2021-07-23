@@ -26,6 +26,18 @@ AT_KEYWORDS(epic)
 AT_CHECK([fig2dev -Lepic -P $srcdir/data/line.fig line.tex])
 AT_CLEANUP
 
+AT_BANNER([Test Gerber output language.])
+
+AT_SETUP([allow polygons with four points])
+AT_KEYWORDS(gbx)
+AT_CHECK([fig2dev -L gbx <<EOF
+FIG_FILE_TOP
+2 3 0 1 0 7 50 0 -1 0 1 0 0 0 0 4
+	0 0 0 600 600 600 0 0
+EOF
+],0,ignore,ignore)
+AT_CLEANUP
+
 AT_BANNER([Test PostScript output language.])
 
 AT_SETUP([compare arrow tips with template])

@@ -1156,17 +1156,22 @@ gengbx_line (F_line *l)
 				draw_xy(p->x, p->y);
 				p = p->next;
 				draw_xy(p->x, p->y);
-				move_xy(p->x, p->y);
+				/* This is probably not correct for
+				   lines having 4 points. */
+				if (p->next) {
+					move_xy(p->x, p->y);
+					/* Draw the remainder - using
+					   the join style. */
+					for (; p->next->next; p = p->next)
+						draw_xy(p->x, p->y);
 
-				/* Draw the remainder - using the join style. */
-				for (; p->next->next; p = p->next)
+					/* Add end section of line. */
+					use_aperture(
+					       define_aperture_for_line_end(l));
+					move_xy(p->x, p->y);
+					p = p->next;
 					draw_xy(p->x, p->y);
-
-				/* Add end section of line. */
-				use_aperture(define_aperture_for_line_end(l));
-				move_xy(p->x, p->y);
-				p = p->next;
-				draw_xy(p->x, p->y);
+				}
 			}
 		}  else {
 			/* All other lines get drawn like this. */
