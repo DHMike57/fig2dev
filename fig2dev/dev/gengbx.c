@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2021 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -524,6 +524,17 @@ flash_xy(long int x, long int y, int aperture_index )
 }
 
 
+/** Abort if the maximum number of apertures is exceeded. */
+static void
+abort_too_many_apertures(long int ap_index)
+{
+	if (ap_index < MAX_APERTURE_INDEX)
+		return;
+	put_msg("Error: Maximum number of possible apertures (%d) exceeded.",
+			MAX_APERTURE_INDEX);
+	exit(EXIT_FAILURE);
+}
+
 /** Define a filled circular aperture given the diameter.
 
     Returns the corresponding aperture index.
@@ -552,6 +563,7 @@ ad_aperture_define_circ(double outer_dia)
 
 	/* If the aperture has not been defined, add it. */
 	if (ap_index == -1) {
+		abort_too_many_apertures(count_apertures);
 		ap_index = count_apertures;
 		fprintf(tfp, "%%ADD%liC,%f%%*\n",
 				d_select_aperture + ap_index, outer_dia );
@@ -640,6 +652,7 @@ ad_aperture_define_square(double width)
 
 	/* If the aperture has not been defined, add it. */
 	if (ap_index == -1) {
+		abort_too_many_apertures(count_apertures);
 		ap_index = count_apertures;
 		fprintf(tfp, "%%ADD%liR,%fX%f*%%\n",
 				d_select_aperture + ap_index, width, width);
