@@ -19,6 +19,8 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
+#include <limits.h>	/* INT_MIN, INT_MAX */
+
 #define		BLACK_COLOR	0
 #define		WHITE_COLOR	7
 
@@ -39,6 +41,8 @@ typedef struct f_point {
 typedef struct f_pos {
 	int			x, y;
 } F_pos;
+#define COORD_MIN	INT_MIN
+#define COORD_MAX	INT_MAX
 
 typedef struct f_arrow {
 	int			type;
@@ -120,6 +124,8 @@ typedef struct f_arc {
 #define INVALID_ARC(a)	\
 	a->type < T_OPEN_ARC || a->type > T_PIE_WEDGE_ARC ||		\
 	COMMON_PROPERTIES(a) || a->cap_style < 0 || a->cap_style > 2 ||	\
+	a->center.x < COORD_MIN || a->center.x > COORD_MAX ||		\
+	a->center.y < COORD_MIN || a->center.y > COORD_MAX ||		\
 	(a->direction != 0 && a->direction != 1)
 
 typedef struct f_line {
