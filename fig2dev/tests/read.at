@@ -88,6 +88,17 @@ A rectangle with 3 corners at line 11 - convert to a polygon.
 ])
 AT_CLEANUP
 
+AT_SETUP([convert box with one point to polyline])
+AT_KEYWORDS(read.c tk)
+AT_CHECK([fig2dev -L tk <<EOF
+FIG_FILE_TOP
+2 2 0 1 -1 -1 50 -1 -1 0.0 0 0 -1 0 0 1
+	 0 600
+EOF
+],0,ignore,[A rectangle with 1 points at line 11 - convert to a polyline.
+])
+AT_CLEANUP
+
 AT_SETUP([fail on a malformed arc-box])
 AT_KEYWORDS(read.c malformed arc-box)
 AT_CHECK([fig2dev -L pict2e <<EOF

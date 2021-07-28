@@ -940,8 +940,8 @@ sanitize_lineobject(
 		for (npts = 1; q->next && npts < 4; q = q->next)
 			++npts;
 		if (npts < 4 ) {
-			put_msg("A polygon with %d points at line %d - convert to a polyline.",
-			npts, line_no);
+			put_msg("A polygon with %d points at line %d - convert "
+					"to a polyline.", npts, line_no);
 			l->type = T_POLYLINE;
 			sanitize_lineobject(l, p, line_no);
 			return 0;
@@ -952,10 +952,17 @@ sanitize_lineobject(
 	    int	npts = 1;
 	    for (q = l->points; q->next; q = q->next)
 		++npts;
+	    if (npts < 3) {
+		put_msg("A %s with %d points at line %d - convert to a "
+			"polyline.", obj_name[l->type-2], npts, line_no);
+		l->type = T_POLYLINE;
+		sanitize_lineobject(l, p, line_no);
+		return 0;
+	    }
 	    if (l->type == T_BOX && npts != 5) {
 		/* tests/testsuite -k polygon,read.c */
-		put_msg("A rectangle with %d corners at line %d - convert to a polygon.",
-			npts - 1, line_no);
+		put_msg("A rectangle with %d corners at line %d - convert to a "
+				"polygon.", npts - 1, line_no);
 		l->type = T_POLYGON;
 		return 0;
 	    }
