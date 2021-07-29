@@ -328,3 +328,23 @@ AT_CHECK([fig2dev -L cgm $srcdir/data/line.fig
 AT_CHECK([fig2dev -L ge $srcdir/data/line.fig
 ], 0, ignore)
 AT_CLEANUP
+
+AT_SETUP([tk output: allow arbitrarily long text, #134])
+AT_KEYWORDS(tk)
+AT_CHECK([fig2dev -L tk <<EOF
+FIG_FILE_TOP
+4 0 0 1 0 1 12 0 4 135 36000 0 0 dnl
+m4_for([i], [1], [39], [],dnl
+[ this is a long text string exceeding 2048 characters])\001
+EOF], 0, ignore, ignore)
+AT_CLEANUP
+
+AT_SETUP([ptk output: allow arbitrarily long text, #134])
+AT_KEYWORDS(ptk)
+AT_CHECK([fig2dev -L ptk <<EOF
+FIG_FILE_TOP
+4 0 0 1 0 1 12 0 4 135 36000 0 0 dnl
+m4_for([i], [1], [39], [],dnl
+[ this is a long text string exceeding 2048 characters])\001
+EOF], 0, ignore, ignore)
+AT_CLEANUP

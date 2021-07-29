@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2021 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -516,8 +516,7 @@ drawBitmap(F_line *l)
 void
 genptk_text(F_text *t)
 {
-	char		stfp[2048];
-	unsigned int	i, j;
+	size_t		i;
 
 	/* I'm sure I'm just too dense to have seen a better way of doing this... */
 	static struct {
@@ -605,44 +604,37 @@ genptk_text(F_text *t)
 		fputs("genptk_text: rotated text not supported by Tk.\n",
 				stderr);
 
-	sprintf(stfp, "%s->createText(qw/%fi %fi", canvas, X(t->base_x),
+	fprintf(tfp, "%s->createText(qw/%fi %fi", canvas, X(t->base_x),
 		Y(t->base_y));
-	niceLine(stfp);
-	strcpy(stfp, " -text/, '");
-	j = strlen(stfp);
+	fputs(" -text/, '", tfp);
 	for (i = 0; i < strlen(t->cstring); ++i) {
 		if (t->cstring[i] == '\'')
-			stfp[j++] = '\\';
-		stfp[j++] = t->cstring[i];
+			fputc('\\', tfp);;
+		fputc(t->cstring[i], tfp);
 	}
-	stfp[j++] = '\'';
-	stfp[j++] = ',';
-	stfp[j++] = '\0'; /* XXX ja? */
-	niceLine(stfp);
+	fputs("\',", tfp);
 	switch (t->type) {
 	case T_LEFT_JUSTIFIED:
 	case DEFAULT:
-		sprintf(stfp, ", -anchor => 'sw'");
+		fprintf(tfp, ", -anchor => 'sw'");
 		break;
 	case T_CENTER_JUSTIFIED:
 		/* The Tk default. */
-		sprintf(stfp, ", -anchor => 's'");
+		fprintf(tfp, ", -anchor => 's'");
 		break;
 	case T_RIGHT_JUSTIFIED:
-		sprintf(stfp, ", -anchor => 'se'");
+		fprintf(tfp, ", -anchor => 'se'");
 		break;
 	default:
 		fputs("genptk_text: Unknown text justification\n", stderr);
 		t->type = T_LEFT_JUSTIFIED;
 		break;
 	}
-	niceLine(stfp);
 
 	if (psfont_text(t)) {
-		sprintf(stfp, ", -font => \"%s%d%s\"",
+		fprintf(tfp, ", -font => \"%s%d%s\"",
 				fontNames[t->font+1].prefix, (int) t->size,
 				fontNames[t->font+1].suffix);
-		niceLine(stfp);
 	} else {	/* Rigid, special, and LaTeX fonts. */
 		int fnum;
 
@@ -670,16 +662,13 @@ genptk_text(F_text *t)
 			fputs("genptk_text: unknown LaTeX font.\n", stderr);
 			break;
 		}
-		sprintf(stfp, ", -font => \"%s%d%s\"", fontNames[fnum].prefix,
+		fprintf(tfp, ", -font => \"%s%d%s\"", fontNames[fnum].prefix,
 				(int)t->size, fontNames[fnum].suffix);
-		niceLine(stfp);
 	}
 	if (t->color != BLACK_COLOR && t->color != DEFAULT) {
-		sprintf(stfp, ", -fill => '#%6.6x'", rgbColorVal(t->color));
-		niceLine(stfp);
+		fprintf(tfp, ", -fill => '#%6.6x'", rgbColorVal(t->color));
 	}
-	sprintf(stfp, ");\n");
-	niceLine(stfp);
+	fputs(");\n", tfp);
 }
 
 /*
