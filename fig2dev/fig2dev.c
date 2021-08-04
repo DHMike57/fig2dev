@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2021 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -219,6 +219,21 @@ get_args(int argc, char *argv[])
 		exit(EXIT_SUCCESS);
 	}
 
+	/* Guess an output driver from the last argument */
+	if ((p = strrchr(argv[argc - 1], '.'))) {
+		++p;
+		for (i = 0; *drivers[i].name; ++i) {
+			if (!strcmp(p, drivers[i].name) || (drivers[i].alias &&
+						!strcmp(p, drivers[i].alias))) {
+				strcpy(lang, drivers[i].name);
+				dev = drivers[i].dev;
+				dev->option('L', optarg);
+				break;
+			}
+		}
+	}
+
+
 	/* sum of all arguments */
 	while ((c = getopt(argc, argv, ARGSTRING)) != EOF) {
 
@@ -298,6 +313,8 @@ get_args(int argc, char *argv[])
 		/* save language for gen{gif,jpg,pcx,xbm,xpm,ppm,tif} */
 		strncpy(lang, optarg, sizeof(lang)-1);
 		lang[sizeof lang - 1] = '\0';
+		/* override if a language already was set above */
+		dev = NULL;
 		for (i = 0; *drivers[i].name; ++i)
 		    if (!strcmp(lang, drivers[i].name))
 			dev = drivers[i].dev;
@@ -494,9 +511,10 @@ help_msg(void)
 	int i, n;
 
 	fputs(	"General Options (all drivers):\n"
-		"  -L language	choose output language (this must be first)\n"
-		"                Available languages are:\n"
-		"                   ",
+"  -L language	choose output language (this must be first, if the language\n"
+"                cannot be inferrred from the suffix of the output file)\n"
+"                Available languages are:\n"
+"                   ",
 		stdout);
 	for (i = 0, n = 20; *drivers[i].name; ++i) {
 		if (n > 72) {

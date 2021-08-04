@@ -48,6 +48,20 @@ AT_CHECK([fig2dev -Leps - - <$srcdir/data/line.fig >out.eps
 ],0)
 AT_CLEANUP
 
+AT_SETUP([Guess jpeg output format from output filename])
+AT_KEYWORDS(read.c)
+AT_SKIP_IF([NO_GS])
+AT_CHECK([fig2dev $srcdir/data/line.fig line.jpg
+],0)
+AT_CLEANUP
+
+AT_SETUP([Guess tiff output format from output filename])
+AT_KEYWORDS(read.c)
+AT_SKIP_IF([NO_GS || \
+	( ! pnmtotiff -version && ! convert -version &&  ! gm version)])
+AT_CHECK([fig2dev $srcdir/data/line.fig line.tif
+],0)
+AT_CLEANUP
 
 AT_BANNER([Parse color specifications (test lookup_X_color() in colors.c)])
 

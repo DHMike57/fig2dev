@@ -5,6 +5,7 @@ Version 3.2
 Patchlevel Xx (Xxx 2021)
 
 NEW FEATURES:
+	o Detect the output language from the output file name.
 	o On the command line, a minus (-) as input or output file name refers
 	  to standard input or standard output.
 

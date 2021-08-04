@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2021 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -58,50 +58,53 @@ extern struct driver dev_dxf;
 
 struct {
 	char		*name;
+	char		*alias;
 	struct driver	*dev;
+/* sizeof lang[] in fig2dev.c must be larger than the
+   maximum string length of a driver name */
 } drivers[] = {
-	{"box",		&dev_box},
-	{"cgm",		&dev_cgm},
-	{"dxf",		&dev_dxf},
-	{"eepic",	&dev_epic},
-	{"eepicemu",	&dev_epic},
-	{"emf",         &dev_emf},
-	{"epic",	&dev_epic},
-	{"eps",		&dev_eps},
-	{"gbx",         &dev_gbx},
-	{"ge",		&dev_ge},
-	{"gif",		&dev_bitmaps},
-	{"ibmgl",	&dev_ibmgl},
-	{"jpeg",	&dev_bitmaps},
-	{"latex",	&dev_latex},
-	{"map",		&dev_map},
-	{"mf",		&dev_mf},
-	{"mp",          &dev_mp},
-	{"pcx",		&dev_bitmaps},
-	{"pdf",		&dev_pdf},
-	{"pdftex",	&dev_pdftex},
-	{"pdftex_t",	&dev_pdftex_t},
-	{"pic",		&dev_pic},
-	{"pict2e",	&dev_pict2e},
-	{"pictex",	&dev_pictex},
-	{"png",		&dev_bitmaps},
-	{"ppm",		&dev_bitmaps},
-	{"ps",		&dev_ps},
-	{"pstex",	&dev_pstex},
-	{"pstex_t",	&dev_pstex_t},
-	{"pstricks",	&dev_pstricks},
-	{"ptk",		&dev_ptk},
-	{"shape",	&dev_shape},
-	{"sld",		&dev_bitmaps},
-	{"svg",		&dev_svg},
-	{"textyl",	&dev_textyl},
-	{"tiff",	&dev_bitmaps},
-	{"tikz",	&dev_tikz},
-	{"tk",		&dev_tk},
-	{"tpic",	&dev_tpic},
-	{"xbm",		&dev_bitmaps},
-	{"xpm",		&dev_bitmaps},
-	{"",		NULL}
+	{"box",		NULL,	&dev_box},
+	{"cgm",		NULL,	&dev_cgm},
+	{"dxf",		NULL,	&dev_dxf},
+	{"eepic",	NULL,	&dev_epic},
+	{"eepicemu",	NULL,	&dev_epic},
+	{"emf",		NULL,	&dev_emf},
+	{"epic",	NULL,	&dev_epic},
+	{"eps",		NULL,	&dev_eps},
+	{"gbx",		NULL,	&dev_gbx},
+	{"ge",		NULL,	&dev_ge},
+	{"gif",		NULL,	&dev_bitmaps},
+	{"ibmgl",	NULL,	&dev_ibmgl},
+	{"jpeg",	"jpg",	&dev_bitmaps},
+	{"latex",	NULL,	&dev_latex},
+	{"map",		NULL,	&dev_map},
+	{"mf",		NULL,	&dev_mf},
+	{"mp",		NULL,	&dev_mp},
+	{"pcx",		NULL,	&dev_bitmaps},
+	{"pdf",		NULL,	&dev_pdf},
+	{"pdftex",	NULL,	&dev_pdftex},
+	{"pdftex_t",	NULL,	&dev_pdftex_t},
+	{"pic",		NULL,	&dev_pic},
+	{"pict2e",	NULL,	&dev_pict2e},
+	{"pictex",	NULL,	&dev_pictex},
+	{"png",		NULL,	&dev_bitmaps},
+	{"ppm",		NULL,	&dev_bitmaps},
+	{"ps",		NULL,	&dev_ps},
+	{"pstex",	NULL,	&dev_pstex},
+	{"pstex_t",	NULL,	&dev_pstex_t},
+	{"pstricks",	NULL,	&dev_pstricks},
+	{"ptk",		NULL,	&dev_ptk},
+	{"shape",	NULL,	&dev_shape},
+	{"sld",		NULL,	&dev_bitmaps},
+	{"svg",		NULL,	&dev_svg},
+	{"textyl",	NULL,	&dev_textyl},
+	{"tiff",	"tif",	&dev_bitmaps},
+	{"tikz",	NULL,	&dev_tikz},
+	{"tk",		NULL,	&dev_tk},
+	{"tpic",	NULL,	&dev_tpic},
+	{"xbm",		NULL,	&dev_bitmaps},
+	{"xpm",		NULL,	&dev_bitmaps},
+	{"",		NULL,	NULL}
 };
 
 #endif /* DRIVERS_H */

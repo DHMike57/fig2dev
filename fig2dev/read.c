@@ -530,8 +530,7 @@ read_colordef(char *line, int line_no)
 	}
 	if (sscanf(line, "%*d %d #%2x%2x%2x", &c, &r, &g, &b) == 4) {
 		if (c >= NUM_STD_COLS && c < NUM_STD_COLS + MAX_USR_COLS &&
-				r >=0 && r < 256 && g >=0 && g < 256 &&
-				b >= 0 && b < 256 ) {
+				r < 256 && g < 256 && b < 256 ) {
 			user_col_indx[num_usr_cols] = c;
 			user_colors[num_usr_cols].r = r;
 			user_colors[num_usr_cols].g = g;

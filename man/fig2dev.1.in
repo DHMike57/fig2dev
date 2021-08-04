@@ -11,8 +11,8 @@ fig2dev \- translates Fig code to various graphics languages
 .nh
 .HP \w'\fBfig2dev\fR\ 'u
 .B fig2dev
-.B \-L
-.I language
+.RB [ \-L
+.IR language ]
 .RB [ \-m
 .IR mag ]
 .RB [ \-s
@@ -38,6 +38,11 @@ into the specified graphics
 .I language
 and puts them in
 .I out-file.
+The graphics language is inferred from the suffix of
+.I out-file,
+or it must be given with the
+.B \-L
+option.
 The default
 .I fig-file
 and
@@ -78,7 +83,8 @@ textyl, tiff, tikz, tk (tcl/tk), tpic, xbm and xpm\fR.
 Notes:
 .br
 You must have ghostscript installed to get the pdf output, and ghostscript and
-the netpbm package to get the bitmap formats (png, jpeg, etc.).
+one from the netpbm, the ImageMagick or the GraphicsMagick packages to get the
+bitmap formats (png, jpeg, etc.).
 
 .TP
 .B \-h
