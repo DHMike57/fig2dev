@@ -2,15 +2,22 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
-Patchlevel Xx (Xxx 2021)
+Patchlevel 8b (Aug 2021)
 
 NEW FEATURES:
 	o Detect the output language from the output file name.
 	o On the command line, a minus (-) as input or output file name refers
 	  to standard input or standard output.
 
--------------------------------------
 BUGS FIXED:
+	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
+	o Correct buffer overflows and segfaults, mainly due to maliciously
+	  crafted input files, tickets #113-117, #122, #123, #125-#135.
+	o With -Lepic -P, generate a complete tex file.
+	o Correctly produce a gif if a transparent color is given, ticket #121.
+	o Return with error if no space is left on the device. Ticket #101.
+
+-------------------------------------
 Patchlevel 8a (Mar 2021)
 
 BUGS FIXED:
@@ -51,7 +58,6 @@ NEW FEATURES:
 	  the database can be given at compile time, default /etc/X11/rgb.txt.
 
 BUGS FIXED:
-	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	Debian bug numbers refer to https://bugs.debian.org/#.
 	o Do not clip objects with line-thickness 0 having arrows. Ticket #53.
 	o Do not segfault on circle/half circle arrowheads with a magnification
@@ -96,7 +102,6 @@ NEW FEATURES:
 	  these files. The files were needed for Tk and Perl/Tk output.
 
 BUGS FIXED:
-	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	o Fix regression whereupon flipped ellipses were not read. Ticket #23.
 	o Distribute i18n files ru_RU.CP1251.ps and uk_UA.KOI8-U.ps.
 	o Make test "survive debian bug #890016" succeed on 32 bit systems.
