@@ -104,6 +104,10 @@ genbitmaps_option(char opt, char *optarg)
 		sscanf(optarg, "%d", &border_margin);
 		break;
 
+	case 'F':
+		gen_ps_eps_option(opt, optarg);
+		break;
+
 	case 'g':		/* background color (handled in ps driver) */
 		if (lookup_X_color(optarg, &background) >= 0) {
 			bgspec = true;

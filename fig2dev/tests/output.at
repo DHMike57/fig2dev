@@ -321,6 +321,17 @@ AT_CLEANUP
 
 AT_BANNER([Test other output languages.])
 
+AT_SETUP([Respect -F option for bitmap outputs])
+AT_KEYWORDS(bitmaps)
+AT_SKIP_IF([NO_GS])
+AT_CHECK([fig2dev -F - textbox.ppm <<EOF
+FIG_FILE_TOP
+4 0 0 50 -1 16 32 0.0000 6 511 7993 0 0 Some own ways ongoing in cases\001
+2 2 0 1 0 7 50 -1 -1 0.000 0 0 -1 0 0 5
+	 0 0 8025 0 8025 -300 0 -300 0 0
+EOF], 0)
+AT_CLEANUP
+
 AT_SETUP([allow default color in ge, cgm output, #72, #73])
 AT_KEYWORDS(cgm ge)
 AT_CHECK([fig2dev -L cgm $srcdir/data/line.fig
