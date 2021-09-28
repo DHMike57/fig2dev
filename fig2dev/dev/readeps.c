@@ -346,7 +346,7 @@ read_eps(F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx,int *lly)
 				}
 				*llx = floor(rllx);
 				*lly = floor(rlly);
-				pic->bit_size.x = (int)(rurx - rlly);
+				pic->bit_size.x = (int)(rurx - rllx);
 				pic->bit_size.y = (int)(rury - rlly);
 				break;
 			}
