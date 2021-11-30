@@ -2,6 +2,13 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
+Patchlevel 8c (Xxx 2021)
+
+BUGS FIXED:
+	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
+	o Correct a typo causing incorrect eps import, ticket #137.
+
+-------------------------------------
 Patchlevel 8b (Aug 2021)
 
 NEW FEATURES:
@@ -10,7 +17,6 @@ NEW FEATURES:
 	  to standard input or standard output.
 
 BUGS FIXED:
-	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	o Correct buffer overflows and segfaults, mainly due to maliciously
 	  crafted input files, tickets #113-117, #122, #123, #125-#135.
 	o With -Lepic -P, generate a complete tex file.
