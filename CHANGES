@@ -7,6 +7,7 @@ Patchlevel 8c (Xxx 2021)
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	o Correct a typo causing incorrect eps import, ticket #137.
+	o Regression, pass driver names to driver, ticket #139.
 
 -------------------------------------
 Patchlevel 8b (Aug 2021)

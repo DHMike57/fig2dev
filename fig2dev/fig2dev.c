@@ -227,7 +227,7 @@ get_args(int argc, char *argv[])
 						!strcmp(p, drivers[i].alias))) {
 				strcpy(lang, drivers[i].name);
 				dev = drivers[i].dev;
-				dev->option('L', optarg);
+				dev->option('L', drivers[i].name);
 				break;
 			}
 		}
