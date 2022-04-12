@@ -198,7 +198,7 @@ FIG_FILE_TOP
 EOF`
 # $blackpixels are 1236 on archlinux wiht ghostscript 9.20,
 #		1198 on ubuntu 16.04.2 with ghostscript 9.18
-AT_CHECK([test $blackpixels -gt 1197 && test $blackpixels -lt 1240])
+AT_CHECK([test $blackpixels -gt 1197 && test $blackpixels -lt 1243])
 AT_CLEANUP
 
 AT_SETUP([postscript, created by latex])
@@ -246,7 +246,7 @@ FIG_FILE_TOP
 EOF`
 # $blackpixels are 1488 on archlinux with ghostscript 9.20,
 #		1433 on ubuntu 16.04.2 with ghostscript 9.18
-AT_CHECK([test $blackpixels -gt 1431 && test $blackpixels -lt 1494])
+AT_CHECK([test $blackpixels -gt 1431 && test $blackpixels -lt 1498])
 AT_CLEANUP
 
 AT_SETUP([find /MediaBox in pdf file])
