@@ -83,8 +83,7 @@ FIG_FILE_TOP
 2 2 0 1 -1 -1 50 -1 -1 0.000 0 0 -1 0 0 3
 	 0 10200 1200 9225 0 9225
 EOF
-],0,ignore,[An open rectangle at line 11 - close it.
-A rectangle with 3 corners at line 11 - convert to a polygon.
+],0,ignore,[A rectangle with 2 corners at line 11 - convert to a polygon.
 ])
 AT_CLEANUP
 
@@ -96,6 +95,17 @@ FIG_FILE_TOP
 	 0 600
 EOF
 ],0,ignore,[A rectangle with 1 points at line 11 - convert to a polyline.
+])
+AT_CLEANUP
+
+AT_SETUP([convert box with two points to a polyline, #142])
+AT_KEYWORDS(read.c gbx)
+AT_CHECK([fig2dev -L gbx <<EOF
+FIG_FILE_TOP
+2 2 0 1 -1 -1 50 -1 -1 0.0 1 0 -1 0 0 2
+	 0 0 0 600
+EOF
+],0,ignore,[A rectangle with 2 points at line 11 - convert to a polyline.
 ])
 AT_CLEANUP
 

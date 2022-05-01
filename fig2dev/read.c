@@ -916,6 +916,8 @@ sanitize_lineobject(
 
 	if ((l->type == T_BOX || l->type == T_POLYGON ||
 			l->type == T_ARC_BOX || l->type == T_PIC_BOX) &&
+		l->points->next && l->points->next->next &&
+		l->points->next->next->next &&
 		(l->points->x != p->x || l->points->y != p->y)) {
 	    /* tests/testsuite -k open,read.c */
 	    put_msg("An open %s at line %d - close it.",
