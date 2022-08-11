@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2021 by Thomas Loimer
+ * Parts Copyright (c) 2015-2022 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -22,6 +22,7 @@
 
 #include <ctype.h>
 #include <limits.h>
+#include <math.h>	/* sqrt() */
 #include <stddef.h>	/* ptrdiff_t */
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,7 +33,6 @@
 #include <sys/stat.h>
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
-//#include "object.h"
 #include "alloc.h"
 #include "free.h"
 #include "messages.h"
@@ -592,6 +592,50 @@ note_fill(int fill, int *color, int line_no)
 	}
 }
 
+/*
+ * An arc is given by its center, the endpoints, and a direction.
+ * Check, whether the distance from the last point to the center is equal to the
+ * distance between the first point and the center. If not, move the last point
+ * along the line connecting it to the center.
+ * Return 0 on success, -1 if the last point co-incides with the center point.
+ */
+static int
+sanitize_arc(F_arc *a, int line_no)
+{
+	double r, l;
+
+	if (a->point[0].x-1. <  a->center.x && a->point[0].x+1. > a->center.x &&
+			a->point[0].y-1. <  a->center.y &&
+			a->point[0].y+1. > a->center.y) {
+		put_msg("Invalid arc object at line %d: arc radius smaller "
+				"than one Fig unit.", line_no);
+		return -1;
+	}
+	if (a->point[2].x == round(a->center.x) &&
+			a->point[2].y == round(a->center.y)) {
+		put_msg("Invalid arc object at line %d: the end point "
+				"co-incides with the center of the arc.",
+				line_no);
+		return -1;
+	}
+
+#define	LENGTH(DX, DY)	sqrt((DX)*(DX) + (DY)*(DY))
+	r = LENGTH(a->point[0].x - a->center.x, a->point[0].y - a->center.y);
+	l = LENGTH(a->point[2].x - a->center.x, a->point[2].y - a->center.y);
+#undef	LENGTH
+
+	/* Due to rounding, the lengths may be off by a maximum of half the
+	 * diagonal of a square, sqrt(2)/2.	*/
+	if (l < r - 1.0 || l > r + 1.0) {
+		double	fac = r / l;
+		a->point[2].x = round(a->center.x + fac *
+					(a->point[2].x - a->center.x));
+		a->point[2].y = round(a->center.y + fac *
+					(a->point[2].y - a->center.y));
+	}
+	return 0;
+}
+
 static F_arc *
 read_arcobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 {
@@ -643,6 +687,8 @@ read_arcobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		free(a);
 		return NULL;
 	}
+	if (sanitize_arc(a, *line_no))
+		return NULL;
 	fix_and_note_color(&a->pen_color, *line_no);
 	note_fill(a->fill_style, &a->fill_color, *line_no);
 	if (fa) {
