@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2022 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -2488,6 +2488,9 @@ draw_arrow(F_arrow *arrow, F_pos *points, int npoints,
 		F_pos *fillpoints, int nfillpoints, int col)
 {
 	int i, type;
+
+	if (npoints < 2)
+		return;
 
 	fprintf(tfp,"%% arrowhead\n");
 	set_linecap(0);			/* butt line cap for arrowheads */

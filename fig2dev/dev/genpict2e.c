@@ -1169,6 +1169,8 @@ put_arrow(F_point *p, F_point *q, F_arrow *a, int linethick)
 	calc_arrow(p->x, p->y, q->x, q->y, linethick, a, points, &npoints,
 		   fillpoints, &nfillpoints, clippts, &nclippts);
 	/* reset line-style outside of put_arrow */
+	if (npoints < 2)
+		return;
 
 	/* fill filled arrows */
 	if ((a->style || nfillpoints) && a->type < 13) {

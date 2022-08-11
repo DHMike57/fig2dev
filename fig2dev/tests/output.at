@@ -228,6 +228,15 @@ FIG_FILE_TOP
 EOF], 0, ignore)
 AT_CLEANUP
 
+AT_SETUP([arrows without any points, ticket #146])
+AT_KEYWORDS(pict2e arrows)
+AT_CHECK([fig2dev -L pict2e <<EOF
+FIG_FILE_TOP
+5 1 2 4 7 2 0 -1 0.0 0 0 1 0 7956 3420 6029 3765 5984 3270 6254 2085
+	1 1 2. 120. 240.
+EOF], 0, ignore)
+AT_CLEANUP
+
 
 AT_BANNER([Test svg output language.])
 AT_SETUP([compare patterns with template])

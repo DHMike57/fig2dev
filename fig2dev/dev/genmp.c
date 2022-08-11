@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2019 by Thomas Loimer
+ * Parts Copyright (c) 2015-2022 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -493,6 +493,8 @@ genmp_drawarrow(int from_x, int from_y, int to_x, int to_y, F_line *obj,
        Information on clipping is discarded */
     calc_arrow(from_x, from_y, to_x, to_y,
 	       obj->thickness, arr, points, &numpoints, fillpoints, &nfillpoints, clippoints, &nclippoints);
+    if (numpoints < 3)
+	return;
 
     fprintf(tfp,"%% Draw arrowhead type %d\n",type);
     fprintf(tfp,"  linecap:=0;\n");	/* butt line cap for arrowheads */
