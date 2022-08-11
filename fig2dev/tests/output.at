@@ -203,6 +203,31 @@ FIG_FILE_TOP
 EOF], 0, ignore)
 AT_CLEANUP
 
+AT_SETUP([arcs ending at multiples of pi/4, #145, #148])
+AT_KEYWORDS(pict2e arc read.c)
+# ticket #145
+AT_CHECK([fig2dev -L pict2e <<EOF
+FIG_FILE_TOP
+5 1 2 4 7 2 0 -1 0 0 0 0 1 1 7956 3420 6029 3765 5 84 3270 6254 2685
+	1 1 2 120 240
+	1 1 2 120 240
+EOF], 0, ignore)
+# ticket #148a
+AT_CHECK([fig2dev -L pict2e <<EOF
+FIG_FILE_TOP
+5 1 2 4 7 2 0 -1 0 0 0 0 1 1 7956 3420 6029 3765 5984 3270 9254 2685
+	1 1 2 120 240
+	1 1 2 120 240
+EOF], 0, ignore)
+# ticket #148b
+AT_CHECK([fig2dev -L pict2e <<EOF
+FIG_FILE_TOP
+5 1 2 4 7 2 0 -1 0 0 0 0 1 1 79E6 12003420 79196029 3765 5984 3270 6254 51752685
+	1 1 2 120 240
+	1 1 2 120 240
+EOF], 0, ignore)
+AT_CLEANUP
+
 
 AT_BANNER([Test svg output language.])
 AT_SETUP([compare patterns with template])

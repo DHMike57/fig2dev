@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2022 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -33,8 +33,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "fig2dev.h"	/* includes bool.h and object.h */
-//#include "object.h"
+#include "fig2dev.h"		/* includes bool.h and object.h */
 #include "bound.h"
 #include "free.h"		/* free_linestorage() */
 #include "messages.h"
@@ -200,8 +199,6 @@ struct pict2earrow {
 #define YDIR(y)		-(y)
 #define EQUAL(p,q)	(p->x == q->x && p->y == q->y)
 			/* cast to double, to not have the integers overflow */
-#define LENGTH(p,q)	sqrt(((double) (q->x - p->x))*(q->x - p->x) \
-			     + ((double)(q->y - p->y))*(q->y - p->y))
 #define THICKNESS(T)	(T <= THICK_SCALE ? 0.5*T : T - THICK_SCALE)
 			/* THICK_SCALE is of type float, see fig2dev.h */
 /* #define round	(int)... see fig2dev.h */
@@ -963,10 +960,12 @@ put_patternline(F_point *p, F_point *q, struct pattern *pattern, double h1,
 	double	len, lenpq, dx, dy, cosl, sinl, digits, dlx[PAT_ND_2];
 	F_pos	pstart, slope[PAT_ND_2];
 
+#define DISTANCE(p,q)	sqrt(((double) (q->x - p->x))*(q->x - p->x) \
+			     + ((double)(q->y - p->y))*(q->y - p->y))
 	/* put a remaining dash */
 	if (h1 < 0) {
 	    len = pattern->d[dstart] + h1; /* the remaining length of the dash */
-	    while ((lenpq = LENGTH(p,q)) <= len) {
+	    while ((lenpq = DISTANCE(p,q)) <= len) {
 		if (q->next == NULL)
 		    return;
 		len -= lenpq;
@@ -990,12 +989,13 @@ put_patternline(F_point *p, F_point *q, struct pattern *pattern, double h1,
 	 *  |offset|
 	 * wind forward through the points which lie within the offset
 	 */
-	while ((lenpq = LENGTH(p,q)) <= h1) {
+	while ((lenpq = DISTANCE(p,q)) <= h1) {
 	    if (q->next == NULL) return;
 	    h1 -= lenpq;
 	    p = q;
 	    q = q->next;
 	}
+#undef	DISTANCE
 
 	/* calculate the number of dash patterns
 	 * ndp - the number of full dash patterns, that fit into this line segment */
@@ -2332,11 +2332,11 @@ static void
 put_patternarc(
 	F_pos *c,		/* center point */
 	double rad,		/* radius */
-	double da,		/* arc angle */
+	double da,		/* arc angle, must be positive */
 	double angle1,		/* start angle */
 	F_arc *a)
 {
-	int		i, cosa2, sina2, px;
+	int		i, cosa2, sina2;
 	double		a1, a2, rot, cosr, sinr;
 	F_spline	s;
 	F_line		*l;
@@ -2345,6 +2345,7 @@ put_patternarc(
 	F_control	z[8];
 	struct d_pos	u[8];	/* octagon points on the unit circle */
 
+	/* Create a x-spline approximating a circle */
 	get_xsplinepoints(z,u,1.025821);
 	/* scale the control points */
 	for (i = 0; i < 8; ++i) {
@@ -2376,41 +2377,57 @@ put_patternarc(
 	if (p == NULL)
 	    return;
 
-	/* the octagon runs in clockwise direction.
+	/*
+	 * Walk along the spline, until the arc angle is covered.
+	 * The octagon runs in clockwise direction.
 	 * a1 is approx. 3*pi/8 (strangely, the control points for the octagon
-	 * start at 5*pi/8). If create_line_with_splines() changes, the
-	 * following breaks! */
+	 * start at 5*pi/8). If the start point given by a1 changes, because
+	 * create_line_with_splines() changes, the following breaks.
+	 */
 	a1 = atan2(p->y, p->x);
 	a2 = a1 - da;
 	sinr = sin(a2);
 	cosr = cos(a2);
 	sina2 = round(rad*sinr);
 	cosa2 = round(rad*cosr);
-	if (a2 >= M_PI_4)
-	    while (p->x < cosa2) {
-		o[3].next = p;
-		p = p->next;
-	    }
-	else
-	    while (p->y > sina2) {
-		o[3].next = p;
-		p = p->next;
-	    }
-	if (a2 < -M_PI_4)
-	    while (p->x > cosa2) {
-		o[3].next = p;
-		p = p->next;
-	    }
-	if (a2 < -3. * M_PI_4)
-	    while (p->y < sina2) {
-		o[3].next = p;
-		p = p->next;
-	    }
-	if (a2 < -5. * M_PI_4)
-	    while (p->x < cosa2) {
-		o[3].next = p;
-		p = p->next;
-	    }
+	/*
+	 * Either walk forward to the next quadrant, or find the last point on
+	 * the arc. Make sure, that the comparison is made on the short
+	 * cathenuse. Comparison on the long cathenuse might fail, since the
+	 * distance of the points on the spline wobbles around the radius of
+	 * the approximated circle.
+	 */
+#define	WIND_FORWARD	o[3].next = p; p = p->next
+	for (;;) {
+		if (a2 < M_PI_4) {
+			while (p->y > p->x) {WIND_FORWARD;}
+		} else {
+			while (p->x < cosa2) {WIND_FORWARD;}
+			break;
+		}
+		if (a2 < -M_PI_4) {
+			while (p->x > -p->y) {WIND_FORWARD;}
+		} else {
+			while (p->y > sina2) {WIND_FORWARD;}
+			break;
+		}
+		if (a2 < -3. * M_PI_4) {
+			while (p->y < p->x) {WIND_FORWARD;}
+		} else {
+			while (p->x > cosa2) {WIND_FORWARD;}
+			break;
+		}
+		if (a2 < -5. * M_PI_4) {
+			while (p->x < -p->y) {WIND_FORWARD;}
+			while (p->x < cosa2) {WIND_FORWARD;}
+			break;
+		} else {
+			while (p->y < sina2) {WIND_FORWARD;}
+			break;
+		}
+	}
+#undef	WIND_FORWARD
+
 	/* re-use the octagon points o[]; o[0] might be the center point for
 	 * pie-wedge arcs, o[1] is the point on the arc exactly at angle a2,
 	 * o[2] is again the center point. Use o[3].next and o[4].next to
@@ -2442,10 +2459,11 @@ put_patternarc(
 
 	p = l->points;
 	while (p != NULL) {
-	    px = i * p->x;
-	    p->x = c->x + round(cosr * px - YDIR(sinr * p->y));
-	    p->y = c->y + round(sinr * px + YDIR(cosr * p->y));
-	    p = p->next;
+		int	px;
+		px = i * p->x;
+		p->x = c->x + round(cosr * px - YDIR(sinr * p->y));
+		p->y = c->y + round(sinr * px + YDIR(cosr * p->y));
+		p = p->next;
 	}
 
 	if (a->type == T_PIE_WEDGE_ARC) {
