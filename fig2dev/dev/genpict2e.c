@@ -199,7 +199,7 @@ struct pict2earrow {
 #define YDIR(y)		-(y)
 #define EQUAL(p,q)	(p->x == q->x && p->y == q->y)
 			/* cast to double, to not have the integers overflow */
-#define THICKNESS(T)	(T <= THICK_SCALE ? 0.5*T : T - THICK_SCALE)
+#define THICKNESS(T)	(T <= THICK_SCALE ? T/2 : T - THICK_SCALE)
 			/* THICK_SCALE is of type float, see fig2dev.h */
 /* #define round	(int)... see fig2dev.h */
 #define PUTPOINT(p)	fprintf(tfp,"(%d,%d)", XCOORD(p->x), YCOORD(p->y))
@@ -390,9 +390,9 @@ get_rgbcolor(int *c, RGB *rgb)
 	    sscanf(Fig_color_names[*c], "#%2hx%2hx%2hx",
 		   &(rgb->red), &(rgb->green), &(rgb->blue));
 	else {
-	    rgb->red = user_colors[*c - NUM_STD_COLS].r;
-	    rgb->green = user_colors[*c - NUM_STD_COLS].g;
-	    rgb->blue = user_colors[*c - NUM_STD_COLS].b;
+	    rgb->red   = (unsigned short)user_colors[*c - NUM_STD_COLS].r;
+	    rgb->green = (unsigned short)user_colors[*c - NUM_STD_COLS].g;
+	    rgb->blue  = (unsigned short)user_colors[*c - NUM_STD_COLS].b;
 	}
 }
 
@@ -617,6 +617,7 @@ genpict2e_start(F_compound *objects)
 	    = TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
 
 	unitlength = mag/ppi;
+	/* border_margin /=(int)(unitlength*72.0) lets a number of tests fail */
 	border_margin /= unitlength*72.0;
 
 	/* adjust for any border margin */
@@ -1640,9 +1641,9 @@ put_picture(F_point *p, F_point *q, F_point *r, F_point *s, F_line *l)
 
 	if (removesuffix) {
 	    c = strrchr(l->pic->file,'.');
-	    n =  c == NULL ? (int) strlen(l->pic->file) : c - l->pic->file;
+	    n = (c == NULL? (int)(strlen(l->pic->file)): (int)(c-l->pic->file));
 	} else {
-	    n = strlen(l->pic->file);
+	    n = (int)strlen(l->pic->file);
 	}
 	dx = r->x - p->x;
 	dy = r->y - p->y;
@@ -2517,10 +2518,10 @@ genpict2e_arc(F_arc *a)
 	c.y = round(a->center.y);
 	/* compute the angles in pict2e-coordinate direction;
 	 * pict2e expects angles in degrees */
-	d1x =  a->point[0].x - a->center.x;
-	d1y =  a->point[0].y - a->center.y;
-	d2x =  a->point[2].x - a->center.x;
-	d2y =  a->point[2].y - a->center.y;
+	d1x =  a->point[0].x - c.x;
+	d1y =  a->point[0].y - c.y;
+	d2x =  a->point[2].x - c.x;
+	d2y =  a->point[2].y - c.y;
 	angle1 = atan2(YDIR(d1y), XDIR(d1x)) * 180. / M_PI;
 	angle2 = atan2(YDIR(d2y), XDIR(d2x)) * 180. / M_PI;
 	/* The radius is the mean of the two radii - they can not differ by more
