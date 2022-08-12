@@ -1528,6 +1528,7 @@ put_poly_or_patternline(F_point *p, F_point *q, F_line *l)
 		h = get_offset(l->for_arrow, l->thickness, l->cap_style);
 		if (l->thickness == 0 || h <= 0.5) {
 		    /* simply wind forward through the line */
+		    f[0] = p;
 		    f[1] = q;
 		    while (f[1]->next != NULL) {
 			f[0] = f[1];
@@ -1713,11 +1714,11 @@ genpict2e_line(F_line *l)
 	/* print any comments prefixed with "%" */
 	print_comments("% ", l->comments, "");
 
-	/* count the number of non-concident points: 1, 2, ..., 5, infinity */
+	/* count the number of points, up to a maximum of four */
 	p[0] = l->points;
 	while (npts < 4 && p[npts]->next != NULL) {
-	    p[npts+1] = p[npts]->next;	/* p[++npts] = p[npts]->next */
-	    ++npts;			/* gave segmentation fault?? */
+	    p[npts+1] = p[npts]->next;
+	    ++npts;
 	}
 	++npts;
 

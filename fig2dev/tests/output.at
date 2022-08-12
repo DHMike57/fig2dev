@@ -14,13 +14,14 @@ dnl party to do so, with the only requirement being that the above copyright
 dnl and this permission notice remain intact.
 
 dnl output.at
-dnl Author: Thomas Loimer, 2016-2021
+dnl Author: Thomas Loimer, 2016-2022
 
 dnl Check various features related to the output languages of fig2dev.
 
 
 AT_BANNER([Test epic/eepic output language.])
 
+dnl AT_SETUP([---- last character here -----------------v
 AT_SETUP([Write complete output file in page mode (-P)])
 AT_KEYWORDS(epic)
 AT_CHECK([fig2dev -Lepic -P $srcdir/data/line.fig line.tex])
@@ -234,6 +235,25 @@ AT_CHECK([fig2dev -L pict2e <<EOF
 FIG_FILE_TOP
 5 1 2 4 7 2 0 -1 0.0 0 0 1 0 7956 3420 6029 3765 5984 3270 6254 2085
 	1 1 2. 120. 240.
+EOF], 0, ignore)
+AT_CLEANUP
+
+AT_SETUP([arrows on two-point line with 0 thickness, #147])
+AT_KEYWORDS(pict2e arrows)
+AT_CHECK([fig2dev -L pict2e <<EOF
+#FIG 3.2
+Landscape
+Center
+Inches
+A4
+100.
+Single
+-2
+12. 2
+3 0 4 2 4 7 2 0 -1 0 0 1 1 3
+	1 1 2 0 20
+	1 1 2. 0 20
+5 1 0 2 4 7 2 0 -1
 EOF], 0, ignore)
 AT_CLEANUP
 
