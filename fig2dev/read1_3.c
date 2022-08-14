@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2022 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -29,7 +29,6 @@
 
 #include "fig2dev.h"	/* includes object.h */
 #include "alloc.h"
-//#include "object.h"
 #include "free.h"
 #include "messages.h"
 
@@ -503,7 +502,7 @@ read_textobject(FILE *fp)
 		free(t);
 		return NULL;
 	}
-	t->cstring = (char *) calloc((unsigned)(strlen(buf)+1), sizeof(char));
+	t->cstring = malloc((strlen(buf)+1u) * sizeof(char));
 	if (t->cstring == NULL) {
 		put_msg(Err_mem);
 		free(t);

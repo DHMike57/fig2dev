@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2022 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -2969,8 +2969,8 @@ textunicode(
     src = str;
     srcleft = srccnt = strlen(str);
     if ((dst = (char *) *utext) == NULL) {
-	dst = (char *) (*utext = calloc(srcleft + 2/*null termination + align*/,
-	    sizeof(short)));
+	dst = (char *)(*utext = malloc((srcleft + 2/*null termination + align*/)
+	    * sizeof(short)));
 	dstleft = dstcnt = srcleft * sizeof(short);
     } else
 	dstleft = dstcnt = *n_unicode;
@@ -2979,7 +2979,7 @@ textunicode(
 	if (iconv(icd, &src, &srcleft, &dst, &dstleft) == (size_t) -1)
 	    fprintf(stderr, "genemf: iconv: illegal byte sequence\n");
 
-	(void) iconv_close(icd);
+	(void)iconv_close(icd);
 
 	*n_chars = srccnt - srcleft;
 	*n_unicode = dstcnt - dstleft;
@@ -3012,8 +3012,7 @@ textunicode(
     *n_chars = strlen(str);
     *n_unicode = *n_chars * 2;
     if (*utext == NULL) {
-	*utext = (short *)calloc((size_t) *n_unicode + 4 /* null + align */,
-	    (size_t) 1);
+	*utext = malloc((size_t)(*n_unicode + 4/* null + align */));
     }
     for (i = 0; i < *n_chars; ++i) {		/* Convert to unicode. */
 	if (str[i] == '\n') {
@@ -3022,6 +3021,7 @@ textunicode(
 	    (*utext)[i] = htofs(str[i]);
 	}
     }
+    (*utext)[*n_chars] = '\0';
 #endif
 }/* end textunicode */
 
