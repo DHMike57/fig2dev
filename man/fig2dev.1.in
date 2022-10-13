@@ -299,6 +299,9 @@ Computer Science at University of California, Davis.
 Conrad Kwok has also written the EEPIC driver of fig2dev.
 .LP
 EEPIC-EMU is an EEPIC emulation package which does not use tpic specials.
+.LP
+When including EPIC/EEPIC output in a LaTeX file, use
+"\fB\\usepackage{epic,eepic}\fR" in the preamble.
 
 .TP
 .B \-d factor
@@ -504,6 +507,12 @@ The \fB\-c\fR option selects the alternate instruction set.
 
 
 .SH LATEX OPTIONS
+LaTeX cannot accurately represent all the graphics objects which can
+be described by Fig.
+For example, the possible slopes which lines may have are limited.
+Some objects, such as spline curves, cannot be drawn at all.
+Fig2latex chooses the closest possible line slope, and prints error
+messages when objects cannot be drawn accurately.
 
 .TP
 .B \-b borderwidth
@@ -544,15 +553,6 @@ The default is 1.
 .TP
 .B \-v
 Verbose mode. Include comments in the otput file.
-
-.LP
-LaTeX cannot accurately represent all the graphics objects which can
-be described by Fig.
-For example, the possible slopes which lines may have are limited.
-Some objects, such as spline curves, cannot be drawn at all.
-Fig2latex chooses the closest possible line slope, and prints error
-messages when objects cannot be drawn accurately.
-
 
 .SH MAP (HTML image map) OPTIONS
 Xfig version 3.2.3 and later saves and allows the user to edit comments
