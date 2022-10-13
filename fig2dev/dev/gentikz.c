@@ -1645,8 +1645,10 @@ gentikz_line(F_line *l)
 	    if (p->next == NULL) {	/* a single point */
 		if (l->cap_style == ROUNDCAP) {
 		    set_capstyle(l->cap_style);
-		    fprintf(tfp, "\\draw (%d,%d);\n",
-			    XCOORD(p->x), YCOORD(p->y));
+		    /* a zero-length line is only displayed with round caps */
+		    fprintf(tfp, "\\draw (%d,%d)--(%d,%d);\n",
+					XCOORD(p->x), YCOORD(p->y),
+					XCOORD(p->x), YCOORD(p->y));
 		} else {
 		    double	h;
 		    set_capstyle(BUTTCAP);
