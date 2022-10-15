@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2021 by Thomas Loimer
+ * Parts Copyright (c) 2015-2022 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -571,17 +571,11 @@ help_msg(void)
 		if (dev == NULL || !strcmp(lang, "dxf")) {
 			puts(
 "DXF Options:\n"
-#ifdef A4
-"  -a          select ANSI A paper size instead of the default ISO A4\n"
-#else
-"  -a          select ISO A4 paper size instead of the default ANSI A\n"
-#endif
 #ifdef IBMGEC
 "  -c          generate instructions for IBM 6180 plotter without IBM-GEC\n"
 #else
 "  -c          generate instructions for IBM 6180 plotter with IBM-GEC\n"
 #endif
-"  -d xll,yll,xur,yur    restrict plotting to area specified by coords\n"
 "  -f fontfile load text character specs from table in file\n"
 "  -l pattfile load patterns for pattern fill from file\n"
 "  -P          rotate figure to portrait (default is landscape)\n"

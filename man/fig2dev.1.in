@@ -245,22 +245,6 @@ DXF is the Drawing Interchange File Format.
 The output to DXF is experimental.
 
 .TP
-.B \-a
-Select @ALTERNATE_PAPERSIZE@ paper size instead of the
-default @DEFAULT_PAPERSIZE@.
-
-.TP
-.B "\-d xll,yll,xur,yur"
-Restrict plotting to a rectangular area of the plotter paper which has
-a lower left hand corner at
-.I (xll,yll)
-and a upper right hand corner at
-.I (xur,yur).
-All four numbers are in inches and follow \fB\-d\fR in a comma-separated list -
-.I xll,yll,xur,yur
-- with no spaces between them.
-
-.TP
 .B \-P
 Rotate the figure to portrait mode. The default is landscape mode.
 

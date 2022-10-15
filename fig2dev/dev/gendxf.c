@@ -58,11 +58,6 @@ static void set_style(int style, double length);
 #define PATTERNS	21
 #define DPR		180.0/M_PI	/* degrees/radian */
 #define DELTA		M_PI/36.0	/* radians */
-#define CMPP		254.0/7227.0	/* centimeters/point */
-#define UNITS_PER_INCH	1016.0		/* plotter units/inch */
-#define HEIGHT		7650.0		/* plotter units */
-#define ISO_A4		10900.0		/* plotter units */
-#define ANSI_A		10300.0		/* plotter units */
 
 #ifdef IBMGEC
 static int	ibmgec = true;
@@ -76,17 +71,7 @@ static int	colors = COLORS;
 static int	patterns = PATTERNS;
 static int	line_style = SOLID_LINE;
 static int	fill_pattern = DEFAULT;
-static double	dash_length = DEFAULT;		/* in pixels */
-#ifdef A4
-static double	pagelength = ISO_A4/UNITS_PER_INCH;
-#else
-static double	pagelength = ANSI_A/UNITS_PER_INCH;
-#endif
-static double	pageheight = HEIGHT/UNITS_PER_INCH;
-static double	xl =  0.0;		/* inches */
-static double	yl =  0.0;		/* inches */
-static double	xu = 32.25;		/* inches */
-static double	yu = 32.25;		/* inches */
+static double	dash_length = DEFAULT;
 static double	figtodxf;		/* dxf (mm|in) per fig unit */
 					/* fig unit: usually 1200 / inch */
 
@@ -124,11 +109,6 @@ gendxf_option(char opt, char *optarg)
 
 	switch (opt) {
 	case 'a':				/* paper size */
-#ifdef A4
-		pagelength = ANSI_A/UNITS_PER_INCH;
-#else
-		pagelength = ISO_A4/UNITS_PER_INCH;
-#endif
 		break;
 
 	case 'c':		/* Graphics Enhancement Cartridge emulation */
@@ -136,7 +116,6 @@ gendxf_option(char opt, char *optarg)
 		break;
 
 	case 'd':				/* position and window, inches*/
-		sscanf(optarg, "%lf,%lf,%lf,%lf", &xl,&yl,&xu,&yu);
 		break;
 
 	case 'f':				/* user's characters */
@@ -201,9 +180,8 @@ gendxf_option(char opt, char *optarg)
 	}
 }
 
-static double	cpi;		/* cent/inch */
-static double	cpp;		/* cent/pixel */
-static double	hcmpp = CMPP;	/* centimeter/point */
+static double	cm;		/* dxf unit (in|mm) per cm */
+static double	styletodxf;	/* dxf unit per in/80 (base line thickness) */
 
 void
 gendxf_start(F_compound *objects)
@@ -215,50 +193,16 @@ gendxf_start(F_compound *objects)
 	    exit(1);
 	    }
 
-	if (xl < xu)
-	    if (0.0 < xu)
-		if (xl < pagelength) {
-		    xl = (0.0 < xl) ? xl: 0.0;
-		    xu = (xu < pagelength) ? xu: pagelength;
-		    }
-		else {
-		    fprintf(stderr, "xll >= %.2f\n", pagelength);
-		    exit(1);
-		    }
-	    else {
-		fprintf(stderr, "xur <= 0.0\n");
-		exit(1);
-		}
-	else {
-	    fprintf(stderr, "xur <= xll\n");
-	    exit(1);
-	    }
-
-	if (yl < yu)
-	    if (0.0 < yu)
-		if (yl < pageheight) {
-		    yl = (0.0 < yl) ? yl: 0.0;
-		    yu = (yu < pageheight) ? yu: pageheight;
-		    }
-		else {
-		    fprintf(stderr, "yll >= %.2f\n", pageheight);
-		    exit(1);
-		    }
-	    else {
-		fprintf(stderr, "yur <= 0.0\n");
-		exit(1);
-		}
-	else {
-	    fprintf(stderr, "yur <= yll\n");
-	    exit(1);
-	    }
-
-	cpi = mag*100.0/sqrt((xu-xl)*(xu-xl) + (yu-yl)*(yu-yl));
-	cpp = cpi/ppi;
-	if (metric)
+	if (metric) {
 		figtodxf = mag * 25.4 / ppi;	/* mm per fig unit */
-	else
+		cm = mag * 10;			/* mm per cm */
+		styletodxf = mag * 25.4 / 80.;	/* mm per in/80
+							(line thickness) */
+	} else {
 		figtodxf = mag / ppi;		/* inch per fig unit */
+		cm = mag / 2.54;		/* inch per cm */
+		styletodxf = mag / 80.;		/* in per in/80 */
+	}
 
 	/* dxf start */
 	fprintf(tfp, "	0\nSECTION\n  2\nHEADER\n");
@@ -332,12 +276,6 @@ gendxf_start(F_compound *objects)
 	fprintf(tfp, "	0\nSECTION\n  2\nBLOCKS\n");
 	fprintf(tfp, "	0\nENDSEC\n");
 	fprintf(tfp, "	0\nSECTION\n  2\nENTITIES\n");
-
-	if (!landscape) {			 /* portrait mode */
-	    if (reflected)			  /* upside-down text */
-		hcmpp	= -hcmpp;
-	}
-
 }
 
 /*	  draw arrow heading from (x1, y1) to (x2, y2) */
@@ -374,14 +312,14 @@ set_style(int style, double length)
 		case DASH_LINE:
 		    if (dash_length != length && length > 0.0) {
 			dash_length = length;
-			fprintf(tfp, "LT2,%.4f;\n", dash_length*2.0*cpp);
+			fprintf(tfp, "LT2,%.4f;\n", dash_length*2.0*styletodxf);
 			}
 		    break;
 
 		case DOTTED_LINE:
 		    if (dash_length != length && length > 0.0) {
 			dash_length = length;
-			fprintf(tfp, "LT1,%.4f;\n", dash_length*2.0*cpp);
+			fprintf(tfp, "LT1,%.4f;\n", dash_length*2.0*styletodxf);
 			}
 		    break;
 		}
@@ -396,7 +334,7 @@ set_style(int style, double length)
 		    if (dash_length != length && length > 0.0)
 			dash_length = length;
 		    if (dash_length > 0.0)
-			fprintf(tfp, "LT2,%.4f;\n", dash_length*2.0*cpp);
+			fprintf(tfp, "LT2,%.4f;\n", dash_length*2.0*styletodxf);
 		    else
 			fprintf(tfp, "LT2,-1.0;\n");
 		    break;
@@ -405,7 +343,7 @@ set_style(int style, double length)
 		    if (dash_length != length && length > 0.0)
 			dash_length = length;
 		    if (dash_length > 0.0)
-			fprintf(tfp, "LT1,%.4f;\n", dash_length*2.0*cpp);
+			fprintf(tfp, "LT1,%.4f;\n", dash_length*2.0*styletodxf);
 		    else
 			fprintf(tfp, "LT1,-1.0;\n");
 		    break;
@@ -441,7 +379,7 @@ fill_polygon(int pattern)
 	    style	  = line_style;
 	    length	   = dash_length;
 	    fprintf(tfp, "LT%d,%.4f;FP;\n",
-		    line_type[pattern], line_space[pattern]*cpi);
+		    line_type[pattern], line_space[pattern] * cm);
 	    /* restore line style */
 	    line_style	       = DEFAULT;
 	    dash_length		= DEFAULT;
@@ -960,7 +898,7 @@ gendxf_text(F_text *t)
   fprintf(tfp, " 72\n%3i\n",t->type);
 
   size = t->size;
-  height = size*hcmpp*high[font];
+  height = size*high[font];
   fprintf(tfp, " 40\n%f\n",height);
 
   fprintf(tfp, "  1\n%s\n",t->cstring);
