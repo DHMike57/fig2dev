@@ -25,8 +25,6 @@
  *	  adapted from:
  *
  *  genibmgl.c:	IBMGL driver for fig2dev
- *		  IBM 6180 Color Plotter with
- *		  IBM Graphics Enhancement Cartridge
  *   Author E. Robert Tisdale, University of California, 1/92
  *  (edwin@cs.ucla.edu)
  *
@@ -34,9 +32,37 @@
  *
  *  genpictex.c:	PiCTeX driver for fig2dev
  *   Author Micah Beck, Cornell University, 4/88
- *  Color, rotated text and ISO-chars added by Herbert Bauer 11/91
- *  PCL job control option added Brian V. Smith 1/2001
+ *
  */
+
+/*
+ * TODO
+ * insert Limits into the header,
+ *	$LIMMIN
+ *	10
+ *	-2		* min. x-coord (default mm)
+ *	20
+ *	-2		* min y-coord
+ *	9
+ *	$LIMMAX
+ *	10
+ *	2		* x-coord
+ *	20
+ *	2		* y-coord
+ *	9
+ *	$PLIMMIN	* paper limits ?
+ *	10
+ *	0		* x-coord
+ *	20
+ *	0		* y-coord
+ *	9
+ *	$PLIMMAX
+ *	10
+ *	210		* x-coord
+ *	20
+ *	297		* y-coord
+ */
+
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -66,7 +92,6 @@ static int	fonts = FONTS;
 static int	colors = COLORS;
 static int	patterns = PATTERNS;
 static int	line_style = SOLID_LINE;
-static int	fill_pattern = DEFAULT;
 static double	dash_length = DEFAULT;
 static double	figtodxf;		/* dxf (mm|in) per fig unit */
 					/* fig unit: usually 1200 / inch */
@@ -360,62 +385,36 @@ set_style(int style, double length)
 void
 gendxf_arc(F_arc *a)
 {
+	(void)a;
   fprintf(tfp, "999\n !! found gendxf_arc\n");
 }
 
 void
 gendxf_ellipse(F_ellipse *e)
 {
-  /* This is a quick fix to use polylines rather than dxf ellipses */
-  /* This might be a compatibility option also in the future. */
-  if (e->thickness != 0 || (0 <= e->fill_style && e->fill_style < patterns)) {
-    int		       j;
-    double	  alpha;
-    double	  angle;
-    double	  delta;
-    double	  x0, y0;
-    double	  a,  b;
-    double	  x,  y;
-
-    set_style(e->style, e->style_val);
-/*    set_width(e->thickness);	*/
-
-    a	  = e->radiuses.x * figtodxf;
-    b	  = e->radiuses.y * figtodxf;
-    x0	  = e->center.x * figtodxf;
-    y0	  = YCOORD(e->center.y) * figtodxf;
-    angle = -e->angle;
-    delta = -DELTA;
-
-    x = x0 + cos(angle)*a;
-    y = y0 + sin(angle)*a;
-
-    fprintf(tfp, "999\n !! found ellipse\n");
-
-    fprintf(tfp, "  0\nPOLYLINE\n");
-    fprintf(tfp, "  6\nSolid\n");
-    fprintf(tfp, "  8\n%3i\n",e->depth);
-    fprintf(tfp, " 66\n1\n");
-    fprintf(tfp, " 62\n%6i\n",e->pen_color);
-    fprintf(tfp, " 10\n0.0\n");
-    fprintf(tfp, " 20\n0.0\n");
-    fprintf(tfp, " 30\n0.0\n");
-    fprintf(tfp, " 70\n  1\n");
-
-    for (j = 1; j <= 72; j++) {
-      alpha = j*delta;
-      x     = x0 + cos(angle)*a*cos(alpha) - sin(angle)*b*sin(alpha);
-      y     = y0 + sin(angle)*a*cos(alpha) + cos(angle)*b*sin(alpha);
-      fprintf(tfp, "  0\nVERTEX\n");
-      fprintf(tfp, "  8\n%3i\n",e->depth);
-      fprintf(tfp, "  6\nSolid\n");
-      fprintf(tfp, " 10\n%f\n",x);
-      fprintf(tfp, " 20\n%f\n",y);
-      fprintf(tfp, " 30\n0.0\n");
-      fprintf(tfp, " 70\n  0\n");
-    }
-    fprintf(tfp, "  0\nSEQEND\n");
-  }
+	if (e->radiuses.x == e->radiuses.y) {
+		fputs("  0\nCIRCLE\n", tfp);
+		fputs("  6\nSolid\n", tfp);		/* line style */
+		fprintf(tfp, "  8\n%3d\n", e->depth);	/* layer name */
+		fputs(" 39\n 1\n", tfp);		/* thickness */
+		fprintf(tfp, " 10\n%.4g\n", e->center.x * figtodxf);
+		fprintf(tfp, " 20\n%.4f\n", YCOORD(e->center.y) * figtodxf);
+		fprintf(tfp, " 40\n%.4f\n", e->radiuses.x * figtodxf);
+	} else {
+		fputs("  0\nELLIPSE\n", tfp);
+		fputs("  6\nSolid\n", tfp);		/* line style */
+		fprintf(tfp, "  8\n%3d\n", e->depth);	/* layer name */
+		// fputs(" 39\n 1\n", tfp);		/* thickness */
+		fprintf(tfp, " 10\n%.4g\n", e->center.x * figtodxf);
+		fprintf(tfp, " 20\n%.4f\n", YCOORD(e->center.y) * figtodxf);
+		/* 11, 21: x and y-coordinate of endpoint of major axis,
+		   relative to center */
+		fprintf(tfp, " 11\n%.4f\n", e->radiuses.x * figtodxf);
+		fputs(" 21\n0.0\n", tfp);
+		fprintf(tfp, " 40\n %.6g\n",
+					(double)e->radiuses.y / e->radiuses.x);
+		fputs(" 41\n0.0\n 42\n6.28318\n", tfp);	/* start, end angle */
+	}
 }
 
 void
