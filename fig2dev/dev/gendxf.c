@@ -44,6 +44,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef	HAVE_STRINGS_H
+#include <strings.h>			/* strcasecmp */
+#endif
 #include <math.h>
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
@@ -68,6 +71,7 @@ static int	fill_pattern = DEFAULT;
 static double	dash_length = DEFAULT;
 static double	figtodxf;		/* dxf (mm|in) per fig unit */
 					/* fig unit: usually 1200 / inch */
+static double	paperheight;
 
 static int	pen_number[] = { 1, 2, 3, 4, 5, 6, 7, 8, 1};
 static double	pen_thickness[] = {.3,.3,.3,.3,.3,.3,.3,.3,.3};
@@ -179,7 +183,8 @@ static double	styletodxf;	/* dxf unit per in/80 (base line thickness) */
 void
 gendxf_start(F_compound *objects)
 {
-	(void)	objects;
+	(void)objects;
+	int	i = -1;
 
 	if (fabs(mag) < 1.0/2048.0){
 	    fprintf(stderr, "|mag| < 1/2048\n");
@@ -196,6 +201,16 @@ gendxf_start(F_compound *objects)
 		cm = mag / 2.54;		/* inch per cm */
 		styletodxf = mag / 80.;		/* in per in/80 */
 	}
+
+	paperheight = paperdef[13].height;	/* paperdef[13] is A4 */
+	while (paperdef[++i].name) {
+		if (!strcasecmp(paperdef[i].name, papersize)) {
+			paperheight = paperdef[i].height;
+			break;
+		}
+	}
+	paperheight *= ppi / 72.;		/* points to fig units */
+#define YCOORD(y)	(paperheight - (y))
 
 	/* dxf start */
 	fprintf(tfp, "	0\nSECTION\n  2\nHEADER\n");
@@ -412,7 +427,7 @@ gendxf_ellipse(F_ellipse *e)
     a	  = e->radiuses.x * figtodxf;
     b	  = e->radiuses.y * figtodxf;
     x0	  = e->center.x * figtodxf;
-    y0	  = e->center.y * figtodxf;
+    y0	  = YCOORD(e->center.y) * figtodxf;
     angle = -e->angle;
     delta = -DELTA;
 
@@ -481,11 +496,11 @@ gendxf_line(F_line *l)
 	  fprintf(tfp, "  6\nSolid\n");
 	  fprintf(tfp, " 62\n%6i\n",l->pen_color);
 	  fprintf(tfp, " 10\n%f\n",p->x * figtodxf);
-	  fprintf(tfp, " 20\n%f\n",p->y * figtodxf);
+	  fprintf(tfp, " 20\n%f\n",YCOORD(p->y) * figtodxf);
 	} else {
 	  if (l->thickness != 0 && l->back_arrow)
-	    draw_arrow_head(q->x * figtodxf, q->y * figtodxf, p->x * figtodxf,
-			  p->y * figtodxf);
+	    draw_arrow_head(q->x * figtodxf, YCOORD(q->y) * figtodxf,
+			    p->x * figtodxf, YCOORD(p->y) * figtodxf);
 
 	  fprintf(tfp, "  0\nPOLYLINE\n");
 	  fprintf(tfp, "  6\nSolid\n");
@@ -504,10 +519,10 @@ gendxf_line(F_line *l)
 	  r = q = p;
 	  while (p != NULL) {
 	    fprintf(tfp, "  0\nVERTEX\n");
-	    fprintf(tfp, "  8\n%3i\n",l->depth);
+	    fprintf(tfp, "  8\n%3i\n", l->depth);
 	    fprintf(tfp, "  6\nSolid\n");
-	    fprintf(tfp, " 10\n%f\n",p->x * figtodxf);
-	    fprintf(tfp, " 20\n%f\n",p->y * figtodxf);
+	    fprintf(tfp, " 10\n%f\n", p->x * figtodxf);
+	    fprintf(tfp, " 20\n%f\n", YCOORD(p->y) * figtodxf);
 	    fprintf(tfp, " 30\n0.0\n");
 	    fprintf(tfp, " 70\n  0\n");
 	    r = q;
@@ -516,8 +531,8 @@ gendxf_line(F_line *l)
 	  }
 
 	  if (l->thickness != 0 && l->for_arrow)
-	    draw_arrow_head(r->x * figtodxf, r->y * figtodxf, q->x * figtodxf,
-			    q->y * figtodxf);
+	    draw_arrow_head(r->x * figtodxf, YCOORD(r->y) * figtodxf,
+			    q->x * figtodxf, YCOORD(q->y) * figtodxf);
 
 /*	  if (0 < l->fill_style && l->fill_style < patterns)
 	    fill_polygon((int)l->fill_style, l->fill_color);	*/
@@ -532,12 +547,12 @@ gendxf_line(F_line *l)
 	  double	dx, dy;
 
 	  llx	      = urx	   = p->x;
-	  lly	      = ury	   = p->y;
+	  lly	      = ury	   = YCOORD(p->y);
 	  while ((p = p->next) != NULL) {
 	    if (llx > p->x) llx = p->x;
 	    if (urx < p->x) urx = p->x;
-	    if (lly > p->y) lly = p->y;
-	    if (ury < p->y) ury = p->y;
+	    if (lly > p->y) lly = YCOORD(p->y);
+	    if (ury < p->y) ury = YCOORD(p->y);
 	  }
 
 	  x0 = llx * figtodxf;
@@ -555,7 +570,7 @@ gendxf_line(F_line *l)
 	    fprintf(tfp, "  6\nSolid\n");
 	    fprintf(tfp, " 62\n%6i\n",l->pen_color);
 	    fprintf(tfp, " 10\n%f\n",p->x * figtodxf);
-	    fprintf(tfp, " 20\n%f\n",p->y * figtodxf);
+	    fprintf(tfp, " 20\n%f\n",YCOORD(p->y) * figtodxf);
 	  } else {
 	    fprintf(tfp, "  0\nLINE\n");
 	    fprintf(tfp, "  6\nSolid\n");
@@ -801,21 +816,21 @@ gendxf_text(F_text *t)
   font	= FONT(t->font);
 
   fprintf(tfp, "  0\nTEXT\n");
-  fprintf(tfp, "  8\n%3i\n",t->depth);
+  fprintf(tfp, "  8\n%3i\n", t->depth);
   fprintf(tfp, "  6\nSolid\n");
-  fprintf(tfp, " 62\n%6i\n",t->color);
-  fprintf(tfp, " 10\n%f\n",t->base_x * figtodxf);
-  fprintf(tfp, " 11\n%f\n",t->base_x * figtodxf);
-  fprintf(tfp, " 20\n%f\n",t->base_y * figtodxf);
-  fprintf(tfp, " 21\n%f\n",t->base_y * figtodxf);
-  fprintf(tfp, " 50\n%f\n",DPR * t->angle);
-  fprintf(tfp, " 72\n%3i\n",t->type);
+  fprintf(tfp, " 62\n%6i\n", t->color);
+  fprintf(tfp, " 10\n%f\n", t->base_x * figtodxf);
+  fprintf(tfp, " 11\n%f\n", t->base_x * figtodxf);
+  fprintf(tfp, " 20\n%f\n", YCOORD(t->base_y) * figtodxf);
+  fprintf(tfp, " 21\n%f\n", YCOORD(t->base_y) * figtodxf);
+  fprintf(tfp, " 50\n%f\n", DPR * t->angle);
+  fprintf(tfp, " 72\n%3i\n", t->type);
 
   size = t->size;
   height = size*high[font];
-  fprintf(tfp, " 40\n%f\n",height);
+  fprintf(tfp, " 40\n%f\n", height);
 
-  fprintf(tfp, "  1\n%s\n",t->cstring);
+  fprintf(tfp, "  1\n%s\n", t->cstring);
 
 }
 
