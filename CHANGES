@@ -6,6 +6,7 @@ Patchlevel 8c (Xxx 2021)
 
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
+	o Correctly scale dxf output, ticket #91.
 	o Correct a typo causing incorrect eps import, ticket #137.
 	o Regression, pass driver names to driver, ticket #139.
 

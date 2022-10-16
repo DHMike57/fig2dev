@@ -571,11 +571,6 @@ help_msg(void)
 		if (dev == NULL || !strcmp(lang, "dxf")) {
 			puts(
 "DXF Options:\n"
-#ifdef IBMGEC
-"  -c          generate instructions for IBM 6180 plotter without IBM-GEC\n"
-#else
-"  -c          generate instructions for IBM 6180 plotter with IBM-GEC\n"
-#endif
 "  -f fontfile load text character specs from table in file\n"
 "  -l pattfile load patterns for pattern fill from file\n"
 "  -P          rotate figure to portrait (default is landscape)\n"

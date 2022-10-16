@@ -59,12 +59,6 @@ static void set_style(int style, double length);
 #define DPR		180.0/M_PI	/* degrees/radian */
 #define DELTA		M_PI/36.0	/* radians */
 
-#ifdef IBMGEC
-static int	ibmgec = true;
-#else
-static int	ibmgec = false;
-#endif
-
 static bool	reflected = false;
 static int	fonts = FONTS;
 static int	colors = COLORS;
@@ -111,8 +105,7 @@ gendxf_option(char opt, char *optarg)
 	case 'a':				/* paper size */
 		break;
 
-	case 'c':		/* Graphics Enhancement Cartridge emulation */
-		ibmgec = !ibmgec;
+	case 'c':
 		break;
 
 	case 'd':				/* position and window, inches*/
@@ -391,89 +384,12 @@ void
 dxf_arc(double sx, double sy, double cx, double cy, double theta, double delta)
 {
   fprintf(tfp, "999\n !! found dxf_arc\n");
-  if (1 == 0) {
-	if (ibmgec)
-	    if (delta == M_PI/36.0)		   /* 5 degrees */
-		fprintf(tfp, "AA%.4f,%.4f,%.4f;",
-			cx, cy, theta*DPR);
-	    else
-		fprintf(tfp, "AA%.4f,%.4f,%.4f,%.4f;",
-			cx, cy, theta*DPR, delta*DPR);
-	else {
-	    double	  alpha;
-	    if (theta < 0.0)
-		delta = -fabs(delta);
-	    else
-		delta = fabs(delta);
-	    for (alpha = delta; fabs(alpha) < fabs(theta); alpha += delta) {
-		fprintf(tfp, "PA%.4f,%.4f;\n",
-			    cx + (sx - cx)*cos(alpha) - (sy - cy)*sin(alpha),
-			    cy + (sy - cy)*cos(alpha) + (sx - cx)*sin(alpha));
-		}
-	    fprintf(tfp, "PA%.4f,%.4f;\n",
-			cx + (sx - cx)*cos(theta) - (sy - cy)*sin(theta),
-			cy + (sy - cy)*cos(theta) + (sx - cx)*sin(theta));
-	    }
-  }
 }
 
 void
 gendxf_arc(F_arc *a)
 {
   fprintf(tfp, "999\n !! found gendxf_arc\n");
-  if (1 == 0) {
-	if (a->thickness != 0 ||
-		(ibmgec && 0 <= a->fill_style && a->fill_style < patterns)) {
-	    double	  x, y;
-	    double	  cx, cy, sx, sy, ex, ey;
-	    double	  dx1, dy1, dx2, dy2, theta;
-
-
-	    set_style(a->style, a->style_val);
-/*	    set_width(a->thickness);	*/
-
-	    cx = a->center.x * figtodxf;
-	    cy = a->center.y * figtodxf;
-	    sx = a->point[0].x * figtodxf;
-	    sy = a->point[0].y * figtodxf;
-	    ex = a->point[2].x * figtodxf;
-	    ey = a->point[2].y * figtodxf;
-
-	    dx1 = sx - cx;
-	    dy1 = sy - cy;
-	    dx2 = ex - cx;
-	    dy2 = ey - cy;
-
-	    theta = atan2(dy2, dx2) - atan2(dy1, dx1);
-	    if (a->direction) {
-		if (theta > 0.0)
-		    theta -= 2.0*M_PI;
-	    } else {
-		if (theta < 0.0)
-		    theta += 2.0*M_PI;
-	    }
-
-	    if (a->type == T_OPEN_ARC && a->thickness != 0 && a->back_arrow) {
-		arc_tangent(cx, cy, sx, sy, !a->direction, &x, &y);
-		draw_arrow_head(x, y, sx, sy);
-		}
-
-	    fprintf(tfp, "PA%.4f,%.4f;PM;PD;", sx, sy);
-	    dxf_arc(sx, sy, cx, cy, theta, DELTA);
-	    fprintf(tfp, "PU;PM2;\n");
-
-	    if (a->thickness != 0)
-		fprintf(tfp, "EP;\n");
-
-	    if (a->type == T_OPEN_ARC && a->thickness != 0 && a->for_arrow) {
-		arc_tangent(cx, cy, ex, ey, a->direction, &x, &y);
-		draw_arrow_head(x, y, ex, ey);
-		}
-
-	    if (0 < a->fill_style && a->fill_style < patterns)
-		fill_polygon(a->fill_style);
-	    }
-  }
 }
 
 void
@@ -481,8 +397,7 @@ gendxf_ellipse(F_ellipse *e)
 {
   /* This is a quick fix to use polylines rather than dxf ellipses */
   /* This might be a compatibility option also in the future. */
-  if (e->thickness != 0 ||
-	    (ibmgec && 0 <= e->fill_style && e->fill_style < patterns)) {
+  if (e->thickness != 0 || (0 <= e->fill_style && e->fill_style < patterns)) {
     int		       j;
     double	  alpha;
     double	  angle;
@@ -535,8 +450,7 @@ gendxf_ellipse(F_ellipse *e)
 void
 gendxf_line(F_line *l)
 {
-  if (l->thickness != 0 || (ibmgec && 0 <= l->fill_style &&
-					l->fill_style < patterns))
+  if (l->thickness != 0 || (0 <= l->fill_style && l->fill_style < patterns))
   {
     F_point	   *p, *q, *r;
 
