@@ -248,10 +248,6 @@ The output to DXF is experimental.
 .B \-P
 Rotate the figure to portrait mode. The default is landscape mode.
 
-.TP
-.B \-v
-Plot the figure upside-down in portrait mode or backwards in landscape mode.
-
 
 .SH EMF OPTIONS
 EMF is Enhanced Metafile, developed by Microsoft and is a

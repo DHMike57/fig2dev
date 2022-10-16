@@ -62,7 +62,6 @@ static void set_style(int style, double length);
 #define DPR		180.0/M_PI	/* degrees/radian */
 #define DELTA		M_PI/36.0	/* radians */
 
-static bool	reflected = false;
 static int	fonts = FONTS;
 static int	colors = COLORS;
 static int	patterns = PATTERNS;
@@ -168,7 +167,6 @@ gendxf_option(char opt, char *optarg)
 		break;
 
 	case 'v':
-		reflected = true;		/* mirror image */
 		break;
 
 	default:
@@ -359,48 +357,6 @@ set_style(int style, double length)
 	    }
 }
 
-/*
- * set_width - issue line width commands as appropriate
- *		  NOTE: for HP plotters we can't do anything
- */
-/*
-static void
-set_width(int w)
-{
-}
-*/
-
-static void
-fill_polygon(int pattern)
-{
-	if (0 < pattern && pattern < patterns) {
-	    int		       style;
-	    double	  length;
-
-	    if (fill_pattern != pattern) {
-		fill_pattern  = pattern;
-		fprintf(tfp, "FT%d,%.4f,%.4f;", fill_type[pattern],
-			fill_space[pattern],
-			reflected ? -fill_angle[pattern]: fill_angle[pattern]);
-		}
-	    /*	  save line style */
-	    style	  = line_style;
-	    length	   = dash_length;
-	    fprintf(tfp, "LT%d,%.4f;FP;\n",
-		    line_type[pattern], line_space[pattern] * cm);
-	    /* restore line style */
-	    line_style	       = DEFAULT;
-	    dash_length		= DEFAULT;
-	    set_style(style, length);
-	    }
-}
-
-void
-dxf_arc(double sx, double sy, double cx, double cy, double theta, double delta)
-{
-  fprintf(tfp, "999\n !! found dxf_arc\n");
-}
-
 void
 gendxf_arc(F_arc *a)
 {
@@ -534,9 +490,6 @@ gendxf_line(F_line *l)
 	    draw_arrow_head(r->x * figtodxf, YCOORD(r->y) * figtodxf,
 			    q->x * figtodxf, YCOORD(q->y) * figtodxf);
 
-/*	  if (0 < l->fill_style && l->fill_style < patterns)
-	    fill_polygon((int)l->fill_style, l->fill_color);	*/
-
 	  fprintf(tfp, "  0\nSEQEND\n");
 	}
 	break;
@@ -614,21 +567,6 @@ gendxf_line(F_line *l)
 
 
 	  }
-
-/*
- *	  fprintf(tfp, "PA%.4f,%.4f;PM;PD;\n",	x0, y0 + dy);
- *	  dxf_arc(x0, y0 + dy, x0 + dx, y0 + dy, angle, DELTA);
- *	  fprintf(tfp, "PA%.4f,%.4f;\n", x1 - dx, y0);
- *	  dxf_arc(x1 - dx, y0, x1 - dx, y0 + dy, angle, DELTA);
- *	  fprintf(tfp, "PA%.4f,%.4f;\n", x1, y1 - dy);
- *	  dxf_arc(x1, y1 - dy, x1 - dx, y1 - dy, angle, DELTA);
- *	  fprintf(tfp, "PA%.4f,%.4f;\n", x0 + dx, y1);
- *	  dxf_arc(x0 + dx, y1, x0 + dx, y1 - dy, angle, DELTA);
- *	  fprintf(tfp, "PA%.4f,%.4f;PU;PM2;\n", x0, y0 + dy);
- *
- *	  if (l->thickness != 0) fprintf(tfp, "EP;\n");
- */
-
 	}
 
 	break;

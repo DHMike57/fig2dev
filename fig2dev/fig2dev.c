@@ -574,8 +574,7 @@ help_msg(void)
 "  -f fontfile load text character specs from table in file\n"
 "  -l pattfile load patterns for pattern fill from file\n"
 "  -P          rotate figure to portrait (default is landscape)\n"
-"  -p penfile  load plotter pen specs from file\n"
-"  -v          print figure upside-down in portrait or backwards in landscape"
+"  -p penfile  load plotter pen specs from file"
 			);
 		}
 
