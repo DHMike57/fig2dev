@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <sys/wait.h>
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
 //#include "object.h"
