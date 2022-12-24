@@ -652,9 +652,9 @@ define_arrow(int ttype, int indx)
 		put_texdimen(YDIR(arrow_shapes[indx].fillpoints[i].y), "\\pgfarrowwidth");
 		fputs("}}\n", tfp);
 	    }
-	    fputs("    \\pgfusepathqfill\n", tfp);
+	    fputs("    \\pgfsetfillcolor{pgfstrokecolor}\\pgfusepathqfill\n", tfp);
 	} else if (HAS_FILL & pgfarrow[ttype].props) {
-	    fputs("    \\ifpgfarrowopen\\pgfusepathqstroke\\else\\pgfsetfillcolor{.}\n", tfp);
+	    fputs("    \\ifpgfarrowopen\\pgfusepathqstroke\\else\\pgfsetfillcolor{pgfstrokecolor}\n", tfp);
 	    fputs("\t\\ifdim\\pgfarrowlinewidth>0pt\\pgfusepathqfillstroke", tfp);
 	    fputs("\\else\\pgfusepathqfill\\fi\\fi\n", tfp);
 	} else {
