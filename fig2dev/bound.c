@@ -3,7 +3,7 @@
  * Copyright (c) 1985 Supoj Sutanthavibul
  * Copyright (c) 1991 Micah Beck
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 Thomas Loimer
+ * Parts Copyright (c) 2015-2023 Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -595,7 +595,8 @@ text_bound(F_text *t, int *xmin, int *ymin, int *xmax, int *ymax, int inc_text)
 		  strchr(t->cstring,'(') || strchr(t->cstring,')') ||
 		  strchr(t->cstring,'{') || strchr(t->cstring,'}') ||
 		  strchr(t->cstring,'[') || strchr(t->cstring,']') ||
-		  strchr(t->cstring,',') || strchr(t->cstring,';'));
+		  strchr(t->cstring,',') || strchr(t->cstring,';') ||
+		  strchr(t->cstring,'_'));
 
     /* check if Symbol font with any descenders */
     if (!descend && psfont_text(t) && t->font == 32)
