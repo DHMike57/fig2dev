@@ -148,8 +148,8 @@ file_on_disk(char *restrict name, char **restrict found, size_t len,
 
 		if (i == filetypes_len && (suffix = strrchr(name, '.'))) {
 			/* Not found. Check, whether the file has one of the
-			   known compression suffices, but the uncompressed file
-			   exists on disk. */
+			   known compression suffices, but the
+			   uncompressed file exists on disk. */
 			for (i = 0; i < filetypes_len; ++i) {
 				if (!strcmp(suffix, filetypes[i][0])) {
 					*(*found + (suffix - name)) = '\0';
@@ -316,14 +316,14 @@ uncompressed_content(struct xfig_stream *restrict xf_stream)
 	char *const	uncompress_fmt = "%s '%s' >%s";
 	FILE		*f;
 
+	/* return early, if uncompressed content already exists */
+	if (xf_stream->content[0] != '\0')
+		return 0;
+
 	if (*xf_stream->uncompress == '\0') {
 		xf_stream->content = xf_stream->name_on_disk;
 		return 0;
 	}
-
-	/* return early, if uncompressed_content was already called */
-	if (*xf_stream->uncompress)
-		return 0;
 
 	/* create a temporary file */
 	strcpy(xf_stream->content, "f2dXXXXXX");
