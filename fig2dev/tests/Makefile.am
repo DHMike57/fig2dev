@@ -4,7 +4,7 @@
 # Copyright (c) 1991 by Micah Beck
 # Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 # Parts Copyright (c) 1989-2015 by Brian V. Smith
-# Parts Copyright (c) 2015-2020 by Thomas Loimer
+# Parts Copyright (c) 2015-2023 by Thomas Loimer
 #
 # Any party obtaining a copy of these files is granted, free of charge, a
 # full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -25,7 +25,10 @@ TESTSUITE = $(srcdir)/testsuite
 TESTSUITE_AT = testsuite.at bitmaps.at input.at output.at read.at
 EXTRA_DIST = testsuite package.m4 $(TESTSUITE_AT) atlocal.in data/arrows.eps \
 	data/arrows.fig data/boxwimg.fig data/cross.pdf data/fillswclip.fig  \
-	data/line.eps data/line.fig data/patterns.fig data/text_w_ascii0.fig
+	data/line.eps data/line.fig data/line.gif.gz data/line.jpg.gz        \
+	data/line.pcx.gz data/line.pdf.gz data/line.png.gz data/line.ppm.gz  \
+	data/line.tif.gz data/line.xbm.gz data/line.xpm.gz data/patterns.fig \
+	data/text_w_ascii0.fig
 
 # ??
 DISTCLEANFILES = atconfig
