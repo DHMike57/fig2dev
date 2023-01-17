@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2021 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -89,8 +89,8 @@ free_stream(struct xfig_stream *restrict xf_stream)
  *		free(found);
  */
 static int
-file_on_disk(char *restrict name, char *restrict *found, size_t len,
-		const char *restrict *uncompress)
+file_on_disk(char *restrict name, char **restrict found, size_t len,
+		const char **restrict uncompress)
 {
 	int		i;
 	size_t		name_len;
@@ -146,11 +146,10 @@ file_on_disk(char *restrict name, char *restrict *found, size_t len,
 			}
 		}
 
-		/* Not found. Check, whether the file has one of the known
-		   compression suffices, but the uncompressed file
-		   exists on disk. */
-		*suffix = '\0';
 		if (i == filetypes_len && (suffix = strrchr(name, '.'))) {
+			/* Not found. Check, whether the file has one of the
+			   known compression suffices, but the uncompressed file
+			   exists on disk. */
 			for (i = 0; i < filetypes_len; ++i) {
 				if (!strcmp(suffix, filetypes[i][0])) {
 					*(*found + (suffix - name)) = '\0';
