@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2022 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -1632,6 +1632,15 @@ read_textobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	memcpy(t->cstring, start, len + 1);
 	if (freestart)
 		free(start);
+
+	if (only_ascii) {
+		start = t->cstring;
+		while (*start != '\0')
+			if (!isascii(*start++)) {
+				only_ascii = false;
+				break;
+			}
+	}
 
 	if (font_size != 0.0) {
 	    /* scale length/height of text by ratio of requested font size to actual size */

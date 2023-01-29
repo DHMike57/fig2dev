@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2022 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -79,6 +79,7 @@ bool	multispec = false;	/* set if the user specs. multiple pages */
 bool	metric;			/* true if file specifies Metric */
 bool	grayonly = false;	/* convert colors to grayscale (-N option) */
 bool	bgspec = false;		/* flag to say -g was specified */
+bool	only_ascii = true;	/* only ascii characters in all text strings */
 #ifdef I18N
 bool support_i18n = false;
 #endif

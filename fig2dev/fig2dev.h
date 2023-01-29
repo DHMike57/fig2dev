@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -94,6 +94,7 @@ extern bool	multispec;	/* true if the command-line args specified -M */
 extern bool	metric;		/* true if the file contains Metric specifier */
 extern bool	grayonly;	/* convert colors to grayscale (-N option) */
 extern bool	bgspec;		/* flag to say -g was specified */
+extern bool	only_ascii;	/* only ascii characters in all text strings */
 #ifdef I18N
 extern bool support_i18n;
 #endif
