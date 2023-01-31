@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2022 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -19,7 +19,7 @@
 /*
  * genpict2e.c: convert fig to pict2e macro language for LaTeX
  *
- * Author: Thomas Loimer, Wien, Austria, 2014-2015
+ * Author: Thomas Loimer, 2014-2023
  * Based on the latex picture driver, genlatex.c
  *
  */
@@ -50,59 +50,13 @@
 /* String arrays */
 extern char	*ISO1toTeX[];	/* iso2tex.c */
 extern char	*ISO2toTeX[];	/* iso2tex.c */
-static char	*texfonts[] = {
-	"",			/* default */
-	"\\rmfamily",		/* roman */
-	"\\bfseries",		/* bold */
-	"\\itshape",		/* italic */
-	"\\sffamily",		/* sans serif */
-	"\\ttfamily",		/* typewriter */
-};
-static char	*texpsfonts[] = {
-	"{T1}{ptm}{m}{n}",	/* Times-Roman, default */
-	"{T1}{ptm}{m}{n}",	/* Times-Roman */
-	"{T1}{ptm}{m}{it}",     /* Times-Italic */
-	"{T1}{ptm}{b}{n}",      /* Times-Bold */
-	"{T1}{ptm}{b}{it}",     /* Times-BoldItalic */
-	"{T1}{pag}{m}{n}",      /* AvantGarde */
-	"{T1}{pag}{m}{sl}",     /* AvantGarde-BookOblique */
-	"{T1}{pag}{db}{n}",     /* AvantGarde-Demi */
-	"{T1}{pag}{db}{sl}",    /* AvantGarde-DemiOblique */
-	"{T1}{pbk}{l}{n}",      /* Bookman-Light */
-	"{T1}{pbk}{l}{it}",     /* Bookman-LightItalic */
-	"{T1}{pbk}{db}{n}",     /* Bookman-Demi */
-	"{T1}{pbk}{db}{it}",    /* Bookman-DemiItalic */
-	"{T1}{pcr}{m}{n}",      /* Courier */
-	"{T1}{pcr}{m}{sl}",     /* Courier-Oblique */
-	"{T1}{pcr}{b}{n}",      /* Courier-Bold */
-	"{T1}{pcr}{b}{sl}",     /* Courier-BoldItalic */
-	"{T1}{phv}{m}{n}",      /* Helvetica */
-	"{T1}{phv}{m}{sl}",     /* Helvetica-Oblique */
-	"{T1}{phv}{b}{n}",      /* Helvetica-Bold */
-	"{T1}{phv}{b}{sl}",     /* Helvetica-BoldOblique */
-	"{T1}{phv}{mc}{n}",     /* Helvetica-Narrow */
-	"{T1}{phv}{mc}{sl}",    /* Helvetica-Narrow-Oblique */
-	"{T1}{phv}{bc}{n}",     /* Helvetica-Narrow-Bold */
-	"{T1}{phv}{bc}{sl}",    /* Helvetica-Narrow-BoldOblique */
-	"{T1}{pnc}{m}{n}",      /* NewCenturySchlbk-Roman */
-	"{T1}{pnc}{m}{it}",     /* NewCenturySchlbk-Italic */
-	"{T1}{pnc}{b}{n}",      /* NewCenturySchlbk-Bold */
-	"{T1}{pnc}{b}{it}",     /* NewCenturySchlbk-BoldItalic */
-	"{T1}{ppl}{m}{n}",      /* Palatino-Roman */
-	"{T1}{ppl}{m}{it}",     /* Palatino-Italic */
-	"{T1}{ppl}{b}{n}",      /* Palatino-Bold */
-	"{T1}{ppl}{b}{it}",     /* Palatino-BoldItalic */
-	"{U}{psy}{m}{n}",       /* Symbol */
-	"{T1}{pzc}{mb}{it}",    /* ZapfChancery-MediumItalic */
-	"{U}{pzd}{m}{n}"	/* ZapfDingbats */
-};
 
 /* Variables */
-static bool	nofontsize = false;
-static bool	nofontname = false;
+static bool	select_fontsize = true;
+static bool	select_fontname = true;
 static bool	epiccompatible = true;
 static bool	removesuffix = false;
-static bool	usetexfonts = false;
+static bool	only_texfonts = false;
 static bool	allspecial = false;
 static bool	pagemode = false;
 static bool	allarrowsltx = false;
@@ -234,7 +188,7 @@ genpict2e_option(char opt, char *optarg)
 	break;
 
     case 'F':
-	nofontname = true;
+	select_fontname = false;
 	break;
 
     case 'i':	/* prepend this string to included graphics file */
@@ -259,11 +213,11 @@ genpict2e_option(char opt, char *optarg)
 	break;
 
     case 'o':
-	nofontsize = true;
+	select_fontsize = false;
 	break;
 
     case 'T':
-	usetexfonts = true;
+	only_texfonts = true;
 	break;
 
     case 'O':
@@ -2189,50 +2143,6 @@ genpict2e_ellipse(F_ellipse *e)
 	}
 }
 
-/*
- * Write font and font size selection commands.
- */
-static void
-put_font(F_text *t)
-{
-	int texsize, bprec;
-	double baselineskip;
-
-	/* tex-drivers by default use the correct font size, a bit different
-	 * from the size on the screen */
-	if (nofontsize) {
-	    if (nofontname) return;
-	} else {
-	    /* the line below is really
-	     * TEXFONTMAG (texfonts.h), but see also PSFONTMAG (psfonts.h) */
-	    texsize = round(t->size * (rigid_text(t) ? 1.0 : fontmag));
-	    baselineskip = (texsize * 1.2);
-	    if (baselineskip == floor(baselineskip))
-		bprec = 0;
-	    else
-		bprec = 1;
-
-	    fprintf(tfp, "\\fontsize{%d}{%.*f}", texsize, bprec, baselineskip);
-
-	    if (nofontname) {
-		fputs("\\selectfont ", tfp);
-		return;
-	    }
-	}
-
-	if (usetexfonts && psfont_text(t)) {
-	    unpsfont(t);
-	    t->flags -= PSFONT_TEXT;
-	}
-
-	if (psfont_text(t))
-		fprintf(tfp, "\\usefont%s", texpsfonts[t->font <= MAX_PSFONT ?
-				t->font + 1 : 0]);
-	else
-		/* Default psfont is -1, default texfont 0, also accept -1. */
-		fprintf(tfp, "\\normalfont%s ", texfonts[t->font <= MAX_FONT ?
-				(t->font >= 0 ? t->font : 0) : MAX_FONT - 1]);
-}
 
 void
 genpict2e_text(F_text *t)
@@ -2280,7 +2190,7 @@ genpict2e_text(F_text *t)
 	/* smash is used to position text at baseline */
 	fprintf(tfp, "\\makebox(0,0)%s{\\smash{", tpos);
 
-	put_font(t);
+	select_font(t, select_fontsize, select_fontname, only_texfonts);
 
 	/* Zapf Dingbats is written with \char%u, otherwise latex interprets
 	 * some characters */

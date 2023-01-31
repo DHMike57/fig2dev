@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -19,14 +19,19 @@
 #ifndef TEXFONTS_H
 #define TEXFONTS_H
 
-#ifdef HAVE_CONFIG_H
+#if defined HAVE_CONFIG_H && !defined VERSION
 #include "config.h"
 #endif
+
+#include "bool.h"
+#include "object.h"
 
 #ifdef NFSS
 extern const char	*texfontfamily[];
 extern const char	*texfontseries[];
 extern const char	*texfontshape[];
+extern const char	*texfonts[];
+extern const char	*texpsfonts[];
 #endif
 
 extern const char	*texfontnames[];
@@ -52,6 +57,7 @@ extern char		texfontsizes[];
 #define TEXFONTSIZE(S)	((S) <= MAXFONTSIZE ? texfontsizes[(int)round(S)] : (S))
 #define TEXFONTMAG(T)	TEXFONTSIZE(T->size*(rigid_text(T) ? 1.0 : fontmag))
 
-void setfigfont(F_text *text);		/* genepic.c */
+extern void	select_font(F_text *t, bool select_fontsize,
+				bool select_fontname, bool only_texfonts);
 
 #endif /* TEXFONTS_H */

@@ -4,7 +4,7 @@
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1988 by Frank Schmuck
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -52,11 +52,9 @@
 #include "genlatex.h"
 #include "messages.h"
 #include "pi.h"
-#include "psfonts.h"
-#include "setfigfont.h"
+//#include "psfonts.h"
 #include "texfonts.h"
 
-extern bool	FontSizeOnly;	/* defined in setfigfont.c */
 
 /*
  *  Installation dependent constants:
@@ -113,6 +111,7 @@ char		thickdot[] = THICKDOT;
 char		thin_ldot [] = THIN_LDOT;
 char		thick_ldot[] = THICK_LDOT;
 
+static bool	select_fontsize = true;
 static	int	encoding = 1;
 static	int	verbose = 0;
 double		dash_mag = 1.0;
@@ -229,7 +228,6 @@ genlatex_option(char opt, char *optarg)
 {
     int i;
 
-    FontSizeOnly = false;
     switch (opt) {
 	case 'a':
 	    fprintf(stderr, "warning: latex option -a obsolete");
@@ -244,7 +242,7 @@ genlatex_option(char opt, char *optarg)
 	    break;
 
 	case 'F':
-	    FontSizeOnly = true;
+	    select_fontsize = false;
 	    break;
 
 	case 'f':			/* set default text font */
@@ -325,7 +323,6 @@ genlatex_start(F_compound *objects)
 	fprintf(tfp, "\\setlength{\\unitlength}{%lisp}%%\n",
 				(long) (round(4736286.72*unitlength)));
 	/* define the SetFigFont macro */
-	define_setfigfont(tfp);
 	fprintf(tfp, "\\begin{picture}(%d,%d)(%d,%d)\n",
 					 urx-llx, ury-lly, llx, lly);
 }
@@ -870,9 +867,6 @@ genlatex_text(F_text *t)
 		tpos = "[lb]";	/* make left in this case */
 	    }
 
-	/* smash is used to position text at baseline */
-	unpsfont(t);
-
 	fprintf(tfp, "\\put(%3d,%3d){", x, y);
 
 #ifdef LATEX2E_GRAPHICS
@@ -880,9 +874,11 @@ genlatex_text(F_text *t)
 	  fprintf(tfp, "\\rotatebox{%.1f}{", t->angle*180/M_PI);
 #endif
 
+	/* smash is used to position text at baseline */
 	fprintf(tfp, "\\makebox(0,0)%s{\\smash{", tpos);
 
-	setfigfont( t );	/* in genepic.c */
+	select_font(t, select_fontsize, true, false);
+
 	set_color(t->color);
 
 	if (!special_text(t))
@@ -927,7 +923,7 @@ genlatex_text(F_text *t)
 	if(t->angle)
 	     fprintf(tfp, "}");
 #endif
-	fprintf(tfp, "}}}}\n");
+	fprintf(tfp, "}}}\n");
 	}
 
 static void

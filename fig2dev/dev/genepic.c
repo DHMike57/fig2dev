@@ -4,7 +4,7 @@
  * Copyright (c) 1988 by Conrad Kwok
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2021 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -109,12 +109,10 @@
 #include "localmath.h"
 #include "messages.h"
 #include "pi.h"
-#include "psfonts.h"
-#include "setfigfont.h"
+//#include "psfonts.h"
 #include "texfonts.h"
 
 extern float	THICK_SCALE;	/* ratio of dpi/80 */
-extern bool	FontSizeOnly;	/* defined in setfigfont.c */
 extern char	*ISO1toTeX[];	/* iso2tex.c */
 extern char	*ISO2toTeX[];	/* iso2tex.c */
 
@@ -171,6 +169,7 @@ static char *FillCommands(int style, int color);
 static int	encoding;
 static double	Threshold;
 static bool	linew_spec = false;
+static bool	select_fontsize = true;
 static int	CurWidth = 0;
 static int	LineStyle = SOLID_LINE;
 static int	LLX = 0, LLY = 0;
@@ -256,9 +255,6 @@ genepic_option(char opt, char *optarg)
 {
 	int loop, i;
 
-	linew_spec = false;
-	FontSizeOnly = false;
-
 	switch (opt) {
 
 	case 'G':	/* processed in fig2dev.c */
@@ -339,7 +335,7 @@ genepic_option(char opt, char *optarg)
 		break;
 
 	case 'F':
-		FontSizeOnly = true;
+		select_fontsize = false;
 		break;
 
 	case 'R':
@@ -431,7 +427,6 @@ genepic_start(F_compound *objects)
     fprintf(tfp, "\\setlength{\\unitlength}{%.8fin}\n", Threshold);
     MaxCircleRadius = (int) (40 / 72.27 / Threshold);
     Threshold = SegLen / Threshold;
-    define_setfigfont(tfp);
     if (DashStretch)
       fprintf(tfp, "{\\renewcommand{\\dashlinestretch}{%d}\n", DashStretch);
     fprintf(tfp, "\\begin{picture}(%d,%d)(%d,%d)\n",
@@ -1225,31 +1220,6 @@ genepic_ellipse(F_ellipse *ell)
 
 
 void
-setfigfont(F_text *text)
-{
-    int texsize;
-    double baselineskip;
-
-    texsize = TEXFONTMAG(text);
-    baselineskip = (texsize * 1.2);
-
-#ifdef NFSS
-    if ( FontSizeOnly )
-	fprintf(tfp, "{\\SetFigFont{%d}{%.1f}",
-		texsize, baselineskip );
-    else
-	fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
-		texsize, baselineskip,
-		TEXFAMILY(text->font),TEXSERIES(text->font),
-		TEXSHAPE(text->font));
-#else
-    fprintf(tfp, "{\\SetFigFont{%d}{%.1f}{%s}",
-	    texsize, baselineskip, TEXFONT(text->font));
-#endif
-}
-
-
-void
 genepic_text(F_text *text)
 {
     F_point pt;
@@ -1310,8 +1280,8 @@ genepic_text(F_text *text)
       }
     }
 
-    unpsfont(text);
-    setfigfont( text );
+    putc('{', tfp);
+    select_font(text, select_fontsize, true, false);
 
     if (!special_text(text))
 	/* This loop escapes special LaTeX characters. */
@@ -1329,9 +1299,8 @@ genepic_text(F_text *text)
 		 spans multiple lines.	What we are doing here is closing off
 		 the current font, starting a new line, and then resuming with
 		 the current font. */
-	      fprintf(tfp, "} \\\\\n");
-
-		setfigfont( text );
+	      fputs("} \\\\\n{", tfp);
+	      select_font(text, select_fontsize, true, false);
 	    }
 	    else
 		fputc(*cp, tfp);
@@ -1340,8 +1309,8 @@ genepic_text(F_text *text)
 	for (cp = (unsigned char*)text->cstring; *cp; cp++) {
 	    if (*cp == TEXT_LINE_SEP) {
 		/* Handle multi-line text strings. */
-		fprintf(tfp, "} \\\\\n");
-		setfigfont( text );
+		fputs("} \\\\\n{", tfp);
+		select_font(text, select_fontsize, true, false);
 
 	    } else {
 #ifdef I18N
@@ -1366,7 +1335,7 @@ genepic_text(F_text *text)
 		    fputc(*cp, tfp);
 	  }
 	}
-    fprintf(tfp, "}}}}\n");
+    fputs("}}}}\n", tfp);
 }
 
 void
