@@ -22,6 +22,7 @@
 #include "texfonts.h"
 
 #include <stdio.h>
+#include <string.h>		/* strpbrk() */
 #include <math.h>		/* floor() */
 
 #include "fig2dev.h"
@@ -178,4 +179,57 @@ select_font(F_text *t, bool select_fontsize, bool select_fontname,
 		/* Default psfont is -1, default texfont 0, also accept -1. */
 		fprintf(tfp, "\\normalfont%s ", texfonts[t->font <= MAX_FONT ?
 				(t->font >= 0 ? t->font : 0) : MAX_FONT - 1]);
+}
+
+/*
+ * Output the string in a text object.
+ * If tex_text is false, quote characters that have a special meaning in tex.
+ */
+void
+put_string(const char *restrict string, bool tex_text)
+{
+	if (tex_text) {
+		/* do not quote any characters */
+		fputs(string, tfp);
+	} else {
+		/* escape the characters below in strpbrk() */
+		const char	*c;
+		const char	*last =  string;
+		while (*last && (c = strpbrk(last, "#$%&<>\\^_`{|}~"))) {
+			/* print the string up to the special character */
+			fprintf(tfp, "%.*s", (int)(c - last), last);
+			switch (*c) {
+			case '<':
+			case '>':
+			case '|':
+				/* without \usepackage[T1]{fontenc}, pdftex
+				   renders these characters differently */
+				fputc('$', tfp);
+				fputc(*c, tfp);
+				fputc('$', tfp);
+				break;
+			case '\\':
+				fputs("\\textbackslash ", tfp);
+				break;
+			case '^':
+				/* with \usepackage[T1]{fontenc}, \^{} inserts
+				   ascii 2, while \textasciicircum inserts the
+				   correct ascii 94 */
+				fputs("\\textasciicircum ", tfp);
+				break;
+			case '~':
+				/* with \usepackage[T1]{fontenc}, \~{} inserts
+				   ascii 3, \textasciitilde inserts ascii 126 */
+				fputs("\\textasciitilde ", tfp);
+				break;
+			default:	/* cases: # $ & _ { } */
+				fputc('\\', tfp);
+				fputc(*c, tfp);
+				break;
+			}
+			last = c + 1;
+		}
+		if (*last)
+			fputs(last, tfp);
+	}
 }

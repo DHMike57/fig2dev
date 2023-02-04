@@ -47,10 +47,6 @@
 #define	M_PI_2	1.57079632679489661923
 #define	M_PI_4	0.78539816339744830962
 
-/* String arrays */
-extern char	*ISO1toTeX[];	/* iso2tex.c */
-extern char	*ISO2toTeX[];	/* iso2tex.c */
-
 /* Variables */
 static bool	select_fontsize = true;
 static bool	select_fontname = true;
@@ -2161,7 +2157,6 @@ genpict2e_text(F_text *t)
 	y = YCOORD(t->base_y);
 
 	switch (t->type) {
-
 	    case T_LEFT_JUSTIFIED:
 	    case DEFAULT:
 		tpos = "[lb]";
@@ -2178,7 +2173,7 @@ genpict2e_text(F_text *t)
 	    default:
 		fputs("Text incorrectly positioned\n", stderr);
 		tpos = "[lb]";	/* make left in this case */
-	    }
+	}
 
 	set_color(t->color);
 
@@ -2191,48 +2186,7 @@ genpict2e_text(F_text *t)
 	fprintf(tfp, "\\makebox(0,0)%s{\\smash{", tpos);
 
 	select_font(t, select_fontsize, select_fontname, only_texfonts);
-
-	/* Zapf Dingbats is written with \char%u, otherwise latex interprets
-	 * some characters */
-	if (t->font == MAX_PSFONT) /* && psfont_text(t) - true anyway */
-	    for (cp = (unsigned char*)t->cstring; *cp; ++cp)
-		fprintf(tfp, "\\char%hhu", *cp);
-	else if (!(special_text(t) || allspecial)) {
-	    char *c;
-	    /* This loop escapes characters "$&%#_{}" and "~^\". */
-	    for (cp = (unsigned char*)t->cstring; *cp; ++cp) {
-		if (strchr("$&%#_{}", *cp))
-		    fputc('\\', tfp);
-		if ((c = strchr("~^\\", *cp))) {
-		    if (*c == '\\')
-			fputs("\\textbackslash ", tfp);
-		    else
-			fprintf(tfp,"\\%c{}", *c);
-		} else
-		    fputc(*cp, tfp);
-	    }
-	} else for (cp = (unsigned char*)t->cstring; *cp; ++cp) {
-#ifdef I18N
-	    extern bool support_i18n;
-	    if (support_i18n && (t->font <= 2))
-		fputc(*cp, tfp);
-	    else
-#endif
-	    if (*cp >= 0xa0) {
-		switch (encoding) {
-		   case 0: /* no escaping */
-			fputc(*cp, tfp);
-			break;
-		   case 1: /* iso-8859-1 */
-			fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
-			break;
-		   case 2: /* iso-8859-2 */
-			fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
-			break;
-		}
-	    } else
-		fputc(*cp, tfp);
-	}
+	put_string(t->cstring, special_text(t));
 
         if(t->angle)
              fputc('}', tfp);

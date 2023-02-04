@@ -37,16 +37,12 @@
 #include "pi.h"
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
-//#include "object.h"
 #include "bound.h"
 #include "gentikz.h"
 #include "messages.h"
 #include "psfonts.h"
-#include "texfonts.h"		/* texfontnames[] */
+#include "texfonts.h"	/* texfontnames[], select_font(), put_string() */
 
-/* String arrays and structs */
-extern char	*ISO1toTeX[];	/* iso2tex.c */
-extern char	*ISO2toTeX[];	/* iso2tex.c */
 
 static const struct color_table {
 	char name[9];
@@ -1701,8 +1697,6 @@ gentikz_ellipse(F_ellipse *e)
 void
 gentikz_text(F_text *t)
 {
-	unsigned char	*cp;
-
 	if (verbose)
 	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
@@ -1734,61 +1728,8 @@ gentikz_text(F_text *t)
 
 	select_font(t, select_fontsize, select_fontname, only_texfonts);
 
-	/* For Zapf Dingbats, some characters are written as \char%u, e.g.,
-	 * \char35 instead of # (\char`\# would also be possible), otherwise
-	 * latex interprets these characters.
-	 * For latex-fonts, \char%u would not always work, because the
-	 * appropriate glyphs are stored in different places (or even taken from
-	 * a different font?). The characters \_`{} must be replaced by
-	 * \textbackslash, \_, \`{}, \{ and \}.	*/
-	if (t->font == MAX_PSFONT) /* && psfont_text(t) - true anyway */
-	    for (cp = (unsigned char*)t->cstring; *cp; ++cp) {
-		/* an excerpt from the ascii table:
-		 *   35 #   36 $   37 %   38 &	 39 '	92 \  94 ^  95 _  96 `
-		 *  123 {  125 }  126 ~
-		 * pdftex and xetex or luatex treat chars > 127 differently -
-		   therefore, for safety, also escape these
-		   \#, \% and \& would also work */
-		if (strchr("#$%&'\\^_`{}~", *cp) || *cp >= 125)
-		    fprintf(tfp, "\\char%hhu", *cp);
-		else
-		    fputc(*cp, tfp);
-	    }
-	else if (!(special_text(t) || allspecial)) {
-	    char *c;
-	    /* This loop escapes characters "$&%#_{}" and "~^\". */
-	    for (cp = (unsigned char*)t->cstring; *cp; ++cp) {
-		if (strchr("$&%#_{}", *cp))
-		    fputc('\\', tfp);
-		if ((c = strchr("~^\\", *cp))) {
-		    if (*c == '\\')
-			fprintf(tfp,"\\textbackslash ");
-		    else
-			fprintf(tfp,"\\%c{}", *c);
-		} else
-		    fputc(*cp, tfp);
-	    }
-	} else for (cp = (unsigned char*)t->cstring; *cp; ++cp) {
-#ifdef I18N
-	    if (support_i18n && (t->font <= 2))
-		fputc(*cp, tfp);
-	    else
-#endif
-	    if (*cp >= 0xa0) {
-		switch (encoding) {
-		   case 0: /* no escaping */
-			fputc(*cp, tfp);
-			break;
-		   case 1: /* iso-8859-1 */
-			fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
-			break;
-		   case 2: /* iso-8859-2 */
-			fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
-			break;
-		}
-	    } else
-		fputc(*cp, tfp);
-	}
+	put_string(t->cstring, special_text(t));
+
 	fputs("}\n", tfp);
 }
 

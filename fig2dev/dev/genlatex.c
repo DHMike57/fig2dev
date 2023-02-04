@@ -132,9 +132,6 @@ double		ldot_yoffset;
 static int	border_margin = 0;
 static double	rad2deg = 57.295779513082320877;
 
-extern char *ISO1toTeX[];	/* iso2tex.c */
-extern char *ISO2toTeX[];	/* iso2tex.c */
-
 /*
  *	struct angle_table line_angles, arrow_angles and get_slope()
  *	from latex_line.c:
@@ -833,9 +830,8 @@ genlatex_ellipse(F_ellipse *e)
 void
 genlatex_text(F_text *t)
 {
-	int	x, y;
-	char	*tpos;
-	unsigned char	*cp;
+	int		x, y;
+	const char	*tpos;
 
 	if (verbose)
 	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
@@ -881,41 +877,7 @@ genlatex_text(F_text *t)
 
 	set_color(t->color);
 
-	if (!special_text(t))
-
-		/* this loop escapes characters "$&%#_{}" */
-		/* and deleted characters "~^\" */
-		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
-		    if (strchr("$&%#_{}", *cp))
-			fputc('\\', tfp);
-		    if (strchr("~^\\", *cp))
-			fprintf(stderr,
-				"Bad character in text object '%c'\n" ,*cp);
-		    else
-			fputc(*cp, tfp);
-		}
-	else
-		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
-#ifdef I18N
-		    if (support_i18n && (t->font <= 2))
-			fputc(*cp, tfp);
-		    else
-#endif
-		    if (*cp >= 0xa0) {
-			switch (encoding) {
-			   case 0: /* no escaping */
-				fputc(*cp, tfp);
-				break;
-			   case 1: /* iso-8859-1 */
-				fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
-				break;
-			   case 2: /* iso-8859-2 */
-				fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
-				break;
-			}
-		    } else
-			fputc(*cp, tfp);
-		}
+	put_string(t->cstring, special_text(t));
 
 	reset_color(t->color);
 

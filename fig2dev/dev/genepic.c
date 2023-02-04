@@ -113,8 +113,6 @@
 #include "texfonts.h"
 
 extern float	THICK_SCALE;	/* ratio of dpi/80 */
-extern char	*ISO1toTeX[];	/* iso2tex.c */
-extern char	*ISO2toTeX[];	/* iso2tex.c */
 
 #define DrawOutLine
 #ifdef DrawOutLine
@@ -205,28 +203,6 @@ char *EllCmdstr[] = {
 
 /* Shading that is used instead of hatchings */
 #define DEFAULT_SHADING 8
-
-#define TEXT_LINE_SEP '\n'
-/* The following two arrays are used to translate characters which
-   are special to LaTeX into characters that print as one would expect.
-   Note that the <> characters aren't really special LaTeX characters
-   but they will not print as themselves unless one is using a font
-   like tt. */
-char latex_text_specials[] = "\\{}><^~$&#_%";
-char *latex_text_mappings[] = {
-  "$\\backslash$",
-  "$\\{$",
-  "$\\}$",
-  "$>$",
-  "$<$",
-  "\\^{}",
-  "\\~{}",
-  "\\$",
-  "\\&",
-  "\\#",
-  "\\_",
-  "\\%"};
-
 
 /* Configurable parameters */
 int	LowerLeftX=0, LowerLeftY=0;
@@ -1223,8 +1199,7 @@ void
 genepic_text(F_text *text)
 {
     F_point pt;
-    char *tpos, *esc_cp, *special_index;
-    unsigned char   *cp;
+    char *tpos;
     int rot_angle = 0;
 
     /* print any comments prefixed with "%" */
@@ -1250,92 +1225,18 @@ genepic_text(F_text *text)
     }
     fprintf(tfp, "\\put(%d,%d){", pt.x, pt.y );
     rot_angle = (int) (text->angle*(180.0/M_PI));
-    if ( AllowRotatedText && rot_angle )
+    if (AllowRotatedText && rot_angle )
 	fprintf(tfp,"\\rotatebox[origin=l]{%d}{", rot_angle );
     else
 	fprintf(tfp, "\\makebox(0,0)%s{", tpos);
-
     fprintf(tfp, "\\smash{");
 
-    /* Output a shortstack in case there are multiple lines. */
-    for(cp = (unsigned char*)text->cstring; *cp; cp++) {
-      if (*cp == TEXT_LINE_SEP) {
-    fprintf(tfp, "\\shortstack" );
-    /* Output the justification for the shortstack. */
-    switch (text->type) {
-      case T_LEFT_JUSTIFIED:
-      case DEFAULT:
-	fprintf(tfp, "[l]");
-	break;
-      case T_CENTER_JUSTIFIED:
-	break;
-      case T_RIGHT_JUSTIFIED:
-	fprintf(tfp, "[r]");
-	break;
-      default:
-	fprintf(stderr, "unknown text position type\n");
-	exit(1);
-	}
-	break;
-      }
-    }
-
-    putc('{', tfp);
     select_font(text, select_fontsize, true, false);
+    put_string(text->cstring, special_text(text));
 
-    if (!special_text(text))
-	/* This loop escapes special LaTeX characters. */
-	for (cp = (unsigned char*)text->cstring; *cp; cp++) {
-	    if ((special_index = strchr(latex_text_specials, *cp))) {
-	      /* Write out the replacement.  Implementation note: we can't
-		 use puts since that will output an additional newline. */
-	      esc_cp=latex_text_mappings[special_index-latex_text_specials];
-	      while (*esc_cp)
-		fputc(*esc_cp++, tfp);
-	    }
-	    else if (*cp == TEXT_LINE_SEP) {
-	      /* Handle multi-line text strings. The problem being addressed here
-		 is a LaTeX bug where LaTeX is unable to handle a font which
-		 spans multiple lines.	What we are doing here is closing off
-		 the current font, starting a new line, and then resuming with
-		 the current font. */
-	      fputs("} \\\\\n{", tfp);
-	      select_font(text, select_fontsize, true, false);
-	    }
-	    else
-		fputc(*cp, tfp);
-	}
-    else
-	for (cp = (unsigned char*)text->cstring; *cp; cp++) {
-	    if (*cp == TEXT_LINE_SEP) {
-		/* Handle multi-line text strings. */
-		fputs("} \\\\\n{", tfp);
-		select_font(text, select_fontsize, true, false);
-
-	    } else {
-#ifdef I18N
-		if (support_i18n && (text->font <= 2))
-			fputc(*cp, tfp);
-	    else
-#endif /* I18N */
-		if (*cp >= 0xa0) {	/* we escape 8-bit char */
-		    switch (encoding) {
-			case 0: /* no escaping */
-			    fputc(*cp, tfp);
-			    break;
-			case 1: /* iso-8859-1 */
-			    fprintf(tfp, "%s", ISO1toTeX[(int)*cp-0xa0]);
-			    break;
-			case 2: /* iso-8859-2 */
-			    fprintf(tfp, "%s", ISO2toTeX[(int)*cp-0xa0]);
-			    break;
-		    }
-		} else
-		    /* no escaping */
-		    fputc(*cp, tfp);
-	  }
-	}
-    fputs("}}}}\n", tfp);
+    if (AllowRotatedText && rot_angle )
+	    fputc('}', tfp);
+    fputs("}}}\n", tfp);
 }
 
 void
