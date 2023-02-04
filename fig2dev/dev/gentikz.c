@@ -215,6 +215,7 @@ static int	cur_patcolor = DEFAULT;
 static int	cur_fillcolor = DEFAULT;
 static int	cur_fillstyle = BLACK_FILL;	/* really, a solid color: NUMSHADES - 1 */
 static int	border_margin = 0;
+static char	*output_encoding = NULL;
 static struct options	default_options;
 static struct options	alt_options;
 
@@ -295,6 +296,10 @@ gentikz_option(char opt, char *optarg)
 
 	case 'P':
 	    pagemode = true;
+	    break;
+
+	case 'u':
+	    output_encoding = "UTF-8";
 	    break;
 
 	case 'v':

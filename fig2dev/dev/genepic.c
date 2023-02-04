@@ -176,6 +176,7 @@ static double	DashLen;
 static int	PageMode = false;
 static int	PatternType=UNFILLED;
 static int	PatternColor=WHITE_COLOR;
+static char	*output_encoding = NULL;
 static struct {
     double mag;
     int size;
@@ -286,6 +287,10 @@ genepic_option(char opt, char *optarg)
 		loop -= 8;
 		mag = ScaleTbl[loop].mag;
 		font_size = (double) ScaleTbl[loop].size;
+		break;
+
+	case 'u':
+		output_encoding = "UTF-8";
 		break;
 
 	case 'v':

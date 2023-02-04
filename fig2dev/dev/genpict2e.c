@@ -68,6 +68,7 @@ static int	default_color = DEFAULT;
 static int	cur_color = DEFAULT;
 static int	cur_shade = NUMSHADES - 1;
 static int	border_margin = 0;
+static char	*output_encoding = NULL;
 
 /* Definitions */
 struct pattern {		/* the dash pattern of non-solid lines */
@@ -238,6 +239,10 @@ genpict2e_option(char opt, char *optarg)
 	thick_width = atoi(optarg);
 	break;
     */
+
+    case 'u':
+	output_encoding = "UTF-8";
+	break;
 
     case 'v':
 	verbose = 1;		/* verbose mode */

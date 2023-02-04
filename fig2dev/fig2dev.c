@@ -228,7 +228,7 @@ get_args(int argc, char *argv[])
 			/* all option letters must be in this string */
 			/* not in this string: HIJQUu and non-alphabetic chars*/
 	while ((c = getopt(argc, argv, "AaB:b:C:cD:d:E:eFf:G:g:hi:jKkL:l:Mm:Nn:"
-					"OoPp:q:R:rS:s:Tt:VvWwX:x:Y:y:Z:z:?"))
+					"OoPp:q:R:rS:s:Tt:uVvWwX:x:Y:y:Z:z:?"))
 			!= EOF) {
 
 	  /* global (all drivers) option handling */
