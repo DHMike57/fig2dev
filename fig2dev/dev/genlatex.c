@@ -112,7 +112,6 @@ char		thin_ldot [] = THIN_LDOT;
 char		thick_ldot[] = THICK_LDOT;
 
 static bool	select_fontsize = true;
-static	int	encoding = 1;
 static	int	verbose = 0;
 double		dash_mag = 1.0;
 int		thick_width = 2;
@@ -264,12 +263,6 @@ genlatex_option(char opt, char *optarg)
 
 	case 'v':
 	    verbose = 1;		/* verbose mode */
-	    break;
-
-	case 'E':
-	    encoding = atoi(optarg);
-	    if (encoding < 0 || encoding > 2)
-		encoding = 1;
 	    break;
 
 	case 'G':

@@ -114,6 +114,14 @@ is given then the
 bounding box is adjusted to include only those objects in the selected depths.
 
 .TP
+.B "\-E encoding"
+Specify the character encoding of the input file.
+Must be one of the strings listed by `iconv --list`, e.g., ISO-8859-1 or UTF-8.
+Defaults to the encoding of the current locale.
+It may be necessary to set this option only if the input file was produced on
+a different computer, or in a different language environment.
+
+.TP
 .B "\-G minor[:major][:unit]"
 Draws a grid on the page.
 Specify thin, or thin and thick line spacing in one of several units.

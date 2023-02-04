@@ -102,6 +102,7 @@ extern char	gif_transparent[8];/* GIF transp color hex name (e.g. #ff00dd)*/
 extern char	papersize[PAPERSZ_LEN];	/* paper size */
 extern char	boundingbox[];	/* boundingbox */
 extern char	lang[];		/* selected output language */
+extern char	*input_encoding;
 extern const char	*Fig_color_names[]; /* hex names for Fig colors */
 extern RGB	background;	/* background (if specified by -g) */
 extern float	grid_minor_spacing; /* grid minor spacing (if any) */

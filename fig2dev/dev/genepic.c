@@ -164,7 +164,6 @@ static void fdraw_arrow_head(FPoint *pt1, FPoint *pt2, double arrowht, double
 static char *FillCommands(int style, int color);
 
 /* Local to the file only */
-static int	encoding;
 static double	Threshold;
 static bool	linew_spec = false;
 static bool	select_fontsize = true;
@@ -242,12 +241,6 @@ genepic_option(char opt, char *optarg)
 
 	case 'a':
 		fprintf(stderr, "warning: genepic option -a obsolete\n");
-		break;
-
-	case 'E':
-		encoding = atoi(optarg);
-		if (encoding < 0 || encoding > 2)
-			encoding = 1;
 		break;
 
 	case 'f':

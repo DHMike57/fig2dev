@@ -58,7 +58,6 @@ static bool	pagemode = false;
 static bool	allarrowsltx = false;
 static char	*prepend = NULL;
 static int	ltxarrow = -1;	/* arrow index to be replaced by a latex-vector */
-static int	encoding = 1;
 static int	verbose = 0;
 static double	unitlength;
 static int	cur_thickness = 0;
@@ -246,12 +245,6 @@ genpict2e_option(char opt, char *optarg)
 
     case 'w':		/* remove suffix from included graphics file */
 	removesuffix = true;
-	break;
-
-    case 'E':
-	sscanf(optarg,"%d",&encoding);
-	if (encoding < 0 || encoding > 2)
-	    encoding = 1;
 	break;
 
     case 'G':
@@ -2145,7 +2138,6 @@ genpict2e_text(F_text *t)
 {
 	int	x, y;
 	char	*tpos;
-	unsigned char	*cp;
 
 	if (verbose)
 	    fputs("%\n% Fig TEXT object\n%\n", tfp);

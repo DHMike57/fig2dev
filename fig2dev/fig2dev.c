@@ -80,13 +80,12 @@ bool	metric;			/* true if file specifies Metric */
 bool	grayonly = false;	/* convert colors to grayscale (-N option) */
 bool	bgspec = false;		/* flag to say -g was specified */
 bool	only_ascii = true;	/* only ascii characters in all text strings */
-#ifdef I18N
-bool support_i18n = false;
-#endif
+bool	support_i18n = true;
 char	gif_transparent[]="\0"; /* GIF transp color hex name (e.g. #ff00dd) */
 char	papersize[PAPERSZ_LEN];	/* paper size */
 char	boundingbox[64];	/* boundingbox */
 char	lang[12];		/* selected output language */
+char	*input_encoding = NULL;
 RGB	background;		/* background (if specified by -g) */
 float	grid_minor_spacing = 0.0; /* grid minor spacing (if any) */
 float	grid_major_spacing = 0.0; /* grid major spacing (if any) */
@@ -161,11 +160,10 @@ static struct depth_opts {
 } depth_opt[NUMDEPTHS + 1];
 
 static char	Usage[] =
-#ifdef I18N
-"Usage:\n %1$s -hV\n %1$s -L language [-s size] [-m scale] [-j] [input [output]]\n";
-#else
-"Usage:\n %1$s -hV\n %1$s -L language [-s size] [-m scale] [input [output]]\n";
-#endif
+"Usage:\n %1$s -hV\n"
+" %1$s -L language -h\n"
+" %1$s [-L language] [-D +/-rangelist] [-K] [-E encoding] [-m scale]\n"
+"\t[-s size] [input [output]]\n";
 
 static int	 parse_gridspec(char *string, float *numer, float *denom,
 				float *spacing, int *nchrs);
@@ -187,14 +185,6 @@ print_comments(char *string1, F_comment *comment, char *string2)
 		comment = comment->next;
 	}
 }
-
-/* all option letters must be in this string */
-/* not in this string: HIJQUu and non-alphabetic chars */
-#ifdef I18N
-#define ARGSTRING	"AaB:b:C:cD:d:E:eFf:G:g:hi:jKkL:l:Mm:Nn:OoPp:q:R:rS:s:Tt:VvWwX:x:Y:y:Z:z:?"
-#else
-#define ARGSTRING	"AaB:b:C:cD:d:E:eFf:G:g:hi:KkL:l:Mm:Nn:OoPp:q:R:rS:s:Tt:VvWwX:x:Y:y:Z:z:?"
-#endif
 
 /* Options with `continue;' are not passed to drivers;
  * Therefore, only -L and -G remain to be cared for in drivers.
@@ -235,8 +225,11 @@ get_args(int argc, char *argv[])
 	}
 
 
-	/* sum of all arguments */
-	while ((c = getopt(argc, argv, ARGSTRING)) != EOF) {
+			/* all option letters must be in this string */
+			/* not in this string: HIJQUu and non-alphabetic chars*/
+	while ((c = getopt(argc, argv, "AaB:b:C:cD:d:E:eFf:G:g:hi:jKkL:l:Mm:Nn:"
+					"OoPp:q:R:rS:s:Tt:VvWwX:x:Y:y:Z:z:?"))
+			!= EOF) {
 
 	  /* global (all drivers) option handling */
 	    switch (c) {
@@ -252,6 +245,17 @@ get_args(int argc, char *argv[])
 	    case 'D':	                /* depth filtering */
 		depth_option(optarg);
 		/* options with "continue" are not passed to the driver */
+		continue;
+
+	    case 'E':
+		if (!strcmp(optarg, "0"))
+			input_encoding = "UTF-8";
+		else if (!strcmp(optarg, "1"))
+			input_encoding = "ISO-8859-1";
+		else if (!strcmp(optarg, "2"))
+			input_encoding = "ISO-8859-2";
+		else
+			input_encoding = optarg;
 		continue;
 
 	    case 'K':
@@ -348,14 +352,12 @@ get_args(int argc, char *argv[])
 		max_dimension = atof(optarg);
 		continue;
 
-#ifdef I18N
 	    case 'j':
-		support_i18n = true;
+		fputs("Option -j is obsolete.\n", stderr);
 		continue;
-#endif /* I18N */
 
 	    case '?':			/* usage		*/
-		fprintf(stderr,Usage,prog,prog);
+		fprintf(stderr, Usage, prog);
 		exit(1);
 	    }
 
@@ -530,11 +532,9 @@ help_msg(void)
 "  -D +/-list  include or exclude depths listed\n"
 "  -K          adjust bounding box according to selected depths\n"
 "                      given with '-D +/-list' option.\n"
+"  -E enc      set the character encoding of the input file\n"
 "  -G minor[:major][unit]    draw light gray grid with thin/thick lines at\n"
 "                minor/major units (e.g., -G .25:1cm)\n"
-#ifdef I18N
-"  -j          enable i18n facility\n"
-#endif
 "  -m mag      set magnification.  This may not be used with the -Z option\n"
 "  -s size     set default font size in points\n"
 "  -Z maxdim   Scale the figure so that the maximum dimension (width or height)\n"
@@ -614,8 +614,6 @@ help_msg(void)
 			puts(
 "EPIC, EEPIC and EEPICEMU Options:\n"
 "  -d scale    divide size of arrowheads by scale\n"
-"  -E num      set encoding for text translation (0 = no translation,\n"
-"                1 = ISO-8859-1, 2 = ISO-8859-2; default 1)\n"
 #ifdef NFSS
 "  -F          do not set font family, series or shape\n"
 #endif /* NFSS */
@@ -678,8 +676,6 @@ help_msg(void)
 "LaTeX Options:\n"
 "  -b width    specify width of blank border around figure (1/72 inch)\n"
 "  -d dmag     set separate magnification for length of line dashes to dmag\n"
-"  -E num      set encoding for text translation (0 = no translation,\n"
-"                1 = ISO-8859-1, 2 = ISO-8859-2; default 1)\n"
 #ifdef NFSS
 "  -F          do not set font family/series/shape\n"
 #endif
@@ -748,8 +744,6 @@ help_msg(void)
 "  -C num      do not issue color commands for color num (0 = black,\n"
 "                1 = blue, etc., see xfig color chooser)\n"
 "  -e          do not try to be compatible with epic/eepic\n"
-"  -E num      set encoding for text translation (0 = no translation,\n"
-"                1 = ISO-8859-1, 2 = ISO-8859-2; default 1)\n"
 "  -F          do not set font family/series/shape\n"
 "  -f font     set default font\n"
 "  -i dir      prepend the string \"dir\" to included graphics files\n"
@@ -821,8 +815,6 @@ help_msg(void)
 			puts(
 "PSTEX_T and PDFTEX_T Options:\n"
 "  -b width    specify width of blank border around figure (1/72 inch)\n"
-"  -E num      set encoding for text translation (0 = no translation,\n"
-"                1 = ISO-8859-1, 2 = ISO-8859-2; default 1)\n"
 #ifdef NFSS
 "  -F          do not set font family, series or shape, so you can\n"
 "                set it from latex\n"
@@ -859,8 +851,6 @@ help_msg(void)
 "  -b width    specify width of blank border around figure (1/72 inch)\n"
 "  -C num      do not issue color commands for color num (0 = black,\n"
 "                1 = blue, etc., see xfig color chooser)\n"
-"  -E num      set encoding for text translation (0 = no translation,\n"
-"                1 = ISO-8859-1, 2 = ISO-8859-2; default 1)\n"
 "  -F          do not set font family/series/shape\n"
 "  -i dir      prepend the string \"dir\" to included graphics files\n"
 "  -O          do not quote characters special to TeX/LaTeX\n"

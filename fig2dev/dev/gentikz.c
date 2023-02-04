@@ -206,7 +206,6 @@ static bool	figscaling = true;
 static char	*prepend = NULL;
 static int	xshift = 0;		/* translate figure, if necessary */
 static int	yshift = 0;		/* translate figure, if necessary */
-static int	encoding = 1;
 static int	verbose = 0;
 static double	unitlength;
 static int	default_color = DEFAULT;
@@ -308,12 +307,6 @@ gentikz_option(char opt, char *optarg)
 
 	case 'w':		/* remove suffix from included graphics file */
 	    removesuffix = true;
-	    break;
-
-	case 'E':
-	    sscanf(optarg,"%d", &encoding);
-	    if (encoding < 0 || encoding > 2)
-		encoding = 1;
 	    break;
 
 	case 'G':
