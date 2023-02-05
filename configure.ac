@@ -5,7 +5,7 @@ AC_COPYRIGHT([Fig2dev: Translate Fig code to various Devices
 Copyright (c) 1991 by Micah Beck
 Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 Parts Copyright (c) 1989-2015 by Brian V. Smith
-Parts Copyright (c) 2015-2020 by Thomas Loimer
+Parts Copyright (c) 2015-2023 by Thomas Loimer
 
 Any party obtaining a copy of these files is granted, free of charge, a
 full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -19,7 +19,7 @@ and this permission notice remain intact.
 
 #
 # configure.ac
-# Author: Thomas Loimer, 2015-2020.
+# Author: Thomas Loimer
 #
 
 dnl Define m4 variables for use in AC_INIT and AC_DEFINE below.
@@ -301,10 +301,10 @@ AC_TYPE_SSIZE_T
 
 # Check for functions and set, e.g., HAVE_STRERROR if found.
 # Assume that errno.h exists if strerror() is available. Otherwise, do
-# not use strerror() at all. Do not try to replace strerror() with the
-# obsolete sys_nerr, sys_errlist and the declaration "int errno".
+# not use strerror() at all.
 # If getpwuid() is found, <pwd.h> is assumed to exist.
-AC_CHECK_FUNCS_ONCE([gethostname strerror getpwuid mkstemp fdopen])
+# If nl_langinfo() is found, <nl_langinfo.h> is assumed to exist.
+AC_CHECK_FUNCS_ONCE([fdopen gethostname getpwuid mkstemp nl_langinfo strerror])
 
 # Under Windows, the _setmode() function is defined in io.h. It accepts two
 # arguments and sets the file access mode to text or binary. O_TEXT and O_BINARY

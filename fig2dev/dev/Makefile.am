@@ -4,7 +4,7 @@
 # Copyright (c) 1991 by Micah Beck
 # Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 # Parts Copyright (c) 1989-2015 by Brian V. Smith
-# Parts Copyright (c) 2015-2020 by Thomas Loimer
+# Parts Copyright (c) 2015-2023 by Thomas Loimer
 #
 # Any party obtaining a copy of these files is granted, free of charge, a
 # full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -16,7 +16,7 @@
 # and this permission notice remain intact.
 
 # fig2dev/dev/Makefile.am
-# Author: Thomas Loimer, 2015-2018.
+# Author: Thomas Loimer
 
 
 MAINTAINERCLEANFILES = Makefile.in
@@ -51,8 +51,9 @@ libdrivers_a_SOURCES = encode.c encode.h genbitmaps.c genbox.c gencgm.c \
     gensvg.c gentextyl.c gentikz.h gentikz.c gentk.c gentpic.c picfonts.h \
     picpsfonts.h psfonts.h psfonts.c \
     psprolog.h readeps.c readgif.c readjpg.c readpcx.c readpics.h readpics.c \
-    readppm.c readtif.c readxbm.c readxpm.c texfonts.h texfonts.c setfigfont.h \
-    setfigfont.c tkpattern.h tkpattern.c xtmpfile.h xtmpfile.c
+    readppm.c readtif.c readxbm.c readxpm.c texfonts.h texfonts.c \
+    textconvert.h textconvert.c setfigfont.h setfigfont.c \
+    tkpattern.h tkpattern.c xtmpfile.h xtmpfile.c
 
 # These contain PACKAGE_VERSION, hence depend on $(CONFIG_HEADER) = config.h.
 encode.h genps.$(OBJEXT) gensvg.$(OBJEXT) genemf.$(OBJEXT) gengbx.$(OBJEXT) \
