@@ -40,6 +40,7 @@
 #include "pi.h"
 #include "psfonts.h"
 #include "texfonts.h"		/* texfontnames[] */
+#include "textconvert.h"
 #include "trans_spline.h"	/* create_line_with_spline() */
 
 #undef M_PI_2
@@ -2141,8 +2142,20 @@ genpict2e_ellipse(F_ellipse *e)
 void
 genpict2e_text(F_text *t)
 {
-	int	x, y;
-	char	*tpos;
+	int		x, y;
+	static int	need_conversion = -1;
+	char		*tpos;
+
+	if (need_conversion == -1) {
+		if (only_ascii) {
+			need_conversion = 0;
+		} else {
+			if (pagemode)
+				output_encoding = "UTF-8";
+			need_conversion = check_conversion(output_encoding,
+							input_encoding);
+		}
+	}
 
 	if (verbose)
 	    fputs("%\n% Fig TEXT object\n%\n", tfp);
@@ -2183,7 +2196,15 @@ genpict2e_text(F_text *t)
 	fprintf(tfp, "\\makebox(0,0)%s{\\smash{", tpos);
 
 	select_font(t, select_fontsize, select_fontname, only_texfonts);
-	put_string(t->cstring, special_text(t));
+
+	if (need_conversion == 1) {
+		char	*str = NULL;
+		(void)convert(&str, t->cstring, strlen(t->cstring));
+		put_string(str, special_text(t));
+		free(str);
+	} else {
+		put_string(t->cstring, special_text(t));
+	}
 
         if(t->angle)
              fputc('}', tfp);
