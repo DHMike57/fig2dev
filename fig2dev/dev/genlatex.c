@@ -52,8 +52,8 @@
 #include "genlatex.h"
 #include "messages.h"
 #include "pi.h"
-//#include "psfonts.h"
 #include "texfonts.h"
+#include "textconvert.h"
 
 
 /*
@@ -829,8 +829,12 @@ void
 genlatex_text(F_text *t)
 {
 	int		x, y;
+	static int	need_conversion = -1;
 	const char	*tpos;
 
+	if (need_conversion == -1)
+		need_conversion = only_ascii ? 0 :
+			check_conversion(output_encoding, input_encoding);
 	if (verbose)
 	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
@@ -875,7 +879,14 @@ genlatex_text(F_text *t)
 
 	set_color(t->color);
 
-	put_string(t->cstring, special_text(t));
+	if (need_conversion == 1) {
+		char	*str = NULL;
+		(void)convert(&str, t->cstring, strlen(t->cstring));
+		put_string(str, special_text(t));
+		free(str);
+	} else {
+		put_string(t->cstring, special_text(t));
+	}
 
 	reset_color(t->color);
 

@@ -118,7 +118,7 @@ bounding box is adjusted to include only those objects in the selected depths.
 Specify the character encoding of the input file.
 Must be one of the strings listed by `iconv --list`, e.g., ISO-8859-1 or UTF-8.
 Defaults to the encoding of the current locale.
-It may be necessary to set this option only if the input file was produced on
+It may be necessary to set this option if the input file was produced on
 a different computer, or in a different language environment.
 
 .TP
@@ -301,11 +301,6 @@ by this factor.
 This is because EPIC arrowheads are normally about double the size of
 TeX arrowheads.
 
-.TP
-.B \-E num
-Set encoding for text translation (0 = none, 1 = ISO-8859-1, 2 = ISO-8859-2;
-default 1).
-
 @nfssman@
 
 .TP
@@ -351,6 +346,10 @@ must be between 8 and 12, inclusively.
 Set the stretch factor of dashed lines to
 .I stretch.
 The default is 30.
+
+.TP
+.B \-u
+Write output file as utf-8 encoded unicode, regardless of the current locale.
 
 .TP
 .B \-v
@@ -537,6 +536,10 @@ Lines of width greater than
 pixels are drawn as \\thicklines.
 Also affects the size of dots in dotted line style.
 The default is 1.
+
+.TP
+.B \-u
+Write output file as utf-8 encoded unicode, regardless of the current locale.
 
 .TP
 .B \-v
@@ -729,18 +732,6 @@ set using "\\linethickness", but also with the eepic-command
 "\\allinethickness" (if it is defined).
 
 .TP
-.B \-E num
-Set encoding for text translation (0 = no translation, 1 = ISO-8859-1, 2 =
-ISO-8859-2; default 1).
-For instance, to use utf8-encoded text, first \fIcreate\fR a text object, then
-\fIedit\fR
-the text using the edit-button in xfig. Convert the fig-file to pict2e with
-the option \fB\-E\ 0\fR and include "\fB\\usepackage[utf8]{inputenc}\fR"
-in the LaTeX file
-In xfig, the text typed in may not be displayed correctly, but the document
-produced from the LaTeX file will show the same text as was typed in.
-
-.TP
 .B \-F
 Do not set the font family, series or shape.
 By default, \fIfig2dev\fR sets the font family, series, shape, font size and
@@ -804,6 +795,10 @@ Replace all arrows by LaTeX-arrows.
 .TP
 .B \-T
 Only use TeX fonts, even where PostScript-fonts are specified.
+
+.TP
+.B \-u
+Write output file as utf-8 encoded unicode, regardless of the current locale.
 
 .TP
 .B \-v
@@ -1184,11 +1179,6 @@ or
 (see above).
 
 .TP
-.B \-E num
-Set encoding for latex text translation
-(0 no translation, 1 ISO-8859-1, 2 ISO-8859-2; default 1)
-
-.TP
 .B \-F
 Don't set the font face, series, and style; only set it's size and the
 baselineskip. By default, fig2dev sets all 5 font parameters when it
@@ -1200,6 +1190,10 @@ document (like "\fB\\sfshape \\input picture.eepic\fR").
 .B \-p file
 specifies the name of the PostScript file to be overlaid.
 If not set or its value is null then no PS file will be inserted.
+
+.TP
+.B \-u
+Write output file as utf-8 encoded unicode, regardless of the current locale.
 
 
 .SH PSTricks OPTIONS
@@ -1427,18 +1421,6 @@ The color of these objects, as well as of those having the color set to
 "Default", is picked up from the including document.
 
 .TP
-.B \-E num
-Set encoding for text translation (0 = no translation, 1 = ISO-8859-1, 2 =
-ISO-8859-2; default 1).
-For instance, to use utf8-encoded text, first \fIcreate\fR a text object, then
-\fIedit\fR
-the text using the edit-button in xfig. Convert the fig-file to tikz with
-the option \fB\-E\ 0\fR and include "\fB\\usepackage[utf8]{inputenc}\fR"
-in the LaTeX file (not necessary when using xelatex).
-In  xfig, the text typed in may not be displayed correctly, but the document
-produced from the LaTeX file will show the same text as was typed in.
-
-.TP
 .B \-F
 Do not set the font family, series or shape.
 By default, \fIfig2dev\fR sets the font family, series, shape,
@@ -1492,6 +1474,10 @@ The package "geometry.sty" is used in \fIout-file\fR to set the paper size.
 .TP
 .B \-T
 Only use TeX fonts, even where PostScript-fonts are specified.
+
+.TP
+.B \-u
+Write output file as utf-8 encoded unicode, regardless of the current locale.
 
 .TP
 .B \-v

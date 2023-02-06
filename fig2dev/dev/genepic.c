@@ -109,8 +109,8 @@
 #include "localmath.h"
 #include "messages.h"
 #include "pi.h"
-//#include "psfonts.h"
 #include "texfonts.h"
+#include "textconvert.h"
 
 extern float	THICK_SCALE;	/* ratio of dpi/80 */
 
@@ -1198,7 +1198,12 @@ genepic_text(F_text *text)
 {
     F_point pt;
     char *tpos;
+    static int need_conversion = -1;
     int rot_angle = 0;
+
+	if (need_conversion == -1)
+		need_conversion = only_ascii ? 0 :
+			check_conversion(output_encoding, input_encoding);
 
     /* print any comments prefixed with "%" */
     print_comments("% ",text->comments,"");
@@ -1230,7 +1235,14 @@ genepic_text(F_text *text)
     fprintf(tfp, "\\smash{");
 
     select_font(text, select_fontsize, true, false);
-    put_string(text->cstring, special_text(text));
+    if (need_conversion == 1) {
+	 char	*str = NULL;
+	(void)convert(&str, text->cstring, strlen(text->cstring));
+	put_string(str, special_text(text));
+	free(str);
+    } else {
+	put_string(text->cstring, special_text(text));
+    }
 
     if (AllowRotatedText && rot_angle )
 	    fputc('}', tfp);
