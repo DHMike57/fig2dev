@@ -70,9 +70,6 @@
 #include "psprolog.h"
 
 extern int	v2_flag, v21_flag, v30_flag;		/* read.c */
-#ifdef I18N
-extern bool	support_i18n;				/* fig2dev.c */
-#endif
 
 /* exported symbols */
 bool		epsflag = false;	/* to distinguish PS and EPS */
@@ -114,10 +111,8 @@ extern int  read_xbm(READ_SIGNATURE);
 extern int  read_xpm(READ_SIGNATURE);
 #undef READ_SIGNATURE
 
-#ifdef I18N
 static bool	enable_composite_font = false;
 static bool	append_find_composite(FILE *restrict out, FILE *restrict in);
-#endif
 
 #define		POINT_PER_INCH		72
 #define		ULIMIT_FONT_SIZE	300
@@ -930,8 +925,8 @@ genps_start(F_compound *objects)
 		fprintf(tfp, "%s\n", ELLIPSE_PS);
 	if (approx_spline_exist(objects))
 		fprintf(tfp, "%s\n", SPLINE_PS);
-#ifdef I18N
-	if (support_i18n && iso_text_exist(objects)) {
+
+	if (iso_text_exist(objects)) {
 		char *libdir, *locale;
 		char localefile_buf[128];
 		char *localefile = localefile_buf;
@@ -978,7 +973,6 @@ genps_start(F_compound *objects)
 		if (localefile != localefile_buf)
 			free(localefile);
 	}
-#endif /* I18N */
 
 	fprintf(tfp, "%s\n", END_PROLOG);
 
@@ -1385,7 +1379,6 @@ append(const char *restrict infilename, FILE *outfile)
 	return 0;
 }
 
-#ifdef I18N
 /*
  * Append open file in to open file out while searching for the string
  * "CompositeRoman".  Return true if found, false otherwise.
@@ -1434,7 +1427,6 @@ append_find_composite(FILE *restrict out, FILE *restrict in)
 	}
 	return found;
 }
-#endif /* I18N */
 
 
 /* read file named in "infilename", converting the binary to hex and
@@ -2333,14 +2325,12 @@ void
 genps_text(F_text *t)
 {
 	unsigned char		*cp;
-#ifdef I18N
 #define LINE_LENGTH_LIMIT 200
 	bool composite = false;
 	bool state_gr = false;
 	int chars = 0;
 	int gr_chars = 0;
 	unsigned char ch;
-#endif /* I18N */
 
 	do_split(t->depth);
 
@@ -2354,7 +2344,6 @@ genps_text(F_text *t)
 	/* print any comments prefixed with "%" */
 	print_comments("% ",t->comments, "");
 
-#ifdef I18N
 	if (enable_composite_font && ((t->flags & PSFONT_TEXT) ?
 				(t->font <= 0 || t->font == 2) :
 				(t->font <= 2))) {
@@ -2365,7 +2354,6 @@ genps_text(F_text *t)
 		else
 			fprintf(tfp, TEXT_PS, "CompositeBold", "",PSFONTMAG(t));
 	} else
-#endif /* I18N */
 		if (PSisomap[t->font+1] == true)
 			fprintf(tfp, TEXT_PS, PSFONT(t), "-iso", PSFONTMAG(t));
 		else
@@ -2378,7 +2366,7 @@ genps_text(F_text *t)
 		fprintf(tfp, " %.1f rot ", t->angle*180.0/M_PI);
 	/* this loop escapes characters '(', ')', and '\' */
 	fputc('(', tfp);
-#ifdef I18N
+
 	for(cp = (unsigned char *)t->cstring; *cp; cp++) {
 		if (LINE_LENGTH_LIMIT < chars) {
 			fputs("\\\n", tfp);
@@ -2427,16 +2415,6 @@ genps_text(F_text *t)
 			fputc('?', tfp);
 		}
 	}
-#else
-	for(cp = (unsigned char *)t->cstring; *cp; cp++) {
-		if (strchr("()\\", *cp))
-			fputc('\\', tfp);
-		if (*cp>=0x80)
-			fprintf(tfp,"\\%o", *cp);
-		else
-			fputc(*cp, tfp);
-	}
-#endif /* I18N */
 	fputc(')', tfp);
 
 	if ((t->type == T_CENTER_JUSTIFIED) || (t->type == T_RIGHT_JUSTIFIED)){

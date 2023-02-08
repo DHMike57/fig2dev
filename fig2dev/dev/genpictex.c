@@ -665,11 +665,9 @@ genpictex_text(F_text *t)
 		}
 	else
 		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
-#ifdef I18N
-			if (support_i18n && (t->font <= 2))
+			if (t->font <= 2)
 				fputc(*cp, tfp);
 			else
-#endif
 				if (*cp >= 0xa0) {
 					switch (encoding) {
 					case 0: /* no escaping */

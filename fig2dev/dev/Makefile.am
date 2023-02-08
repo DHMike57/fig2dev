@@ -38,9 +38,8 @@ noinst_LIBRARIES = libdrivers.a
 ## objects like libdrivers_a-as85ec.o etc. are created
 # i18ndir is defined and AC_SUBST'd in configure.ac
 AM_CPPFLAGS = -I"$(top_srcdir)/fig2dev"
-if ENABLE_I18N
 AM_CPPFLAGS += -DI18N_DATADIR="\"$(i18ndir)\""
-endif
+
 ## libraries do not need LDFLAGS - they need not be linked
 ## libdrivers_a_LIBADD is appended to the link-command
 

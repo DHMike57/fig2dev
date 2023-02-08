@@ -178,23 +178,11 @@ AS_IF([test "x$enableval" = xno || test "x$enableval" = xA4 || \
     [AC_SUBST(DEFAULT_PAPERSIZE, ["ANSI A"])dnl
      AC_SUBST(ALTERNATE_PAPERSIZE, ["ISO A4"])])dnl
 
-AC_ARG_ENABLE([i18n], [AS_HELP_STRING([--disable-i18n],
-	[disable internationalization of text input \
-		for some drivers (default: enable)])],
-    [i18nman="/dev/null"],
-    [enableval=yes; i18nman="$srcdir/man/i18n.man"])dnl
-AS_IF([test "x$enableval" = xyes],dnl
-    [AC_DEFINE([I18N], 1,dnl
-	[Define to 1 to use internationalization of text input \
-		for some drivers.])dnl
 # The directory where internationalization data is installed to.
 # fig2dev/dev/Makefile.am defines -DI18N_DATADIR
 # i18ndir is used in fig2dev/i18n/Makefile.am
-     AC_SUBST([i18ndir],['$(pkgdatadir)/i18n'])])
+AC_SUBST([i18ndir],['$(pkgdatadir)/i18n'])
 AM_CONDITIONAL([ENABLE_I18N],[test "x$enableval" = xyes])
-dnl Substitute the file fragment named by i18nman, defined above,
-dnl into man/fig1dev.1 (or not)
-AC_SUBST_FILE([i18nman])
 
 AC_ARG_ENABLE([NFSS], [AS_HELP_STRING([--disable-NFSS],
 	[disable LaTeX New Font Selection Scheme (default: enable)])],

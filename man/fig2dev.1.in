@@ -136,8 +136,6 @@ Allowable units are: i, in, inch, f, ft, feet, c, cm, mm, and m.
 .B Only allowed for PostScript, EPS, PDF, pstricks, tikz and
 .B bitmap (GIF, JPEG, etc) drivers.
 
-@i18nman@
-
 .TP
 .B "\-m mag"
 Set the magnification at which the figure is rendered to
