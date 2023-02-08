@@ -593,7 +593,6 @@ help_msg(void)
 			puts(
 "EPS, PDFTEX, PSTEX and PDF (if -P is not given) Options:\n"
 "  -A          add ASCII preview (produce EPSI file; not for PDF output)\n"
-"  -a          do not output user's login name (anonymous)\n"
 "  -B \"Wx [Wy X0 Y0]\"    force width, height and origin in absolute coordinates\n"
 "  -b width    specify width of blank border around figure (points, 1/72 inch)\n"
 "  -C dummyarg add color TIFF preview (for Microsoft apps; not for PDF output)\n"
@@ -727,7 +726,6 @@ help_msg(void)
 		if (dev == NULL || !strcmp(lang, "pictex")) {
 			puts(
 "PICTeX Options:\n"
-"  -a          don't output user's login name (anonymous)\n"
 "  -E num      set encoding for text translation (0 = no translation,\n"
 "                1 = ISO-8859-1, 2 = ISO-8859-2; default 1)\n"
 "  -f font     set default font\n"
@@ -763,7 +761,6 @@ help_msg(void)
 			puts(
 "PostScript and PDF (if -P is given) Options:\n"
 "  -A          add ASCII (EPSI) preview, not for PDF output\n"
-"  -a          do not output user's login name (anonymous)\n"
 "  -b width    specify width of blank border around figure (1/72 inch)\n"
 "  -C dummyarg add color TIFF preview (for Microsoft apps), not for PDF output\n"
 "  -c          center figure on page\n"

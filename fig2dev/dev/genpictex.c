@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2018 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -34,9 +34,6 @@
 #include <unistd.h>
 #endif
 #include <math.h>
-#ifdef HAVE_GETPWUID
-#include <pwd.h>
-#endif
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
 //#include "object.h"
@@ -71,7 +68,6 @@ static int	line_style = SOLID_LINE;
 static char	*linethick = "1pt";
 static char	*plotsymbol = "\\makebox(0,0)[l]{\\tencirc\\symbol{'160}}";
 static int	cur_thickness = -1;
-static bool	anonymous = true;
 static bool	rotate = true;
 
 static void
@@ -82,10 +78,6 @@ genpictex_option(char opt, char *optarg)
 	FontSizeOnly = false;
 
 	switch (opt) {
-	case 'a':			/* anonymous (don't output user name) */
-		anonymous = true;
-		break;
-
 	case 'f':			/* set default text font */
 		for (i = 1; i <= MAX_FONT; ++i)
 			if (!strcmp(optarg, texfontnames[i]))
@@ -143,9 +135,7 @@ convy(double a)
 void
 genpictex_start(F_compound *objects)
 {
-	char		host[256];
-	struct passwd	*who;
-	char		date_buf[CREATION_TIME_LEN];
+	char	date_buf[CREATION_TIME_LEN];
 
 	texfontsizes[0] = texfontsizes[1] =
 		TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
@@ -160,18 +150,6 @@ genpictex_start(F_compound *objects)
 			prog, PACKAGE_VERSION);
 	if (creation_date(date_buf))
 		fprintf(tfp, "%%%%CreationDate: %s\n", date_buf);
-#ifdef HAVE_GETHOSTNAME
-	if (gethostname(host, sizeof(host)) == -1)
-#endif
-		(void)strcpy(host, "unknown-host!?!?");
-#ifdef HAVE_GETPWUID
-	if (!anonymous) {
-		who = getpwuid(getuid());
-		if (who)
-			fprintf(tfp, "%%%%User: %s@%s (%s)\n",
-					who->pw_name, host, who->pw_gecos);
-	}
-#endif
 
 	/* print any whole-figure comments prefixed with "% " */
 	if (objects->comments) {

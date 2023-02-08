@@ -302,9 +302,8 @@ AC_TYPE_SSIZE_T
 # Check for functions and set, e.g., HAVE_STRERROR if found.
 # Assume that errno.h exists if strerror() is available. Otherwise, do
 # not use strerror() at all.
-# If getpwuid() is found, <pwd.h> is assumed to exist.
 # If nl_langinfo() is found, <nl_langinfo.h> is assumed to exist.
-AC_CHECK_FUNCS_ONCE([fdopen gethostname getpwuid mkstemp nl_langinfo strerror])
+AC_CHECK_FUNCS_ONCE([fdopen mkstemp nl_langinfo strerror])
 
 # Under Windows, the _setmode() function is defined in io.h. It accepts two
 # arguments and sets the file access mode to text or binary. O_TEXT and O_BINARY

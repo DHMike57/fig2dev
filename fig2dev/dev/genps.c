@@ -52,9 +52,6 @@
 #include <math.h>
 #include <ctype.h>
 #include <sys/stat.h>	/* struct stat */
-#ifdef HAVE_GETPWUID
-#include <pwd.h>
-#endif
 #include <locale.h>
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
@@ -133,7 +130,6 @@ static bool	append_find_composite(FILE *restrict out, FILE *restrict in);
 							obj->thickness > 0)
 
 /* variables obtained from command line options */
-static bool	anonymous = true;
 static bool	asciipreview = false;	/* add ASCII preview? */
 static bool	tiffpreview = false;	/* add a TIFF preview? */
 static bool	tiffcolor = false;	/* color or b/w TIFF preview */
@@ -439,10 +435,6 @@ gen_ps_eps_option(char opt, char *optarg)
 	case 'P':		/* pagemode */
 		break;
 
-	case 'a':		/* anonymous (don't output user name) */
-	      anonymous = true;
-	      break;
-
 	case 'A':		/* add ASCII preview */
 		asciipreview = true;
 		break;
@@ -585,9 +577,7 @@ gen_ps_eps_option(char opt, char *optarg)
 void
 genps_start(F_compound *objects)
 {
-	char		 host[256];
 	char		 date_buf[CREATION_TIME_LEN];
-	struct passwd	*who;
 	int		 itmp, jtmp;
 	int		 i;
 	int		 cliplx, cliply, clipux, clipuy;
@@ -625,10 +615,6 @@ genps_start(F_compound *objects)
 		multi_page = false;
 
 	scalex = scaley = mag * POINT_PER_INCH / ppi;
-
-	/* this seems to work around Solaris' cc optimizer bug */
-	/* the problem was that llx had garbage in it - this "fixes" it */
-	sprintf(host,"llx=%d\n",llx);
 
 	/* convert to point unit */
 	fllx = llx * scalex;
@@ -755,24 +741,12 @@ genps_start(F_compound *objects)
 	else
 		fputs("%!PS-Adobe-3.0\n", tfp);
 
-#ifdef HAVE_GETHOSTNAME
-	if (gethostname(host, sizeof(host)) == -1)
-#endif
-		(void) strcpy(host, "unknown host");
 	fprintf(tfp, "%%%%Title: %s\n",
 		(name? name: ((from) ? from : "stdin")));
 	fprintf(tfp, "%%%%Creator: %s Version %s\n",
 		prog, PACKAGE_VERSION);
 	if (creation_date(date_buf))
 		fprintf(tfp, "%%%%CreationDate: %s\n", date_buf);
-#ifdef HAVE_GETPWUID
-	if (!anonymous) {
-		who = getpwuid(getuid());
-		if (who)
-			fprintf(tfp, "%%%%For: %s@%s (%s)\n",
-				who->pw_name, host, who->pw_gecos);
-	}
-#endif
 
 	/* calc initial clipping area to size of the bounding box
 	   (this is needed for later clipping by arrowheads) */

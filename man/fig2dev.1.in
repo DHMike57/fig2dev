@@ -826,10 +826,6 @@ The size of TeX's memory limits the number of plot symbols in a picture.
 As a result, it is best to use PiCTeX to generate small pictures.
 
 .TP
-.B \-a
-Anonymous mode. Do not write the user name into the output file.
-
-.TP
 .B \-E num
 Set encoding for latex text translation
 (0 = no translation, 1 = ISO-8859-1, 2 = ISO-8859-2; default 1).
@@ -983,10 +979,6 @@ crosshatch, etc.
 .B \-A
 Add an ASCII (EPSI) preview.
 Not for PDF.
-
-.TP
-.B \-a
-Anonymous mode. Do not write the user's login name into the output file.
 
 .TP
 .B \-b borderwidth
