@@ -24,6 +24,8 @@
 #endif
 #include <stddef.h>
 
+extern int	only_ascii;
+
 extern int	check_conversion(const char *restrict output_encoding,
 				const char *restrict input_encoding);
 extern int	convert(char **restrict out, char *restrict in, size_t inlen);

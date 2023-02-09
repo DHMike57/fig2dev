@@ -94,7 +94,6 @@ extern bool	multispec;	/* true if the command-line args specified -M */
 extern bool	metric;		/* true if the file contains Metric specifier */
 extern bool	grayonly;	/* convert colors to grayscale (-N option) */
 extern bool	bgspec;		/* flag to say -g was specified */
-extern bool	only_ascii;	/* only ascii characters in all text strings */
 extern char	gif_transparent[8];/* GIF transp color hex name (e.g. #ff00dd)*/
 extern char	papersize[PAPERSZ_LEN];	/* paper size */
 extern char	boundingbox[];	/* boundingbox */

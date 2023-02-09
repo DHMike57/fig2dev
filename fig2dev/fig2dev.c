@@ -79,7 +79,6 @@ bool	multispec = false;	/* set if the user specs. multiple pages */
 bool	metric;			/* true if file specifies Metric */
 bool	grayonly = false;	/* convert colors to grayscale (-N option) */
 bool	bgspec = false;		/* flag to say -g was specified */
-bool	only_ascii = true;	/* only ascii characters in all text strings */
 char	gif_transparent[]="\0"; /* GIF transp color hex name (e.g. #ff00dd) */
 char	papersize[PAPERSZ_LEN];	/* paper size */
 char	boundingbox[64];	/* boundingbox */

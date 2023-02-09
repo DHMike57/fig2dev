@@ -44,6 +44,8 @@
 
 #include "messages.h"
 
+int	only_ascii = 1;
+
 #ifdef HAVE_ICONV
 static iconv_t	cd;
 #endif
@@ -92,6 +94,9 @@ check_conversion(const char *restrict output_charset,
 	char	outbuf[32];
 	char	*in;
 	char	*out;
+
+	if (only_ascii)
+		return 0;
 
 	if (!input_charset && !output_charset)
 		return 0;

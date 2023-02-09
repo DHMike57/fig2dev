@@ -833,8 +833,8 @@ genlatex_text(F_text *t)
 	const char	*tpos;
 
 	if (need_conversion == -1)
-		need_conversion = only_ascii ? 0 :
-			check_conversion(output_encoding, input_encoding);
+		need_conversion = check_conversion(output_encoding,
+							input_encoding);
 	if (verbose)
 	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 

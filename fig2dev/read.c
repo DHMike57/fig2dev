@@ -19,6 +19,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include "read.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -36,8 +37,8 @@
 #include "alloc.h"
 #include "free.h"
 #include "messages.h"
-#include "read.h"
 #include "trans_spline.h"
+#include "dev/textconvert.h"	/* only_ascii */
 
 #ifndef HAVE_GETLINE
 #include "lib/getline.h"
@@ -1637,7 +1638,7 @@ read_textobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		start = t->cstring;
 		while (*start != '\0')
 			if (!isascii(*start++)) {
-				only_ascii = false;
+				only_ascii = 0;
 				break;
 			}
 	}

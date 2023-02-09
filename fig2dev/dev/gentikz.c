@@ -1699,14 +1699,10 @@ gentikz_text(F_text *t)
 	static int	need_conversion = -1;
 
 	if (need_conversion == -1) {
-		if (only_ascii) {
-			need_conversion = 0;
-		} else {
-			if (pagemode)
-				output_encoding = "UTF-8";
-			need_conversion = check_conversion(output_encoding,
+		if (pagemode)
+			output_encoding = "UTF-8";
+		need_conversion = check_conversion(output_encoding,
 							input_encoding);
-		}
 	}
 
 	if (verbose)

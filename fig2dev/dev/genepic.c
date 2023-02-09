@@ -1202,8 +1202,8 @@ genepic_text(F_text *text)
     int rot_angle = 0;
 
 	if (need_conversion == -1)
-		need_conversion = only_ascii ? 0 :
-			check_conversion(output_encoding, input_encoding);
+		need_conversion = check_conversion(output_encoding,
+							input_encoding);
 
     /* print any comments prefixed with "%" */
     print_comments("% ",text->comments,"");
