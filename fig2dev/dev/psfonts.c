@@ -144,43 +144,42 @@ static int	PSmapwarn[] = {
 		true			/* ZapfDingbats */
 };
 
-int	PSisomap[] = {
-		false, false,		/* Times-Roman */
-		false,			/* Times-Italic */
-		false,			/* Times-Bold */
-		false,			/* Times-BoldItalic */
-		false,			/* AvantGarde */
-		false,			/* AvantGarde-BookOblique */
-		false,			/* AvantGarde-Demi */
-		false,			/* AvantGarde-DemiOblique */
-		false,			/* Bookman-Light */
-		false,			/* Bookman-LightItalic */
-		false,			/* Bookman-Demi */
-		false,			/* Bookman-DemiItalic */
-		false,			/* Courier */
-		false,			/* Courier-Oblique */
-		false,			/* Courier-Bold */
-		false,			/* Courier-BoldItalic */
-		false,			/* Helvetica */
-		false,			/* Helvetica-Oblique */
-		false,			/* Helvetica-Bold */
-		false,			/* Helvetica-BoldOblique */
-		false,			/* Helvetica-Narrow */
-		false,			/* Helvetica-Narrow-Oblique */
-		false,			/* Helvetica-Narrow-Bold */
-		false,			/* Helvetica-Narrow-BoldOblique */
-		false,			/* NewCenturySchlbk-Roman */
-		false,			/* NewCenturySchlbk-Italic */
-		false,			/* NewCenturySchlbk-Bold */
-		false,			/* NewCenturySchlbk-BoldItalic */
-		false,			/* Palatino-Roman */
-		false,			/* Palatino-Italic */
-		false,			/* Palatino-Bold */
-		false,			/* Palatino-BoldItalic */
-#define NO 2
-		NO,			/* Symbol */
-		false,			/* ZapfChancery-MediumItalic */
-		NO			/* ZapfDingbats */
+int	PSneedsutf8[] = {
+		0, 0,			/* Times-Roman */
+		0,			/* Times-Italic */
+		0,			/* Times-Bold */
+		0,			/* Times-BoldItalic */
+		0,			/* AvantGarde */
+		0,			/* AvantGarde-BookOblique */
+		0,			/* AvantGarde-Demi */
+		0,			/* AvantGarde-DemiOblique */
+		0,			/* Bookman-Light */
+		0,			/* Bookman-LightItalic */
+		0,			/* Bookman-Demi */
+		0,			/* Bookman-DemiItalic */
+		0,			/* Courier */
+		0,			/* Courier-Oblique */
+		0,			/* Courier-Bold */
+		0,			/* Courier-BoldItalic */
+		0,			/* Helvetica */
+		0,			/* Helvetica-Oblique */
+		0,			/* Helvetica-Bold */
+		0,			/* Helvetica-BoldOblique */
+		0,			/* Helvetica-Narrow */
+		0,			/* Helvetica-Narrow-Oblique */
+		0,			/* Helvetica-Narrow-Bold */
+		0,			/* Helvetica-Narrow-BoldOblique */
+		0,			/* NewCenturySchlbk-Roman */
+		0,			/* NewCenturySchlbk-Italic */
+		0,			/* NewCenturySchlbk-Bold */
+		0,			/* NewCenturySchlbk-BoldItalic */
+		0,			/* Palatino-Roman */
+		0,			/* Palatino-Italic */
+		0,			/* Palatino-Bold */
+		0,			/* Palatino-BoldItalic */
+		0,			/* Symbol */
+		0,			/* ZapfChancery-MediumItalic */
+		0			/* ZapfDingbats */
 };
 
 static char *figfontnames[] = {

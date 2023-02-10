@@ -20,7 +20,7 @@
 #define PSFONTS_H
 
 extern char	*PSfontnames[];
-extern int	PSisomap[];
+extern int	PSneedsutf8[];
 extern int	PSfontmap[];
 
 extern void	unpsfont(F_text *);

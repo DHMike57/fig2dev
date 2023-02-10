@@ -176,6 +176,7 @@ static int	last_depth = MAXDEPTH + 4;
 static int	append(const char *restrict infilename, FILE *restrict outfile);
 static void	appendhex(char *infilename,FILE *outfile,int width,int height);
 static bool	approx_spline_exist(F_compound *ob);
+static int	contains_non_ascii(char *str);
 static void	do_split(int actual_depth);/* split different depths' objects */
 					   /* but only as comment */
 static void	clip_arrows(F_line *obj, int objtype);
@@ -183,13 +184,12 @@ static void	draw_arrow(F_arrow *arrow, F_pos *points, int npoints,
 				F_pos *fillpoints, int nfillpoints, int col);
 static void	draw_gridline(float x1, float y1, float x2, float y2);
 static bool	ellipse_exist(F_compound *ob);
-static void	encode_all_fonts(F_compound *ob);
 static void	fill_area(int fill, int pen_color, int fill_color);
 static void	genps_ctl_spline(F_spline *s);
 static void	genps_itp_spline(F_spline *s);
 static void	genps_std_colors(void);
 static void	genps_usr_colors(void);
-static bool	iso_text_exist(F_compound *ob);
+static int	note_text_beyond_ascii(F_compound *obj);
 static void	putword(int word, FILE *file);
 static void	set_linewidth(double w);
 
@@ -239,6 +239,7 @@ static char	*psfontnames[] = {
 	"Helvetica",			/* sans serif */
 	"Courier"			/* typewriter */
 };
+
 
 #define PS_FONTNAMES(T)	\
 	(((v2_flag&&!(v21_flag||v30_flag)) || \
@@ -577,6 +578,7 @@ genps_start(F_compound *objects)
 	int		 i;
 	int		 cliplx, cliply, clipux, clipuy;
 	int		 userllx, userlly, userurx, userury;
+	int		 needs_cmap;
 	const struct paperdef	*pd;
 	char		 psize[20];
 
@@ -818,6 +820,12 @@ genps_start(F_compound *objects)
 
 	/* put in the magnification for information purposes */
 	fprintf(tfp, "%%%%Magnification: %.4f\n",metric? mag*76.2/80.0 : mag);
+
+	if ((needs_cmap = note_text_beyond_ascii(objects))) {
+		fputs("%%DocumentNeededResources: ProcSet (CIDInit)\n", tfp);
+		fputs("%%+ CMap (Xfig-UTF8-H)\n", tfp);
+		fputs("%%DocumentSuppliedResources: CMap (Xfig-UTF8-H)\n", tfp);
+	}
 	fputs("%%EndComments\n", tfp);
 
 	/* This %%BeginSetup .. %%EndSetup has to occur after
@@ -877,6 +885,13 @@ genps_start(F_compound *objects)
 	}
 
 	fputs("%%BeginProlog\n", tfp);
+
+	if (needs_cmap) {
+		fputs(XFIG_CMAP1, tfp);
+		fputs(XFIG_CMAP2, tfp);
+		fputs(XFIG_CMAP3, tfp);
+	}
+
 	if (pats_used)
 		fprintf(tfp,"/MyAppDict 100 dict dup begin def\n");
 	fprintf(tfp, "%s", BEGIN_PROLOG1);
@@ -908,29 +923,39 @@ genps_start(F_compound *objects)
 
 	/* translate (in multi-page mode this is done at end of this proc) */
 	/* (rotation and y flipping is done in %%BeginPageSetup area */
-	if (pats_used) {
-		int i;
+	if (pats_used)
 		/* only define the patterns that are used */
 		for (i=0; i<NUMPATTERNS; i++)
 			if (pattern_used[i])
 				fprintf(tfp, "\n%s", fill_def[i]);
-	}
 	fprintf(tfp, "\n%s", BEGIN_PROLOG2);
-	if (iso_text_exist(objects)) {
-		fprintf(tfp, "%s%s%s",
-			SPECIAL_CHAR_1, SPECIAL_CHAR_2, SPECIAL_CHAR_3);
-		encode_all_fonts(objects);
-	}
+
+	if (needs_cmap)
+		/*
+		 * for each font insert, e.g.,
+		 *	/NewCenturySchlbk-Roman-UTF-8
+		 *	/Xfig-AGL-UTF8-H /CMap findresource
+		 *	[/NewCenturySchlbk-Roman ] composefont pop
+		 */
+		for (i = 0; i < MAX_PSFONT + 2; ++i)
+			if (PSneedsutf8[i])
+				fprintf(tfp, "/%s-UTF-8\n/Xfig-AGL-UTF8-H /CMap"
+						" findresource\n"
+						"[/%s ] composefont pop\n",
+						PSfontnames[i],
+						PSfontnames[i]);
+
 	if (ellipse_exist(objects))
 		fprintf(tfp, "%s\n", ELLIPSE_PS);
 	if (approx_spline_exist(objects))
 		fprintf(tfp, "%s\n", SPLINE_PS);
 
-	if (iso_text_exist(objects)) {
+	if (needs_cmap) {
 		char *libdir, *locale;
 		char localefile_buf[128];
 		char *localefile = localefile_buf;
 		FILE *fp;
+
 		libdir = getenv("FIG2DEV_LIBDIR");
 #ifdef I18N_DATADIR
 		if (libdir == NULL)
@@ -948,14 +973,9 @@ genps_start(F_compound *objects)
 			sprintf(localefile, "%s/%s.ps", libdir, locale);
 			/* get filename like
 			   ``/usr/local/lib/fig2dev/japanese.ps'' */
-			fp = fopen(localefile, "rb");
-			if (fp == NULL) {
-				fprintf(stderr, "fig2dev: can not open file: %s\n",
-						localefile);
-			} else {
+			if ((fp = fopen(localefile, "rb"))) {
 				enable_composite_font =
 					append_find_composite(tfp, fp);
-
 				if (ferror(tfp)) {
 					fputs("Error writing output file.\n",
 							stderr);
@@ -2353,11 +2373,13 @@ genps_text(F_text *t)
 					PSFONTMAG(t));
 		else
 			fprintf(tfp, TEXT_PS, "CompositeBold", "",PSFONTMAG(t));
-	} else
-		if (PSisomap[t->font+1] == true)
-			fprintf(tfp, TEXT_PS, PSFONT(t), "-iso", PSFONTMAG(t));
+	} else {
+		if (PSneedsutf8[t->font+1] == 1 &&
+				contains_non_ascii(t->cstring))
+			fprintf(tfp, TEXT_PS, PSFONT(t), "-UTF-8",PSFONTMAG(t));
 		else
 			fprintf(tfp, TEXT_PS, PSFONT(t), "", PSFONTMAG(t));
+	}
 
 	fprintf(tfp, "%d %d m\ngs ", t->base_x,  t->base_y);
 	fprintf(tfp, "1 -1 sc ");
@@ -2400,7 +2422,7 @@ genps_text(F_text *t)
 			fputc('\\', tfp);
 			chars += 1;
 		}
-		if (ch>=0x80) {
+		if (0/*ch>=0x80*/) {
 			fprintf(tfp,"\\%o", ch);
 			chars += 4;
 		} else {
@@ -2694,52 +2716,43 @@ genps_usr_colors(void)
 	}
 }
 
-static bool
-iso_text_exist(F_compound *ob)
+static int
+contains_non_ascii(char *str)
 {
-	F_compound	*c;
-	F_text	    *t;
-	unsigned char   *s;
+	char	*c;
+	int	ret = 0;
+	for (c = str; *c != '\0'; ++c) {
+		if (!isascii(*c)) {
+			ret = 1;
+			break;
+		}
+	}
+	return ret;
+}
 
-	if (ob->texts != NULL) {
-		for (t = ob->texts; t != NULL; t = t->next) {
-			/* look for any ISO (non-ASCII) chars in
-			   non-special text except for pstex */
-			if (!strcmp(lang,"pstex") && special_text(t))
-				continue;
-			for (s = (unsigned char*)t->cstring; *s != '\0'; s++) {
-				/* look for characters >= 128 or ASCII '-' */
-				if ((*s>127) || (*s=='-'))
-					return true;
-			}
+static int
+note_text_beyond_ascii(F_compound *obj)
+{
+	int		needs_cmap = 0;
+	F_compound	*o;
+	F_text		*t;
+
+	for (t = obj->texts; t != NULL; t = t->next) {
+		if (PSneedsutf8[t->font + 1] ||
+			((!strcmp(lang, "pstex") || !strcmp(lang, "pdftex")) &&
+				 special_text(t)))
+			continue;
+		if (contains_non_ascii(t->cstring)) {
+			if (!needs_cmap)
+				needs_cmap = 1;
+			PSneedsutf8[t->font + 1] = 1;
 		}
 	}
 
-	for (c = ob->compounds; c != NULL; c = c->next) {
-		if (iso_text_exist(c))
-			return true;
-	}
-	return false;
-}
+	for (o = obj->compounds; o != NULL; o = o->next)
+		needs_cmap = note_text_beyond_ascii(o);
 
-static void
-encode_all_fonts(F_compound *ob)
-{
-	F_compound *c;
-	F_text     *t;
-
-	if (ob->texts != NULL) {
-		for (t = ob->texts; t != NULL; t = t->next)
-			if (PSisomap[t->font+1] == false) {
-				fprintf(tfp, "/%s /%s-iso isovec ReEncode\n",
-						PSFONT(t), PSFONT(t));
-				PSisomap[t->font+1] = true;
-			}
-	}
-
-	for (c = ob->compounds; c != NULL; c = c->next) {
-		encode_all_fonts(c);
-	}
+	return needs_cmap;
 }
 
 static bool

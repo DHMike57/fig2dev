@@ -579,51 +579,318 @@ matrix\n\
 makepattern\n\
 /P22 exch def\n"
 
+#define		XFIG_CMAP1	"\
+%%BeginResource: CMap (Xfig-UTF8-H)\n\
+%%Title: (Xfig-UTF8-H Adobe 0)\n\
+%%Version: 1.0\n\
+% The PostScript Language Reference, 3rd ed., Section 5.11.4 - CMap Example,\n\
+% pp 385-387 and the example for the composefont operator on p 388 was useful.\n\
+/CIDInit /ProcSet findresource begin\n\
+12 dict begin\n\
+begincmap\n\
+/CIDSystemInfo [ null ] def\n\
+% Xfig Adobe Glyph List\n\
+/CMapName /Xfig-AGL-UTF8-H def\n\
+/CMapVersion 1.0 def\n\
+/CMapType 1 def\n\
+/WMode 0 def\n\
+% See Adobe Technical Note #5099,\n\
+% Building CMap Files for CID-Keyed Fonts (1998), 5099.CMapFiles.pdf, Sec. 3.4:\n\
+% \"...the theoretical code space range should be used here, not just the code\n\
+%  space range that contains defined characters.\"\n\
+%\n\
+% Define the UTF-8 code space range\n\
+3 begincodespacerange\n\
+     <00>     <7F>\n\
+   <C280>   <DFBF>\n\
+ <E08080> <EFBFBF>\n\
+% <F0808080> <F7BFBFBF>\n\
+endcodespacerange\n\
+0 usefont\n\
+42 beginbfrange\n\
+% Basic Latin, or ASCII\n\
+<20> <7f> [ /space /exclam /quotedbl /numbersign /dollar /percent /ampersand\n\
+ /quotesingle /parenleft /parenright /asterisk /plus /comma /hyphen /period\n\
+ /slash /zero /one /two /three /four /five /six /seven /eight /nine /colon\n\
+ /semicolon /less /equal /greater /question /at /A /B /C /D /E /F /G /H /I /J /K\n\
+ /L /M /N /O /P /Q /R /S /T /U /V /W /X /Y /Z /bracketleft /backslash\n\
+ /bracketright /asciicircum /underscore /grave /a /b /c /d /e /f /g /h /i /j /k\n\
+ /l /m /n /o /p /q /r /s /t /u /v /w /x /y /z /braceleft /bar /braceright\n\
+ /asciitilde /controlDEL ]\n\
+% Latin-1 Supplement, u+a0--u+bf\n\
+<c2a0> <c2bf> [ /nbspace /exclamdown /cent /sterling /currency /yen /brokenbar\n\
+ /section /dieresis /copyright /ordfeminine /guillemotleft /logicalnot\n\
+ /sfthyphen /registered /macron /degree /plusminus /twosuperior /threesuperior\n\
+ /acute /mu /paragraph /periodcentered /cedilla /onesuperior /ordmasculine\n\
+ /guillemotright /onequarter /onehalf /threequarters /questiondown ]\n\
+% Latin-1 Supplement, u+c0--u+ff\n\
+<c380> <c3bf> [ /Agrave /Aacute /Acircumflex /Atilde /Adieresis /Aring /AE\n\
+ /Ccedilla /Egrave /Eacute /Ecircumflex /Edieresis /Igrave /Iacute /Icircumflex\n\
+ /Idieresis /Eth /Ntilde /Ograve /Oacute /Ocircumflex /Otilde /Odieresis\n\
+ /multiply /Oslash /Ugrave /Uacute /Ucircumflex /Udieresis /Yacute /Thorn\n\
+ /germandbls /agrave /aacute /acircumflex /atilde /adieresis /aring /ae\n\
+ /ccedilla /egrave /eacute /ecircumflex /edieresis /igrave /iacute /icircumflex\n\
+ /idieresis /eth /ntilde /ograve /oacute /ocircumflex /otilde /odieresis /divide\n\
+ /oslash /ugrave /uacute /ucircumflex /udieresis /yacute /thorn /ydieresis ]\n\
+% Latin Extended-A, u+0100--u+013f\n\
+<c480> <c4bf> [ /Amacron /amacron /Abreve /abreve /Aogonek /aogonek /Cacute\n\
+ /cacute /Ccircumflex /ccircumflex /Cdotaccent /cdotaccent /Ccaron /ccaron\n\
+ /Dcaron /dcaron /Dcroat /dcroat /Emacron /emacron /Ebreve /ebreve /Edotaccent\n\
+ /edotaccent /Eogonek /eogonek /Ecaron /ecaron /Gcircumflex /gcircumflex /Gbreve\n\
+ /gbreve /Gdotaccent /gdotaccent /Gcedilla /gcedilla /Hcircumflex /hcircumflex\n\
+ /Hbar /hbar /Itilde /itilde /Imacron /imacron /Ibreve /ibreve /Iogonek /iogonek\n\
+ /Idotaccent /dotlessi /IJ /ij /Jcircumflex /jcircumflex /Kcedilla /kcedilla\n\
+ /kgreenlandic /Lacute /lacute /Lcedilla /lcedilla /Lcaron /lcaron /Ldot ]\n\
+% Latin Extended-A, u+0140--u+017f\n\
+<c580> <c5bf> [ /ldot /Lslash /lslash /Nacute /nacute /Ncedilla /ncedilla\n\
+ /Ncaron /ncaron /napostrophe /Eng /eng /Omacron /omacron /Obreve /obreve\n\
+ /Ohungarumlaut /ohungarumlaut /OE /oe /Racute /racute /Rcedilla /rcedilla\n\
+ /Rcaron /rcaron /Sacute /sacute /Scircumflex /scircumflex /Scedilla /scedilla\n\
+ /Scaron /scaron /Tcedilla /tcedilla /Tcaron /tcaron /Tbar /tbar /Utilde /utilde\n\
+ /Umacron /umacron /Ubreve /ubreve /Uring /uring /Uhungarumlaut /uhungarumlaut\n\
+ /Uogonek /uogonek /Wcircumflex /wcircumflex /Ycircumflex /ycircumflex\n\
+ /Ydieresis /Zacute /zacute /Zdotaccent /zdotaccent /Zcaron /zcaron /longs ]\n"
 
-#define		SPECIAL_CHAR_1	"\
-/reencdict 12 dict def /ReEncode { reencdict begin\n\
-/newcodesandnames exch def /newfontname exch def /basefontname exch def\n\
-/basefontdict basefontname findfont def /newfont basefontdict maxlength dict def\n\
-basefontdict { exch dup /FID ne { dup /Encoding eq\n\
-{ exch dup length array copy newfont 3 1 roll put }\n\
-{ exch newfont 3 1 roll put } ifelse } { pop pop } ifelse } forall\n\
-newfont /FontName newfontname put newcodesandnames aload pop\n\
-128 1 255 { newfont /Encoding get exch /.notdef put } for\n\
-newcodesandnames length 2 idiv { newfont /Encoding get 3 1 roll put } repeat\n\
-newfontname newfont definefont pop end } def\n\
-/isovec [\n\
-"
-#define		SPECIAL_CHAR_2	"\
-8#055 /minus 8#200 /grave 8#201 /acute 8#202 /circumflex 8#203 /tilde\n\
-8#204 /macron 8#205 /breve 8#206 /dotaccent 8#207 /dieresis\n\
-8#210 /ring 8#211 /cedilla 8#212 /hungarumlaut 8#213 /ogonek 8#214 /caron\n\
-8#220 /dotlessi 8#230 /oe 8#231 /OE\n\
-8#240 /space 8#241 /exclamdown 8#242 /cent 8#243 /sterling\n\
-8#244 /currency 8#245 /yen 8#246 /brokenbar 8#247 /section 8#250 /dieresis\n\
-8#251 /copyright 8#252 /ordfeminine 8#253 /guillemotleft 8#254 /logicalnot\n\
-8#255 /hyphen 8#256 /registered 8#257 /macron 8#260 /degree 8#261 /plusminus\n\
-8#262 /twosuperior 8#263 /threesuperior 8#264 /acute 8#265 /mu 8#266 /paragraph\n\
-8#267 /periodcentered 8#270 /cedilla 8#271 /onesuperior 8#272 /ordmasculine\n\
-8#273 /guillemotright 8#274 /onequarter 8#275 /onehalf\n\
-8#276 /threequarters 8#277 /questiondown 8#300 /Agrave 8#301 /Aacute\n\
-8#302 /Acircumflex 8#303 /Atilde 8#304 /Adieresis 8#305 /Aring\n\
-"
-#define		SPECIAL_CHAR_3	"\
-8#306 /AE 8#307 /Ccedilla 8#310 /Egrave 8#311 /Eacute\n\
-8#312 /Ecircumflex 8#313 /Edieresis 8#314 /Igrave 8#315 /Iacute\n\
-8#316 /Icircumflex 8#317 /Idieresis 8#320 /Eth 8#321 /Ntilde 8#322 /Ograve\n\
-8#323 /Oacute 8#324 /Ocircumflex 8#325 /Otilde 8#326 /Odieresis 8#327 /multiply\n\
-8#330 /Oslash 8#331 /Ugrave 8#332 /Uacute 8#333 /Ucircumflex\n\
-8#334 /Udieresis 8#335 /Yacute 8#336 /Thorn 8#337 /germandbls 8#340 /agrave\n\
-8#341 /aacute 8#342 /acircumflex 8#343 /atilde 8#344 /adieresis 8#345 /aring\n\
-8#346 /ae 8#347 /ccedilla 8#350 /egrave 8#351 /eacute\n\
-8#352 /ecircumflex 8#353 /edieresis 8#354 /igrave 8#355 /iacute\n\
-8#356 /icircumflex 8#357 /idieresis 8#360 /eth 8#361 /ntilde 8#362 /ograve\n\
-8#363 /oacute 8#364 /ocircumflex 8#365 /otilde 8#366 /odieresis 8#367 /divide\n\
-8#370 /oslash 8#371 /ugrave 8#372 /uacute 8#373 /ucircumflex\n\
-8#374 /udieresis 8#375 /yacute 8#376 /thorn 8#377 /ydieresis\
-] def\n\
-"
+#define		XFIG_CMAP2	"\
+% Latin Extended-B (small part), u+1fa--u+1ff\n\
+<c7ba> <c7bf> [ /Aringacute /aringacute /AEacute /aeacute /Oslashacute\n\
+ /oslashacute ]\n\
+<c898> <c89b> [ /Scommaaccent /scommaaccent /uni021A /uni021B ]\n\
+% Spacing Modifier Letters (small part), u+2d8--u2dd\n\
+<cb98> <cb9d> [ /breve /dotaccent /ring /ogonek /tilde /hungarumlaut ]\n\
+% Greek and Coptic, u+384--u+386\n\
+<ce84> <ce86> [ /tonos /dieresistonos /Alphatonos ]\n\
+<ce88> <ce8a> [ /Epsilontonos /Etatonos /Iotatonos ]\n\
+<ce8e> <cea1> [ /Upsilontonos /Omegatonos /iotadieresistonos /Alpha /Beta\n\
+  /Gamma /uni0394 /Epsilon /Zeta /Eta /Theta /Iota /Kappa /Lambda /Mu /Nu /Xi\n\
+  /Omicron /Pi /Rho ]\n\
+<cea3> <cebf> [ /Sigma /Tau /Upsilon /Phi /Chi /Psi /uni03A9 /Iotadieresis\n\
+  /Upsilondieresis /alphatonos /epsilontonos /etatonos /iotatonos\n\
+  /upsilondieresistonos /alpha /beta /gamma /delta /epsilon /zeta /eta /theta\n\
+  /iota /kappa /lambda /uni03BC /nu /xi /omicron ]\n\
+<cf82> <cf8e> [ /uni03C2 /sigma /tau /upsilon /phi /chi /psi /omega /iotadieresis\n\
+  /upsilondieresis /omicrontonos /upsilontonos /omegatonos ]\n\
+% Cyrillic, u+400--u+43f\n\
+<d080> <d0bf> [ /uni0400 /afii10023 /afii10051 /afii10052 /afii10053 /afii10054\n\
+  /afii10055 /afii10056 /afii10057 /afii10058 /afii10059 /afii10060 /afii10061\n\
+  /uni040D /afii10062 /afii10145 /afii10017 /afii10018 /afii10019\n\
+  /afii10020 /afii10021 /afii10022 /afii10024 /afii10025 /afii10026 /afii10027\n\
+  /afii10028 /afii10029 /afii10030 /afii10031 /afii10032 /afii10033 /afii10034\n\
+  /afii10035 /afii10036 /afii10037 /afii10038 /afii10039 /afii10040 /afii10041\n\
+  /afii10042 /afii10043 /afii10044 /afii10045 /afii10046 /afii10047 /afii10048\n\
+  /afii10049 /afii10065 /afii10066 /afii10067 /afii10068 /afii10069 /afii10070\n\
+  /afii10072 /afii10073 /afii10074 /afii10075 /afii10076 /afii10077 /afii10078\n\
+  /afii10079 /afii10080 /afii10081 ]\n\
+% Cyrillic, u+440--u+463\n\
+<d180> <d19f> [ /afii10082 /afii10083 /afii10084 /afii10085 /afii10086\n\
+  /afii10087 /afii10088 /afii10089 /afii10090 /afii10091 /afii10092 /afii10093\n\
+  /afii10094 /afii10095 /afii10096 /afii10097 /uni0450 /afii10071 /afii10099\n\
+  /afii10100 /afii10101 /afii10102 /afii10103 /afii10104 /afii10105 /afii10106\n\
+  /afii10107 /afii10108 /afii10109 /uni045D /afii10110 /afii10193 ]\n\
+<d1b2> <d1b5> [ /uni0472 /uni0473 /uni0474 /uni0475 ]\n\
+<d290> <d293> [ /afii10050 /afii10098 /uni0492 /uni0493 ]\n\
+<d296> <d29d> [ /uni0496 /uni0497 /uni0498 /uni0499 /uni049A /uni049B /uni049C\n\
+  /uni049D ]\n\
+<d2a0> <d2a3> [ /uni04A0 /uni04A1 /uni04A2 /uni04A3 ]\n\
+<d2ae> <d2b3> [ /uni04AE /uni04AF /uni04B0 /uni04B1 /uni04B2 /uni04B3 ]\n\
+<d2b6> <d2bb> [ /uni04B6 /uni04B7 /uni04B8 /uni04B9 /uni04BA /uni04BB ]\n\
+% Latin Extended Additional, u+1e80--u+1e85\n\
+<e1ba80> <e1ba85> [ /Wgrave /wgrave /Wacute /wacute /Wdieresis /wdieresis ]\n\
+<e28093> <e28095> [ /endash /emdash /afii00208 ]\n\
+<e28097> <e2809e> [ /underscoredbl /quoteleft /quoteright /quotesinglbase\n\
+ /quotereversed /quotedblleft /quotedblright /quotedblbase ]\n\
+<e280a0> <e280a2> [ /dagger /daggerdbl /bullet ]\n\
+<e280b9> <e280bc> [ /guilsinglleft /guilsinglright /exclamdbl ]\n\
+<e281b4> <e281b9> [ /foursuperior /fivesuperior /sixsuperior /sevensuperior\n\
+ /eightsuperior /ninesuperior ]\n\
+<e2859b> <e2859e> [ /oneeighth /threeeighths /fiveeighths /seveneighths ]\n\
+<e28690> <e28699> [ /arrowleft /arrowup /arrowright /arrowdown /arrowboth\n\
+ /arrowupdn /uni2196 /uni2197 /uni2198 /uni2199 ]\n\
+<e28790> <e28795> [ /arrowdblleft /arrowdblup /arrowdblright /arrowdbldown\n\
+ /arrowdblboth /uni21D5]\n\
+<e28885> <e28889> [ /emptyset /Delta /gradient /element /notelement ]\n\
+<e2889d> <e288a0> [ /proportional /infinity /orthogonal /angle ]\n\
+<e288a7> <e288ab> [ /uni2227 /uni2228 /intersection /union /integral ]\n\
+<e28a82> <e28a87> [ /propersubset /propersuperset /notsubset /uni2285\n\
+ /reflexsubset /reflexsuperset ]\n\
+<e28a95> <e28a99> [ /uni2295 /uni2296 /circlemultiply /uni2298 /uni2299 ]\n\
+<e28aa2> <e28aa5> [ /uni22A2 /uni22A3 /uni22A4 /perpendicular ]\n\
+<e29590> <e295b0> [ /SF430000 /SF240000 /SF510000 /SF520000 /SF390000 /SF220000\n"
+
+#define		XFIG_CMAP3	"\
+ /SF210000 /SF250000 /SF500000 /SF490000 /SF380000 /SF280000 /SF270000 /SF260000\n\
+ /SF360000 /SF370000 /SF420000 /SF190000 /SF200000 /SF230000 /SF470000 /SF480000\n\
+ /SF410000 /SF450000 /SF460000 /SF400000 /SF540000 /SF530000 /SF440000 /uni256D\n\
+ /uni256E /uni256F /uni2570 ]\n\
+<e29690> <e29693> [ /rtblock /ltshade /shade /dkshade ]\n\
+<e298b9> <e298bc> [ /uni25B9 /smileface /invsmileface /sun ]\n\
+<eebf80> <eebfac> [ /uniEFC0 /uniEFC1 /uniEFC2 /uniEFC3 /uniEFC4 /uniEFC5\n\
+ /uniEFC6 /uniEFC7 /uniEFC8 /uniEFC9 /uniEFCA /uniEFCB /uniEFCC /uniEFCD\n\
+ /uniEFCE /uniEFCF /uniEFD0 /uniEFD1 /uniEFD2 /uniEFD3 /uniEFD4 /uniEFD5\n\
+ /uniEFD6 /uniEFD7 /uniEFD8 /uniEFD9 /uniEFDA /uniEFDB /uniEFDC /uniEFDD\n\
+ /uniEFDE /uniEFDF /uniEFE0 /uniEFE1 /uniEFE2 /uniEFE3 /uniEFE4 /uniEFE5\n\
+ /uniEFE6 /uniEFE7 /uniEFE8 /uniEFE9 /uniEFEA /uniEFEB /uniEFEC ]\n\
+<eebfba> <eebfbf> [ /uniEFFA /uniEFFB /uniEFFC /uniEFFD /uniEFFE /uniEFFF ]\n\
+<efac80> <efac84> [ /ff /fi /fl /ffi /ffl ]\n\
+endbfrange\n\
+\n\
+100 beginbfchar\n\
+   <c692> /florin\n\
+   <cb86> /circumflex\n\
+   <cb87> /caron\n\
+   <cb89> /uni2C9\n\
+   <ce87> /uni0387\n\
+   <ce8c> /Omicrontonos\n\
+   <cf80> /pi\n\
+   <cf81> /rho\n\
+   <cf91> /theta1\n\
+   <c195> /phi1\n\
+   <c196> /omega1\n\
+   <d1a2> /uni0462\n\
+   <d1a3> /uni0463\n\
+   <d2aa> /uni04AA\n\
+   <d2ab> /uni04AB\n\
+   <d380> /uni04C0\n\
+   <d38b> /uni04CB\n\
+   <d38c> /uni04CC\n\
+   <d38f> /uni04CF\n\
+   <d398> /uni04D8\n\
+   <d399> /afii10846\n\
+   <d3a2> /uni04E2\n\
+   <d3a3> /uni04E3\n\
+   <d3a8> /uni04E8\n\
+   <d3a9> /uni04E9\n\
+   <d3ae> /uni04EE\n\
+   <d3af> /uni04EF\n\
+ <e1bbb2> /Ygrave\n\
+ <e1bbb3> /ygrave\n\
+ <e28082> /uni2002\n\
+ <e280a6> /ellipsis\n\
+ <e280b0> /perthousand\n\
+ <e280b2> /minute\n\
+ <e280b3> /second\n\
+ <e280be> /uni203E\n\
+ <e28184> /fraction\n\
+ <e281b0> /zerosuperior\n\
+ <e281bf> /nsuperior\n\
+ <e282a3> /franc\n\
+ <e282a2> /lira	% would be e282a4, but this really is the /cruzeiro\n\
+ <e282a7> /peseta\n\
+ <e282ac> /Euro\n\
+ <e282af> /uni20AF\n\
+ <e2839d> /uni20DD\n\
+ <e28485> /afii61248\n\
+ <e2848f> /uni210F\n\
+ <e28491> /Ifraktur\n\
+ <e28492> /uni2112\n\
+ <e28493> /afii61289\n\
+ <e28496> /afii61352\n\
+ <e28498> /weierstrass\n\
+ <e2849c> /Rfraktur\n\
+ <e2849e> /uni211E\n\
+ <e284a0> /uni2120\n\
+ <e284a2> /trademark\n\
+ <e284a6> /uni2126\n\
+ <e284a8> /uni2128\n\
+ <e284ad> /uni212D\n\
+ <e284ae> /estimated\n\
+ <e284af> /uni212F\n\
+ <e284b5> /aleph\n\
+ <e284b6> /uni2136\n\
+ <e284b7> /uni2137\n\
+ <e286a8> /arrowupdnbse\n\
+ <e286b5> /carriagereturn\n\
+ <e28784> /uni21C4\n\
+ <e28786> /uni21C6\n\
+ <e28880> /universal\n\
+ <e28882> /partialdiff\n\
+ <e28883> /existential\n\
+ <e2888b> /suchthat\n\
+ <e2888d> /uni220D\n\
+ <e2888f> /product\n\
+ <e28891> /summation\n\
+ <e28892> /minus\n\
+ <e28893> /uni2213\n\
+ <e28895> /uni2215\n\
+ <e28897> /asteriskmath\n\
+ <e28899> /uni2219\n\
+ <e2889a> /radical\n\
+ <e288a3> /uni2223\n\
+ <e288a5> /uni2225\n\
+ <e288ae> /uni222E\n\
+ <e288b4> /therefore\n\
+ <e288b5> /uni2235\n\
+ <e288b7> /uni2237\n\
+ <e28985> /congruent\n\
+ <e28988> /approxequal\n\
+ <e289a0> /notequal\n\
+ <e289a1> /equivalence\n\
+ <e289a2> /uni2262\n\
+ <e289a4> /lessequal\n\
+ <e289a5> /greaterequal\n\
+ <e289aa> /uni226A\n\
+ <e289ab> /uni226B\n\
+ <e28abb> /uni22BB\n\
+ <e28c82> /house\n\
+ <e28c90> /revlogicalnot\n\
+ <e28ca0> /integraltp\n\
+ <e28ca1> /integralbt\n\
+endbfchar\n\
+48 beginbfchar\n\
+ <e28ca9> /angleleft\n\
+ <e28caa> /angleright\n\
+ <e29480> /SF100000\n\
+ <e29482> /SF110000\n\
+ <e2948c> /SF010000\n\
+ <e29490> /SF030000\n\
+ <e29494> /SF020000\n\
+ <e29498> /SF040000\n\
+ <e2949c> /SF080000\n\
+ <e294a4> /SF090000\n\
+ <e294ac> /SF060000\n\
+ <e294b4> /SF070000\n\
+ <e294bc> /SF050000\n\
+ <e29680> /upblock\n\
+ <e29684> /dnblock\n\
+ <e29688> /block\n\
+ <e2968c> /lfblock\n\
+ <e296a0> /filledbox\n\
+ <e296a1> /uni25A1\n\
+ <e296aa> /H18543\n\
+ <e296ab> /H18551\n\
+ <e296ac> /filledrect\n\
+ <e296b2> /triagup\n\
+ <e296b5> /uni25B5\n\
+ <e296ba> /triagrt\n\
+ <e296bc> /triagdn\n\
+ <e296bf> /uni25BF\n\
+ <e29783> /uni25C3\n\
+ <e29784> /triaglf\n\
+ <e29786> /uni25C6\n\
+ <e29787> /uni25C7\n\
+ <e2978a> /lozenge\n\
+ <e2978b> /circle\n\
+ <e2978f> /H18533\n\
+ <e29798> /invbullet\n\
+ <e29799> /invcircle\n\
+ <e297a6> /openbullet\n\
+ <e29980> /female\n\
+ <e29982> /male\n\
+ <e299a0> /spade\n\
+ <e299a3> /club\n\
+ <e299a5> /heart\n\
+ <e3809a> /uni301A\n\
+ <e3809b> /uni301B\n\
+ <e299a6> /diamond\n\
+ <e299aa> /musicalnote\n\
+ <e299ab> /musicalnotedbl\n\
+ <eebebf> /uniEFBF\n\
+endbfchar\n\
+endcmap\n\
+currentdict CMapName exch /CMap defineresource pop\n\
+end\n\
+end\n\
+%%EndResource\n"
 
 #define		ELLIPSE_PS	" \
 /DrawEllipse {\n\
