@@ -1235,8 +1235,8 @@ genepic_text(F_text *text)
     fprintf(tfp, "\\smash{");
 
     select_font(text, select_fontsize, true, false);
-    if (need_conversion == 1) {
-	 char	*str = NULL;
+    if (need_conversion == 1 && contains_non_ascii(text->cstring)) {
+	char	*str;
 	(void)convert(&str, text->cstring, strlen(text->cstring));
 	put_string(str, special_text(text));
 	free(str);

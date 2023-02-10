@@ -2193,8 +2193,8 @@ genpict2e_text(F_text *t)
 
 	select_font(t, select_fontsize, select_fontname, only_texfonts);
 
-	if (need_conversion == 1) {
-		char	*str = NULL;
+	if (need_conversion == 1 && contains_non_ascii(t->cstring)) {
+		char	*str;
 		(void)convert(&str, t->cstring, strlen(t->cstring));
 		put_string(str, special_text(t));
 		free(str);

@@ -879,8 +879,8 @@ genlatex_text(F_text *t)
 
 	set_color(t->color);
 
-	if (need_conversion == 1) {
-		char	*str = NULL;
+	if (need_conversion == 1 && contains_non_ascii(t->cstring)) {
+		char	*str;
 		(void)convert(&str, t->cstring, strlen(t->cstring));
 		put_string(str, special_text(t));
 		free(str);
