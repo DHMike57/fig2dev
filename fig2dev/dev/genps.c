@@ -50,7 +50,7 @@
 #include <unistd.h>
 #endif
 #include <math.h>
-#include <ctype.h>
+#include <ctype.h>	/* tolower() */
 #include <sys/stat.h>	/* struct stat */
 #include <locale.h>
 
@@ -64,6 +64,7 @@
 #include "pi.h"
 #include "psfonts.h"
 #include "readpics.h"
+#include "textconvert.h"
 #include "xtmpfile.h"
 
 /* include the PostScript preamble, patterns etc */
@@ -176,7 +177,6 @@ static int	last_depth = MAXDEPTH + 4;
 static int	append(const char *restrict infilename, FILE *restrict outfile);
 static void	appendhex(char *infilename,FILE *outfile,int width,int height);
 static bool	approx_spline_exist(F_compound *ob);
-static int	contains_non_ascii(char *str);
 static void	do_split(int actual_depth);/* split different depths' objects */
 					   /* but only as comment */
 static void	clip_arrows(F_line *obj, int objtype);
@@ -2714,20 +2714,6 @@ genps_usr_colors(void)
 					user_colors[i].g/255.0,
 					user_colors[i].b/255.0);
 	}
-}
-
-static int
-contains_non_ascii(char *str)
-{
-	char	*c;
-	int	ret = 0;
-	for (c = str; *c != '\0'; ++c) {
-		if (!isascii(*c)) {
-			ret = 1;
-			break;
-		}
-	}
-	return ret;
 }
 
 static int

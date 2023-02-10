@@ -82,6 +82,20 @@ get_local_charset(char *charset, size_t size)
 }
 
 
+int
+contains_non_ascii(char *str)
+{
+	char	*c;
+	int	ret = 0;
+	for (c = str; *c != '\0'; ++c) {
+		if (*c & ~0x7f) {
+			ret = 1;
+			break;
+		}
+	}
+	return ret;
+}
+
 /*
  * Check, whether a conversion between in- and output_charset is necessary.
  * Return 0 if not necessary or not possible, 1 otherwise.
