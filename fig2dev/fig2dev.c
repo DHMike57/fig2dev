@@ -246,7 +246,9 @@ get_args(int argc, char *argv[])
 		continue;
 
 	    case 'E':
-		if (!strcmp(optarg, "0"))
+		if (!strcmp(optarg, "0") || !strcmp(optarg, "utf8") ||
+					!strcmp(optarg, "UTF8") ||
+					!strcmp(optarg, "utf-8"))
 			input_encoding = "UTF-8";
 		else if (!strcmp(optarg, "1"))
 			input_encoding = "ISO-8859-1";
