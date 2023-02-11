@@ -352,10 +352,6 @@ get_args(int argc, char *argv[])
 		max_dimension = atof(optarg);
 		continue;
 
-	    case 'j':
-		fputs("Option -j is obsolete.\n", stderr);
-		continue;
-
 	    case '?':			/* usage		*/
 		fprintf(stderr, Usage, prog);
 		exit(1);
@@ -599,6 +595,7 @@ help_msg(void)
 "  -F          use correct font sizes (points instead of 1/80inch)\n"
 "  -f font     set default font\n"
 "  -g color    set background color\n"
+"  -j          enable composite fonts for japanese or korean text\n"
 "  -N          convert all colors to grayscale\n"
 "  -n name     set title part of PostScript output to name\n"
 "  -R \"Wx [Wy X0 Y0]\"    force width, height and origin in relative\n"
@@ -768,6 +765,7 @@ help_msg(void)
 "  -F          use correct font sizes (points instead of 1/80inch)\n"
 "  -f font     set default font\n"
 "  -g color    set background color\n"
+"  -j          enable composite fonts for japanese or korean text\n"
 "  -l dummyarg landscape mode (dummy argument required after \"-l\")\n"
 "  -M          generate multiple pages for large figure\n"
 "  -N          convert all colors to grayscale\n"

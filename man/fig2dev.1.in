@@ -1023,6 +1023,22 @@ Use
 for the background.
 
 .TP
+.B \-j
+Enable composite fonts for text objects containing japanese or korean texts.
+With this option on and if your environment variable LC_CTYPE is set to one of
+ja_JP.eucJP, ja_JP.EUC, ja_JP, ja_JP.ujis, ja, japanese, ko_KR.eucKR, ko_KR.EUC,
+ko_KR, ko, or korean, fig2dev will insert a postscript preamble taken from
+the fig2dev/i18n directory into the output file.
+Japanese characters written with the Times-Roman font will then be taken from
+the fonts Ryumin-Light-EUC-H or HeiseiMin-W3-EUC-H, japanese characters written
+with Times-Bold will be taken from GothicBBB-Medium-EUC-H.
+For the korean locales, korean characters appearing in text objects for which
+Times-Roman is selected will be taken from Munhwa-Regular-KSC-EUC-H or
+HLaTeX-Myoungjo-Regular-KSC-EUC-H. Korean characters in Times-Bold text will be
+taken from MunhwaGothic-Bold-KSC-EUC-H or HLaTeX-Gothic-Regular-KSC-EUC-H.
+Ghostscript must be able to find these fonts.
+
+.TP
 .B \-l dummy_arg
 Generate figure in landscape mode.  The dummy argument is ignored,
 but must appear on the command line for reasons of compatibility.

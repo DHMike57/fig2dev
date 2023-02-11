@@ -113,7 +113,7 @@ extern int  read_xpm(READ_SIGNATURE);
 #undef READ_SIGNATURE
 
 static bool	enable_composite_font = false;
-static bool	append_find_composite(FILE *restrict out, FILE *restrict in);
+static bool	append_find_composite(FILE *restrict out);
 
 #define		POINT_PER_INCH		72
 #define		ULIMIT_FONT_SIZE	300
@@ -492,6 +492,10 @@ gen_ps_eps_option(char opt, char *optarg)
 		}
 		break;
 
+	case 'j':
+		enable_composite_font = true;
+		break;
+
 	case 'l':			/* landscape mode */
 		if (!epsflag) {
 		    landscape = true;	/* override the figure file setting */
@@ -581,9 +585,6 @@ genps_start(F_compound *objects)
 	int		 needs_cmap;
 	const struct paperdef	*pd;
 	char		 psize[20];
-
-	char		*libdir;
-	char		 filename[512];
 
 	/* make sure user isn't asking for both TIFF and ASCII preview */
 	if (tiffpreview && asciipreview) {
@@ -936,49 +937,9 @@ genps_start(F_compound *objects)
 	if (approx_spline_exist(objects))
 		fprintf(tfp, "%s\n", SPLINE_PS);
 
-	if (needs_cmap) {
-		char *libdir, *locale;
-		char localefile_buf[128];
-		char *localefile = localefile_buf;
-		FILE *fp;
-
-		libdir = getenv("FIG2DEV_LIBDIR");
-#ifdef I18N_DATADIR
-		if (libdir == NULL)
-			libdir = I18N_DATADIR;
-#endif
-		locale = setlocale(LC_CTYPE, NULL);
-		if (locale == NULL) {
-			fprintf(stderr,
-			      "fig2dev: LANG not defined; assuming C locale\n");
-			locale = "C";
-		}
-		if (strlen(libdir) + strlen(locale) + 5 > sizeof localefile_buf)
-			localefile = malloc(strlen(libdir) + strlen(locale) + 5);
-		if (localefile != NULL) {
-			sprintf(localefile, "%s/%s.ps", libdir, locale);
-			/* get filename like
-			   ``/usr/local/lib/fig2dev/japanese.ps'' */
-			if ((fp = fopen(localefile, "rb"))) {
-				enable_composite_font =
-					append_find_composite(tfp, fp);
-				if (ferror(tfp)) {
-					fputs("Error writing output file.\n",
-							stderr);
-					exit(EXIT_FAILURE);
-				}
-				if (ferror(fp)) {
-					fprintf(stderr,
-						"Error reading file %s.\n"
-						"The output might be broken.\n",
-						localefile);
-				}
-			fclose(fp);
-			}
-		}
-		if (localefile != localefile_buf)
-			free(localefile);
-	}
+	if (needs_cmap && enable_composite_font)
+		/* append the composite font prologue, if applicable */
+		enable_composite_font = append_find_composite(tfp);
 
 	fprintf(tfp, "%s\n", END_PROLOG);
 
@@ -1012,7 +973,6 @@ genps_start(F_compound *objects)
 	fputs("$F2psEnd\n", tfp);
 	fputs("restore\n", tfp);
 	fputs("} bind def\n", tfp);
-
 
 	if (multi_page) {
 		/* reset the matrix for multipage mode */
@@ -1385,14 +1345,53 @@ append(const char *restrict infilename, FILE *outfile)
 	return 0;
 }
 
+#define COMPOSITE_ERRMSG	"fig2dev: LC_CTYPE not defined.\n\
+  In order to use composed fonts for japanese or korean output,\n\
+  set LC_CTYPE to one of the locales ja_JP.eucJP, ja_JP.EUC, ja_JP,\n\
+  ja_JP.ujis, ja, japanese, ko_KR.eucKR, ko_KR.EUC, ko_KR, ko, or korean.\n"
+
 /*
- * Append open file in to open file out while searching for the string
- * "CompositeRoman".  Return true if found, false otherwise.
+ * Search for a postscript prologue based on the current locale.
+ * Append the file to out.
+ * Search for the text "CompositeRoman" and return true, if found.
+ * Return false if not found or if the postscript prologue file was not found.
  */
 static bool
-append_find_composite(FILE *restrict out, FILE *restrict in)
+append_find_composite(FILE *restrict out)
 {
+	char	*libdir, *locale;
+	char	localefile_buf[128];
+	char	*localefile = localefile_buf;
+	FILE	*in;
+
+	libdir = getenv("FIG2DEV_LIBDIR");
+#ifdef I18N_DATADIR
+	if (libdir == NULL)
+		libdir = I18N_DATADIR;
+#endif
+	locale = setlocale(LC_CTYPE, NULL);
+	if (locale == NULL) {
+		fputs(COMPOSITE_ERRMSG, stderr);
+		return false;
+	}
+	if (strlen(libdir) + strlen(locale) + 5 > sizeof localefile_buf &&
+		!(localefile = malloc(strlen(libdir) + strlen(locale) + 5))) {
+		put_msg(Err_mem);
+		return false;
+	}
+
+	sprintf(localefile, "%s/%s.ps", libdir, locale);
+	/* get filename like /usr/local/lib/fig2dev/japanese.ps */
+	if (!(in = fopen(localefile, "rb"))) {
+		err_msg("Unable to open postscript prologue file %s");
+		if (localefile != localefile_buf)
+			free(localefile);
+		return false;
+	}
+
 	/*
+	 * Now search for CompositeRoman and, if found, copy the file to tfp.
+	 *
 	 * Initially, the needle was passed as a function parameter. However,
 	 * Visual Studio cannot create an array of a size depending on a
 	 * function parameter (str[], below). Therefore, use the fixed needle
@@ -1431,9 +1430,19 @@ append_find_composite(FILE *restrict out, FILE *restrict in)
 		}
 		fwrite(str + needle_len, (size_t)1, chars, out);
 	}
+	if (ferror(out)) {
+		put_msg("Error writing output file.");
+		exit(EXIT_FAILURE);
+	}
+	if (!fclose(in)) {
+		err_msg("Error reading file %s", localefile);
+		put_msg("The output might be broken.");
+	}
+
+	if (localefile != localefile_buf)
+		free(localefile);
 	return found;
 }
-
 
 /* read file named in "infilename", converting the binary to hex and
    append to already open FILE "outfile".
@@ -1463,7 +1472,6 @@ appendhex(char *infilename, FILE *outfile, int width, int height)
 	}
 	fclose(infile);
 }
-
 
 static void
 set_style(int s, double v)
@@ -2378,7 +2386,7 @@ genps_text(F_text *t)
 
 	if (t->angle != 0.0)
 		fprintf(tfp, " %.1f rot ", t->angle*180.0/M_PI);
-	/* this loop escapes characters '(', ')', and '\' */
+
 	fputc('(', tfp);
 
 	if ((!enable_composite_font || !composite) && need_conversion == 1 &&
@@ -2387,6 +2395,7 @@ genps_text(F_text *t)
 	else
 		str = t->cstring;
 
+	/* this loop escapes characters '(', ')', and '\' */
 	for(cp = (unsigned char *)str; *cp; cp++) {
 		if (LINE_LENGTH_LIMIT < chars) {
 			fputs("\\\n", tfp);
@@ -2396,6 +2405,8 @@ genps_text(F_text *t)
 		if (enable_composite_font && composite) {
 			if (ch & 0x80) {	/* GR */
 				if (!state_gr) {
+					/* insert the EscChar (default 255) and
+					   the font number (here 1) */
 					fprintf(tfp, "\\377\\001");
 					chars += 8;
 					state_gr = true;
@@ -2410,6 +2421,7 @@ genps_text(F_text *t)
 								t->cstring);
 						fputc('?', tfp);
 					}
+					/* EscChar and font number, here 0 */
 					fprintf(tfp, "\\377\\000");
 					chars += 8;
 					state_gr = false;
