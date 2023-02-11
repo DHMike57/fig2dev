@@ -870,20 +870,6 @@ genps_start(F_compound *objects)
 		fputs("%\n", tfp);
 	}
 
-	/* insert PostScript codes to select paper size, if exist */
-	libdir = getenv("FIG2DEV_LIBDIR");
-#ifdef I18N_DATADIR
-	if (libdir == NULL)
-		libdir = I18N_DATADIR;
-#endif
-	if (libdir != NULL) {
-		sprintf(filename, "%s/%s.ps", libdir, papersize);
-		/* get filename like "/usr/local/lib/fig2dev/A3.ps" and
-		   prepend it to the postscript code;
-		   do not mind, if it does not work */
-		(void)append(filename, tfp);
-	}
-
 	fputs("%%BeginProlog\n", tfp);
 
 	if (needs_cmap) {
