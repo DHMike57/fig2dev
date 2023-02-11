@@ -47,10 +47,7 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 check_PROGRAMS = test1 test2
 
 # keep the definitions below in sync with those in ../dev/Makefile.am
-if ENABLE_I18N
 test1_CPPFLAGS = -DI18N_DATADIR="\"$(i18ndir)\""
-endif
-
 test2_CPPFLAGS = -I$(top_srcdir)/fig2dev -I$(top_srcdir)/fig2dev/dev
 test2_LDADD = $(top_builddir)/fig2dev/dev/libdrivers.a \
 	$(top_builddir)/fig2dev/messages.$(OBJEXT)
