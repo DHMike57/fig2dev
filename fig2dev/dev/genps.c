@@ -2344,19 +2344,25 @@ genps_ellipse(F_ellipse *e)
 void
 genps_text(F_text *t)
 {
-	unsigned char		*cp;
+	static int	need_conversion = -1;
+	unsigned char	*cp;
 #define LINE_LENGTH_LIMIT 200
-	bool composite = false;
-	bool state_gr = false;
-	int chars = 0;
-	int gr_chars = 0;
-	unsigned char ch;
+	bool		composite = false;
+	bool		state_gr = false;
+	int		chars = 0;
+	int		gr_chars = 0;
+	unsigned char	ch;
+	int		beyond_ascii = 0;
+	char		*str = NULL;
 
 	do_split(t->depth);
 
 	/* ignore hidden text (new for xfig3.2.3/fig2dev3.2.3) */
 	if (hidden_text(t))
 		return;
+
+	if (need_conversion == -1)
+		need_conversion = check_conversion("UTF-8", input_encoding);
 
 	if (multi_page)
 		fprintf(tfp, "/o%d {", no_obj++);
@@ -2375,7 +2381,7 @@ genps_text(F_text *t)
 			fprintf(tfp, TEXT_PS, "CompositeBold", "",PSFONTMAG(t));
 	} else {
 		if (PSneedsutf8[t->font+1] == 1 &&
-				contains_non_ascii(t->cstring))
+				(beyond_ascii = contains_non_ascii(t->cstring)))
 			fprintf(tfp, TEXT_PS, PSFONT(t), "-UTF-8",PSFONTMAG(t));
 		else
 			fprintf(tfp, TEXT_PS, PSFONT(t), "", PSFONTMAG(t));
@@ -2389,7 +2395,13 @@ genps_text(F_text *t)
 	/* this loop escapes characters '(', ')', and '\' */
 	fputc('(', tfp);
 
-	for(cp = (unsigned char *)t->cstring; *cp; cp++) {
+	if ((!enable_composite_font || !composite) && need_conversion == 1 &&
+			beyond_ascii /* checked also for PSneedsutf8[]== 1 */)
+		(void)convert(&str, t->cstring, strlen(t->cstring));
+	else
+		str = t->cstring;
+
+	for(cp = (unsigned char *)str; *cp; cp++) {
 		if (LINE_LENGTH_LIMIT < chars) {
 			fputs("\\\n", tfp);
 			chars = 0;
@@ -2438,6 +2450,8 @@ genps_text(F_text *t)
 		}
 	}
 	fputc(')', tfp);
+	if (str && str != t->cstring)
+		free(str);
 
 	if ((t->type == T_CENTER_JUSTIFIED) || (t->type == T_RIGHT_JUSTIFIED)){
 
