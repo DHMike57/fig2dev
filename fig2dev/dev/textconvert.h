@@ -30,4 +30,5 @@ extern int	contains_non_ascii(char *str);
 extern int	check_conversion(const char *restrict output_encoding,
 				const char *restrict input_encoding);
 extern int	convert(char **restrict out, char *restrict in, size_t inlen);
+extern int	convertutf8tolatin1(char *restrict str);
 #endif

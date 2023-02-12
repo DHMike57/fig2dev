@@ -233,3 +233,41 @@ convert(char **restrict out, char *restrict in, size_t inlen)
 	 * the caller immediately free's *out anyhow. */
 	return stat;
 }
+
+/*
+ * Convert utf8 to latin1. Code points beyond latin 1 are silently omitted.
+ * Return -1 if characters beyond latin1 are found or errors are encountered,
+ * 0 if all went smoothly.
+ */
+int
+convertutf8tolatin1(char *restrict str)
+{
+	char	*c;
+	char	*d;
+	int	stat = 0;
+
+	d = str;
+	for (c = str; *c; ++c) {
+		if (!(*c & 0x80/* 1000 0000 */)) {	/* ascii */
+			if (d == c)
+				++d;
+			else	
+				*d++ = *c;
+		} else {				/* above ascii */
+			if (*c & 0xd0/* 1110 0000 */ == 0xc0/* 1100 0000*/ &&
+					(*d = *c & 0x3f/* 0011 1111 */) < 4 &&
+					++*c) {
+				*d = *d << 5 & (*c & 0x3f);
+				++d;
+			} else {
+				stat = -1;
+				/* skip any sequence representing larger
+				   codepoints */
+				while (*c && *c & 0x80)
+					++c;
+			}
+		}
+	}
+	*d = '\0';
+	return stat;
+}
