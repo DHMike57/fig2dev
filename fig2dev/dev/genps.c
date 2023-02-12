@@ -189,7 +189,7 @@ static void	genps_ctl_spline(F_spline *s);
 static void	genps_itp_spline(F_spline *s);
 static void	genps_std_colors(void);
 static void	genps_usr_colors(void);
-static int	note_text_beyond_ascii(F_compound *obj);
+static int	note_text_needing_cmap(F_compound *obj);
 static void	putword(int word, FILE *file);
 static void	set_linewidth(double w);
 
@@ -822,7 +822,7 @@ genps_start(F_compound *objects)
 	/* put in the magnification for information purposes */
 	fprintf(tfp, "%%%%Magnification: %.4f\n",metric? mag*76.2/80.0 : mag);
 
-	if ((needs_cmap = note_text_beyond_ascii(objects))) {
+	if ((needs_cmap = note_text_needing_cmap(objects))) {
 		fputs("%%DocumentNeededResources: ProcSet (CIDInit)\n", tfp);
 		fputs("%%+ CMap (Xfig-UTF8-H)\n", tfp);
 		fputs("%%DocumentSuppliedResources: CMap (Xfig-UTF8-H)\n", tfp);
@@ -925,7 +925,7 @@ genps_start(F_compound *objects)
 		 *	[/NewCenturySchlbk-Roman ] composefont pop
 		 */
 		for (i = 0; i < MAX_PSFONT + 2; ++i)
-			if (PSneedsutf8[i])
+			if (PSneedsutf8[i] == 1)
 				fprintf(tfp, "/%s-UTF-8\n/Xfig-AGL-UTF8-H /CMap"
 						" findresource\n"
 						"[/%s ] composefont pop\n",
@@ -2374,7 +2374,7 @@ genps_text(F_text *t)
 		else
 			fprintf(tfp, TEXT_PS, "CompositeBold", "",PSFONTMAG(t));
 	} else {
-		if (PSneedsutf8[t->font+1] == 1 &&
+		if (PSneedsutf8[t->font + 1] == 1 &&
 				(beyond_ascii = contains_non_ascii(t->cstring)))
 			fprintf(tfp, TEXT_PS, PSFONT(t), "-UTF-8",PSFONTMAG(t));
 		else
@@ -2390,10 +2390,14 @@ genps_text(F_text *t)
 	fputc('(', tfp);
 
 	if ((!enable_composite_font || !composite) && need_conversion == 1 &&
-			beyond_ascii /* checked also for PSneedsutf8[]== 1 */)
-		(void)convert(&str, t->cstring, strlen(t->cstring));
-	else
+				beyond_ascii /* && PSneedsutf8[] == 1 */) {
+			(void)convert(&str, t->cstring, strlen(t->cstring));
+	} else {
+		/* PSneedsutf8[] == 2 and composite are mutually exclusive */
 		str = t->cstring;
+		if (PSneedsutf8[t->font + 1] == 2)
+			(void)convertutf8tolatin1(str);
+	}
 
 	/* this loop escapes characters '(', ')', and '\' */
 	for(cp = (unsigned char *)str; *cp; cp++) {
@@ -2729,7 +2733,7 @@ genps_usr_colors(void)
 }
 
 static int
-note_text_beyond_ascii(F_compound *obj)
+note_text_needing_cmap(F_compound *obj)
 {
 	int		needs_cmap = 0;
 	F_compound	*o;
@@ -2740,7 +2744,8 @@ note_text_beyond_ascii(F_compound *obj)
 			((!strcmp(lang, "pstex") || !strcmp(lang, "pdftex")) &&
 				 special_text(t)))
 			continue;
-		if (contains_non_ascii(t->cstring)) {
+		if (!PSneedsutf8[t->font + 1] &&
+					contains_non_ascii(t->cstring)) {
 			if (!needs_cmap)
 				needs_cmap = 1;
 			PSneedsutf8[t->font + 1] = 1;
@@ -2748,7 +2753,7 @@ note_text_beyond_ascii(F_compound *obj)
 	}
 
 	for (o = obj->compounds; o != NULL; o = o->next)
-		needs_cmap = note_text_beyond_ascii(o);
+		needs_cmap = note_text_needing_cmap(o);
 
 	return needs_cmap;
 }

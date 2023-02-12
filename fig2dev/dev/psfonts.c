@@ -2,8 +2,8 @@
  * Fig2dev: Translate Fig code to various Devices
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
- * Parts Copyright (c) 1989-2007 by Brian V. Smith
- * Parts Copyright (c) 2015,2016 by Thomas Loimer
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -144,6 +144,8 @@ static int	PSmapwarn[] = {
 		true			/* ZapfDingbats */
 };
 
+/* 0 for only ascii characters, 1 beyond ascii,
+   2 for Symbol or Zapf Dingbats requiring latin1 encoding */
 int	PSneedsutf8[] = {
 		0, 0,			/* Times-Roman */
 		0,			/* Times-Italic */
@@ -177,9 +179,9 @@ int	PSneedsutf8[] = {
 		0,			/* Palatino-Italic */
 		0,			/* Palatino-Bold */
 		0,			/* Palatino-BoldItalic */
-		0,			/* Symbol */
+		2,			/* Symbol */
 		0,			/* ZapfChancery-MediumItalic */
-		0			/* ZapfDingbats */
+		2			/* ZapfDingbats */
 };
 
 static char *figfontnames[] = {

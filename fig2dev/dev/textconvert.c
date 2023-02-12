@@ -254,10 +254,10 @@ convertutf8tolatin1(char *restrict str)
 			else	
 				*d++ = *c;
 		} else {				/* above ascii */
-			if (*c & 0xd0/* 1110 0000 */ == 0xc0/* 1100 0000*/ &&
+			if ((*c & 0xd0/* 1110 0000 */) == 0xc0/* 1100 0000*/ &&
 					(*d = *c & 0x3f/* 0011 1111 */) < 4 &&
-					++*c) {
-				*d = *d << 5 & (*c & 0x3f);
+					*++c) {
+				*d = *d << 6 | (*c & 0x3f);
 				++d;
 			} else {
 				stat = -1;
