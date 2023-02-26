@@ -723,8 +723,6 @@ help_msg(void)
 		if (dev == NULL || !strcmp(lang, "pictex")) {
 			puts(
 "PICTeX Options:\n"
-"  -E num      set encoding for text translation (0 = no translation,\n"
-"                1 = ISO-8859-1, 2 = ISO-8859-2; default 1)\n"
 "  -f font     set default font\n"
 "  -l dimen    set line thickness to TeX dimen\n"
 "  -p symbol   set plot symbol (default \\tencirc\\symbol{'160})\n"

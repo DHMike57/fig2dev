@@ -43,8 +43,8 @@
 #include "messages.h"
 #include "pi.h"
 #include "psfonts.h"
-#include "setfigfont.h"
 #include "texfonts.h"
+#include "textconvert.h"
 
 #define UNIT "cm"	/* dip */
 #define CONVUNIT 2.54	/* dip */
@@ -62,7 +62,6 @@ static void	rtop();
 static void	draw_arrow_head();
 static void	set_linewidth();
 
-static int	encoding = 1;
 static double	dash_length = -1;
 static int	line_style = SOLID_LINE;
 static char	*linethick = "1pt";
@@ -106,12 +105,6 @@ genpictex_option(char opt, char *optarg)
 
 	case 'r':			/* do not use dvips */
 		rotate = false;
-		break;
-
-	case 'E':
-		encoding = atoi(optarg);
-		if (encoding < 0 || encoding > 2)
-			encoding = 1;
 		break;
 
 	case 'G':
@@ -158,7 +151,6 @@ genpictex_start(F_compound *objects)
 		fprintf(tfp, "%%\n");
 	}
 	fprintf(tfp, "\\font\\thinlinefont=cmr5\n");
-	define_setfigfont(tfp);
 	fprintf(tfp, "\\mbox{\\beginpicture\n");
 	fprintf(tfp, "\\setcoordinatesystem units <%6.5f%s,%6.5f%s>\n",
 			mag, UNIT, mag, UNIT);
@@ -627,24 +619,7 @@ genpictex_text(F_text *t)
 		return;
 	}
 
-	unpsfont(t);
-	{
-		int texsize;
-		double baselineskip;
-
-		texsize = TEXFONTMAG(t);
-		baselineskip = (texsize * 1.2);
-
-#ifdef NFSS
-		fprintf(tfp, "\\put{\\SetFigFont{%d}{%.1f}{%s}{%s}{%s}",
-				texsize, baselineskip,
-				TEXFAMILY(t->font), TEXSERIES(t->font),
-				TEXSHAPE(t->font));
-#else
-		fprintf(tfp, "\\put{\\SetFigFont{%d}{%.1f}{%s}",
-				texsize, baselineskip, TEXFONT(t->font));
-#endif
-	}
+	select_font(t, true, true, true);
 
 	if(rotate && t->angle && t->type == T_LEFT_JUSTIFIED)
 		fprintf(tfp,
@@ -653,41 +628,7 @@ genpictex_text(F_text *t)
 
 	set_color(t->color);
 
-	if (!special_text(t))
-		/* this loop escapes characters "$&%#_{}" */
-		/* and deleted characters "~^\" */
-		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
-			if (strchr("$&%#_{}", *cp))
-				(void)fputc('\\', tfp);
-			if (strchr("~^\\", *cp))
-				fprintf(stderr,
-					"Bad character in text object '%c'\n",
-					*cp);
-			else
-				(void)fputc(*cp, tfp);
-		}
-	else
-		for(cp = (unsigned char*)t->cstring; *cp; cp++) {
-			if (t->font <= 2)
-				fputc(*cp, tfp);
-			else
-				if (*cp >= 0xa0) {
-					switch (encoding) {
-					case 0: /* no escaping */
-						fputc(*cp, tfp);
-						break;
-					case 1: /* iso-8859-1 */
-						fprintf(tfp, "%s",
-							ISO1toTeX[(int)*cp-0xa0]);
-						break;
-					case 2: /* iso-8859-2 */
-						fprintf(tfp, "%s",
-							ISO2toTeX[(int)*cp-0xa0]);
-						break;
-					}
-				} else
-					fputc(*cp, tfp);
-		}
+	put_string(t->cstring, t->font, special_text(t), need_conversion);
 
 	reset_color(t->color);
 

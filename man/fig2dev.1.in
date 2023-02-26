@@ -807,11 +807,6 @@ The size of TeX's memory limits the number of plot symbols in a picture.
 As a result, it is best to use PiCTeX to generate small pictures.
 
 .TP
-.B \-E num
-Set encoding for latex text translation
-(0 = no translation, 1 = ISO-8859-1, 2 = ISO-8859-2; default 1).
-
-.TP
 .B \-f font
 Set the default font used for text objects to \fIfont\fR,
 where \fIfont\fR is one of
