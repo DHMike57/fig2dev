@@ -85,10 +85,11 @@ get_local_charset(char *charset, size_t size)
 int
 contains_non_ascii(char *str)
 {
-	char	*c;
-	int	ret = 0;
-	for (c = str; *c != '\0'; ++c) {
-		if (*c & ~0x7f) {
+	const unsigned char	mask = ~0x7f;
+	unsigned char		*c;
+	int			ret = 0;
+	for (c = (unsigned char *)str; *c != '\0'; ++c) {
+		if (*c & mask) {
 			ret = 1;
 			break;
 		}
@@ -242,12 +243,12 @@ convert(char **restrict out, char *restrict in, size_t inlen)
 int
 convertutf8tolatin1(char *restrict str)
 {
-	char	*c;
-	char	*d;
-	int	stat = 0;
+	unsigned char	*c;
+	unsigned char	*d;
+	int		stat = 0;
 
-	d = str;
-	for (c = str; *c; ++c) {
+	d = (unsigned char *)str;
+	for (c = (unsigned char *)str; *c; ++c) {
 		if (!(*c & 0x80/* 1000 0000 */)) {	/* ascii */
 			if (d == c)
 				++d;
