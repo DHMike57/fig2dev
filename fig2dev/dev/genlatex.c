@@ -38,6 +38,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include "genlatex.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,12 +49,10 @@
 #include <math.h>
 
 #include "fig2dev.h"	/* includes bool.h and object.h */
-//#include "object.h"
-#include "genlatex.h"
 #include "messages.h"
 #include "pi.h"
 #include "texfonts.h"
-#include "textconvert.h"
+#include "textconvert.h"	/* check_conversion() */
 
 
 /*
@@ -873,14 +872,7 @@ genlatex_text(F_text *t)
 
 	set_color(t->color);
 
-	if (need_conversion == 1 && contains_non_ascii(t->cstring)) {
-		char	*str;
-		(void)convert(&str, t->cstring, strlen(t->cstring));
-		put_string(str, special_text(t));
-		free(str);
-	} else {
-		put_string(t->cstring, special_text(t));
-	}
+	put_string(t->cstring, t->font, special_text(t), need_conversion);
 
 	reset_color(t->color);
 

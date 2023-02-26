@@ -22,12 +22,14 @@
 #include "texfonts.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>		/* strpbrk() */
 #include <math.h>		/* floor() */
 
 #include "fig2dev.h"
 #include "object.h"
 #include "psfonts.h"		/* unpsfont() */
+#include "textconvert.h"
 
 
 #ifdef NFSS
@@ -181,55 +183,112 @@ select_font(F_text *t, bool select_fontsize, bool select_fontname,
 				(t->font >= 0 ? t->font : 0) : MAX_FONT - 1]);
 }
 
-/*
- * Output the string in a text object.
- * If tex_text is false, quote characters that have a special meaning in tex.
- */
-void
-put_string(const char *restrict string, bool tex_text)
+static void
+put_quoted_string(const char *restrict string)
 {
-	if (tex_text) {
-		/* do not quote any characters */
-		fputs(string, tfp);
-	} else {
-		/* escape the characters below in strpbrk() */
-		const char	*c;
-		const char	*last =  string;
-		while (*last && (c = strpbrk(last, "#$%&<>\\^_`{|}~"))) {
-			/* print the string up to the special character */
-			fprintf(tfp, "%.*s", (int)(c - last), last);
-			switch (*c) {
-			case '<':
-			case '>':
-			case '|':
-				/* without \usepackage[T1]{fontenc}, pdftex
-				   renders these characters differently */
-				fputc('$', tfp);
-				fputc(*c, tfp);
-				fputc('$', tfp);
-				break;
-			case '\\':
-				fputs("\\textbackslash ", tfp);
-				break;
-			case '^':
-				/* with \usepackage[T1]{fontenc}, \^{} inserts
-				   ascii 2, while \textasciicircum inserts the
-				   correct ascii 94 */
-				fputs("\\textasciicircum ", tfp);
-				break;
-			case '~':
-				/* with \usepackage[T1]{fontenc}, \~{} inserts
-				   ascii 3, \textasciitilde inserts ascii 126 */
-				fputs("\\textasciitilde ", tfp);
-				break;
-			default:	/* cases: # $ & _ { } */
-				fputc('\\', tfp);
-				fputc(*c, tfp);
-				break;
-			}
-			last = c + 1;
+	const char	*c;
+	const char	*last =  string;
+
+	while (*last && (c = strpbrk(last, " #$%&<>\\^_{|}~"))) {
+		/* print the string up to the special character */
+		fprintf(tfp, "%.*s", (int)(c - last), last);
+		switch (*c) {
+		case '<':
+			fputs("\\textless ", tfp);
+			break;
+		case '>':
+			fputs("\\textgreater ", tfp);
+			break;
+		case '|':
+			fputs("\\textbar ", tfp);
+			break;
+		case '\\':
+			fputs("\\textbackslash ", tfp);
+			break;
+		case '^':
+			/* with \usepackage[T1]{fontenc}, \^{} inserts
+			   ascii 2, while \textasciicircum inserts the
+			   correct ascii 94 */
+			fputs("\\textasciicircum ", tfp);
+			break;
+		case '~':
+			/* with \usepackage[T1]{fontenc}, \~{} inserts
+			   ascii 3, \textasciitilde inserts ascii 126 */
+			fputs("\\textasciitilde ", tfp);
+			break;
+		default:	/* cases "space"#$%&_{} */
+			fputc('\\', tfp);
+			fputc(*c, tfp);
+			break;
 		}
-		if (*last)
-			fputs(last, tfp);
+		last = c + 1;
+	}
+	if (*last)
+		fputs(last, tfp);
+}
+
+static void
+put_quoted_characters(const char *restrict str)
+{
+	const char	*c;
+
+	/*
+	 * an excerpt from the ascii table:
+	 *   35 #   36 $   37 %   38 &	 39 '	92 \  94 ^  95 _  96 `
+	 *  123 {  125 }  126 ~
+	 * \#, \% and \& would also work
+	 */
+	for (c = str; *c; ++c) {
+		if (strchr(" #$%&\\^_`{}~", *c) || (unsigned char)(*c) > 127) {
+			fprintf(tfp, "\\char%hhu", *c);
+			if (*(c + 1) >= '0' && *(c + 1) <= '9')
+				fputc(' ', tfp);
+		} else {
+			fputc(*c, tfp);
+		}
+	}
+}
+
+static void
+put_characters(const char *restrict str)
+{
+	const char	*c;
+
+	for (c = str; *c; ++c) {
+		if ((unsigned char)(*c) > 127) {
+			fprintf(tfp, "\\char%hhu", *c);
+			if (*(c + 1) >= '0' && *(c + 1) <= '9')
+				fputc(' ', tfp);
+		} else {
+			fputc(*c, tfp);
+		}
+	}
+}
+
+void
+put_string(char *restrict string, int font, bool tex_text, int need_conversion)
+{
+
+	if (font == MAX_PSFONT || font == MAX_PSFONT - 2) {
+		/* Zapf Dingbats || Symbol */
+		if (need_conversion != 1 && contains_non_ascii(string))
+			(void)convertutf8tolatin1(string);
+		/* leave text in any other encoding as-is */
+		if (tex_text)
+			put_characters(string);
+		else
+			put_quoted_characters(string);
+	} else {
+		char	*str = string;
+		/* all other fonts */
+		if (need_conversion == 1 && contains_non_ascii(string))
+			(void)convert(&str, string, strlen(string));
+		if (tex_text)
+			fputs(str, tfp);
+		else
+			put_quoted_string(str);
+
+		if (str != string)
+			free(str);
 	}
 }

@@ -57,7 +57,8 @@ extern char		texfontsizes[];
 #define TEXFONTSIZE(S)	((S) <= MAXFONTSIZE ? texfontsizes[(int)round(S)] : (S))
 #define TEXFONTMAG(T)	TEXFONTSIZE(T->size*(rigid_text(T) ? 1.0 : fontmag))
 
-extern void	put_string(const char *restrict string, bool tex_text);
+extern void	put_string(char *restrict string, int font, bool tex_text,
+				int need_conversion);
 extern void	select_font(F_text *t, bool select_fontsize,
 				bool select_fontname, bool only_texfonts);
 

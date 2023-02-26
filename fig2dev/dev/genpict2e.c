@@ -2184,14 +2184,7 @@ genpict2e_text(F_text *t)
 
 	select_font(t, select_fontsize, select_fontname, only_texfonts);
 
-	if (need_conversion == 1 && contains_non_ascii(t->cstring)) {
-		char	*str;
-		(void)convert(&str, t->cstring, strlen(t->cstring));
-		put_string(str, special_text(t));
-		free(str);
-	} else {
-		put_string(t->cstring, special_text(t));
-	}
+	put_string(t->cstring, t->font, special_text(t), need_conversion);
 
         if(t->angle)
              fputc('}', tfp);
