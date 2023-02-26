@@ -167,14 +167,15 @@ read_objects(FILE *fp, F_compound *obj)
 	F_arc		*a, *la = NULL;
 	F_compound	*c, *lc = NULL;
 	bool		objects = false;
+	int		i;
 	int		object, coord_sys;
 	int		line_no;
 	int		gif_colnum = 0;
 	char		*line;
-	char		buf[16];
+	char		buf[17];
 	size_t		line_len = 256;
 
-	/* Get the 15 chars of the first line.
+	/* Get the first chars of the first line.
 	   Use fgets(), because get_line() would store the line as a comment */
 	if (fgets(buf, sizeof buf, fp) == NULL) {
 		put_msg("Could not read input file.");
@@ -188,10 +189,9 @@ read_objects(FILE *fp, F_compound *obj)
 	/* seek to the end of the first line
 	   (the only place, where '\0's are tolerated) */
 	} else if (buf[strlen(buf) - 1] != '\n') {
-		int	c;
 		do
-			c = fgetc(fp);
-		while (c != '\n' && c != EOF);
+			i = fgetc(fp);
+		while (i != '\n' && i != EOF);
 	}
 
 	if (strncmp(buf, "#FIG ", 5)) {
@@ -220,6 +220,32 @@ read_objects(FILE *fp, F_compound *obj)
 		put_msg("Cannot determine fig file format from string '%s'.",
 				&buf[5]);
 		exit(EXIT_FAILURE);
+	}
+
+	if ((i = fgetc(fp)) == '#') {
+		if (fgets(buf, sizeof buf, fp) == NULL) {
+			put_msg("Could not read input file.");
+			return -1;
+		}
+		/* if the input_encoding is set as an option, override
+		   the encoding given in the file */
+		if (!input_encoding && !strcmp(buf, "encoding: UTF-8\n")) {
+			input_encoding = "UTF-8";
+		} else if (buf[strlen(buf) - 1] != '\n') {
+			/* seek forward to the end of the line;
+			   comments here are not mentioned by the
+			   specification, thus ignore this comment */
+			while ((i = fgetc(fp)) != '\n' && i != EOF)
+				;
+		}
+	} else {
+		if (i == EOF) {
+			put_msg("Could not read input file.");
+			return -1;
+		}
+		if (i != ungetc(i, fp))
+			put_msg("Unable to push back the first character of the"
+					" second line.");
 	}
 
 	if ((line = malloc(line_len)) == NULL) {

@@ -2,7 +2,10 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
-Patchlevel 8c (Xxx 2023)
+Patchlevel 9 (Xxx 2023)
+
+NEW FEATURES:
+	o Write utf8-encoded postscript and tex-outputs.
 
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.

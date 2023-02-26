@@ -187,7 +187,7 @@ static void
 put_quoted_string(const char *restrict string)
 {
 	const char	*c;
-	const char	*last =  string;
+	const char	*last = string;
 
 	while (*last && (c = strpbrk(last, " #$%&<>\\^_{|}~"))) {
 		/* print the string up to the special character */
