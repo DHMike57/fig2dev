@@ -69,7 +69,6 @@ static int	default_color = DEFAULT;
 static int	cur_color = DEFAULT;
 static int	cur_shade = NUMSHADES - 1;
 static int	border_margin = 0;
-static char	*output_encoding = NULL;
 
 /* Definitions */
 struct pattern {		/* the dash pattern of non-solid lines */
@@ -240,10 +239,6 @@ genpict2e_option(char opt, char *optarg)
 	thick_width = atoi(optarg);
 	break;
     */
-
-    case 'u':
-	output_encoding = "UTF-8";
-	break;
 
     case 'v':
 	verbose = 1;		/* verbose mode */
@@ -2146,12 +2141,8 @@ genpict2e_text(F_text *t)
 	static int	need_conversion = -1;
 	char		*tpos;
 
-	if (need_conversion == -1) {
-		if (pagemode)
-			output_encoding = "UTF-8";
-		need_conversion = check_conversion(output_encoding,
-							input_encoding);
-	}
+	if (need_conversion == -1)
+		need_conversion = check_conversion("UTF-8", input_encoding);
 
 	if (verbose)
 	    fputs("%\n% Fig TEXT object\n%\n", tfp);

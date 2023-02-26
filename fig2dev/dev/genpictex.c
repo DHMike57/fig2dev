@@ -592,9 +592,12 @@ genpictex_ellipse(F_ellipse *e)
 void
 genpictex_text(F_text *t)
 {
-	double	x, y;
-	char *tpos;
-	unsigned char *cp;
+	double		x, y;
+	char		*tpos;
+	static int	need_conversion = -1;
+
+	if (need_conversion == -1)
+		need_conversion = check_conversion("UTF-8", input_encoding);
 
 	/* print any comments */
 	print_comments("% ",t->comments, "");

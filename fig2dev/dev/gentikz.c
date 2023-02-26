@@ -216,7 +216,6 @@ static int	cur_patcolor = DEFAULT;
 static int	cur_fillcolor = DEFAULT;
 static int	cur_fillstyle = BLACK_FILL;	/* really, a solid color: NUMSHADES - 1 */
 static int	border_margin = 0;
-static char	*output_encoding = NULL;
 static struct options	default_options;
 static struct options	alt_options;
 
@@ -297,10 +296,6 @@ gentikz_option(char opt, char *optarg)
 
 	case 'P':
 	    pagemode = true;
-	    break;
-
-	case 'u':
-	    output_encoding = "UTF-8";
 	    break;
 
 	case 'v':
@@ -1698,12 +1693,8 @@ gentikz_text(F_text *t)
 {
 	static int	need_conversion = -1;
 
-	if (need_conversion == -1) {
-		if (pagemode)
-			output_encoding = "UTF-8";
-		need_conversion = check_conversion(output_encoding,
-							input_encoding);
-	}
+	if (need_conversion == -1)
+		need_conversion = check_conversion("UTF-8", input_encoding);
 
 	if (verbose)
 	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");

@@ -176,7 +176,7 @@ static double	DashLen;
 static int	PageMode = false;
 static int	PatternType=UNFILLED;
 static int	PatternColor=WHITE_COLOR;
-static char	*output_encoding = NULL;
+
 static struct {
     double mag;
     int size;
@@ -287,10 +287,6 @@ genepic_option(char opt, char *optarg)
 		loop -= 8;
 		mag = ScaleTbl[loop].mag;
 		font_size = (double) ScaleTbl[loop].size;
-		break;
-
-	case 'u':
-		output_encoding = "UTF-8";
 		break;
 
 	case 'v':
@@ -1202,8 +1198,7 @@ genepic_text(F_text *text)
     int rot_angle = 0;
 
 	if (need_conversion == -1)
-		need_conversion = check_conversion(output_encoding,
-							input_encoding);
+		need_conversion = check_conversion("UTF-8", input_encoding);
 
     /* print any comments prefixed with "%" */
     print_comments("% ",text->comments,"");

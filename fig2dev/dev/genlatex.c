@@ -130,7 +130,6 @@ double		ldot_xoffset;
 double		ldot_yoffset;
 static int	border_margin = 0;
 static double	rad2deg = 57.295779513082320877;
-static char	*output_encoding = NULL;
 
 /*
  *	struct angle_table line_angles, arrow_angles and get_slope()
@@ -260,10 +259,6 @@ genlatex_option(char opt, char *optarg)
 
 	case 'l':			/* set thin/thick line threshold */
 	    thick_width = atoi(optarg);
-	    break;
-
-	case 'u':
-	    output_encoding = "UTF-8";
 	    break;
 
 	case 'v':
@@ -833,8 +828,7 @@ genlatex_text(F_text *t)
 	const char	*tpos;
 
 	if (need_conversion == -1)
-		need_conversion = check_conversion(output_encoding,
-							input_encoding);
+		need_conversion = check_conversion("UTF-8", input_encoding);
 	if (verbose)
 	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 

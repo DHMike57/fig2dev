@@ -346,10 +346,6 @@ Set the stretch factor of dashed lines to
 The default is 30.
 
 .TP
-.B \-u
-Write output file as utf-8 encoded unicode, regardless of the current locale.
-
-.TP
 .B \-v
 Include comments in the output file.
 
@@ -509,11 +505,6 @@ Make blank border around figure of width
 .B \-d dmag
 Set a separate magnification for the length of line dashes to \fIdmag\fR.
 
-.TP
-.B \-E num
-Set encoding for latex text translation
-(0 = no translation, 1 = ISO-8859-1, 2 = ISO-8859-2; default 1).
-
 @nfssman@
 
 .TP
@@ -534,10 +525,6 @@ Lines of width greater than
 pixels are drawn as \\thicklines.
 Also affects the size of dots in dotted line style.
 The default is 1.
-
-.TP
-.B \-u
-Write output file as utf-8 encoded unicode, regardless of the current locale.
 
 .TP
 .B \-v
@@ -793,10 +780,6 @@ Replace all arrows by LaTeX-arrows.
 .TP
 .B \-T
 Only use TeX fonts, even where PostScript-fonts are specified.
-
-.TP
-.B \-u
-Write output file as utf-8 encoded unicode, regardless of the current locale.
 
 .TP
 .B \-v
@@ -1197,10 +1180,6 @@ document (like "\fB\\sfshape \\input picture.eepic\fR").
 specifies the name of the PostScript file to be overlaid.
 If not set or its value is null then no PS file will be inserted.
 
-.TP
-.B \-u
-Write output file as utf-8 encoded unicode, regardless of the current locale.
-
 
 .SH PSTricks OPTIONS
 The
@@ -1480,10 +1459,6 @@ The package "geometry.sty" is used in \fIout-file\fR to set the paper size.
 .TP
 .B \-T
 Only use TeX fonts, even where PostScript-fonts are specified.
-
-.TP
-.B \-u
-Write output file as utf-8 encoded unicode, regardless of the current locale.
 
 .TP
 .B \-v
