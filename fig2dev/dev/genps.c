@@ -2395,7 +2395,9 @@ genps_text(F_text *t)
 	} else {
 		/* PSneedsutf8[] == 2 and composite are mutually exclusive */
 		str = t->cstring;
-		if (PSneedsutf8[t->font + 1] == 2)
+		if (PSneedsutf8[t->font + 1] == 2 && need_conversion != 1)
+			/* if need_conversion == 1, the string is not
+			   utf8-encoded */
 			(void)convertutf8tolatin1(str);
 	}
 
