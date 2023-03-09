@@ -1115,6 +1115,7 @@ genps_end(void)
 	const int	h = pageheight, w = pagewidth;
 	int		epslen, tiflen;
 	struct stat	fstat;
+	char		date_buf[CREATION_TIME_LEN];
 
 	/* for multipage, translate and output objects for each page */
 	if (multi_page) {
@@ -1301,6 +1302,13 @@ genps_end(void)
 		fputs("end\n", tfp);		/* close off MyAppDict */
 	/* final DSC comment for eps output (EOF = end of document) */
 	fputs("%EOF\n", tfp);
+
+	if (pdfflag) {
+		if (creation_date_pdfmark(date_buf))
+		        fprintf(tfp,
+				"[ /ModDate (%s)\n /CreationDate (%s)\n /DOCINFO pdfmark\n",
+				date_buf, date_buf);
+	}
 
 	/* all ok */
 	return 0;

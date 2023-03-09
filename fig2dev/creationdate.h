@@ -21,3 +21,4 @@
 
 #define	CREATION_TIME_LEN	36
 extern int	creation_date(char *buf);
+extern int	creation_date_pdfmark(char *buf);

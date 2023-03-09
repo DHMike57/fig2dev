@@ -36,8 +36,8 @@
 #include "creationdate.h"
 
 
-int
-creation_date(char *buf)
+static struct tm*
+parse_time()
 {
     time_t now;
 
@@ -70,15 +70,43 @@ creation_date(char *buf)
 	} else {
 	    /* no errors, epoch is valid */
 	    now = epoch;
-	    strftime(buf, CREATION_TIME_LEN, "%F %H:%M:%S", gmtime(&now));
-	    return true;
+	    return gmtime(&now);
 	}
     }
 #endif
 
     /* fall trough on errors or !source_date_epoch */
     time(&now);
-    if (strftime(buf, CREATION_TIME_LEN, "%F %H:%M:%S", localtime(&now)))
+    return localtime(&now);
+}
+
+static struct tm*
+get_time()
+{
+    static struct tm time = { 0 };
+    static int initialized = 0;
+    if (!initialized) {
+      time = *parse_time();
+      initialized = 1;
+    }
+    return &time;
+}
+
+int
+creation_date(char *buf)
+{
+    if (strftime(buf, CREATION_TIME_LEN, "%F %H:%M:%S", get_time()))
+	return true;
+    else
+	return false;
+}
+
+int
+creation_date_pdfmark(char *buf)
+{
+    // Pdfmark format should be D:YYYYMMDDHHmmSSOHH’mm’.
+    // Timezone offset (O...) may be omitted
+    if (strftime(buf, CREATION_TIME_LEN, "D:%Y%m%d%H%M%S", get_time()))
 	return true;
     else
 	return false;
