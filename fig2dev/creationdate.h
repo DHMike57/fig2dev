@@ -1,6 +1,9 @@
 /*
  * Fig2dev: Translate Fig code to various Devices
- * Parts Copyright (c) 2016, 2017 by Thomas Loimer
+ * Copyright (c) 1991 by Micah Beck
+ * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
+ * Parts Copyright (c) 1989-2015 by Brian V. Smith
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -19,6 +22,15 @@
  *
  */
 
+#ifndef CREATIONDATE_H
+#define CREATIONDATE_H
+
+#if defined HAVE_CONFIG_H && !defined VERSION
+#include "config.h"
+#endif
+
 #define	CREATION_TIME_LEN	36
-extern int	creation_date(char *buf);
-extern int	creation_date_pdfmark(char *buf);
+extern int	creation_date(char *restrict buf);
+extern int	creation_date_pdfmark(char *restrict buf);
+
+#endif /* CREATIONDATE_H */
