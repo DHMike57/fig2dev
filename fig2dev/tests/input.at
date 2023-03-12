@@ -101,7 +101,7 @@ AT_CHECK([fig2dev -Leps -g'misty rose' $srcdir/data/line.fig
 AT_CLEANUP
 
 AT_BANNER([Read installed files.])
-AT_SETUP([$i18ndir/cs_CZ.ps must exist])
+AT_SETUP([$i18ndir/japanese.ps must exist])
 AT_KEYWORDS(installpath)
 AT_SKIP_IF([test "x$INSTALLCHECK" = xno])
 AT_CHECK(["$abs_builddir"/test1], 0)
