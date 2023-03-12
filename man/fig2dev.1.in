@@ -754,8 +754,8 @@ See also \fB\-F\fR (no font properties).
 .B \-O
 Do not quote characters special to TeX/LaTeX.
 Useful to get, e.g., an italic \fIx\fR, not $x$,
-because it was forgotten to set the text-flag "special-text" in xfig.
-This option effectively sets the "special-text" flag for all text.
+if it was forgotten to set the text flag "TeX" in xfig.
+This option effectively sets the "TeX" flag for all text.
 
 .TP
 .B \-P
@@ -1433,8 +1433,8 @@ will be generated.
 .B \-O
 Do not quote characters special to TeX/LaTeX.
 Useful to get, e.g., an italic \fIx\fR, not $x$,
-because it was forgotten to set the text-flag "special-text" in xfig.
-This option effectively sets the "special-text" flag for all text.
+if it was forgotten to set the text-flag "TeX" in xfig.
+This option effectively sets the "TeX" flag for all text.
 
 .TP
 .B \-o
