@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2021 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -54,7 +54,8 @@ int ReadFromBitmapFile(FILE *file, unsigned int *width, unsigned int *height,
 
 static void
 	drawBitmap(F_line *),
-	drawFilledShape(void (*)(), void *, int, int, int, int, int, double),
+	drawFilledShape(void (*)(void *), void *, int, int, int, int, int,
+			double),
 	niceLine(char *),
 	ptkArc(void *),
 	ptkEllipse(void *),
@@ -1023,7 +1024,7 @@ genptk_spline(F_spline *s)
  * as necessary, and close the object.
  */
 static void
-drawFilledShape(void (*tkShape)(), void *p, int thickness, int penColor,
+drawFilledShape(void (*tkShape)(void *), void *p, int thickness, int penColor,
 	int fillColor, int fillStyle, int style, double style_val)
 {
 	char	sftp[256];

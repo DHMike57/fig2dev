@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -41,13 +41,16 @@
 #include "pi.h"
 #include "texfonts.h"
 
-static void putline();
+static void putline(int start_x, int start_y, int end_x, int end_y);
 
-static void gentextyl_ctl_spline(), gentextyl_itp_spline();
-static void bezier_spline();
-static void draw_arrow_head();
-static void set_style();
-static void rtop();
+static void gentextyl_ctl_spline(F_spline *s);
+static void gentextyl_itp_spline(F_spline *s);
+static void bezier_spline(double a0, double b0, double a1, double b1,
+			double a2, double b2, double a3, double b3);
+static void draw_arrow_head(double x1, double y1, double x2, double y2,
+			double arrowht, double arrowwid);
+static void set_style(int style);
+static void rtop(double x, double y, double *r, double *th);
 /* static void set_linewidth();	*/
 
 static int	line_style = 0; /* Textyl solid line style */

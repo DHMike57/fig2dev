@@ -812,7 +812,7 @@ gentikz_grid(float major, float minor)
 }
 
 int
-gentikz_end()
+gentikz_end(void)
 {
 	fputs("\\endtikzpicture", tfp);
 	if (pagemode)

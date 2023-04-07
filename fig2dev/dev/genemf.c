@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2022 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -649,61 +649,63 @@ static const struct localefnt {
 /*~~~~~|><|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 
-static void delete_handle();
-static void clear_current_handle();
-static void select_object();
-static void use_handle();
-static struct emfhandle *get_handle();
-static int conv_color();
-static int conv_fill_color();
-static int conv_fontindex();
-static int conv_capstyle();
-static int conv_joinstyle();
-static int conv_linetype();
-static void edgeattr();
-static void edgevis();
-static void bkmode();
-static void bkcolor();
-static void create_brush_pattern();
-static void fillstyle();
-static void textfont();
-static void warn_32bit_pos();
-static void pos2point();
-static double arrow_length();
-static void arrow();
-static void arc_arrow();
-static void arc_arrow_adjust();
-static double arc_radius();
-static void translate();
-static void rotate();
-static void arc_rotate();
-static void arcoutline();
-static void arcinterior();
-static void arc_reverse();
-static void circle();
-static void ellipse();
-static void rotated_ellipse();
-static int icprod();
-static int cwarc();
-static int direction();
-static double distance();
-static size_t emh_write();
-static int is_flip();
-static void encode_bitmap();
-static void picbox();
-static void polygon();
-static int polyline_adjust();
-static void polyline();
-static void rect();
-static void roundrect();
-static void shape();
-static void shape_interior();
-static void textunicode();
-static void text();
-static void textcolr();
-static void textalign();
+static void delete_handle(struct emfhandle *h);
+static void clear_current_handle(enum emfhandletype type);
+static void select_object(unsigned handle);
+static void use_handle(struct emfhandle *h);
+static struct emfhandle *get_handle(enum emfhandletype type);
+static int conv_color(int colorIndex);
+static int conv_fill_color(int style, int color);
+static int conv_fontindex(int font, int flags);
+static int conv_capstyle(int cap);
+static int conv_joinstyle(int join);
+static int conv_linetype(int type);
+static void edgeattr(int vis, int type, int width, int color, int join,int cap);
+static void edgevis(int onoff);
+static void bkmode(int mode);
+static void bkcolor(int rgb);
+static void create_brush_pattern(unsigned char *bits, int pattern);
+static void fillstyle(int fill_color, int fill_style, int pen_color);
+static void textfont(int font, double size, int angle);
+static void warn_32bit_pos(void);
+static void pos2point(F_point *P, F_pos *p);
+static double arrow_length(F_arrow *a);
+static void arrow(F_point *P, F_arrow *a, F_line *l, Dir *dir);
+static void arc_arrow(F_pos *p, F_point *q, F_arrow *arw, F_arc *arc);
+static void arc_arrow_adjust(F_point *p, F_point *arwpos, F_arc *arc, double r,
+				F_arrow *arw, double adir);
+static double arc_radius(F_arc *a);
+static void translate(double *x, double *y, double tx, double ty);
+static void rotate(double *x, double *y, double angle);
+static void arc_rotate(F_point *p, double cx, double cy, double angle);
+static void arcoutline(F_arc *a);
+static void arcinterior(F_arc *a);
+static void arc_reverse(F_arc *arc);
+static void circle(F_ellipse *e);
+static void ellipse(F_ellipse *e);
+static void rotated_ellipse(F_ellipse *e);
+static int icprod(int x1, int y1, int x2, int y2);
+static int cwarc(F_arc *a);
+static int direction(F_point *p, F_point *q, Dir *dir, double *dist);
+static double distance(double x1, double y1, double x2, double y2);
+static size_t emh_write(const void *ptr, size_t size, size_t nmemb,
+			emh_flag flag);
+static int is_flip(int rot, int flip);
+static void encode_bitmap(F_pic *pic, int bpp, int rot);
+static void picbox(F_line *l);
+static void polygon(F_line *l);
+static int polyline_adjust(F_point *p, F_point *q, double l);
+static void polyline(F_line *l);
+static void rect(F_line *l);
+static void roundrect(F_line *l);
+static void shape(F_line *l, int join, int cap, void (*drawshape)(F_line *));
+static void shape_interior(F_line *l, void (*drawshape)(F_line *));
+static void textunicode(const char *str, int *n_chars, short **utext, int *n_unicode);
+static void text(int x, int y, RECTL *bbx, char *str);
+static void textcolr(int color);
+static void textalign(int align);
 #ifdef HAVE_ICONV
-static void moveto();
+static void moveto(int x, int y);
 #endif
 
 #ifdef HAVE_PNG_H
@@ -1581,9 +1583,7 @@ Some figures will be invisible on Windows 95/98/Me.\n");
 
 
 /* Copies coordinates of pos p to point P. */
-static void pos2point(P, p)
-    F_point *P;
-    F_pos *p;
+static void pos2point(F_point *P, F_pos *p)
 {
 
     P->x = p->x; P->y = p->y;
@@ -1623,11 +1623,7 @@ arrow_length(F_arrow *a)
 /* Draws an arrow ending at point p pointing into direction dir.
  * type and attributes as required by a and l.  This routine works
  * for both lines and arc (in that case l should be a F_arc *). */
-static void arrow(P, a, l, dir)
-    F_point	*P;
-    F_arrow	*a;
-    F_line	*l;
-    Dir		*dir;
+static void arrow(F_point *P, F_arrow *a, F_line *l, Dir *dir)
 {
     F_point s1, s2, t, p;
     EMRPOLYLINE	em_pl;		/* Little endian format */
@@ -1805,11 +1801,8 @@ static void arrow(P, a, l, dir)
 
 
 /* Draws arc arrow ending at p and starting at q. */
-static void arc_arrow(p, q, arw, arc)
-    F_pos	*p;
-    F_point	*q;
-    F_arrow	*arw;
-    F_arc	*arc;
+static void
+arc_arrow(F_pos *p, F_point *q, F_arrow *arw, F_arc *arc)
 {
     F_point P;
     Dir dir; double d;
@@ -1821,15 +1814,11 @@ static void arc_arrow(p, q, arw, arc)
     arrow(&P, arw, (F_line *)arc, &dir);
 }
 
-
 /* Replaces p by the starting point of the arc arrow ending at p. */
-static void arc_arrow_adjust(p, arwpos, arc, r, arw, adir)
-    F_point *p;		/* in: end of the arc, out: fixed end of arc */
-    F_point *arwpos;	/* out: origin of arrow */
-    F_arc *arc;
-    double r;
-    F_arrow *arw;
-    double adir;
+static void
+arc_arrow_adjust(F_point *p,	/* in: end of the arc, out: fixed end of arc */
+		F_point *arwpos,/* out: origin of arrow */
+		F_arc *arc, double r, F_arrow *arw, double adir)
 {
     double l;
     double alen, th;
@@ -2000,9 +1989,7 @@ rotate(double *x, double *y, double angle)
 
 
 /* Rotates the point p counter clockwise along the arc with center c. */
-static void arc_rotate(p, cx, cy, angle)
-    F_point *p;
-    double cx, cy, angle;
+static void arc_rotate(F_point *p, double cx, double cy, double angle)
 {
     double x = p->x, y = p->y;
 
@@ -2234,11 +2221,8 @@ cwarc(F_arc *a)
 
 /* Computes distance and normalized direction vector from q to p.
  * returns true if the points do not coincide and false if they do. */
-static int direction(p, q, dir, dist)
-    F_point	*p;
-    F_point	*q;
-    Dir		*dir;
-    double	*dist;
+static int
+direction(F_point *p, F_point *q, Dir *dir, double *dist)
 {
 
     dir->x = p->x - q->x;
@@ -2263,11 +2247,8 @@ distance(double x1, double y1, double x2, double y2)
 
 /* Write an enhanced metarecord and keep track of number of bytes written
  * and number of records written in the global header record "emh". */
-static size_t emh_write(ptr, size, nmemb, flag)
-    const void *ptr;
-    size_t	size;
-    size_t	nmemb;
-    emh_flag	flag;
+static size_t
+emh_write(const void *ptr, size_t size, size_t nmemb, emh_flag flag)
 {
 
     if (flag == EMH_RECORD) emh_nRecords++;
@@ -2666,10 +2647,7 @@ polygon(F_line *l)
 
 
 /* Replaces p by the shortened starting point of the line segment. */
-static int polyline_adjust(p, q, l)
-    F_point *p;
-    F_point *q;
-    double l;
+static int polyline_adjust(F_point *p, F_point *q, double l)
 {
     double d; Dir dir;
 
@@ -2948,7 +2926,7 @@ shape_interior(F_line *l, void (*drawshape)(F_line *))
  * to nulls. */
 static void
 textunicode(
-	char *str,
+	const char *str,
 	int *n_chars,
 	short **utext,		/* If *utext is null, memory is allocated */
 	int *n_unicode)
@@ -2966,7 +2944,7 @@ textunicode(
 	    perror("genemf: iconv");
     }
 
-    src = str;
+    src = (char *)str;
     srcleft = srccnt = strlen(str);
     if ((dst = (char *) *utext) == NULL) {
 	dst = (char *)(*utext = malloc((srcleft + 2/*null termination + align*/)

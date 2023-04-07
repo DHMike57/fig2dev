@@ -141,8 +141,8 @@ bool	arrows_used, arrow_used[NUMARROWS];
 
 /* local */
 struct obj_rec {
-	void (*gendev)();
-	char *obj;
+	void (*gendev)(void *obj);
+	void *obj;
 	int depth;
 };
 static bool	maxdimspec = false; /* if max size of figure (-Z) was given */
@@ -919,40 +919,40 @@ static int compound_dump(F_compound *com, struct obj_rec *array,
 	  count = compound_dump(c, array, count, dev);
 	for (a = com->arcs; a != NULL; a = a->next) {
 	  if (array) {
-		array[count].gendev = dev->arc;
-		array[count].obj = (char *)a;
+		array[count].gendev = (void(*)(void *))dev->arc;
+		array[count].obj = (void *)a;
 		array[count].depth = a->depth;
 	  }
 	  count += 1;
 	}
 	for (e = com->ellipses; e != NULL; e = e->next) {
 	  if (array) {
-		array[count].gendev = dev->ellipse;
-		array[count].obj = (char *)e;
+		array[count].gendev = (void(*)(void *))dev->ellipse;
+		array[count].obj = (void *)e;
 		array[count].depth = e->depth;
 	  }
 	  count += 1;
 	}
 	for (l = com->lines; l != NULL; l = l->next) {
 	  if (array) {
-		array[count].gendev = dev->line;
-		array[count].obj = (char *)l;
+		array[count].gendev = (void(*)(void *))dev->line;
+		array[count].obj = (void *)l;
 		array[count].depth = l->depth;
 	  }
 	  count += 1;
 	}
 	for (s = com->splines; s != NULL; s = s->next) {
 	  if (array) {
-		array[count].gendev = dev->spline;
-		array[count].obj = (char *)s;
+		array[count].gendev = (void(*)(void *))dev->spline;
+		array[count].obj = (void *)s;
 		array[count].depth = s->depth;
 	  }
 	  count += 1;
 	}
 	for (t = com->texts; t != NULL; t = t->next) {
 	  if (array) {
-		array[count].gendev = dev->text;
-		array[count].obj = (char *)t;
+		array[count].gendev = (void(*)(void *))dev->text;
+		array[count].obj = (void *)t;
 		array[count].depth = t->depth;
 	  }
 	  count += 1;

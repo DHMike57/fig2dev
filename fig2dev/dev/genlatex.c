@@ -116,8 +116,8 @@ double		dash_mag = 1.0;
 int		thick_width = 2;
 double		tolerance = 2.0;
 double		arc_tolerance = 1.0;
-void		(*translate_coordinates)() = NULL;
-void		(*translate_coordinates_d)() = NULL;
+void		(*translate_coordinates)(int *x, int *y) = NULL;
+void		(*translate_coordinates_d)(double *x, double *y) = NULL;
 double		unitlength;
 static int	cur_thickness = -1;
 double		ldot_diameter = 1.0/72.0;
@@ -623,7 +623,8 @@ put_arc_box(int llx, int lly, int urx, int ury, int radius, int style,
 	int	radius2= 2*radius;
 	double	swidth = (double)(urx-llx-radius2);
 	double	sheight= (double)(ury-lly-radius2);
-	void (*put_line)();
+	void (*put_line)(int x, int y, int sx, int sy,
+			double l, int arrow, double val);
 
 	switch (style) {
 	    case SOLID_LINE:

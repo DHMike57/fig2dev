@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -328,8 +328,7 @@ _relpos(int x, int y)
 }
 
 static void
-point(p)
-    F_point	*p;
+point(F_point *p)
 {
   _pos(p->x, p->y);
 }
@@ -528,15 +527,13 @@ static void fillcolrgb(int r, int g, int b)
 /* Converts hatch pattern index. FIG knows 16 patterns, CGM only 6
  * different ones. */
 
-static int conv_pattern_index(index)
-    int index;
+static int conv_pattern_index(int index)
 {
   return map_pattern[index];
 }
 
 static void
-hatchindex(index)
-    int index;
+hatchindex(int index)
 {
   static int oldindex = UNDEFVALUE;
 
@@ -686,11 +683,7 @@ typedef struct Dir {double x, y;} Dir;
  * for both lines and arc (in that case l should be a F_arc *). */
 
 static void
-cgm_arrow(P, a, l, dir)
-    F_point	*P;
-    F_arrow	*a;
-    F_line	*l;
-    Dir		*dir;
+cgm_arrow(F_point *P, F_arrow *a, F_line *l, Dir *dir)
 {
   F_point s1, s2, t, p;
 
@@ -780,11 +773,7 @@ arrow_length(F_arrow *a)
  * Returns true if the points do not coincide and false if they do. */
 
 static int
-direction(p, q, dir, dist)
-    F_point	*p;
-    F_point	*q;
-    Dir		*dir;
-    double	*dist;
+direction(F_point *p, F_point *q, Dir *dir, double *dist)
 {
   dir->x = p->x - q->x;
   dir->y = p->y - q->y;
@@ -804,10 +793,7 @@ direction(p, q, dir, dist)
  * arrow after drawing the polyline and before drawing the arrow. */
 
 static int
-polyline_arrow_adjust(P, q, a)
-    F_point *P;
-    F_point *q;
-    F_arrow *a;
+polyline_arrow_adjust(F_point *P, F_point *q, F_arrow *a)
 {
   double D, L;
   Dir dir;
@@ -829,9 +815,7 @@ _line(int x1, int y1, int x2, int y2)
 }
 
 static void
-line(p, q)
-    F_point *p;
-    F_point *q;
+line(F_point *p, F_point *q)
 {
   _line(p->x, p->y, q->x, q->y);
 }

@@ -53,14 +53,20 @@ extern char	*ISO1toTeX[];
 extern char	*ISO2toTeX[];
 extern bool	 FontSizeOnly;	/* defined in setfigfont.c */
 
-static void	genpictex_ctl_spline(), genpictex_itp_spline();
-static void	bezier_spline();
-static void	put_box();
-static void	set_style();
-static void	putline();
-static void	rtop();
-static void	draw_arrow_head();
-static void	set_linewidth();
+static void	genpictex_ctl_spline(F_spline *s);
+static void	genpictex_itp_spline(F_spline *s);
+static void	bezier_spline(double a0, double b0, double a1, double b1,
+			double a2, double b2, double a3, double b3);
+static void	put_box(int llx, int lly, int urx, int ury, F_line *l);
+static void	set_style(int style, double dash_len);
+static void	putline(int start_x, int start_y, double end_x, double end_y,
+			int next_x, int next_y,
+			int first_start_x, int first_start_y,
+			int first_end_x, int first_end_y);
+static void	rtop(double x, double y, double *r, double *th);
+static void	draw_arrow_head(double x1, double y1, double x2, double y2,
+			double arrowht, double arrowwid);
+static void	set_linewidth(int w);
 
 static double	dash_length = -1;
 static int	line_style = SOLID_LINE;

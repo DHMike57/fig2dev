@@ -316,7 +316,8 @@ get_2bytes(FILE *fp) {
 
 static int
 next_marker(FILE *fp) {	/* look for next JPEG Marker  */
-	int c, nbytes = 0;
+	int c;
+	int nbytes = 0;
 
 	if (feof(fp))
 		return M_ERROR;		    /* dummy marker		  */
@@ -337,7 +338,8 @@ next_marker(FILE *fp) {	/* look for next JPEG Marker  */
 /* analyze JPEG marker */
 
 static bool
-AnalyzeJPEG() {
+AnalyzeJPEG(void)
+{
 	int b, c, unit;
 	unsigned long i, length = 0;
 #define APP_MAX 255

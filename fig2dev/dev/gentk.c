@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2021 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -52,7 +52,8 @@ int ReadFromBitmapFile(FILE *file, unsigned int *width, unsigned int *height,
 		unsigned char **data_ret);	/* readxbm.c */
 
 static void
-	drawFilledShape(void (*)(), void *, int, int, int, int, int, double),
+	drawFilledShape(void (*)(void *), void *, int, int, int, int, int,
+			double),
 	drawBitmap(F_line *),
 	tkLine(F_line *, int, int, int, double),
 	tkArc(void *),
@@ -274,7 +275,7 @@ gentk_start(F_compound *objects)
  */
 
 int
-gentk_end()
+gentk_end(void)
 {
 	fprintf(tfp, "focus %s\n", canvas);
 
@@ -985,7 +986,7 @@ void gentk_spline(F_spline *s)
  */
 
 static void
-drawFilledShape(void (*tkShape)(), void *p, int thickness, int penColor,
+drawFilledShape(void (*tkShape)(void *), void *p, int thickness, int penColor,
 	int fillColor, int fillStyle, int style, double style_val)
 {
 	char	sftp[256];

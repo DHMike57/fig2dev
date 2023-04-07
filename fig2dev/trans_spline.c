@@ -92,8 +92,7 @@ free_point_array(F_pos *pts)
 
 
 static bool
-init_point_array(init_size, step_size)
-    int		    init_size, step_size;
+init_point_array(int init_size, int step_size)
 {
     npoints = 0;
     max_points = init_size;

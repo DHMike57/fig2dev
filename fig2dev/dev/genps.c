@@ -78,11 +78,8 @@ bool		pdfflag = false;	/* to distinguish PDF and PS/EPS */
 
 /*
  * The procedures to embed image files into ps code are defined in a number of
- * source files (readgif.c, readjpg.c, readeps.c,...). These procedures could
- * simply be included here in genps.c, which would result in an overwhelmingly
- * big file. Reading procedures are separated into their respective files, but
- * since they are used only here, the functions are declared here and separate
- * header files are not written.
+ * source files (readgif.c, readjpg.c, readeps.c,...) although these procedures
+ * are only needed in genps.c. The function declarations are given here below.
  */
 #define READ_SIGNATURE \
 	F_pic *pic, struct xfig_stream *restrict pic_stream, int *llx, int *lly
@@ -110,7 +107,6 @@ extern int  read_tif(READ_SIGNATURE);
 extern int  read_xbm(READ_SIGNATURE);
 /* readxpm.c */
 extern int  read_xpm(READ_SIGNATURE);
-#undef READ_SIGNATURE
 
 static bool	enable_composite_font = false;
 static bool	append_find_composite(FILE *restrict out);
@@ -266,7 +262,7 @@ static char	*fill_def[NUMPATTERNS] = {
 static	 struct hdr {
 	    char	*type;
 	    char	*bytes;
-	    int		(*readfunc)();
+	    int		(*readfunc)(READ_SIGNATURE);
 	    bool	pipeok;
 	    /* buf[12] below must be large enough for the file signature */
 	} headers[] = {	{"GIF", "GIF",			read_gif,	false},
