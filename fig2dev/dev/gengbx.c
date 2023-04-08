@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2021 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -1362,7 +1362,7 @@ gengbx_ellipse (F_ellipse *e)
 			return;
 
 		write_trace("## START:CIRCLE");
-		if (NULL == (Arc_malloc(a))) {
+		if (!Arc_malloc(a)) {
 			put_msg(Err_mem);
 			exit (2);
 		}

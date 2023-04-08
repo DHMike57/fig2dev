@@ -691,7 +691,7 @@ read_arcobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	int	type, style;
 	double	thickness, wid, ht;
 
-	if (NULL == (Arc_malloc(a))) {
+	if (!Arc_malloc(a)) {
 		put_msg(Err_mem);
 		return NULL;
 	}
@@ -1204,7 +1204,7 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		size_t	len;
 		ssize_t	chars;
 
-		if ((Pic_malloc(l->pic)) == NULL) {
+		if (!Pic_malloc(l->pic)) {
 			free(l);
 			return NULL;
 		}
@@ -1243,7 +1243,7 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		}
 	}
 
-	if (NULL == (l->points = Point_malloc(p))) {
+	if (!(l->points = Point_malloc(p))) {
 		put_msg(Err_mem);
 		free_linestorage(l);
 		return NULL;
@@ -1277,7 +1277,7 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 			++num_ident;
 			continue;
 		}
-		if (NULL == (Point_malloc(q))) {
+		if (!Point_malloc(q)) {
 			put_msg(Err_mem);
 			free_linestorage(l);
 			return NULL;
@@ -1329,7 +1329,7 @@ make_arrow(int type, int style, double thickness, double wid, double ht,
 		put_msg("Zero-width arrow at line %d ignored.", line_no);
 		return NULL;
 	}
-	if (NULL == (Arrow_malloc(a))) {
+	if (!Arrow_malloc(a)) {
 		put_msg(Err_mem);
 		return NULL;
 	}
@@ -1427,7 +1427,7 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 		free_splinestorage(s);
 		return NULL;
 	};
-	if (NULL == (s->points = Point_malloc(p))) {
+	if (!(s->points = Point_malloc(p))) {
 		put_msg(Err_mem);
 		free_splinestorage(s);
 		return NULL;
@@ -1451,7 +1451,7 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 		};
 		if (!v30_flag && x == 9999)
 			break;
-		if (NULL == (Point_malloc(q))) {
+		if (!Point_malloc(q)) {
 			put_msg(Err_mem);
 			free_splinestorage(s);
 			return NULL;
@@ -1510,7 +1510,7 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 	/* Read controls from older versions */
 	/* Add a dummy point, to not repeat here part of the loop below.
 	   Remove this dummy point further below. */
-	if (NULL == (s->controls = Control_malloc(cp))) {
+	if (!(s->controls = Control_malloc(cp))) {
 		put_msg(Err_mem);
 		free_splinestorage(s);
 		return NULL;
@@ -1525,7 +1525,7 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 			free_splinestorage(s);
 			return NULL;
 		}
-		if (NULL == (Control_malloc(cq))) {
+		if (!Control_malloc(cq)) {
 			put_msg(Err_mem);
 			cp->next = NULL;
 			free_splinestorage(s);
