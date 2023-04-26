@@ -37,6 +37,8 @@
 #endif
 #ifdef HAVE_NL_LANGINFO
 #include <langinfo.h>
+#else
+#include <locale.h>
 #endif
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
@@ -161,6 +163,7 @@ int
 convert(char **restrict out, char *restrict in, size_t inlen)
 {
 	int	stat;
+#ifdef HAVE_ICONV
 	size_t	converted;
 	size_t	out_remain;
 	size_t	out_size;
@@ -232,6 +235,10 @@ convert(char **restrict out, char *restrict in, size_t inlen)
 	}
 	/* one could realloc() *out to the minimum necessary; However, currently
 	 * the caller immediately free's *out anyhow. */
+#else
+	(void)inlen;
+	*out = in;
+#endif /* HAVE_ICONV */
 	return stat;
 }
 
