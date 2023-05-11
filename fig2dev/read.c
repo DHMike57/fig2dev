@@ -951,11 +951,7 @@ read_ellipseobject(char *line, int line_no)
  * boxes: allow only vertical and horizontal edges, convert to polygon otherwise
  */
 static int
-sanitize_lineobject(
-	F_line	*l,	/* the line */
-	F_point	*p,	/* the last point of the line */
-	int	line_no
-	)
+sanitize_lineobject(F_line *l, int line_no)
 {
 	F_point	*q;
 		/* CHANGE if object definitions change! Also, see below. */
@@ -991,7 +987,7 @@ sanitize_lineobject(
 			l->type == T_ARC_BOX || l->type == T_PIC_BOX) &&
 		l->points->next && l->points->next->next &&
 		l->points->next->next->next &&
-		(l->points->x != p->x || l->points->y != p->y)) {
+		(l->points->x != l->last[0].x || l->points->y != l->last[0].y)){
 	    /* tests/testsuite -k open,read.c */
 	    put_msg("An open %s at line %d - close it.",
 		    /* CHANGE THIS if object definitions change! */
@@ -1001,10 +997,12 @@ sanitize_lineobject(
 		put_msg(Err_mem);
 		return -1;
 	    }
-	    p->next = q;
-	    q->next = NULL;
-	    q->x = l->points->x;
-	    q->y = l->points->y;
+	    /* l->last[] only contains the position, not the link to the next
+	       point; Insert the last point in front. */
+	    q->next = l->points;
+	    q->x = l->last[0].x;
+	    q->y = l->last[0].y;
+	    l->points = q;
 	}
 
 	if (l->type == T_POLYGON) {
@@ -1017,7 +1015,7 @@ sanitize_lineobject(
 			put_msg("A polygon with %d points at line %d - convert "
 					"to a polyline.", npts, line_no);
 			l->type = T_POLYLINE;
-			sanitize_lineobject(l, p, line_no);
+			sanitize_lineobject(l, line_no);
 			return 0;
 		}
 	}
@@ -1030,7 +1028,7 @@ sanitize_lineobject(
 		put_msg("A %s with %d points at line %d - convert to a "
 			"polyline.", obj_name[l->type-2], npts, line_no);
 		l->type = T_POLYLINE;
-		sanitize_lineobject(l, p, line_no);
+		sanitize_lineobject(l, line_no);
 		return 0;
 	    }
 	    if (l->type == T_BOX && npts != 5) {
@@ -1259,7 +1257,7 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	    l->last[1].y = o->y;
 	}
 
-	if (sanitize_lineobject(l, p, *line_no)) {
+	if (sanitize_lineobject(l, *line_no)) {
 	    free_linestorage(l);
 	    return NULL;
 	}
