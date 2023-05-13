@@ -1077,6 +1077,7 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	int	type, style, radius_flag;
 	double	thickness, wid, ht;
 	int	npts;
+	int	num_ident = 0;
 
 	Line_malloc(l);
 	l->points = NULL;
@@ -1223,8 +1224,11 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	    return NULL;
 	}
 
+#define MAX_V2POINTS	1000000
 	if (!v30_flag)
-	    npts = 1000000;
+		npts = MAX_V2POINTS;
+	else
+		l->num_points = npts;
 	for (--npts; npts > 0; --npts) {
 	    count_lines_correctly(fp, line_no);
 	    if (fscanf(fp, "%d%d", &x, &y) != 2) {
@@ -1235,8 +1239,10 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	    if (!v30_flag && x == 9999)
 	       break;
 	    /* tests/testsuite -k coincident,read.c */
-	    if (x == p->x && y == p->y) /* skip co-incident points */
+	    if (x == p->x && y == p->y) { /* skip co-incident points */
+		++num_ident;
 		continue;
+	    }
 	    if (NULL == (Point_malloc(q))) {
 		put_msg(Err_mem);
 		free_linestorage(l);
@@ -1249,6 +1255,11 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	    o = p;
 	    p = q;
 	}
+	if (!v30_flag)
+		l->num_points = MAX_V2POINTS - npts - num_ident;
+	else
+		l->num_points -= num_ident;
+#undef MAX_V2POINTS
 
 	l->last[0].x = p->x;
 	l->last[0].y = p->y;

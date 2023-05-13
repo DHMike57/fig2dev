@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -151,6 +151,7 @@ typedef struct f_line {
 	      for ARC, LINE and SPLINE (LINE has join_style following cap_style */
 	int			join_style;
 	int			radius;	/* for T_ARC_BOX */
+	int			num_points;
 	struct f_pos		last[2]; /* last and penultimate point */
 	struct f_pic		*pic;
 	struct f_comment	*comments;
