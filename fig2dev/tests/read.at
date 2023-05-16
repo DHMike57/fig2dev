@@ -109,6 +109,17 @@ EOF
 ])
 AT_CLEANUP
 
+AT_SETUP([convert box with three points to polygon, #152])
+AT_KEYWORDS(read.c gbx)
+AT_CHECK([fig2dev -L gbx <<EOF
+FIG_FILE_TOP
+2 2 0 1 -1 -1 50 -1 -1 0.0 1 0 -1 0 0 3
+	 0 0 0 600 600 0
+EOF
+],0,ignore,[A rectangle with 3 corners at line 11 - convert to a polygon.
+])
+AT_CLEANUP
+
 AT_SETUP([fail on a malformed arc-box])
 AT_KEYWORDS(read.c malformed arc-box)
 AT_CHECK([fig2dev -L pict2e <<EOF
