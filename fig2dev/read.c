@@ -942,19 +942,18 @@ read_ellipseobject(char *line, int line_no)
  * Sanitize line objects. Return 0 on success, -1 otherwise.
  * On error, call free_linestorage(l) after sanitize_lineobject().
  *
+ * polygons: close, if open, i.e., last point must coincide with first point
+ * polygons: convert to polyline if less than 3 unique points
+ * rectangle: convert to polygon, if not 5 points, or if not rectangular
+ * rectangle with rounded corners: error, if not 5 points or not rectangular
+ * boxes: allow only vertical and horizontal edges, convert to polygon otherwise
  * polylines: remove fill, if less than 3 points
  *		remove arrows, if only one point
- * polygons: convert to polyline if less than 3 unique points
- * rectangles, polygons: last point must coincide with first point
- * rectangle: convert to polygon, if not 5 points
- * rectangle with rounded corners: error, if not 5 points
- * boxes: allow only vertical and horizontal edges, convert to polygon otherwise
  */
 static int
 sanitize_lineobject(F_line *l, int line_no)
 {
-	F_point	*q;
-		/* CHANGE if object definitions change! Also, see below. */
+	/* CHANGE if object definitions change! Also, see below. */
 	const char    *obj_name[] = {
 				"rectangle",
 				"polygon",
@@ -962,109 +961,127 @@ sanitize_lineobject(F_line *l, int line_no)
 				"picture box"
 	};
 
+	if ((l->type == T_BOX || l->type == T_POLYGON ||
+			l->type == T_ARC_BOX || l->type == T_PIC_BOX)) {
+
+		/* close an open box or polygon; testsuite -k open,read.c */
+		if (l->points->x != l->last[0].x ||
+				l->points->y != l->last[0].y) {
+			F_point	*q;
+
+			/* CHANGE THIS if object definitions change! */
+			put_msg("An open %s at line %d - close it.",
+					obj_name[l->type-2], line_no);
+			if (NULL == (Point_malloc(q))) {
+				put_msg(Err_mem);
+				return -1;
+			}
+			/* l->last[] only contains the position, not the link
+			   to the next point; Insert the last point in front. */
+			q->next = l->points;
+			q->x = l->last[0].x;
+			q->y = l->last[0].y;
+			l->points = q;
+			++l->num_points;
+		}
+
+		/* reject incorrect arc-boxes and picture boxes */
+		if (l->type == T_ARC_BOX || l->type == T_PIC_BOX) {
+			if (l->num_points != 5) {
+				/* tests/testsuite -k malformed,read.c */
+				put_msg("A malformed %s at line %d - it has %d "
+						"corners.",
+						obj_name[l->type - 2],
+						line_no, l->num_points - 1);
+				return -1;
+			} else {
+#define IS_RECTANGLE(p, q)	/* p, q is the first and third point */	\
+		((p->x == p->next->x && q->x == q->next->x &&		\
+		  p->y == q->next->y && p->next->y == q->y) ||		\
+		 (p->y == p->next->y && q->y == q->next->y &&		\
+		  p->x == q->next->x && p->next->x == q->x))
+
+				/* tests/testsuite -k distorted,read.c */
+				F_point	*q = l->points->next->next;
+
+				if (!IS_RECTANGLE(l->points, q)) {
+					put_msg("A distorted or inclined %s at "
+							"line %d.",
+							obj_name[l->type - 2],
+							line_no);
+					return -1;
+				}
+			}
+
+		} else { /* T_BOX || T_POLYGON */
+
+			/* too few points - convert to a line */
+			if (l->num_points < 4) {
+				put_msg("A %s with %d points at line %d - "
+						"convert to a polyline.",
+						obj_name[l->type - 2],
+						l->num_points, line_no);
+				l->type = T_POLYLINE;
+				/* the polygon is closed or was closed above,
+				   hence it has at least two points */
+				if (l->num_points == 2) {
+					free(l->points->next);
+					l->points->next = NULL;
+					l->last[0].x = l->points->x;
+					l->last[0].y = l->points->y;
+				} else if (l->num_points == 3) {
+					free(l->points->next->next);
+					l->points->next->next = NULL;
+					l->last[0].x = l->points->next->x;
+					l->last[0].y = l->points->next->y;
+					l->last[1].x = l->points->x;
+					l->last[1].y = l->points->y;
+				} /* else (l->num_points == 1) */
+
+			/* convert misformed rectangles to polygons */
+			} else if (l->type == T_BOX) {
+				F_point	*q = l->points->next->next;
+
+				if (l->num_points != 5) {
+					put_msg("A rectangle with %d corners at"
+							" line %d - convert to "
+							"a polygon.",
+							l->num_points - 1,
+							line_no);
+					l->type = T_POLYGON;
+
+				} else if (!IS_RECTANGLE(l->points, q)) {
+					put_msg("A distorted retangle at line "
+							"%d - convert to a "
+							"polygon.", line_no);
+					l->type = T_POLYGON;
+#undef IS_RECTANGLE
+				}
+			}
+		} /* end l->type == T_BOX || l->type == T_POLYGON */
+
+	} /* l->type == any box or polygon */
+
+	/* above, a closed line might have been converted to a polyline */
 	if (l->type == T_POLYLINE &&
 		(l->points->next == NULL || l->points->next->next == NULL)) {
 	    l->fill_style = UNFILLED;
 	    if (l->points->next == NULL) {
 		if (l->for_arrow) {
 		    /* tests/testsuite -k polyline,read.c */
-		    put_msg(
-			"A single point with a forward arrow - remove the arrow.");
+		    put_msg("A single point with a forward arrow - "
+				    "remove the arrow.");
 		    free(l->for_arrow);
 		    l->for_arrow = NULL;
 		}
 		if (l->back_arrow) {
-		    put_msg(
-			"A single point with a backward arrow - remove the arrow.");
+		    put_msg("A single point with a backward arrow - "
+				    "remove the arrow.");
 		    free(l->back_arrow);
 		    l->back_arrow = NULL;
 		}
 	    }
-	    return 0;
 	}
-
-	if ((l->type == T_BOX || l->type == T_POLYGON ||
-			l->type == T_ARC_BOX || l->type == T_PIC_BOX) &&
-		l->points->next && l->points->next->next &&
-		l->points->next->next->next &&
-		(l->points->x != l->last[0].x || l->points->y != l->last[0].y)){
-	    /* tests/testsuite -k open,read.c */
-	    put_msg("An open %s at line %d - close it.",
-		    /* CHANGE THIS if object definitions change! */
-		    obj_name[l->type-2],
-		    line_no);
-	    if (NULL == (Point_malloc(q))) {
-		put_msg(Err_mem);
-		return -1;
-	    }
-	    /* l->last[] only contains the position, not the link to the next
-	       point; Insert the last point in front. */
-	    q->next = l->points;
-	    q->x = l->last[0].x;
-	    q->y = l->last[0].y;
-	    l->points = q;
-	}
-
-	if (l->type == T_POLYGON) {
-		int	npts;
-
-		q = l->points;
-		for (npts = 1; q->next && npts < 4; q = q->next)
-			++npts;
-		if (npts < 4 ) {
-			put_msg("A polygon with %d points at line %d - convert "
-					"to a polyline.", npts, line_no);
-			l->type = T_POLYLINE;
-			sanitize_lineobject(l, line_no);
-			return 0;
-		}
-	}
-
-	if (l->type == T_BOX || l->type == T_ARC_BOX || l->type == T_PIC_BOX) {
-	    int	npts = 1;
-	    for (q = l->points; q->next; q = q->next)
-		++npts;
-	    if (npts < 3) {
-		put_msg("A %s with %d points at line %d - convert to a "
-			"polyline.", obj_name[l->type-2], npts, line_no);
-		l->type = T_POLYLINE;
-		sanitize_lineobject(l, line_no);
-		return 0;
-	    }
-	    if (l->type == T_BOX && npts != 5) {
-		/* tests/testsuite -k polygon,read.c */
-		put_msg("A rectangle with %d corners at line %d - convert to a "
-				"polygon.", npts - 1, line_no);
-		l->type = T_POLYGON;
-		return 0;
-	    }
-	    if (npts != 5) {	/* && (T_ARC_BOX || PIC_BOX) */
-		/* tests/testsuite -k malformed,read.c */
-		put_msg("A malformed %s at line %d - it has %d corners.",
-			obj_name[l->type-2], line_no, npts - 1);
-		return -1;
-	    } else {	/* npts == 5 && (T_BOX || T_ARC_BOX || PIC_BOX) */
-		q = l->points->next->next;
-		if ((l->points->x != l->points->next->x ||
-			q->x != q->next->x || l->points->y != q->next->y ||
-			l->points->next->y != q->y) &&
-			(l->points->y != l->points->next->y ||
-			q->y != q->next->y || l->points->x != q->next->x ||
-			l->points->next->x != q->x)) {
-		    /* tests/testsuite -k distorted,read.c */
-		    if (l->type == T_BOX) {
-			put_msg("A distorted %s at line %d - convert to a polygon.",
-			    obj_name[l->type-2], line_no);
-			l->type = T_POLYGON;
-			return 0;
-		    }
-		    put_msg("A distorted or inclined %s at line %d.",
-			    obj_name[l->type-2], line_no);
-		    return -1;
-		}
-	    }
-	}
-
 	return 0;
 }
 
