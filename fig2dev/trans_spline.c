@@ -579,6 +579,11 @@ create_line_with_spline(F_spline *s)
 	  ptr = ptr->next;
 	}
     }
+  line->num_points = npoints;
+  line->last[0].x = points[i - 1].x;
+  line->last[0].y = points[i - 1].y;
+  line->last[1].x = points[i - 2].x;
+  line->last[1].y = points[i - 2].y;
 
   free_point_array(points);
   npoints = 0;
