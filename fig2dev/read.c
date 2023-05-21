@@ -69,7 +69,7 @@ static F_compound	*read_compoundobject(FILE *fp, char **restrict line,
 					size_t *line_len, int *line_no);
 static F_comment	*attach_comments(void);
 static F_arrow		*make_arrow(int type, int style, double thickness,
-					double wid, double ht);
+					double wid, double ht, int line_no);
 static void		count_lines_correctly(FILE *fp, int *line_no);
 static void		init_pats_used(void);
 static ssize_t		get_line(FILE *fp, char **restrict line,
@@ -80,7 +80,6 @@ static ptrdiff_t	backslash_count(const char *restrict cp,
 
 static char	Err_incomp[] = "Incomplete %s object at line %d.";
 static char	Err_invalid[] = "Invalid %s object at line %d.";
-static char	Err_arrow[] = "Invalid %s arrow at line %d.";
 
 #define		FILL_CONVERT(f)	((v2_flag || (f) < WHITE_FILL) \
 					? (v30_flag? f: (f-1)) : 20 - ((f)-1)*5)
@@ -726,12 +725,8 @@ read_arcobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		    free(a);
 		    return NULL;
 	    }
-	    if ((a->for_arrow = make_arrow(type, style, thickness, wid, ht))
-			    == NULL) {
-		    put_msg(Err_arrow, "forward", *line_no);
-		    free(a);
-		    return NULL;
-	    }
+	    a->for_arrow = make_arrow(type, style, thickness, wid, ht,
+					*line_no);
 	}
 	if (ba) {
 	    if (get_line(fp, line, line_len, line_no) < 0 ||
@@ -741,12 +736,8 @@ read_arcobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		    free(a);
 		    return NULL;
 	    }
-	    if ((a->back_arrow = make_arrow(type, style, thickness, wid, ht))
-			    == NULL) {
-		    put_msg(Err_arrow, "backward", *line_no);
-		    free(a);
-		    return NULL;
-	    }
+	    a->back_arrow = make_arrow(type, style, thickness, wid, ht,
+					*line_no);
 	}
 	a->comments = attach_comments();		/* attach any comments */
 	return a;
@@ -1161,12 +1152,8 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		free(l);
 		return NULL;
 	    }
-	    if ((l->for_arrow = make_arrow(type, style, thickness, wid, ht))
-			    == NULL) {
-		    put_msg(Err_arrow, "forward", *line_no);
-		    free(l);
-		    return NULL;
-	    }
+	    l->for_arrow = make_arrow(type, style, thickness, wid, ht,
+					*line_no);
 	}
 	if (ba) {
 	    if (get_line(fp, line, line_len, line_no) < 0 ||
@@ -1176,12 +1163,8 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		free_linestorage(l);
 		return NULL;
 	    }
-	    if ((l->back_arrow = make_arrow(type, style, thickness, wid, ht))
-			    == NULL) {
-		    put_msg(Err_arrow, "backward", *line_no);
-		    free_linestorage(l);
-		    return NULL;
-	    }
+	    l->back_arrow = make_arrow(type, style, thickness, wid, ht,
+					*line_no);
 	}
 	if (l->type == T_PIC_BOX) {
 	    char	*file, *c;
@@ -1297,14 +1280,21 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 }
 
 static F_arrow *
-make_arrow(int type, int style, double thickness, double wid, double ht)
+make_arrow(int type, int style, double thickness, double wid, double ht,
+		int line_no)
 {
 	F_arrow		*a;
 
 	if (style < 0 || style > 1 || type < 0 ||
 			/* beware of int overflow */
-			type > NUMARROWS || (type + 1) * 2 > NUMARROWS)
+			type > NUMARROWS || (type + 1) * 2 > NUMARROWS) {
+		put_msg("Invalid arrow at line %d.", line_no);
 		return NULL;
+	}
+	if (wid < 1e-2 && type != 5 && type != 6) {
+		put_msg("Zero-width arrow at line %d ignored.", line_no);
+		return NULL;
+	}
 	if (NULL == (Arrow_malloc(a))) {
 		put_msg(Err_mem);
 		return NULL;
@@ -1379,12 +1369,8 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 		    free(s);
 		    return NULL;
 	    }
-	    if ((s->for_arrow = make_arrow(type, style, thickness, wid, ht))
-			    == NULL) {
-		    put_msg(Err_arrow, "forward", *line_no);
-		    free(s);
-		    return NULL;
-	    }
+	    s->for_arrow = make_arrow(type, style, thickness, wid, ht,
+					*line_no);
 	}
 	if (ba) {
 	    if (get_line(fp, line, line_len, line_no) < 0 ||
@@ -1394,12 +1380,8 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 		    free_splinestorage(s);
 		    return NULL;
 	    }
-	    if ((s->back_arrow = make_arrow(type, style, thickness, wid, ht))
-			    == NULL) {
-		    put_msg(Err_arrow, "backward", *line_no);
-		    free_splinestorage(s);
-		    return NULL;
-	    }
+	    s->back_arrow = make_arrow(type, style, thickness, wid, ht,
+					*line_no);
 	}
 
 	/* Read points */

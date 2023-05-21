@@ -239,6 +239,8 @@ EOF], 0, ignore)
 AT_CLEANUP
 
 AT_SETUP([arrows on two-point line with 0 thickness, #147])
+# The fig-file really contains an open spline that is converted to a line.
+# The problem are the zero width arrows.
 AT_KEYWORDS(pict2e arrows)
 AT_CHECK([fig2dev -L pict2e <<EOF
 #FIG 3.2
@@ -254,7 +256,9 @@ Single
 	1 1 2 0 20
 	1 1 2. 0 20
 5 1 0 2 4 7 2 0 -1
-EOF], 0, ignore)
+EOF], 0, ignore, [Zero-width arrow at line 11 ignored.
+Zero-width arrow at line 12 ignored.
+])
 AT_CLEANUP
 
 
