@@ -879,7 +879,7 @@ calc_arrow(int x1, int y1, int x2, int y2, int linethick, F_arrow *arrow,
 			    /* (Don't adjust those with tipmv < 0) */
 
 	/* alpha is the angle the line is relative to horizontal */
-	l = sqrt((double)dx * dx + dy * dy);
+	l = sqrt((double)dx * dx + (double)dy * dy);
 	sina = dy / l;
 	cosa = dx / l;
 
