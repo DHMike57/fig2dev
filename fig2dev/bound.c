@@ -729,6 +729,11 @@ arrow_bound(int objtype, F_line *obj, int *xmin, int *ymin, int *xmax,
 			    a->direction, a->for_arrow, &p1x, &p1y);
 		p2x = a->point[2].x;	/* forward tip */
 		p2y = a->point[2].y;
+	    } else if (objtype == OBJ_POLYLINE) {
+		p1x = obj->last[1].x;
+		p1y = obj->last[1].y;
+		p2x = obj->last[0].x;
+		p2y = obj->last[0].y;
 	    } else {
 		/* this doesn't work very well for a spline with few points
 		    and lots of curvature */

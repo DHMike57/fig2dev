@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2022 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -535,7 +535,7 @@ genmp_arrowheads(F_line *obj, int objtype)
 {
     double	x1,x2,x3,y1,y2,y3,c,d;
     int		from_x, from_y, to_x, to_y;
-    F_point	*p, *old_p;
+    F_point	*p;
     F_control	*ctl;
     F_arc	*a;
     F_spline	*s;
@@ -582,7 +582,6 @@ genmp_arrowheads(F_line *obj, int objtype)
 		     adapted from genps.c  */
 		  x1 = p->x;
 		  y1 = p->y;
-		  old_p = p;
 		  p = p->next;
 		  c = p->x;
 		  d = p->y;
@@ -594,7 +593,6 @@ genmp_arrowheads(F_line *obj, int objtype)
 		  y2 = y1;
 		  /* go through the points to find the last two */
 		  for ( ; p->next != NULL; p = p->next) {
-		      old_p = p;
 		      x1 = x3;
 		      y1 = y3;
 		      x2 = c;
@@ -617,15 +615,10 @@ genmp_arrowheads(F_line *obj, int objtype)
 	  case OBJ_POLYLINE:
 	  default:
 	      /* the two last points of the polyline determine the direction of the arrow */
-	      p = obj->points;
-	      old_p = p;
-	      p = p->next;
-	      for ( ; p->next != NULL; p=p->next )
-		  old_p = p;
-	      from_x = old_p->x;
-	      from_y = old_p->y;
-	      to_x = p->x;
-	      to_y =p->y;
+	      from_x = obj->last[1].x;
+	      from_y = obj->last[1].y;
+	      to_x = obj->last[0].x;
+	      to_y = obj->last[0].y;
 	}
 
 	/* draw the arrow */

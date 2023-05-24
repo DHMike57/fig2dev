@@ -1926,17 +1926,12 @@ genps_line(F_line *l)
 		/* second point */
 		fpntx2 = q->x;
 		fpnty2 = q->y;
-		/* go through the points to get the last two */
-		while (q->next != NULL) {
-			p = q;
-			q = q->next;
-		}
 		/* next to last point */
-		lpntx2 = p->x;
-		lpnty2 = p->y;
+		lpntx2 = l->last[1].x;
+		lpnty2 = l->last[1].y;
 		/* last point */
-		lpntx1 = q->x;
-		lpnty1 = q->y;
+		lpntx1 = l->last[0].x;
+		lpnty1 = l->last[0].y;
 		/* set clipping for any arrowheads */
 		if (NEEDS_CLIPPING(l)) {
 			fprintf(tfp, "gs ");
@@ -1944,8 +1939,6 @@ genps_line(F_line *l)
 		}
 
 		/* now output the points */
-		p = l->points;
-		q = p->next;
 		fprintf(tfp, "n %d %d m", p->x, p->y);
 		i=1;
 		while (q->next != NULL) {
