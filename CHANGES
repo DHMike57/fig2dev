@@ -10,7 +10,8 @@ NEW FEATURES:
 BUGS FIXED:
 	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
 	o Include sys/wait.h to build on some bsds.
-	o Process crafted input files, tickets #142, #145, #146, #147, #148.
+	o Process crafted input files, tickets #142, #145, #146, #147, #148,
+	  and #152.
 	o Correctly scale dxf output, ticket #91.
 	o Correct a typo causing incorrect eps import, ticket #137.
 	o Regression, pass driver names to driver, ticket #139.
