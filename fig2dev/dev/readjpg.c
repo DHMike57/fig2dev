@@ -317,14 +317,12 @@ get_2bytes(FILE *fp) {
 static int
 next_marker(FILE *fp) {	/* look for next JPEG Marker  */
 	int c;
-	int nbytes = 0;
 
 	if (feof(fp))
 		return M_ERROR;		    /* dummy marker		  */
 
 	do {
 		do {			    /* skip to FF		  */
-			nbytes++;
 			c = getc(fp);
 		} while (c != 0xFF);
 		do {			    /* skip repeated FFs	  */

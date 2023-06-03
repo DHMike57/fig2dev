@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2020 by Thomas Loimer
+ * Parts Copyright (c) 2015-2023 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -2059,7 +2059,9 @@ do_eps_conversion(char *eps_path, char *src)
   stn = string_lookup_val(base_names, base);
   if (stn) {
     base_index = ++stn->val.i;
-    sprintf(uniqified_base, "%s-%03d", base, base_index);
+    SNPRINTF_EXIT(sizeof uniqified_base, uniqified_base,
+	snprintf(uniqified_base, sizeof uniqified_base, "%s-%03d",
+							base, base_index));
   }
   else {
     strcpy(uniqified_base, base);
