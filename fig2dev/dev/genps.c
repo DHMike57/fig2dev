@@ -641,74 +641,74 @@ genps_start(F_compound *objects)
 	}
 
 	if (epsflag) {
-	    /* shift figure to 0,0 */
-	    origx = -fllx;
-	    origy =  fury;
-	    if (boundingboxspec) {
-		    jtmp = sscanf(boundingbox, "%lf %lf %lf %lf",
-				    &userwidthx, &userwidthy,
-				    &userorigx, &userorigy);
-		    switch (jtmp) {
-		    case 0:
-			    userwidthx=(furx-fllx)/POINT_PER_INCH;
-			    if (metric)
-				    userwidthx *= 2.54;
-			    /* the comment below silences gcc's
-			       -Wimplicit-fallthrough warning */
-			    /* intentionally fall through */
-			    /* and set the other user... vars */
-		    case 1:
-			    userwidthy=(fury-flly)/POINT_PER_INCH;
-			    if (metric)
-				    userwidthy *= 2.54;
-			    /* intentionally fall through */
-			    /* and set the other user... vars */
-		    case 2:
-			    userorigx=0;
-			    /* intentionally fall through */
-			    /* and set the last user... var */
-		    case 3:
-			    userorigy=0;
-		    }
-		    if (userwidthx <= 0) {
-			    userwidthx=(furx-fllx)/POINT_PER_INCH;
-			    if (metric)
-				    userwidthx *= 2.54;
-		    }
-		    if (userwidthy <= 0) {
-			    userwidthy=(fury-flly)/POINT_PER_INCH;
-			    if (metric)
-				    userwidthy *= 2.54;
-		    }
+		/* shift figure to 0,0 */
+		origx = -fllx;
+		origy =  fury;
+		if (boundingboxspec) {
+			jtmp = sscanf(boundingbox, "%lf %lf %lf %lf",
+					&userwidthx, &userwidthy,
+					&userorigx, &userorigy);
+			switch (jtmp) {
+			case 0:
+				userwidthx=(furx-fllx)/POINT_PER_INCH;
+				if (metric)
+					userwidthx *= 2.54;
+				/* the comment below silences gcc's
+				   -Wimplicit-fallthrough warning */
+				/* intentionally fall through */
+				/* and set the other user... vars */
+			case 1:
+				userwidthy=(fury-flly)/POINT_PER_INCH;
+				if (metric)
+					userwidthy *= 2.54;
+				/* intentionally fall through */
+				/* and set the other user... vars */
+			case 2:
+				userorigx=0;
+				/* intentionally fall through */
+				/* and set the last user... var */
+			case 3:
+				userorigy=0;
+			}
+			if (userwidthx <= 0) {
+				userwidthx=(furx-fllx)/POINT_PER_INCH;
+				if (metric)
+					userwidthx *= 2.54;
+			}
+			if (userwidthy <= 0) {
+				userwidthy=(fury-flly)/POINT_PER_INCH;
+				if (metric)
+					userwidthy *= 2.54;
+			}
 
-		    userorigx  *= POINT_PER_INCH;
-		    userorigy  *= POINT_PER_INCH;
-		    userwidthx *= POINT_PER_INCH;
-		    userwidthy *= POINT_PER_INCH;
+			userorigx  *= POINT_PER_INCH;
+			userorigy  *= POINT_PER_INCH;
+			userwidthx *= POINT_PER_INCH;
+			userwidthy *= POINT_PER_INCH;
 
-		    if (metric) {
-			    userorigx  /= 2.54;
-			    userorigy  /= 2.54;
-			    userwidthx /= 2.54;
-			    userwidthy /= 2.54;
-		    }
+			if (metric) {
+				userorigx  /= 2.54;
+				userorigy  /= 2.54;
+				userwidthx /= 2.54;
+				userwidthy /= 2.54;
+			}
 
-		    userllx = (int) floor(userorigx);
-		    userlly = (int) floor(userorigy);
-		    userurx = (int) ceil(userorigx+userwidthx);
-		    userury = (int) ceil(userorigy+userwidthy);
+			userllx = (int) floor(userorigx);
+			userlly = (int) floor(userorigy);
+			userurx = (int) ceil(userorigx+userwidthx);
+			userury = (int) ceil(userorigy+userwidthy);
 
-		    /* adjust for any border margin */
-		    userllx -= border_margin;
-		    userlly -= border_margin;
-		    userurx += border_margin;
-		    userury += border_margin;
+			/* adjust for any border margin */
+			userllx -= border_margin;
+			userlly -= border_margin;
+			userurx += border_margin;
+			userury += border_margin;
 
-		    if (useabsolutecoo) {
-			    userllx += origx;
-			    userurx += origx;
-		    }
-	    }
+			if (useabsolutecoo) {
+				userllx += origx;
+				userurx += origx;
+			}
+		}
 	} else {	/* postscript */
 		if (landscape) {
 			itmp = pageheight;
@@ -1555,7 +1555,7 @@ genps_line(F_line *l)
 	do_split(l->depth);
 
 	if (multi_page)
-	   fprintf(tfp, "/o%d {", no_obj++);
+		fprintf(tfp, "/o%d {", no_obj++);
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ",l->comments, "");
@@ -1645,9 +1645,9 @@ genps_line(F_line *l)
 		fputs("% pen to black in case this eps object doesn't set "
 			"color first\n", tfp);
 		if (grayonly)
-		    fputs("0 setgray\n", tfp);
+			fputs("0 setgray\n", tfp);
 		else
-		    fputs("0 0 0 setrgbcolor\n", tfp);
+			fputs("0 0 0 setrgbcolor\n", tfp);
 
 		init_stream(&pic_stream);
 

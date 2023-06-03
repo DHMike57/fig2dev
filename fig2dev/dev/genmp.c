@@ -303,96 +303,96 @@ static char *include_filename=NULL;
 void
 genmp_start(F_compound *objects)
 {
-    FILE *in;
-    fprintf(tfp,
-	    "%%\n%% fig2dev (version %s) -L (m)mp version %.2lf --- Preamble\n%%\n",
-	    PACKAGE_VERSION, GENMP_VERSION);
+	FILE *in;
+	fprintf(tfp, "%%\n%% fig2dev (version %s) -L (m)mp version %.2lf --- "
+			"Preamble\n%%\n", PACKAGE_VERSION, GENMP_VERSION);
 	fprintf(tfp,"\n");
 
-    fprintf(tfp,"%%\n%% mp output driver options:\n%% %s\n%%\n\n", options);
+	fprintf(tfp,"%%\n%% mp output driver options:\n%% %s\n%%\n\n", options);
 
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {
-	    fprintf(tfp,"%%\n");
-	    print_comments("% ",objects->comments, "");
-	    fprintf(tfp,"%%\n");
+		fprintf(tfp,"%%\n");
+		print_comments("% ",objects->comments, "");
+		fprintf(tfp,"%%\n");
 	}
 
-    /* print the "prologues:=n;" line */
-    if (has_prologues) {
-	fprintf(tfp,"prologues:=%ld;\n\n",prologues_nr);
-    }
+	/* print the "prologues:=n;" line */
+	if (has_prologues) {
+		fprintf(tfp,"prologues:=%ld;\n\n",prologues_nr);
+	}
 
 
-    fprintf(tfp,"%% +MP-ADDITIONAL-HEADER\n");
-    if (latexmode || immediate_insert_filename!=NULL || include_filename!=NULL) {
-	fprintf(tfp,"verbatimtex\n");
+	fprintf(tfp,"%% +MP-ADDITIONAL-HEADER\n");
+	if (latexmode || immediate_insert_filename!=NULL ||
+			include_filename!=NULL) {
+		fprintf(tfp,"verbatimtex\n");
 
+		if (latexmode) {
+			fprintf(tfp,"%%&latex\n");
+		}
+
+		if (immediate_insert_filename!=NULL &&
+				(in = fopen(immediate_insert_filename,"r"))) {
+			/* We do not want to restrict line buffer sizes.
+			 * Furthermore we do not expect huge files here.
+			 * So just read the contents character by character.
+			 */
+
+			int c;
+			fprintf(tfp,"%% start of included material from %s\n",
+					immediate_insert_filename);
+			while ((c=getc(in))!=EOF) {
+				putc(c,tfp);
+			}
+			fprintf(tfp,"%% end of included material\n");
+			fclose(in);
+		} else if (latexmode) {
+			/* standard header text */
+			fprintf(tfp,"\\documentclass{article}\n");
+			fprintf(tfp,"\\begin{document}\n");
+		}
+
+
+		if (include_filename!=NULL) {
+			fprintf(tfp,"\\input %s\n",include_filename);
+		}
+
+		fprintf(tfp,"etex\n");
+
+	}
+	fprintf(tfp,"%% -MP-ADDITIONAL-HEADER\n\n");
+
+	/* latexmode: write the font macros. */
 	if (latexmode) {
-	   fprintf(tfp,"%%&latex\n");
+		fprintf(tfp, "\n%%SetFigFont macros for latex\n");
+		fprintf(tfp, "verbatimtex\n");
+		define_setfigfont(tfp);
+		fprintf(tfp, "\\ifx\\SetFigFontSize\\undefined%%\n");
+		fprintf(tfp, "\\gdef\\SetFigFontSize#1#2{%%\n");
+		fprintf(tfp, "	\\fontsize{#1}{#2pt}%%\n");
+		fprintf(tfp, "	\\selectfont}%%\n");
+		fprintf(tfp, "\\fi%%\n");
+		fprintf(tfp,"etex\n\n");
 	}
-
-	if (immediate_insert_filename!=NULL &&
-	    (in=fopen(immediate_insert_filename,"r"))!=NULL) {
-	    /* We do not want to restrict line buffer sizes.
-	     * Furthermore we do not expect huge files here.
-	     * So just read the contents character by character.
-	     */
-
-	    int c;
-	    fprintf(tfp,"%% start of included material from %s\n",
-		    immediate_insert_filename);
-	    while ((c=getc(in))!=EOF) {
-		putc(c,tfp);
-	    }
-	    fprintf(tfp,"%% end of included material\n");
-	    fclose(in);
-	} else if (latexmode) {
-	    /* standard header text */
-	    fprintf(tfp,"\\documentclass{article}\n");
-	    fprintf(tfp,"\\begin{document}\n");
-	}
-
-
-	if (include_filename!=NULL) {
-	    fprintf(tfp,"\\input %s\n",include_filename);
-	}
-
-	fprintf(tfp,"etex\n");
-
-    }
-    fprintf(tfp,"%% -MP-ADDITIONAL-HEADER\n\n");
-
-    /* latexmode: write the font macros. */
-    if (latexmode) {
-	fprintf(tfp, "\n%%SetFigFont macros for latex\n");
-	fprintf(tfp, "verbatimtex\n");
-	define_setfigfont(tfp);
-	fprintf(tfp, "\\ifx\\SetFigFontSize\\undefined%%\n");
-	fprintf(tfp, "\\gdef\\SetFigFontSize#1#2{%%\n");
-	fprintf(tfp, "	\\fontsize{#1}{#2pt}%%\n");
-	fprintf(tfp, "	\\selectfont}%%\n");
-	fprintf(tfp, "\\fi%%\n");
-	fprintf(tfp,"etex\n\n");
-    }
 
 	if (split) {
-	      /*
-	       * We need a bounding box around all objects in all
-	       * partial figures. Otherwise overlapping them will not
-	       * work properly. We create this bounding area here once
-	       * and for all. It will be included in each figure.
-	       */
-	      fprintf(tfp,"path allbounds;\n");
-	      fprintf(tfp,"allbounds = (%.2lf,%.2lf)--(%.2lf,%.2lf)",
-		      fig2bp(llx),y_off(fig2bp(lly)),fig2bp(urx),
-		      y_off(fig2bp(lly)));
-	      fprintf(tfp,"--(%.2lf,%.2lf)--(%.2lf,%.2lf)--cycle;\n",
-		      fig2bp(urx),y_off(fig2bp(ury)),
-		      fig2bp(llx),y_off(fig2bp(ury)));
+		/*
+		 * We need a bounding box around all objects in all
+		 * partial figures. Otherwise overlapping them will not
+		 * work properly. We create this bounding area here once
+		 * and for all. It will be included in each figure.
+		 */
+		fprintf(tfp,"path allbounds;\n");
+		fprintf(tfp,"allbounds = (%.2lf,%.2lf)--(%.2lf,%.2lf)",
+				fig2bp(llx),y_off(fig2bp(lly)),fig2bp(urx),
+				y_off(fig2bp(lly)));
+		fprintf(tfp,"--(%.2lf,%.2lf)--(%.2lf,%.2lf)--cycle;\n",
+				fig2bp(urx),y_off(fig2bp(ury)),
+				fig2bp(llx),y_off(fig2bp(ury)));
 	} else {
-	   fprintf(tfp,"%% Now draw the figure\n");
-	   fprintf(tfp,"beginfig(0)\n");
+		fprintf(tfp,"%% Now draw the figure\n");
+		fprintf(tfp,"beginfig(0)\n");
 	}
 
 	fprintf(tfp,"%% Some reasonable defaults\n");
@@ -404,14 +404,14 @@ genmp_start(F_compound *objects)
 	 */
 	fprintf(tfp,"  truecorners:=%d;\n",split==0);
 	fprintf(tfp,"  bboxmargin:=0;\n");
-	}
+}
 
 int
 genmp_end(void)
 {
 	if (split) {
-	    /* We must add the bounds for the last figure */
-	    fprintf(tfp,"setbounds currentpicture to allbounds;\n");
+		/* We must add the bounds for the last figure */
+		fprintf(tfp,"setbounds currentpicture to allbounds;\n");
 	}
 	/* Close the (last) figure and terminate MetaPost program */
 	fprintf(tfp,"endfig;\nend\n");
@@ -450,7 +450,7 @@ genmp_option(char opt, char *optarg)
 			prologues_nr = atoi(optarg);
 		} else {
 			fprintf(stderr,
-			    "Warning: missing argument for '-p'. Ignored.\n");
+			"Warning: missing argument for '-p'. Ignored.\n");
 		}
 		break;
 		/* other options are silently ignored */
@@ -483,199 +483,203 @@ static void
 genmp_drawarrow(int from_x, int from_y, int to_x, int to_y, F_line *obj,
 		F_arrow *arr)
 {
-    int    i, type;
-    F_pos  points[50], fillpoints[50], clippoints[50];
-    int    numpoints, nfillpoints, nclippoints;
+	int    i, type;
+	F_pos  points[50], fillpoints[50], clippoints[50];
+	int    numpoints, nfillpoints, nclippoints;
 
-    type = arr->type;
+	type = arr->type;
 
-    /* use xfig calculation method to generate arrow outline in points array.
-       Information on clipping is discarded */
-    calc_arrow(from_x, from_y, to_x, to_y,
-	       obj->thickness, arr, points, &numpoints, fillpoints, &nfillpoints, clippoints, &nclippoints);
-    if (numpoints < 3)
-	return;
+	/* use xfig calculation method to generate arrow outline in points array.
+	   Information on clipping is discarded */
+	calc_arrow(from_x, from_y, to_x, to_y, obj->thickness, arr, points,
+			&numpoints, fillpoints, &nfillpoints, clippoints,
+			&nclippoints);
+	if (numpoints < 3)
+		return;
 
-    fprintf(tfp,"%% Draw arrowhead type %d\n",type);
-    fprintf(tfp,"  linecap:=0;\n");	/* butt line cap for arrowheads */
-    fprintf(tfp,"  linejoin:=0;\n");	/* miter join for sharp points */
-    fprintf(tfp,"  pickup pencircle scaled %.2lf;\n",fig2bp(arr->thickness));
+	fprintf(tfp,"%% Draw arrowhead type %d\n",type);
+	fprintf(tfp,"  linecap:=0;\n");    /* butt line cap for arrowheads */
+	fprintf(tfp,"  linejoin:=0;\n");   /* miter join for sharp points */
+	fprintf(tfp,"  pickup pencircle scaled %.2lf;\n",
+			fig2bp(arr->thickness));
 
-    fprintf(tfp,"  path arr;\n");
-    fprintf(tfp,"  arr = (%.2lf, %.2lf)",
-	    fig2bp(points[0].x),
-	    y_off(fig2bp(points[0].y)));
-    for (i=1; i<numpoints; i++) {
-	fprintf(tfp, "\n      --(%.2lf, %.2lf)",
-		fig2bp(points[i].x),
-		y_off(fig2bp(points[i].y)));
-    }
-
-   if (type != 0 && type != 6 && type < 9)  {
-	/* old heads, close the path */
-	fprintf(tfp, " -- cycle");
-    }
-    fprintf(tfp,";\n");
-
-    if (type != 0) {
-	if (arr->style == 0) { /* hollow, fill with white */
-	    fprintf(tfp,"  fill arr withcolor white;\n");
-	} else if (type < 9) {
-	    /* solid, fill with color  */
-	    fprintf(tfp,"  fill arr withcolor %s;\n",
-		    genmp_pencolor(obj->pen_color));
+	fprintf(tfp,"  path arr;\n");
+	fprintf(tfp,"  arr = (%.2lf, %.2lf)", fig2bp(points[0].x),
+			y_off(fig2bp(points[0].y)));
+	for (i=1; i<numpoints; i++) {
+		fprintf(tfp, "\n      --(%.2lf, %.2lf)", fig2bp(points[i].x),
+				y_off(fig2bp(points[i].y)));
 	}
-    }
-    fprintf(tfp,"  draw arr withcolor %s;\n",
-	    genmp_pencolor(obj->pen_color));
+
+	if (type != 0 && type != 6 && type < 9)  {
+		/* old heads, close the path */
+		fprintf(tfp, " -- cycle");
+	}
+	fprintf(tfp,";\n");
+
+	if (type != 0) {
+		if (arr->style == 0) { /* hollow, fill with white */
+			fprintf(tfp,"  fill arr withcolor white;\n");
+		} else if (type < 9) {
+			/* solid, fill with color  */
+			fprintf(tfp,"  fill arr withcolor %s;\n",
+					genmp_pencolor(obj->pen_color));
+		}
+	}
+	fprintf(tfp,"  draw arr withcolor %s;\n",
+			genmp_pencolor(obj->pen_color));
 }
 
 static void
 genmp_arrowheads(F_line *obj, int objtype)
 {
-    double	x1,x2,x3,y1,y2,y3,c,d;
-    int		from_x, from_y, to_x, to_y;
-    F_point	*p;
-    F_control	*ctl;
-    F_arc	*a;
-    F_spline	*s;
+	double	x1,x2,x3,y1,y2,y3,c,d;
+	int		from_x, from_y, to_x, to_y;
+	F_point	*p;
+	F_control	*ctl;
+	F_arc	*a;
+	F_spline	*s;
 
-    /* generate two points to determine direction of arrowhead.
-       Start with forward arrow */
+	/* generate two points to determine direction of arrowhead.
+	   Start with forward arrow */
 
-    if (obj->for_arrow) {
+	if (obj->for_arrow) {
 
-	switch(objtype) {
+		switch(objtype) {
 
-	  case OBJ_ARC:
-	      /* find arrowhead direction for arcs */
-	      a = (F_arc *) obj;
-	      /* last point */
-	      to_x = a->point[2].x;
-	      to_y = a->point[2].y;
-	      compute_arcarrow_angle(a->center.x, a->center.y,
-				     (double) to_x, (double) to_y,
-				     a->direction, a->for_arrow,
-				     &from_x, &from_y);
-	      break;
+		case OBJ_ARC:
+			/* find arrowhead direction for arcs */
+			a = (F_arc *) obj;
+			/* last point */
+			to_x = a->point[2].x;
+			to_y = a->point[2].y;
+			compute_arcarrow_angle(a->center.x, a->center.y,
+					(double) to_x, (double) to_y,
+					a->direction, a->for_arrow,
+					&from_x, &from_y);
+			break;
 
-	  case OBJ_SPLINE:
-	      /* find arrowhead direction for splines.
-		 UNTESTED!! Not used by current implementation*/
-	      s = (F_spline *) obj;
-	      p = s->points;
-	      if (int_spline(s)) {
-		  ctl = s->controls;
-		  /* the two last control points of the interpolated spline
-		     determine the direction of the arrow */
-		  p = p->next;
-		  for ( ; p->next != NULL; p=p->next )
-		      ctl = ctl->next;
-		  /* next-to-last control point */
-		  from_x = round(ctl->lx);
-		  from_y = round(ctl->ly);
-		  /* last point */
-		  to_x = p->x;
-		  to_y = p->y;
-	      } else {
-		  /* for control point splines, arrow direction has to be calculated
-		     adapted from genps.c  */
-		  x1 = p->x;
-		  y1 = p->y;
-		  p = p->next;
-		  c = p->x;
-		  d = p->y;
-		  x3  = (x1 + c) / 2;
-		  y3  = (y1 + d) / 2;
+		case OBJ_SPLINE:
+			/* find arrowhead direction for splines.
+			   UNTESTED!! Not used by current implementation*/
+			s = (F_spline *) obj;
+			p = s->points;
+			if (int_spline(s)) {
+				ctl = s->controls;
+				/* the two last control points of the
+				   interpolated spline determine the direction
+				   of the arrow */
+				p = p->next;
+				for ( ; p->next != NULL; p=p->next )
+					ctl = ctl->next;
+				/* next-to-last control point */
+				from_x = round(ctl->lx);
+				from_y = round(ctl->ly);
+				/* last point */
+				to_x = p->x;
+				to_y = p->y;
+			} else {
+				/* for control point splines, arrow direction
+				   has to be calculated adapted from genps.c  */
+				x1 = p->x;
+				y1 = p->y;
+				p = p->next;
+				c = p->x;
+				d = p->y;
+				x3  = (x1 + c) / 2;
+				y3  = (y1 + d) / 2;
 
-		  /* in case there are only two points in this spline */
-		  x2 = x1;
-		  y2 = y1;
-		  /* go through the points to find the last two */
-		  for ( ; p->next != NULL; p = p->next) {
-		      x1 = x3;
-		      y1 = y3;
-		      x2 = c;
-		      y2 = d;
-		      c = p->x;
-		      d = p->y;
-		      x3 = (x2 + c) / 2;
-		      y3 = (y2 + d) / 2;
-		  }
+				/* in case there are only two points
+				   in this spline */
+				x2 = x1;
+				y2 = y1;
+				/* go through the points to find the last two */
+				for ( ; p->next != NULL; p = p->next) {
+					x1 = x3;
+					y1 = y3;
+					x2 = c;
+					y2 = d;
+					c = p->x;
+					d = p->y;
+					x3 = (x2 + c) / 2;
+					y3 = (y2 + d) / 2;
+				}
 
-		  /* next to last point */
-		  from_x = round(x2);
-		  from_y = round(y2);
-		  /* last point */
-		  to_x = round(c);
-		  to_y = round(d);
-	      }
-	      break;
+				/* next to last point */
+				from_x = round(x2);
+				from_y = round(y2);
+				/* last point */
+				to_x = round(c);
+				to_y = round(d);
+			}
+			break;
 
-	  case OBJ_POLYLINE:
-	  default:
-	      /* the two last points of the polyline determine the direction of the arrow */
-	      from_x = obj->last[1].x;
-	      from_y = obj->last[1].y;
-	      to_x = obj->last[0].x;
-	      to_y = obj->last[0].y;
+		case OBJ_POLYLINE:
+		default:
+			/* the two last points of the polyline determine the
+			   direction of the arrow */
+			from_x = obj->last[1].x;
+			from_y = obj->last[1].y;
+			to_x = obj->last[0].x;
+			to_y = obj->last[0].y;
+		}
+
+		/* draw the arrow */
+		genmp_drawarrow(from_x, from_y, to_x, to_y, obj,obj->for_arrow);
 	}
 
-	/* draw the arrow */
-	genmp_drawarrow(from_x, from_y, to_x, to_y, obj, obj->for_arrow);
-    }
+	/* get points for any backward arrowhead */
+	if (obj->back_arrow) {
 
-    /* get points for any backward arrowhead */
-  if (obj->back_arrow) {
+		switch(objtype) {
 
-	switch(objtype) {
+		case OBJ_ARC:
+			a = (F_arc *) obj;
+			/* first point */
+			to_x = a->point[0].x;
+			to_y = a->point[0].y;
+			compute_arcarrow_angle(a->center.x, a->center.y,
+					(double) to_x, (double) to_y,
+					a->direction ^ 1, a->back_arrow,
+					&from_x, &from_y);
+			break;
 
-	  case OBJ_ARC:
-	    a = (F_arc *) obj;
-	    /* first point */
-	    to_x = a->point[0].x;
-	    to_y = a->point[0].y;
-	    compute_arcarrow_angle(a->center.x, a->center.y,
-				   (double) to_x, (double) to_y,
-				   a->direction ^ 1, a->back_arrow,
-				   &from_x, &from_y);
-	    break;
+		case OBJ_SPLINE:
+			/* find arrowhead direction for splines.
+			   UNTESTED!! Not used by current implementation*/
+			s = (F_spline *) obj;
+			p = s->points;
+			if (int_spline(s)) {
+				ctl = s->controls;
+				/* first point */
+				to_x = p->x;
+				to_y = p->y;
+				/* second point */
+				from_x = round(ctl->rx);
+				from_y = round(ctl->ry);
+			} else {
+				/* first point */
+				to_x = p->x;
+				to_y = p->y;
+				/* second point */
+				from_x = round(((double)p->x + p->next->x) / 2);
+				from_y = round(((double)p->y + p->next->y) / 2);
+			}
+			break;
 
-	  case OBJ_SPLINE:
-	      /* find arrowhead direction for splines.
-		UNTESTED!! Not used by current implementation*/
-	      s = (F_spline *) obj;
-	      p = s->points;
-	      if (int_spline(s)) {
-		  ctl = s->controls;
-		  /* first point */
-		  to_x = p->x;
-		  to_y = p->y;
-		  /* second point */
-		  from_x = round(ctl->rx);
-		  from_y = round(ctl->ry);
-	      } else {
-		  /* first point */
-		  to_x = p->x;
-		  to_y = p->y;
-		  /* second point */
-		  from_x = round(((double) p->x + (double) p->next->x) / 2);
-		  from_y = round(((double) p->y + (double) p->next->y) / 2);
-	      }
-	      break;
+		case OBJ_POLYLINE:
+		default:
+			p=obj->points;
+			to_x = p->x;
+			to_y = p->y;
+			from_x = p->next->x;
+			from_y = p->next->y;
+		}
 
-	  case OBJ_POLYLINE:
-	  default:
-	      p=obj->points;
-	      to_x = p->x;
-	      to_y = p->y;
-	      from_x = p->next->x;
-	      from_y = p->next->y;
+		/* draw the arrow */
+		genmp_drawarrow(from_x, from_y, to_x, to_y, obj,
+				obj->back_arrow);
 	}
-
-	/* draw the arrow */
-	genmp_drawarrow(from_x, from_y, to_x, to_y, obj, obj->back_arrow);
-  }
 }
 
 /* Changes for arrowhead support end here */
@@ -692,88 +696,106 @@ genmp_line(F_line *l)
 
 	fprintf(tfp,"%% Begin polyline object\n");
 	switch( l->type) {
-	   case 1:	      /* Polyline */
-	   case 2:	      /* Box */
-	   case 3:	      /* Polygon */
-	      fprintf(tfp,"  linecap:=%d;\n",l->cap_style);
-	      fprintf(tfp,"  linejoin:=%d;\n",l->join_style);
-	      fprintf(tfp,"  pickup pencircle scaled %.2lf;\n",fig2bp(l->thickness));
-	      fprintf(tfp,"  path p;\n");
-	      p = l->points;
-	      fprintf(tfp,"  p = (%.2lf, %.2lf)", fig2bp(p->x),y_off(fig2bp(p->y)));
-	      p = p->next;
-	      for ( ; p != NULL; p=p->next) {
-		 fprintf(tfp,"\n    --(%.2lf, %.2lf)", fig2bp(p->x),
-		     y_off(fig2bp(p->y)));
-	      }
-	      if (l->type != 1)
-		 fprintf(tfp,"--cycle;\n");
-	      else
-		 fprintf(tfp,";\n");
-	      if (l->fill_style != -1) {   /* Filled? */
-		 fprintf(tfp,"	path f;\n");
-		 fprintf(tfp,"	f = p--cycle;\n");
-		 fprintf(tfp,"	fill f %s;\n",
-		    genmp_fillcolor(l->fill_color,l->fill_style));
-	      }
-	 if (l->thickness != 0) {     /* invisible pen? */
-		 fprintf(tfp,"	draw p ");
-		 fprintf(tfp,"withcolor %s",genmp_pencolor(l->pen_color));
-		 if (l->style == 1) {	  /* dashed */
-		    fprintf(tfp," dashed evenly scaled %.2lf;\n",l->style_val/3.3);
-		 } else if (l->style == 2) {	 /* dotted */
-		    fprintf(tfp," dashed withdots scaled %.2lf;\n",l->style_val/4.75);
-		 } else		  /* plain */
-		    fprintf(tfp,";\n");
+	case 1:	      /* Polyline */
+	case 2:	      /* Box */
+	case 3:	      /* Polygon */
+		fprintf(tfp, "  linecap:=%d;\n", l->cap_style);
+		fprintf(tfp, "  linejoin:=%d;\n", l->join_style);
+		fprintf(tfp, "  pickup pencircle scaled %.2lf;\n",
+				fig2bp(l->thickness));
+		fprintf(tfp, "  path p;\n");
+		p = l->points;
+		fprintf(tfp, "  p = (%.2lf, %.2lf)", fig2bp(p->x),
+				y_off(fig2bp(p->y)));
+		p = p->next;
+		for ( ; p != NULL; p = p->next) {
+			fprintf(tfp,"\n    --(%.2lf, %.2lf)", fig2bp(p->x),
+					y_off(fig2bp(p->y)));
+		}
+		if (l->type != 1)
+			fprintf(tfp,"--cycle;\n");
+		else
+			fprintf(tfp,";\n");
+		if (l->fill_style != -1) {   /* Filled? */
+			fprintf(tfp, "	path f;\n");
+			fprintf(tfp, "	f = p--cycle;\n");
+			fprintf(tfp, "	fill f %s;\n",
+					genmp_fillcolor(l->fill_color,
+						l->fill_style));
+		}
+		if (l->thickness != 0) {     /* invisible pen? */
+			fprintf(tfp, "	draw p ");
+			fprintf(tfp, "withcolor %s",
+					genmp_pencolor(l->pen_color));
+			if (l->style == 1) {	  /* dashed */
+				fprintf(tfp, " dashed evenly scaled %.2lf;\n",
+						l->style_val/3.3);
+			} else if (l->style == 2) {	 /* dotted */
+				fprintf(tfp, " dashed withdots scaled %.2lf;\n",
+						l->style_val/4.75);
+			} else		  /* plain */
+				fprintf(tfp,";\n");
 
-		 if ((l->for_arrow != NULL) || (l->back_arrow != NULL))
-		     genmp_arrowheads(l, OBJ_POLYLINE);
-	      }
-	      break;
-	   case 4:	      /* arc box */
-	      fprintf(tfp,"  linecap:=%d;\n",l->cap_style);
-	      fprintf(tfp,"  linejoin:=1;\n");	 /* rounded necessary for arcbox */
-	      fprintf(tfp,"  pickup pencircle scaled %.2lf;\n",fig2bp(l->thickness));
-	      fprintf(tfp,"  path p,pb,sw,nw,ne,se;\n");
-	      fprintf(tfp,"  pair ll,ul,ur,lr;\n");
-	      p = l->points;
-	      fprintf(tfp,"  p = (%.2lf,%.2lf)--",fig2bp(p->x),y_off(fig2bp(p->y)));
-	      p = (p->next)->next;
-	 fprintf(tfp,"(%.2lf,%.2lf);\n",fig2bp(p->x),y_off(fig2bp(p->y)));
-	      fprintf(tfp,"  ur = urcorner p; ll = llcorner p;\n");
-	      fprintf(tfp,"  ul = ulcorner p; lr = lrcorner p;\n");
-	      fprintf(tfp,"  sw = fullcircle scaled %.2lf shifted (ll+\
-(%.2lf,%.2lf));\n",fig2bp(l->radius*2),fig2bp(l->radius),fig2bp(l->radius));
-	      fprintf(tfp,"  nw = fullcircle scaled %.2lf shifted (ul+\
-(%.2lf,%.2lf));\n",fig2bp(l->radius*2),fig2bp(l->radius),-fig2bp(l->radius));
-	      fprintf(tfp,"  ne = fullcircle rotated 180 scaled %.2lf shifted (ur+\
-(%.2lf,%.2lf));\n",fig2bp(l->radius*2),-fig2bp(l->radius),-fig2bp(l->radius));
-	      fprintf(tfp,"  se = fullcircle rotated 180 scaled %.2lf shifted (lr+\
-(%.2lf,%.2lf));\n",fig2bp(l->radius*2),-fig2bp(l->radius),fig2bp(l->radius));
-	      fprintf(tfp,"  pb = buildcycle(sw,ll--ul,nw,ul--ur,ne,ur--lr,se,\
-lr--ll);\n");
-	      if (l->fill_style != -1)
-		 fprintf(tfp,"	fill pb %s;\n",
-		    genmp_fillcolor(l->fill_color,l->fill_style));
-	      if (l->thickness != 0) {	    /* invisible pen? */
-		 fprintf(tfp,"	draw pb withcolor %s",
-		    genmp_pencolor(l->pen_color));
-		 if (l->style == 1) {	  /* dashed */
-		    fprintf(tfp," dashed evenly scaled %.2lf;\n",l->style_val/3.3);
-		 } else if (l->style == 2) {	 /* dotted */
-		    fprintf(tfp," dashed withdots scaled %.2lf;\n",
-		    l->style_val/4.75);
-		 } else		  /* plain */
-		    fprintf(tfp,";\n");
-	      }
-	      break;
-	   case 5:	      /* picture object */
-	      fprintf(tfp,"  show \"Picture objects are not supported!\"\n");
-	      break;
-	   default:
-	      fprintf(tfp,"  show \"This Polyline object is not supported!\"\n");
+			if ((l->for_arrow != NULL) || (l->back_arrow != NULL))
+				genmp_arrowheads(l, OBJ_POLYLINE);
+		}
+		break;
+	case 4:	      /* arc box */
+		fprintf(tfp, "  linecap:=%d;\n",l->cap_style);
+		fprintf(tfp, "  linejoin:=1;\n");/* rounded necessary for arcbox */
+		fprintf(tfp, "  pickup pencircle scaled %.2lf;\n",
+				fig2bp(l->thickness));
+		fprintf(tfp, "  path p,pb,sw,nw,ne,se;\n");
+		fprintf(tfp, "  pair ll,ul,ur,lr;\n");
+		p = l->points;
+		fprintf(tfp, "  p = (%.2lf,%.2lf)--",
+				fig2bp(p->x), y_off(fig2bp(p->y)));
+		p = (p->next)->next;
+		fprintf(tfp, "(%.2lf,%.2lf);\n",
+				fig2bp(p->x), y_off(fig2bp(p->y)));
+		fprintf(tfp, "  ur = urcorner p; ll = llcorner p;\n");
+		fprintf(tfp, "  ul = ulcorner p; lr = lrcorner p;\n");
+		fprintf(tfp, "  sw = fullcircle scaled %.2lf shifted "
+				"(ll + (%.2lf,%.2lf));\n", fig2bp(l->radius*2),
+				fig2bp(l->radius), fig2bp(l->radius));
+		fprintf(tfp, "  nw = fullcircle scaled %.2lf shifted "
+				"(ul + (%.2lf,%.2lf));\n", fig2bp(l->radius*2),
+				fig2bp(l->radius),-fig2bp(l->radius));
+		fprintf(tfp, "  ne = fullcircle rotated 180 scaled %.2lf "
+				"shifted (ur + (%.2lf,%.2lf));\n",
+				fig2bp(l->radius*2), -fig2bp(l->radius),
+				-fig2bp(l->radius));
+		fprintf(tfp, "  se = fullcircle rotated 180 scaled %.2lf "
+				"shifted (lr + (%.2lf,%.2lf));\n",
+				fig2bp(l->radius*2), -fig2bp(l->radius),
+				fig2bp(l->radius));
+		fprintf(tfp, "  pb = buildcycle(sw,ll--ul,nw,ul--ur,ne,ur--lr,"
+				"se,lr--ll);\n");
+		if (l->fill_style != -1)
+			fprintf(tfp, "	fill pb %s;\n",
+					genmp_fillcolor(l->fill_color,
+						l->fill_style));
+		if (l->thickness != 0) {	    /* invisible pen? */
+			fprintf(tfp, "	draw pb withcolor %s",
+					genmp_pencolor(l->pen_color));
+			if (l->style == 1) {	  /* dashed */
+				fprintf(tfp, " dashed evenly scaled %.2lf;\n",
+						l->style_val/3.3);
+			} else if (l->style == 2) {	 /* dotted */
+				fprintf(tfp, " dashed withdots scaled %.2lf;\n",
+						l->style_val/4.75);
+			} else		  /* plain */
+				fprintf(tfp, ";\n");
+		}
+		break;
+	case 5:	      /* picture object */
+		fprintf(tfp, "  show \"Picture objects are not supported!\"\n");
+		break;
+	default:
+		fprintf(tfp, "  show \"This Polyline object is "
+				"not supported!\"\n");
 	}
-	fprintf(tfp,"%% End polyline object\n");
+	fprintf(tfp, "%% End polyline object\n");
 	return;
 }
 
@@ -787,125 +809,147 @@ genmp_spline(F_spline *s)
 	do_split(s->depth);
 
 	/* print any comments prefixed with "%" */
-	print_comments("% ",s->comments, "");
+	print_comments("% ", s->comments, "");
 
-	fprintf(tfp,"%% Begin spline object\n");
+	fprintf(tfp, "%% Begin spline object\n");
 	switch (s->type) {
-	   case 0:	  /* control point spline (open) */
-	   case 1:	  /* control point spline (closed) */
-	      fprintf(tfp,"  linecap:=%d;\n",s->cap_style);
-	      fprintf(tfp,"  pair p[],c[];\n");
-	      fprintf(tfp,"  path s;\n");
-	      fprintf(tfp,"  pickup pencircle scaled %.2lf;\n",fig2bp(s->thickness));
-/* locate "curve points" halfway between given poinsts */
-	      p = s->points; i=0;
-	      fprintf(tfp,"  p%d = .5[(%.2lf,%.2lf),", i++, fig2bp(p->x),
-		 y_off(fig2bp(p->y)));
-	      p = p->next;
-	      fprintf(tfp,"(%.2lf,%.2lf)];\n",fig2bp(p->x),y_off(fig2bp(p->y)));
-	      for ( ; p->next != NULL; ) {    /* at least 3 points */
-		 fprintf(tfp,"	p%d = .5[(%.2lf,%.2lf),",i++, fig2bp(p->x),
-		    y_off(fig2bp(p->y)));
-		 p = p->next;
-		 fprintf(tfp,"(%.2lf,%.2lf)];\n",fig2bp(p->x),y_off(fig2bp(p->y)));
-	      }
-/* locate "control points" 2/3 of way between curve points and given points */
-	      p = (s->points)->next; i=0; j=0;
-	      for ( ; p->next != NULL; ) {   /* at least 3 points */
-		 fprintf(tfp,"	c%d = .666667[p%d,(%.2lf,%.2lf)];\n",j++,i++,
-		    fig2bp(p->x),y_off(fig2bp(p->y)));
-		 fprintf(tfp,"	c%d = .666667[p%d,(%.2lf,%.2lf)];\n",j++,i,
-		    fig2bp(p->x),y_off(fig2bp(p->y)));
-		 p = p->next;
-	      }
-	      if (s->type == 1) {  /* closed spline */
-		 fprintf(tfp,"	c%d = .666667[p%d,(%.2lf,%.2lf)];\n",j++,i++,
-		    fig2bp(p->x),y_off(fig2bp(p->y)));
-		 fprintf(tfp,"	c%d = .666667[p0,(%.2lf,%.2lf)];\n",j++,
-		    fig2bp(p->x),y_off(fig2bp(p->y)));
-	      }
-/* now draw the spline */
-	      p = s->points; i=0; j=0;
-	      if (s->type == 1)    /* closed spline */
-		 fprintf(tfp,"	s =\n");
-	      else
-		 fprintf(tfp,"	s = (%.2lf,%.2lf)..\n", fig2bp(p->x),
-		 y_off(fig2bp(p->y)));
-	      p = p->next;
-	      for ( ; p->next != NULL; ) {  /* 3 or more points */
-		 fprintf(tfp,"	  p%d..controls c%d and c%d..\n",i++,j,j+1);
-		 j += 2;
-		 p = p->next;
-	      }
-	      if (s->type == 1) {     /* closed spline */
-		 fprintf(tfp,"	  p%d..controls c%d and c%d..cycle;\n",i++,j,j+1);
-		 j += 2;
-	      } else
-		 fprintf(tfp,"	  p%d..(%.2lf,%.2lf);\n",i,
-		    fig2bp(p->x),y_off(fig2bp(p->y)));
-	      if (s->fill_style != -1) {   /* Filled? */
-		 fprintf(tfp,"	path f;\n");
-		 fprintf(tfp,"	f = s--cycle;\n");
-		 fprintf(tfp,"	fill f %s;\n",
-		    genmp_fillcolor(s->fill_color,s->fill_style));
-	      }
-	      if (s->thickness != 0) {	   /* invisible pen? */
-		 fprintf(tfp,"	draw s ");
-		 fprintf(tfp,"withcolor %s",genmp_pencolor(s->pen_color));
-		 if (s->style == 1) {	  /* dashed */
-		    fprintf(tfp," dashed evenly scaled %.2lf;\n",s->style_val/3.3);
-		 } else if (s->style == 2) {	 /* dotted */
-		    fprintf(tfp," dashed withdots scaled %.2lf;\n",s->style_val/4.75);
-		 } else		  /* plain */
-		    fprintf(tfp,";\n");
+	case 0:	  /* control point spline (open) */
+	case 1:	  /* control point spline (closed) */
+		fprintf(tfp, "  linecap:=%d;\n", s->cap_style);
+		fprintf(tfp, "  pair p[],c[];\n");
+		fprintf(tfp, "  path s;\n");
+		fprintf(tfp, "  pickup pencircle scaled %.2lf;\n",
+				fig2bp(s->thickness));
+		/* locate "curve points" halfway between given poinsts */
+		p = s->points; i=0;
+		fprintf(tfp, "  p%d = .5[(%.2lf,%.2lf),", i++, fig2bp(p->x),
+				y_off(fig2bp(p->y)));
+		p = p->next;
+		fprintf(tfp, "(%.2lf,%.2lf)];\n", fig2bp(p->x),
+				y_off(fig2bp(p->y)));
+		for ( ; p->next != NULL; ) {    /* at least 3 points */
+			fprintf(tfp, "	p%d = .5[(%.2lf,%.2lf),", i++,
+					fig2bp(p->x), y_off(fig2bp(p->y)));
+			p = p->next;
+			fprintf(tfp, "(%.2lf,%.2lf)];\n", fig2bp(p->x),
+					y_off(fig2bp(p->y)));
+		}
+		/* locate "control points" 2/3 of way between curve points
+		   and given points */
+		p = (s->points)->next; i=0; j=0;
+		for ( ; p->next != NULL; ) {   /* at least 3 points */
+			fprintf(tfp, "	c%d = .666667[p%d,(%.2lf,%.2lf)];\n",
+					j++, i++,
+					fig2bp(p->x), y_off(fig2bp(p->y)));
+			fprintf(tfp, "	c%d = .666667[p%d,(%.2lf,%.2lf)];\n",
+					j++, i,
+					fig2bp(p->x), y_off(fig2bp(p->y)));
+			p = p->next;
+		}
+		if (s->type == 1) {  /* closed spline */
+			fprintf(tfp, "	c%d = .666667[p%d,(%.2lf,%.2lf)];\n",
+					j++, i++,
+					fig2bp(p->x), y_off(fig2bp(p->y)));
+			fprintf(tfp, "	c%d = .666667[p0,(%.2lf,%.2lf)];\n",
+					j++, fig2bp(p->x), y_off(fig2bp(p->y)));
+		}
+		/* now draw the spline */
+		p = s->points; i=0; j=0;
+		if (s->type == 1)    /* closed spline */
+			fprintf(tfp, "	s =\n");
+		else
+			fprintf(tfp, "	s = (%.2lf,%.2lf)..\n", fig2bp(p->x),
+					y_off(fig2bp(p->y)));
+		p = p->next;
+		for ( ; p->next != NULL; ) {  /* 3 or more points */
+			fprintf(tfp, "	  p%d..controls c%d and c%d..\n",
+					i++, j, j+1);
+			j += 2;
+			p = p->next;
+		}
+		if (s->type == 1) {     /* closed spline */
+			fprintf(tfp, "	  p%d..controls c%d and c%d..cycle;\n",
+					i++, j, j+1);
+			j += 2;
+		} else
+			fprintf(tfp, "	  p%d..(%.2lf,%.2lf);\n", i,
+					fig2bp(p->x), y_off(fig2bp(p->y)));
+		if (s->fill_style != -1) {   /* Filled? */
+			fprintf(tfp, "	path f;\n");
+			fprintf(tfp, "	f = s--cycle;\n");
+			fprintf(tfp, "	fill f %s;\n",
+					genmp_fillcolor(s->fill_color,
+						s->fill_style));
+		}
+		if (s->thickness != 0) {	   /* invisible pen? */
+			fprintf(tfp, "	draw s ");
+			fprintf(tfp, "withcolor %s",
+					genmp_pencolor(s->pen_color));
+			if (s->style == 1) {	  /* dashed */
+				fprintf(tfp, " dashed evenly scaled %.2lf;\n",
+						s->style_val/3.3);
+			} else if (s->style == 2) {	 /* dotted */
+				fprintf(tfp, " dashed withdots scaled %.2lf;\n",
+						s->style_val/4.75);
+			} else		  /* plain */
+				fprintf(tfp, ";\n");
 
-		 if ((s->for_arrow != NULL) || (s->back_arrow != NULL))
-		     genmp_arrowheads((F_line *)s, OBJ_SPLINE);
-	      }
-	      break;
-	   case 2:	   /* interpolated spline (open) */
-	   case 3:	   /* interpolated spline (closed) */
-	      fprintf(tfp,"  linecap:=%d;\n",s->cap_style);
-	      fprintf(tfp,"  path s;\n");
-	      fprintf(tfp,"  pickup pencircle scaled %.2lf;\n",fig2bp(s->thickness));
-	      c = s->controls;
-	      p = s->points;
-	      fprintf(tfp,"  s = (%.2lf, %.2lf)", fig2bp(p->x),y_off(fig2bp(p->y)));
-	      p = p->next;
-	      for ( ; p != NULL; p=p->next, c=c->next) {
-		 fprintf(tfp,"..controls (%.2lf, %.2lf) and (%.2lf, %.2lf)\n",
-		    fig2bp(c->rx), y_off(fig2bp(c->ry)),fig2bp((c->next)->lx),
-		    y_off(fig2bp((c->next)->ly)));
-		 fprintf(tfp,"	..(%.2lf,%.2lf)",fig2bp(p->x),y_off(fig2bp(p->y)));
-	      }
-	      if (s->type == 3)       /* closed spline */
-		 fprintf(tfp,"..cycle;\n");
-	      else
-		 fprintf(tfp,";\n");
-	      if (s->fill_style != -1) {   /* Filled? */
-		 fprintf(tfp,"	path f;\n");
-		 fprintf(tfp,"	f = s--cycle;\n");
-		 fprintf(tfp,"	fill f %s;\n",
-		    genmp_fillcolor(s->fill_color,s->fill_style));
-	      }
-	      if (s->thickness != 0) {	   /* invisible pen? */
-		 fprintf(tfp,"	draw s ");
-		 fprintf(tfp,"withcolor %s",genmp_pencolor(s->pen_color));
-		 if (s->style == 1) {	  /* dashed */
-		    fprintf(tfp," dashed evenly scaled %.2lf;\n",s->style_val/3.3);
-		 } else if (s->style == 2) {	 /* dotted */
-		    fprintf(tfp," dashed withdots scaled %.2lf;\n",s->style_val/4.75);
-		 } else		  /* plain */
-		    fprintf(tfp,";\n");
+			if ((s->for_arrow != NULL) || (s->back_arrow != NULL))
+				genmp_arrowheads((F_line *)s, OBJ_SPLINE);
+		}
+		break;
+	case 2:	   /* interpolated spline (open) */
+	case 3:	   /* interpolated spline (closed) */
+		fprintf(tfp, "  linecap:=%d;\n", s->cap_style);
+		fprintf(tfp, "  path s;\n");
+		fprintf(tfp, "  pickup pencircle scaled %.2lf;\n",
+				fig2bp(s->thickness));
+		c = s->controls;
+		p = s->points;
+		fprintf(tfp, "  s = (%.2lf, %.2lf)",
+				fig2bp(p->x), y_off(fig2bp(p->y)));
+		p = p->next;
+		for ( ; p != NULL; p=p->next, c=c->next) {
+			fprintf(tfp, "..controls (%.2lf, %.2lf) and "
+					"(%.2lf, %.2lf)\n",
+					fig2bp(c->rx), y_off(fig2bp(c->ry)),
+					fig2bp((c->next)->lx),
+					y_off(fig2bp((c->next)->ly)));
+			fprintf(tfp, "	..(%.2lf,%.2lf)",
+					fig2bp(p->x), y_off(fig2bp(p->y)));
+		}
+		if (s->type == 3)       /* closed spline */
+			fprintf(tfp, "..cycle;\n");
+		else
+			fprintf(tfp, ";\n");
+		if (s->fill_style != -1) {   /* Filled? */
+			fprintf(tfp, "	path f;\n");
+			fprintf(tfp, "	f = s--cycle;\n");
+			fprintf(tfp, "	fill f %s;\n",
+					genmp_fillcolor(s->fill_color,
+						s->fill_style));
+		}
+		if (s->thickness != 0) {	   /* invisible pen? */
+			fprintf(tfp, "	draw s ");
+			fprintf(tfp, "withcolor %s",
+					genmp_pencolor(s->pen_color));
+			if (s->style == 1) {	  /* dashed */
+				fprintf(tfp, " dashed evenly scaled %.2lf;\n",
+						s->style_val/3.3);
+			} else if (s->style == 2) {	 /* dotted */
+				fprintf(tfp, " dashed withdots scaled %.2lf;\n",
+						s->style_val/4.75);
+			} else		  /* plain */
+				fprintf(tfp, ";\n");
 
-		 if ((s->for_arrow != NULL) || (s->back_arrow != NULL))
-		     genmp_arrowheads((F_line *)s, OBJ_SPLINE);
-	      }
-	      break;
-	   default:
-	      fprintf(tfp,"  show \"This Spline object is not supported!\"\n");
+			if ((s->for_arrow != NULL) || (s->back_arrow != NULL))
+				genmp_arrowheads((F_line *)s, OBJ_SPLINE);
+		}
+		break;
+	default:
+		fprintf(tfp, "  show \"This Spline object is not supported!\"\n");
 	}
-	fprintf(tfp,"%% End spline object\n");
+	fprintf(tfp, "%% End spline object\n");
 	return;
 }
 
@@ -916,41 +960,45 @@ genmp_ellipse(F_ellipse *e)
 	do_split(e->depth);
 
 	/* print any comments prefixed with "%" */
-	print_comments("% ",e->comments, "");
+	print_comments("% ", e->comments, "");
 
-	fprintf(tfp,"%% Begin ellipse object\n");
+	fprintf(tfp, "%% Begin ellipse object\n");
 	switch(e->type) {
-	   case 1:	   /* Ellipse by radius */
-	   case 2:	   /* Ellipse by diameter */
-	   case 3:	   /* Circle by radius */
-	   case 4:	   /* Circle by diameter */
-	      fprintf(tfp,"  pickup pencircle scaled %.2lf;\n",fig2bp(e->thickness));
-	      fprintf(tfp,"  path c;\n");
-	      fprintf(tfp,"  c = fullcircle scaled %.2lf yscaled %.2lf\n",
-		 fig2bp((e->radiuses).x*2),
-		 fig2bp((e->radiuses).y)/fig2bp((e->radiuses).x));
-	      fprintf(tfp,"	    rotated %.2lf shifted (%.2lf,%.2lf);\n",
-		 rad2deg(e->angle),fig2bp((e->center).x),
-		 y_off(fig2bp((e->center).y)));
-	      if (e->fill_style != -1)
-		 fprintf(tfp," fill c %s;\n",
-		    genmp_fillcolor(e->fill_color,e->fill_style));
-	      if (e->thickness != 0) {	   /* invisible pen? */
-		 fprintf(tfp,"	draw c withcolor %s",
-		    genmp_pencolor(e->pen_color));
-		 if (e->style == 1) {	  /* dashed */
-		    fprintf(tfp," dashed evenly scaled %.2lf;\n",e->style_val/3.3);
-		 } else if (e->style == 2) {	 /* dotted */
-		    fprintf(tfp," dashed withdots scaled %.2lf;\n",e->style_val/4.75);
-		 } else {	  /* plain */
-		    fprintf(tfp,";\n");
-		 }
-	      }
-	      break;
-	   default:
-	      fprintf(tfp,"  show \"This Ellipse object is not supported!\"\n");
+	case 1:	   /* Ellipse by radius */
+	case 2:	   /* Ellipse by diameter */
+	case 3:	   /* Circle by radius */
+	case 4:	   /* Circle by diameter */
+		fprintf(tfp, "  pickup pencircle scaled %.2lf;\n",
+				fig2bp(e->thickness));
+		fprintf(tfp, "  path c;\n");
+		fprintf(tfp, "  c = fullcircle scaled %.2lf yscaled %.2lf\n",
+				fig2bp((e->radiuses).x*2),
+				fig2bp((e->radiuses).y)/fig2bp((e->radiuses).x));
+		fprintf(tfp, "	    rotated %.2lf shifted (%.2lf,%.2lf);\n",
+				rad2deg(e->angle), fig2bp((e->center).x),
+				y_off(fig2bp((e->center).y)));
+		if (e->fill_style != -1)
+			fprintf(tfp, " fill c %s;\n",
+					genmp_fillcolor(e->fill_color,
+						e->fill_style));
+		if (e->thickness != 0) {	   /* invisible pen? */
+			fprintf(tfp, "	draw c withcolor %s",
+					genmp_pencolor(e->pen_color));
+			if (e->style == 1) {	  /* dashed */
+				fprintf(tfp, " dashed evenly scaled %.2lf;\n",
+						e->style_val/3.3);
+			} else if (e->style == 2) {	 /* dotted */
+				fprintf(tfp, " dashed withdots scaled %.2lf;\n",
+						e->style_val/4.75);
+			} else {	  /* plain */
+				fprintf(tfp, ";\n");
+			}
+		}
+		break;
+	default:
+		fprintf(tfp, "  show \"This Ellipse object is not supported!\"\n");
 	}
-	fprintf(tfp,"%% End ellipse object\n");
+	fprintf(tfp, "%% End ellipse object\n");
 	return;
 }
 
@@ -961,62 +1009,66 @@ genmp_arc(F_arc *a)
 	do_split(a->depth);
 
 	/* print any comments prefixed with "%" */
-	print_comments("% ",a->comments, "");
+	print_comments("% ", a->comments, "");
 
-	fprintf(tfp,"%% Begin arc object\n");
+	fprintf(tfp, "%% Begin arc object\n");
 	switch (a->type) {
 	   case 0:	      /* three point arc (open) JFIG BUG */
 	   case 1:	      /* three point arc (open) */
 	   case 2:	      /* three point arc (pie wedge) */
-	      fprintf(tfp,"  linecap:=%d;\n",a->cap_style);
-	      fprintf(tfp,"  linejoin:=0;\n");	/* mitered necessary for pie wedge */
-	      fprintf(tfp,"  pickup pencircle scaled %.2lf;\n",fig2bp(a->thickness));
-	      fprintf(tfp,"  path a,p,ls,le;\n");
-	      fprintf(tfp,"  pair s,e,c;\n");
-	      fprintf(tfp,"  c = (%.2lf,%.2lf);\n",fig2bp(a->center.x),
+	      fprintf(tfp, "  linecap:=%d;\n", a->cap_style);
+	      fprintf(tfp, "  linejoin:=0;\n");	/* mitered necessary for pie wedge */
+	      fprintf(tfp, "  pickup pencircle scaled %.2lf;\n",
+			      fig2bp(a->thickness));
+	      fprintf(tfp, "  path a,p,ls,le;\n");
+	      fprintf(tfp, "  pair s,e,c;\n");
+	      fprintf(tfp, "  c = (%.2lf,%.2lf);\n", fig2bp(a->center.x),
 		 y_off(fig2bp(a->center.y)));
-	      fprintf(tfp,"  s = (%.2lf,%.2lf);\n",fig2bp(a->point[0].x),
+	      fprintf(tfp, "  s = (%.2lf,%.2lf);\n", fig2bp(a->point[0].x),
 		 y_off(fig2bp(a->point[0].y)));
-	      fprintf(tfp,"  e = (%.2lf,%.2lf);\n",fig2bp(a->point[2].x),
+	      fprintf(tfp, "  e = (%.2lf,%.2lf);\n", fig2bp(a->point[2].x),
 		 y_off(fig2bp(a->point[2].y)));
-	      fprintf(tfp,"  d := (%.2lf ++ %.2lf)*2.0;\n",
+	      fprintf(tfp, "  d := (%.2lf ++ %.2lf)*2.0;\n",
 		 fig2bp(a->point[0].x)-fig2bp(a->center.x),
 		 fig2bp(a->point[0].y)-fig2bp(a->center.y));
-	      fprintf(tfp,"  ls = (0,0)--(d,0) rotated angle (s-c);\n");
-	      fprintf(tfp,"  le = (0,0)--(d,0) rotated angle (e-c);\n");
-	      fprintf(tfp,"  p = ");
+	      fprintf(tfp, "  ls = (0,0)--(d,0) rotated angle (s-c);\n");
+	      fprintf(tfp, "  le = (0,0)--(d,0) rotated angle (e-c);\n");
+	      fprintf(tfp, "  p = ");
 	      if (a->direction != 1)  /* clockwise */
-		 fprintf(tfp,"reverse ");
-	      fprintf(tfp,"fullcircle scaled d rotated angle (s-c) ");
-	      fprintf(tfp,"cutafter le;\n");
+		 fprintf(tfp, "reverse ");
+	      fprintf(tfp, "fullcircle scaled d rotated angle (s-c) ");
+	      fprintf(tfp, "cutafter le;\n");
 	      if (a->type == 2)    /* pie wedge */
-		 fprintf(tfp,"	a = buildcycle(ls,p,le) shifted c;\n");
+		 fprintf(tfp, "	a = buildcycle(ls,p,le) shifted c;\n");
 	      else
-		 fprintf(tfp,"	a = p shifted c;\n");
+		 fprintf(tfp, "	a = p shifted c;\n");
 	      if (a->fill_style != -1) {   /* Filled arc */
-		 fprintf(tfp,"	path f;\n");
-		 fprintf(tfp,"	f = a--cycle;\n");
-		 fprintf(tfp,"	fill f %s;\n",
-		    genmp_fillcolor(a->fill_color,a->fill_style));
+		 fprintf(tfp, "	path f;\n");
+		 fprintf(tfp, "	f = a--cycle;\n");
+		 fprintf(tfp, "	fill f %s;\n",
+		    genmp_fillcolor(a->fill_color, a->fill_style));
 	      }
 	      if (a->thickness != 0) {	   /* invisible pen? */
-		 fprintf(tfp,"	draw a ");
-		 fprintf(tfp,"withcolor %s",genmp_pencolor(a->pen_color));
+		 fprintf(tfp, "	draw a ");
+		 fprintf(tfp, "withcolor %s", genmp_pencolor(a->pen_color));
 		 if (a->style == 1) {	  /* dashed */
-		    fprintf(tfp," dashed evenly scaled %.2lf;\n",a->style_val/3.3);
+		    fprintf(tfp, " dashed evenly scaled %.2lf;\n",
+				    a->style_val/3.3);
 		 } else if (a->style == 2) {	 /* dotted */
-		    fprintf(tfp," dashed withdots scaled %.2lf;\n",a->style_val/4.75);
+		    fprintf(tfp, " dashed withdots scaled %.2lf;\n",
+				    a->style_val/4.75);
 		 } else		  /* plain */
-		    fprintf(tfp,";\n");
+		    fprintf(tfp, ";\n");
 
 		 if ((a->for_arrow != NULL) || (a->back_arrow != NULL))
 		     genmp_arrowheads((F_line *)a, OBJ_ARC);
 	      }
 	      break;
 	   default:
-	      fprintf(tfp,"  show \"This Arc object is not supported! (type=%d)\"\n",a->type);
+	      fprintf(tfp, "  show \"This Arc object is not supported! "
+			      "(type=%d)\"\n", a->type);
 	}
-	fprintf(tfp,"%% End arc object\n");
+	fprintf(tfp, "%% End arc object\n");
 	return;
 }
 
@@ -1030,19 +1082,20 @@ genmp_arc(F_arc *a)
 
 static char tex_text_specials[] = "\\{}><^~$&#_% ";
 static char *tex_text_mappings[] = {
-  "$\\backslash$",
-  "$\\{$",
-  "$\\}$",
-  "$>$",
-  "$<$",
-  "\\^{}",
-  "\\~{}",
-  "\\$",
-  "\\&",
-  "\\#",
-  "\\_",
-  "\\%",
-  "~"};
+	"$\\backslash$",
+	"$\\{$",
+	"$\\}$",
+	"$>$",
+	"$<$",
+	"\\^{}",
+	"\\~{}",
+	"\\$",
+	"\\&",
+	"\\#",
+	"\\_",
+	"\\%",
+	"~"
+};
 
 void
 genmp_text(F_text *t)
@@ -1051,165 +1104,173 @@ genmp_text(F_text *t)
 	do_split(t->depth);
 
 	/* print any comments prefixed with "%" */
-	print_comments("% ",t->comments, "");
-	fprintf(tfp,"%% Begin text object\n");
+	print_comments("% ", t->comments, "");
+	fprintf(tfp, "%% Begin text object\n");
 
 
-    /* The whole next part is just relevant for
-     *
-     *	 text with a latex font  and
-     *	 special text with a postscript font
-     */
-    if (! ispsfont(t->flags) || special_text(t) ) {
-	fprintf(tfp,"  picture q;\n");
+	/* The whole next part is just relevant for
+	 *
+	 *	 text with a latex font  and
+	 *	 special text with a postscript font
+	 */
+	if (! ispsfont(t->flags) || special_text(t) ) {
+		fprintf(tfp, "  picture q;\n");
 
-	/* Define fonts */
-	if ( latexmode ) {
-	    /* Define fonts for latex. */
-	    genmp_writefontmacro_latex(t,"mpsetfnt");
-	} else {
-	    /* Define fonts for tex (just special text) */
-	    genmp_writefontmacro_tex(t->size,getfont(t->flags,t->font),"mpsetfnt");
-	}
-
-
-	fprintf(tfp,"  q = btex \\mpsetfnt ");
-
-
-	/* normal text: escape the special characters. */
-	if (!special_text(t)){
-	    char *special_index, *cp, *esc_cp;
-
-	    /* This loop escapes special (La)TeX characters. */
-	    for(cp = t->cstring; *cp; cp++) {
-		if ((special_index=strchr(tex_text_specials, *cp))) {
-		    /* Write out the replacement.  Implementation note: we can't
-		     * use puts since that will output an additional newline.
-		     */
-		    esc_cp=tex_text_mappings[special_index-tex_text_specials];
-		    while (*esc_cp)
-			fputc(*esc_cp++, tfp);
-		} else
-		    fputc(*cp, tfp);
-	    }
-
-	} else if (!latexmode) {
-	    /* special text in tex mode:
-	     * insert the mathmode font macro at the beginning of each
-	     * mathmode block. */
-	    char *cp;
-	    char tmpstr[15];
-	    int is_mathmode = 0;
-	    int handle_mathmode = 0;
-	    int delim_length = 0;
-
-
-	    for(cp = t->cstring; *cp; cp+=delim_length) {
-		delim_length = 1;
-		if ( strchr("$", *cp) ) {
-		    handle_mathmode = 1;
-		    delim_length = 1;
-		} else if ( cp == strstr (cp, "\\begin{math}") ) {
-		    handle_mathmode = 1;
-		    delim_length = 12;
-		} else if ( cp == strstr (cp, "\\end{math}") ) {
-		    handle_mathmode = 1;
-		    delim_length = 10;
-		} else if ( cp == strstr (cp, "\\(") ) {
-		    handle_mathmode = 1;
-		    delim_length = 2;
-		} else if ( cp == strstr (cp, "\\)") ) {
-		    handle_mathmode = 1;
-		    delim_length = 2;
-		} else if ( cp == strstr (cp, "\\$") ) {
-		    /* ignore */
-		    delim_length = 2;
+		/* Define fonts */
+		if ( latexmode ) {
+			/* Define fonts for latex. */
+			genmp_writefontmacro_latex(t, "mpsetfnt");
+		} else {
+			/* Define fonts for tex (just special text) */
+			genmp_writefontmacro_tex(t->size,
+					getfont(t->flags, t->font), "mpsetfnt");
 		}
 
-		strncpy ( tmpstr, cp, delim_length );
-		tmpstr[delim_length] = '\0';
 
-		/*if ( !latexmode && handle_mathmode && is_mathmode ) {
-		  fprintf (tfp, "}");
-		  }*/
-		fprintf(tfp, "%s", tmpstr);
-		if ( handle_mathmode ) {
-		    if (! is_mathmode ) {
-			/*fprintf(tfp, "%s {", MATHFONTMACRO);*/
-			fprintf(tfp, "%s ", MATHFONTMACRO);
-		    }
-		    handle_mathmode = 0;
-		    is_mathmode = 1 - is_mathmode;
+		fprintf(tfp, "  q = btex \\mpsetfnt ");
+
+
+		/* normal text: escape the special characters. */
+		if (!special_text(t)){
+			char *special_index, *cp, *esc_cp;
+
+			/* This loop escapes special (La)TeX characters. */
+			for(cp = t->cstring; *cp; cp++) {
+				if ((special_index = strchr(tex_text_specials,
+								*cp))) {
+					/* Write out the replacement.  Implementation note: we can't
+					 * use puts since that will output an additional newline.
+					 */
+					esc_cp=tex_text_mappings[special_index-tex_text_specials];
+					while (*esc_cp)
+						fputc(*esc_cp++, tfp);
+				} else
+					fputc(*cp, tfp);
+			}
+
+		} else if (!latexmode) {
+			/* special text in tex mode:
+			 * insert the mathmode font macro at the beginning of each
+			 * mathmode block. */
+			char *cp;
+			char tmpstr[15];
+			int is_mathmode = 0;
+			int handle_mathmode = 0;
+			int delim_length = 0;
+
+
+			for(cp = t->cstring; *cp; cp+=delim_length) {
+				delim_length = 1;
+				if ( strchr("$", *cp) ) {
+					handle_mathmode = 1;
+					delim_length = 1;
+				} else if (cp == strstr (cp, "\\begin{math}")) {
+					handle_mathmode = 1;
+					delim_length = 12;
+				} else if (cp == strstr (cp, "\\end{math}")) {
+					handle_mathmode = 1;
+					delim_length = 10;
+				} else if (cp == strstr (cp, "\\(")) {
+					handle_mathmode = 1;
+					delim_length = 2;
+				} else if (cp == strstr (cp, "\\)")) {
+					handle_mathmode = 1;
+					delim_length = 2;
+				} else if (cp == strstr (cp, "\\$")) {
+					/* ignore */
+					delim_length = 2;
+				}
+
+				strncpy (tmpstr, cp, delim_length);
+				tmpstr[delim_length] = '\0';
+
+				/*if ( !latexmode && handle_mathmode && is_mathmode ) {
+				  fprintf (tfp, "}");
+				  }*/
+				fprintf(tfp, "%s", tmpstr);
+				if ( handle_mathmode ) {
+					if (! is_mathmode ) {
+						/*fprintf(tfp, "%s {", MATHFONTMACRO);*/
+						fprintf(tfp, "%s ",
+								MATHFONTMACRO);
+					}
+					handle_mathmode = 0;
+					is_mathmode = 1 - is_mathmode;
+				}
+			}
+		} else {
+			/* special text in latex mode: just write the text. */
+			fputs(t->cstring, tfp);
 		}
-	    }
+		fputs(" etex;\n", tfp);
+
+	}
+
+
+
+
+	/* The next section is related to normal text with a ps font. */
+	else {
+
+		fputs("  picture q;\n", tfp);
+		fputs("  q=thelabel.urt(\"", tfp);
+		fputs(t->cstring, tfp);
+		fputs("\" infont ", tfp);
+		if (t->font<0) {
+			fputs( "defaultfont", tfp);
+		} else {
+			fprintf(tfp, "\"%s\"", xfigpsfonts[t->font]);
+		}
+		fputs(" scaled ", tfp);
+		fprintf(tfp, "(%dpt/fontsize defaultfont)",
+				(int)(t->size*mag*BPperINCH/FIGSperINCH));
+		fputs(",(0,0));\n", tfp);
+	}
+
+
+
+	/* The next section is the same for all modes. Take the things done
+	 * above, rotate them and put them to the right position.
+	 */
+
+	fputs("  picture p;\n", tfp);
+	fprintf(tfp, "  p = q rotated %.2lf;\n", rad2deg(t->angle));
+
+
+	/* To put the text at the correct position, we must have
+	   the left anchor point of the text; this point must
+	   be calculated when the text is centered or right justified.
+	   This also avoids mistakes with rotated text.
+	   To get the left anchor point of right justified [centered] text,
+	   we have to walk down the whole [the half] line of the text to the
+	   beginning of the label. In the case of rotated text, this can be
+	   calculated with the cos and sin of the rotation angle.*/
+	if ( t->type == 0) {
+		/* left justified */
+		fprintf(tfp, "  label.urt(p,((%.2lf,%.2lf))+llcorner p) ",
+				fig2bp(t->base_x), y_off(fig2bp(t->base_y)));
+		fprintf(tfp, "withcolor %s;\n", genmp_pencolor(t->color));
+	} else if (t->type == 1) {
+		/* centered */
+		fprintf(tfp, "  label.urt(p,((%.2lf,%.2lf))+xpart "
+				"(lrcorner q - llcorner q)*"
+				"(-cosd %.2lf,-sind %.2lf)/2+llcorner p) ",
+				fig2bp(t->base_x), y_off(fig2bp(t->base_y)),
+				rad2deg(t->angle), rad2deg(t->angle));
+		fprintf(tfp, "withcolor %s;\n", genmp_pencolor(t->color));
+	} else if (t->type == 2) {
+		/* right justified */
+		fprintf(tfp, "  label.urt(p,((%.2lf,%.2lf))+xpart "
+				"(lrcorner q - llcorner q)*"
+				"(-cosd %.2lf,-sind %.2lf)+llcorner p) ",
+				fig2bp(t->base_x), y_off(fig2bp(t->base_y)),
+				rad2deg(t->angle), rad2deg(t->angle));
+		fprintf(tfp, "withcolor %s;\n", genmp_pencolor(t->color));
 	} else {
-	    /* special text in latex mode: just write the text. */
-	    fputs(t->cstring, tfp);
-	}
-	fputs(" etex;\n", tfp);
-
-    }
-
-
-
-
-    /* The next section is related to normal text with a ps font. */
-    else {
-
-	fputs("  picture q;\n", tfp);
-	fputs("  q=thelabel.urt(\"", tfp);
-	fputs(t->cstring, tfp);
-	fputs("\" infont ", tfp);
-	if (t->font<0) {
-	    fputs( "defaultfont", tfp);
-	} else {
-	    fprintf(tfp, "\"%s\"", xfigpsfonts[t->font]);
-	}
-	fputs(" scaled ", tfp);
-	fprintf(tfp, "(%dpt/fontsize defaultfont)",(int)(t->size*mag*BPperINCH/FIGSperINCH));
-	fputs(",(0,0));\n", tfp);
-    }
-
-
-
-    /* The next section is the same for all modes. Take the things done above,
-     * rotate them and put them to the right position.
- */
-
-    fputs("  picture p;\n", tfp);
-    fprintf(tfp,"  p = q rotated %.2lf;\n",rad2deg(t->angle));
-
-
-    /* To put the text at the correct position, we must have
-       the left anchor point of the text; this point must
-       be calculated when the text is centered or right justified.
-       This also avoids mistakes with rotated text.
-       To get the left anchor point of right justified [centered] text,
-       we have to walk down the whole [the half] line of the text to the
-       beginning of the label. In the case of rotated text, this can be
-       calculated with the cos and sin of the rotation angle.*/
-    if ( t->type == 0) {
-	/* left justified */
-	    fprintf(tfp,"  label.urt(p,((%.2lf,%.2lf))+llcorner p) ",
-		    fig2bp(t->base_x), y_off(fig2bp(t->base_y)));
-	     fprintf(tfp,"withcolor %s;\n",genmp_pencolor(t->color));
-    } else if (t->type == 1) {
-	/* centered */
-	fprintf(tfp,"  label.urt(p,((%.2lf,%.2lf))+xpart (lrcorner q - llcorner q)*(-cosd %.2lf,-sind %.2lf)/2+llcorner p) ",
-		fig2bp(t->base_x), y_off(fig2bp(t->base_y)),
-		rad2deg(t->angle),rad2deg(t->angle));
-	     fprintf(tfp,"withcolor %s;\n",genmp_pencolor(t->color));
-    } else if (t->type == 2) {
-	/* right justified */
-	fprintf(tfp,"  label.urt(p,((%.2lf,%.2lf))+xpart (lrcorner q - llcorner q)*(-cosd %.2lf,-sind %.2lf)+llcorner p) ",
-		fig2bp(t->base_x), y_off(fig2bp(t->base_y)),
-		rad2deg(t->angle),rad2deg(t->angle));
-	     fprintf(tfp,"withcolor %s;\n",genmp_pencolor(t->color));
-    } else {
-	     fprintf(tfp,"  show \"This Text object is not supported!\"\n");
+		fprintf(tfp, "  show \"This Text object is not supported!\"\n");
 	}
 
-	fprintf(tfp,"%% End text object\n");
+	fprintf(tfp, "%% End text object\n");
 
 	return;
 }
@@ -1218,16 +1279,16 @@ static char *
 genmp_pencolor(int c)
 {
 	static char p_string[30];
-/* It is assumed that c will never be -1 (default) */
+	/* It is assumed that c will never be -1 (default) */
 	if ((c > 0) && (c < NUM_STD_COLS))    /* normal color */
-	   strcpy(p_string,xfigcolors[c]);
+		strcpy(p_string, xfigcolors[c]);
 	else if (c >= NUM_STD_COLS)	/* user defined color */
-	   sprintf(p_string,"(%.2lf,%.2lf,%.2lf)",
-	      user_colors[c-NUM_STD_COLS].r/255.0,
-	      user_colors[c-NUM_STD_COLS].g/255.0,
-	      user_colors[c-NUM_STD_COLS].b/255.0);
+		sprintf(p_string, "(%.2lf,%.2lf,%.2lf)",
+				user_colors[c-NUM_STD_COLS].r/255.0,
+				user_colors[c-NUM_STD_COLS].g/255.0,
+				user_colors[c-NUM_STD_COLS].b/255.0);
 	else			    /* black or default color */
-	   strcpy(p_string,"(0.00,0.00,0.00)");
+		strcpy(p_string, "(0.00,0.00,0.00)");
 	return(p_string);
 }
 
@@ -1237,50 +1298,51 @@ genmp_fillcolor(int c, int s)
 	static char f_string[100];
 
 	if (c == 0)    /* black fill */
-	   sprintf(f_string,"withcolor (black + %.2lfwhite)",
-	      (double)(20-s)/20.0);
+		sprintf(f_string, "withcolor (black + %.2lfwhite)",
+				(double)(20-s)/20.0);
 	else	       /* other fill */
-	   sprintf(f_string,"withcolor (%s + %.2lfwhite)",
-	      genmp_pencolor(c),(double)(s-20)/20.0);
+		sprintf(f_string, "withcolor (%s + %.2lfwhite)",
+				genmp_pencolor(c), (double)(s-20)/20.0);
 	return(f_string);
 }
 
 static void
 genmp_writefontmacro_latex(F_text *t, char *name)
 {
-    /* Code inherited from genlatex.c, and modified*/
-    int texsize;
-    double baselineskip;
+	/* Code inherited from genlatex.c, and modified*/
+	int texsize;
+	double baselineskip;
 
 
-    texsize = TEXFONTMAG(t);
-    baselineskip = texsize * 1.2;
-    texsize *= BPperINCH/FIGSperINCH;
-    baselineskip *= BPperINCH/FIGSperINCH;
+	texsize = TEXFONTMAG(t);
+	baselineskip = texsize * 1.2;
+	texsize *= BPperINCH/FIGSperINCH;
+	baselineskip *= BPperINCH/FIGSperINCH;
 
-    fprintf(tfp,"  verbatimtex\n");
-    fprintf(tfp, "   \\def\\%s{%%\n", name);
+	fprintf(tfp, "  verbatimtex\n");
+	fprintf(tfp, "   \\def\\%s{%%\n", name);
 
-    /* not default font: set the font and font size. */
-    if (! isdefaultfont (t->flags, t->font)) {
+	/* not default font: set the font and font size. */
+	if (! isdefaultfont (t->flags, t->font)) {
 #ifdef NFSS
-	fprintf(tfp,"	    \\SetFigFont{%d}{%.1f}{%s}{%s}{%s}%%\n",
-		texsize, baselineskip,
-		TEXFAMILY(t->font),TEXSERIES(t->font),TEXSHAPE(t->font));
+		fprintf(tfp, "	    \\SetFigFont{%d}{%.1f}{%s}{%s}{%s}%%\n",
+				texsize, baselineskip,
+				TEXFAMILY(t->font), TEXSERIES(t->font),
+				TEXSHAPE(t->font));
 #else
-	fprintf(tfp, "\\SetFigFont{%d}{%.1f}{%s}%%\n",
-		texsize, baselineskip, TEXFONT(t->font));
+		fprintf(tfp, "\\SetFigFont{%d}{%.1f}{%s}%%\n",
+				texsize, baselineskip, TEXFONT(t->font));
 #endif
-    }
+	}
 
-    /* default font: set the font size only. */
-    else {
-	fprintf(tfp,"	    \\SetFigFontSize{%d}{%.1f}%%\n",
-		texsize, baselineskip);
-    }
+	/* default font: set the font size only. */
+	else {
+		fprintf(tfp, "	    \\SetFigFontSize{%d}{%.1f}%%\n",
+				texsize, baselineskip);
+	}
 
-    fprintf(tfp, "    }%%\n");
-    fprintf(tfp,"  etex;\n");
+	fprintf(tfp, "    }%%\n");
+	fprintf(tfp, "  etex;\n");
 }
 
 static void
@@ -1292,18 +1354,25 @@ genmp_writefontmacro_tex(double psize, char *font, char *name)
 	psize *= mag * BPperINCH/FIGSperINCH;
 
 	ten = psize; seven = psize*.7; five = psize*.5;
-	fprintf(tfp,"  verbatimtex\n");
-	fprintf(tfp,"	 \\font\\%s=%s at %.2lfpt\n",name,font,psize);
-	fprintf(tfp,"	 \\font\\tenrm=cmr10 at %.2lfpt\\font\\sevenrm=cmr7 at %.2lfpt\n",ten,seven);
-	fprintf(tfp,"	 \\font\\fiverm=cmr5 at %.2lfpt\\font\\teni=cmmi10 at %.2lfpt\n",five,ten);
-	fprintf(tfp,"	 \\font\\seveni=cmmi7 at %.2lfpt\\font\\fivei=cmmi5 at %.2lfpt\n",seven,five);
-	fprintf(tfp,"	 \\font\\tensy=cmsy10 at %.2lfpt\\font\\sevensy=cmsy7 at %.2lfpt\n",ten,seven);
-	fprintf(tfp,"	 \\font\\fivesy=cmsy5 at %.2lfpt\n", five);
-	fprintf(tfp,"	 \\def%s{%%\n", MATHFONTMACRO);
-	fprintf(tfp,"	   \\textfont0\\tenrm\\scriptfont0\\sevenrm\\scriptscriptfont0\\fiverm\n");
-	fprintf(tfp,"	   \\textfont1\\teni\\scriptfont1\\seveni\\scriptscriptfont1\\fivei\n");
-	fprintf(tfp,"	   \\textfont2\\tensy\\scriptfont2\\sevensy\\scriptscriptfont2\\fivesy}\n");
-	fprintf(tfp,"  etex;\n");
+	fprintf(tfp, "  verbatimtex\n");
+	fprintf(tfp, "	 \\font\\%s=%s at %.2lfpt\n", name, font, psize);
+	fprintf(tfp, "	 \\font\\tenrm=cmr10 at %.2lfpt\\font\\sevenrm=cmr7 "
+			"at %.2lfpt\n", ten, seven);
+	fprintf(tfp, "	 \\font\\fiverm=cmr5 at %.2lfpt\\font\\teni=cmmi10 "
+			"at %.2lfpt\n", five, ten);
+	fprintf(tfp, "	 \\font\\seveni=cmmi7 at %.2lfpt\\font\\fivei=cmmi5 "
+			"at %.2lfpt\n", seven, five);
+	fprintf(tfp, "	 \\font\\tensy=cmsy10 at %.2lfpt\\font\\sevensy=cmsy7 "
+			"at %.2lfpt\n", ten, seven);
+	fprintf(tfp, "	 \\font\\fivesy=cmsy5 at %.2lfpt\n", five);
+	fprintf(tfp, "	 \\def%s{%%\n", MATHFONTMACRO);
+	fprintf(tfp, "	   \\textfont0\\tenrm\\scriptfont0\\sevenrm"
+			"\\scriptscriptfont0\\fiverm\n");
+	fprintf(tfp, "	   \\textfont1\\teni\\scriptfont1\\seveni"
+			"\\scriptscriptfont1\\fivei\n");
+	fprintf(tfp, "	   \\textfont2\\tensy\\scriptfont2\\sevensy"
+			"\\scriptscriptfont2\\fivesy}\n");
+	fprintf(tfp, "  etex;\n");
 }
 
 /*
@@ -1314,19 +1383,21 @@ genmp_writefontmacro_tex(double psize, char *font, char *name)
 static void
 do_split(int actual_depth)
 {
-    if (split) {
-	   if (actual_depth+1 < last_depth) {
-	      /* depths differ by more than one */
-	      if (fig_number > 0) {
-		  /* end the current figure, if we already had one */
-		  fprintf(tfp,"setbounds currentpicture to allbounds;\n");
-		  fprintf(tfp,"endfig;\n");
-	      }
-	      /* start a new figure with a comment */
-	      fprintf(tfp,"%% Now draw objects of depth: %d\n",actual_depth);
-	      fprintf(tfp,"beginfig(%d)\n",fig_number++);
-	   }
-	   last_depth = actual_depth;
+	if (split) {
+		if (actual_depth+1 < last_depth) {
+			/* depths differ by more than one */
+			if (fig_number > 0) {
+				/* end the current figure, if we already had one */
+				fprintf(tfp, "setbounds currentpicture to "
+						"allbounds;\n");
+				fprintf(tfp, "endfig;\n");
+			}
+			/* start a new figure with a comment */
+			fprintf(tfp, "%% Now draw objects of depth: %d\n",
+					actual_depth);
+			fprintf(tfp, "beginfig(%d)\n", fig_number++);
+		}
+		last_depth = actual_depth;
 	}
 }
 

@@ -223,146 +223,157 @@ get_args(int argc, char *argv[])
 	}
 
 
-			/* all option letters must be in this string */
-			/* not in this string: HIJQUu and non-alphabetic chars*/
+	/* all option letters must be in this string */
+	/* not in this string: HIJQUu and non-alphabetic chars*/
 	while ((c = getopt(argc, argv, "AaB:b:C:cD:d:E:eFf:G:g:hi:jKkL:l:Mm:Nn:"
 					"OoPp:q:R:rS:s:Tt:VvWwX:x:Y:y:Z:z:?"))
 			!= EOF) {
 
-	  /* global (all drivers) option handling */
-	    switch (c) {
+		/* global (all drivers) option handling */
+		switch (c) {
 
-	    case 'h':	/* print version message for -h too */
-	    case 'V':
-		printf("fig2dev Version %s\n", PACKAGE_VERSION);
-		if (c == 'h')
-		    help_msg();
-		exit(0);
-		break;
+		case 'h':		/* print version message for -h too */
+		case 'V':
+			printf("fig2dev Version %s\n", PACKAGE_VERSION);
+			if (c == 'h')
+				help_msg();
+			exit(0);
+			break;
 
-	    case 'D':	                /* depth filtering */
-		depth_option(optarg);
-		/* options with "continue" are not passed to the driver */
-		continue;
+		case 'D':                /* depth filtering */
+			depth_option(optarg);
+			/* options with "continue" are not passed to
+			   the driver */
+			continue;
 
-	    case 'E':
-		if (!strcmp(optarg, "0") || !strcmp(optarg, "utf8") ||
+		case 'E':
+			if (!strcmp(optarg, "0") || !strcmp(optarg, "utf8") ||
 					!strcmp(optarg, "UTF8") ||
 					!strcmp(optarg, "utf-8"))
-			input_encoding = "UTF-8";
-		else if (!strcmp(optarg, "1"))
-			input_encoding = "ISO-8859-1";
-		else if (!strcmp(optarg, "2"))
-			input_encoding = "ISO-8859-2";
-		else
-			input_encoding = optarg;
-		continue;
+				input_encoding = "UTF-8";
+			else if (!strcmp(optarg, "1"))
+				input_encoding = "ISO-8859-1";
+			else if (!strcmp(optarg, "2"))
+				input_encoding = "ISO-8859-2";
+			else
+				input_encoding = optarg;
+			continue;
 
-	    case 'K':
-		/* adjust bounding box according to selected depth range
-		   given with '-D RANGE' option above */
-		adjust_boundingbox = true;
-		continue;
+		case 'K':
+			/* adjust bounding box according to selected
+			   depth range given with '-D RANGE' option above */
+			adjust_boundingbox = true;
+			continue;
 
-	    case 'G':			/* Grid */
-		/* if major AND minor are specified */
-		if ((p = strchr(optarg,':'))) {
-		    /* parse minor grid spec first */
-		    if (p != optarg) {
-			if ((nvals=parse_gridspec(optarg, &numer, &denom,
-					&grid_minor_spacing, &nchars)) == 2)
-			    grid_minor_spacing = numer/denom;
-		    }
-		    /* now parse major grid spec */
-		    if ((nvals=parse_gridspec(p+1, &numer, &denom,
-				    &grid_major_spacing, &nchars)) == 2)
-			grid_major_spacing = numer/denom;
-		} else {
-		    /* only minor grid specified */
-		    if ((nvals=parse_gridspec(optarg, &numer, &denom,
-				    &grid_minor_spacing, &nchars)) == 2)
-			grid_minor_spacing = numer/denom;
-		    p = optarg-1;
+		case 'G':		/* Grid */
+			/* if major AND minor are specified */
+			if ((p = strchr(optarg,':'))) {
+				/* parse minor grid spec first */
+				if (p != optarg) {
+					if ((nvals = parse_gridspec(optarg,
+							&numer, &denom,
+							&grid_minor_spacing,
+							&nchars)) == 2)
+						grid_minor_spacing =numer/denom;
+				}
+				/* now parse major grid spec */
+				if ((nvals = parse_gridspec(p+1, &numer, &denom,
+							&grid_major_spacing,
+							&nchars)) == 2)
+					grid_major_spacing = numer/denom;
+			} else {
+				/* only minor grid specified */
+				if ((nvals = parse_gridspec(optarg, &numer,
+							&denom,
+							&grid_minor_spacing,
+							&nchars)) == 2)
+					grid_minor_spacing = numer/denom;
+				p = optarg - 1;
+			}
+			/* now parse any units after grid spacing */
+			if ((size_t)nchars < strlen(p+1)) {
+				grid = p+nchars+1;
+				if ((strcmp(grid,"i") && strcmp(grid,"in") &&
+							strcmp(grid,"inch") &&
+							strcmp(grid,"f") &&
+							strcmp(grid,"ft") &&
+							strcmp(grid,"feet") &&
+							strcmp(grid,"c") &&
+							strcmp(grid,"cm") &&
+							strcmp(grid,"mm") &&
+							strcmp(grid,"m") )) {
+					grid_usage();
+					grid_major_spacing = 0.0;
+					grid_minor_spacing = 0.0;
+					break;
+				}
+				if (!strcmp(grid,"i") || !strcmp(grid,"in") ||
+						!strcmp(grid,"in"))
+					mult =  1.0;
+				else if (!strcmp(grid,"f") || !strcmp(grid,"ft")
+						|| !strcmp(grid,"feet"))
+					mult = 12.0;
+				else if (strcmp(grid,"c") == 0 ||
+						strcmp(grid,"cm") == 0)
+					mult = 1.0/2.54;
+				else if (strcmp(grid,"mm") == 0)
+					mult = 1.0/25.4;
+				else if (strcmp(grid,"m") == 0)
+					mult = 1.0/0.0254;
+			} else {
+				mult = 1.0;	/* no units, 1:1 */
+			}
+			break;	/* error message given in genpstricks.c */
+
+		case 'L':		/* set output language */
+			/* save language for gen{gif,jpg,pcx,xbm,xpm,ppm,tif} */
+			strncpy(lang, optarg, sizeof(lang)-1);
+			lang[sizeof lang - 1] = '\0';
+			/* override if a language already was set above */
+			dev = NULL;
+			for (i = 0; *drivers[i].name; ++i)
+				if (!strcmp(lang, drivers[i].name))
+					dev = drivers[i].dev;
+			if (!dev) {
+				fprintf(stderr,"Unknown graphics language %s\n",
+						lang);
+				fprintf(stderr, "Known languages are:\n");
+				/* display available languages - 23/01/90 */
+				for (i=0; *drivers[i].name; i++)
+					fprintf(stderr,"%s ",drivers[i].name);
+				fprintf(stderr,"\n");
+				exit(1);
+			}
+			break;	/* needed in genepic.c, genmp.c */
+
+		case 'm':		/* set magnification */
+			fontmag = mag = atof(optarg);
+			magspec = true;		/* user-specified */
+			continue;
+
+		case 's':		/* set default font size */
+			font_size = atof(optarg);
+			/* max size is checked in respective drivers */
+			if (font_size <= 0.0)
+				font_size = DEFAULT_FONT_SIZE;
+			continue;
+
+		case 'Z':		/* scale to requested size (inches/cm)*/
+			maxdimspec = true;
+			max_dimension = atof(optarg);
+			continue;
+
+		case '?':		/* usage		*/
+			fprintf(stderr, Usage, prog);
+			exit(1);
 		}
-		/* now parse any units after grid spacing */
-		if ((size_t)nchars < strlen(p+1)) {
-		    grid = p+nchars+1;
-		    if ((strcmp(grid,"i") && strcmp(grid,"in") &&
-					strcmp(grid,"inch") &&
-				strcmp(grid,"f") && strcmp(grid,"ft") &&
-					strcmp(grid,"feet") &&
-				strcmp(grid,"c") && strcmp(grid,"cm") &&
-				strcmp(grid,"mm") && strcmp(grid,"m") )) {
-			grid_usage();
-			grid_major_spacing = grid_minor_spacing = 0.0;
-			break;
-		    }
-		    if (!strcmp(grid,"i") || !strcmp(grid,"in") ||
-				!strcmp(grid,"in"))
-			mult =  1.0;
-		    else if (!strcmp(grid,"f") || !strcmp(grid,"ft") ||
-				!strcmp(grid,"feet"))
-			mult = 12.0;
-		    else if (strcmp(grid,"c") == 0 || strcmp(grid,"cm") == 0)
-			mult = 1.0/2.54;
-		    else if (strcmp(grid,"mm") == 0)
-			mult = 1.0/25.4;
-		    else if (strcmp(grid,"m") == 0)
-			mult = 1.0/0.0254;
-		} else {
-		    mult = 1.0;	/* no units, 1:1 */
-		}
-		break;	/* error message given in genpstricks.c */
 
-	    case 'L':			/* set output language */
-		/* save language for gen{gif,jpg,pcx,xbm,xpm,ppm,tif} */
-		strncpy(lang, optarg, sizeof(lang)-1);
-		lang[sizeof lang - 1] = '\0';
-		/* override if a language already was set above */
-		dev = NULL;
-		for (i = 0; *drivers[i].name; ++i)
-		    if (!strcmp(lang, drivers[i].name))
-			dev = drivers[i].dev;
+		/* pass options through to driver */
 		if (!dev) {
-		    fprintf(stderr,
-			    "Unknown graphics language %s\n", lang);
-		    fprintf(stderr,"Known languages are:\n");
-		    /* display available languages - 23/01/90 */
-		    for (i=0; *drivers[i].name; i++)
-			fprintf(stderr,"%s ",drivers[i].name);
-		    fprintf(stderr,"\n");
-		    exit(1);
+			fprintf(stderr, "No graphics language specified.\n");
+			exit(1);
 		}
-		break;	/* needed in genepic.c, genmp.c */
-
-	    case 'm':			/* set magnification */
-		fontmag = mag = atof(optarg);
-		magspec = true;		/* user-specified */
-		continue;
-
-	    case 's':			/* set default font size */
-		font_size = atof(optarg);
-		/* max size is checked in respective drivers */
-		if (font_size <= 0.0)
-		    font_size = DEFAULT_FONT_SIZE;
-		continue;
-
-	    case 'Z':			/* scale to requested size (inches/cm)*/
-		maxdimspec = true;
-		max_dimension = atof(optarg);
-		continue;
-
-	    case '?':			/* usage		*/
-		fprintf(stderr, Usage, prog);
-		exit(1);
-	    }
-
-	    /* pass options through to driver */
-	    if (!dev) {
-		fprintf(stderr, "No graphics language specified.\n");
-		exit(1);
-	    }
-	    dev->option(c, optarg);
+		dev->option(c, optarg);
 	}
 	/* adjust font size after option loop to make sure we have any -m first,
 	   which affects fontmag */
@@ -377,7 +388,7 @@ get_args(int argc, char *argv[])
 	if (magspec && maxdimspec) {
 		fputs("Must specify only one of -m (magnification) "
 				"and -Z (max dimension).\n",
-			stderr);
+				stderr);
 		exit(1);
 	}
 
@@ -393,16 +404,16 @@ parse_gridspec(char *string, float *numer,float *denom, float *spacing,
 {
 	int  numvals;
 
-	if ((numvals=sscanf(string,"%f/%f%n",numer,denom,nchrs)) == 2) {
-	    if (*numer < 0.0 || *denom < 0.0 || *denom == 0.0)
-		return 0;
-	    else
-		return numvals;
+	if ((numvals = sscanf(string, "%f/%f%n", numer, denom, nchrs)) == 2) {
+		if (*numer < 0.0 || *denom < 0.0 || *denom == 0.0)
+			return 0;
+		else
+			return numvals;
 	} else if ((numvals=sscanf(string,"%f%n",spacing,nchrs)) == 1) {
-	    if (*spacing < 0.0 || *spacing == 0.0)
-		return 0;
-	    else
-		return numvals;
+		if (*spacing < 0.0 || *spacing == 0.0)
+			return 0;
+		else
+			return numvals;
 	}
 
 	grid_usage();
@@ -412,12 +423,12 @@ parse_gridspec(char *string, float *numer,float *denom, float *spacing,
 static void
 grid_usage(void)
 {
-     fputs("Can't parse grid spec. Format is -G [minor_tick][:major_tick]unit ",
-	     stderr);
-     fputs("e.g. -G .5:2cm or -G 1/16:1/2in\n", stderr);
-     fputs("Allowable units are: ", stderr);
-     fputs("'i', 'in', 'ft', 'feet', 'c', 'cm', 'mm', 'm'.", stderr);
-     fputs("  Ignoring grid.\n", stderr);
+	fputs("Can't parse grid spec. Format is -G "
+			"[minor_tick][:major_tick]unit ", stderr);
+	fputs("e.g. -G .5:2cm or -G 1/16:1/2in\n", stderr);
+	fputs("Allowable units are: ", stderr);
+	fputs("'i', 'in', 'ft', 'feet', 'c', 'cm', 'mm', 'm'.", stderr);
+	fputs("  Ignoring grid.\n", stderr);
 }
 
 int
@@ -916,46 +927,46 @@ static int compound_dump(F_compound *com, struct obj_rec *array,
 	F_text		*t;
 
 	for (c = com->compounds; c != NULL; c = c->next)
-	  count = compound_dump(c, array, count, dev);
+		count = compound_dump(c, array, count, dev);
 	for (a = com->arcs; a != NULL; a = a->next) {
-	  if (array) {
-		array[count].gendev = (void(*)(void *))dev->arc;
-		array[count].obj = (void *)a;
-		array[count].depth = a->depth;
-	  }
-	  count += 1;
+		if (array) {
+			array[count].gendev = (void(*)(void *))dev->arc;
+			array[count].obj = (void *)a;
+			array[count].depth = a->depth;
+		}
+		count += 1;
 	}
 	for (e = com->ellipses; e != NULL; e = e->next) {
-	  if (array) {
-		array[count].gendev = (void(*)(void *))dev->ellipse;
-		array[count].obj = (void *)e;
-		array[count].depth = e->depth;
-	  }
-	  count += 1;
+		if (array) {
+			array[count].gendev = (void(*)(void *))dev->ellipse;
+			array[count].obj = (void *)e;
+			array[count].depth = e->depth;
+		}
+		count += 1;
 	}
 	for (l = com->lines; l != NULL; l = l->next) {
-	  if (array) {
-		array[count].gendev = (void(*)(void *))dev->line;
-		array[count].obj = (void *)l;
-		array[count].depth = l->depth;
-	  }
-	  count += 1;
+		if (array) {
+			array[count].gendev = (void(*)(void *))dev->line;
+			array[count].obj = (void *)l;
+			array[count].depth = l->depth;
+		}
+		count += 1;
 	}
 	for (s = com->splines; s != NULL; s = s->next) {
-	  if (array) {
-		array[count].gendev = (void(*)(void *))dev->spline;
-		array[count].obj = (void *)s;
-		array[count].depth = s->depth;
-	  }
-	  count += 1;
+		if (array) {
+			array[count].gendev = (void(*)(void *))dev->spline;
+			array[count].obj = (void *)s;
+			array[count].depth = s->depth;
+		}
+		count += 1;
 	}
 	for (t = com->texts; t != NULL; t = t->next) {
-	  if (array) {
-		array[count].gendev = (void(*)(void *))dev->text;
-		array[count].obj = (void *)t;
-		array[count].depth = t->depth;
-	  }
-	  count += 1;
+		if (array) {
+			array[count].gendev = (void(*)(void *))dev->text;
+			array[count].obj = (void *)t;
+			array[count].depth = t->depth;
+		}
+		count += 1;
 	}
 	return count;
 }
@@ -976,8 +987,8 @@ gendev_objects(F_compound *objects, struct driver *dev)
 	/* dump object pointers to an array */
 	obj_count = compound_dump(objects, 0, 0, dev);
 	if (!obj_count) {
-	    fprintf(stderr, "fig2dev: No objects in Fig file\n");
-	    return -1;
+		fprintf(stderr, "fig2dev: No objects in Fig file\n");
+		return -1;
 	}
 	rec_array = (struct obj_rec *)malloc(obj_count*sizeof(struct obj_rec));
 	(void)compound_dump(objects, rec_array, 0, dev);
@@ -994,8 +1005,8 @@ gendev_objects(F_compound *objects, struct driver *dev)
 
 	/* generate objects in sorted order */
 	for (r = rec_array; r<rec_array+obj_count; r++)
-	  if (depth_filter(r->depth))
-	    (*(r->gendev))(r->obj);
+		if (depth_filter(r->depth))
+			(*(r->gendev))(r->obj);
 
 	/* generate trailer */
 	status = (*dev->end)();
@@ -1029,12 +1040,15 @@ gendev_nogrid(float major, float minor)
 static void
 depth_usage(void)
 {
-    fprintf(stderr,"%s: help for -D option:\n",prog);
-    fprintf(stderr,"  -D +rangelist  means keep only depths in rangelist.\n");
-    fprintf(stderr,"  -D -rangelist  means keep all depths but those in rangelist.\n");
-    fprintf(stderr,"  Rangelist can be a list of numbers or ranges of numbers, e.g.:\n");
-    fprintf(stderr,"    10,40,55,60:70,99\n");
-    exit(1);
+	fprintf(stderr, "%s: help for -D option:\n", prog);
+	fputs("  -D +rangelist  means keep only depths in rangelist.\n",
+			stderr);
+	fputs("  -D -rangelist  means keep all depths but those in "
+			"rangelist.\n", stderr);
+	fputs("  Rangelist can be a list of numbers or ranges of numbers, "
+			"e.g.:\n", stderr);
+	fputs("    10,40,55,60:70,99\n", stderr);
+	exit(1);
 }
 
 void
@@ -1051,25 +1065,25 @@ depth_option(char *s)
 	}
 
 	for (d = depth_opt; depth_index < NUMDEPTHS && *s; ++depth_index, d++) {
-	    if (*s == ',') ++s;
-	    d->d1 = d->d2 = -1;
-	    d->d1 = strtol(s,&s,10);
-	    if (d->d1 < 0)
-		depth_usage();
-	    switch(*s) {		/* what's the delim? */
-	    case ':':			/* parse a range */
-		d->d2 = strtol(s+1,&s,10);
-		if (d->d2 < d->d1)
-		    depth_usage();
-		break;
-	    case ',':			/* just start the next one */
-		s++;
-		break;
-	    }
+		if (*s == ',') ++s;
+		d->d1 = d->d2 = -1;
+		d->d1 = strtol(s,&s,10);
+		if (d->d1 < 0)
+			depth_usage();
+		switch(*s) {		/* what's the delim? */
+		case ':':			/* parse a range */
+			d->d2 = strtol(s+1,&s,10);
+			if (d->d2 < d->d1)
+				depth_usage();
+			break;
+		case ',':			/* just start the next one */
+			s++;
+			break;
+		}
 	}
 	if (depth_index >= NUMDEPTHS) {
-	    fprintf(stderr,"%s: Too many -D values!\n",prog);
-	    exit(1);
+		fprintf(stderr,"%s: Too many -D values!\n",prog);
+		exit(1);
 	}
 	d->d1 = -1;
 }
@@ -1080,14 +1094,14 @@ depth_filter(int obj_depth)
 	struct depth_opts *d;
 
 	if (depth_index <= 0)		/* no filters were set up */
-	    return 1;
+		return 1;
 	for (d = depth_opt; d->d1 >= 0; d++)
-	    if (d->d2 >= 0) {		/* it's a range comparison */
-		if (obj_depth >= d->d1 && obj_depth <= d->d2)
-		    return (depth_op=='+')? 1:0;
-	    } else {			/* it's a single-value comparison */
-		if (d->d1 == obj_depth)
-		    return (depth_op=='+')? 1:0;
-	    }
+		if (d->d2 >= 0) {	/* it's a range comparison */
+			if (obj_depth >= d->d1 && obj_depth <= d->d2)
+				return (depth_op=='+')? 1:0;
+		} else {		/* it's a single-value comparison */
+			if (d->d1 == obj_depth)
+				return (depth_op=='+')? 1:0;
+		}
 	return (depth_op=='-')? 1:0;
 }

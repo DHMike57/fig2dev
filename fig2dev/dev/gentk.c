@@ -1227,33 +1227,33 @@ tkLine(F_line *l, int penColor, int thickness, int style, double style_val)
 	tk_setstyle(style, style_val);
 
 	switch (l->join_style) {
-	    case 0:	/* Miter (Tk default). */
+	case 0:	/* Miter (Tk default). */
 		break;
-	    case 1:	/* Round. */
+	case 1:	/* Round. */
 		sprintf(stfp, " -joinstyle round");
 		niceLine(stfp);
 		break;
-	    case 2:	/* Bevel. */
+	case 2:	/* Bevel. */
 		sprintf(stfp, " -joinstyle bevel");
 		niceLine(stfp);
 		break;
-	    default:
+	default:
 		fputs("tkLine: unknown join style.\n", stderr);
 		break;
 	}
 
 	switch (l->cap_style) {
-	    case 0:	/* Butt (Tk default). */
+	case 0:	/* Butt (Tk default). */
 		break;
-	    case 1:	/* Round. */
+	case 1:	/* Round. */
 		sprintf(stfp, " -capstyle round");
 		niceLine(stfp);
 		break;
-	    case 2: /* Projecting. */
+	case 2: /* Projecting. */
 		sprintf(stfp, " -capstyle projecting");
 		niceLine(stfp);
 		break;
-	    default:
+	default:
 		fputs("tkLine: unknown cap style.\n", stderr);
 		break;
 	}

@@ -114,7 +114,7 @@ static const char   *arrowflag[3] = {
  *  -hullpoint		.tiphull    true or false: if to use (0,0)
  *  -upperhullpoint	.nhull	    positive: number of upper hull points
  *				    negative: number of hull points
- *  -[upper]hullpoint	.hullp[]    upperhull (nhull > 0) or hull points (nhull < 0)
+ *  -[upper]hullpoint	.hullp[]    upperhull (nhull>0) or hull points (nhull<0)
  *  -hullpoint		.endhull    true or false, if to use .lendl
  * The tipend is always at 0.
  * The backend is often at -1 (times length).
@@ -247,76 +247,78 @@ gentikz_option(char opt, char *optarg)
 	int i;
 	switch (opt) {
 	case 'b':			/* border margin around figure */
-	    border_margin = atoi(optarg);
-	    /* atoi() is slightly faster than sscanf(), but returns 0 if there
-	     * is no int; Use atoi if the default value is 0 anyway. */
-	    /* sscanf(optarg,"%d",&border_margin); */
-	    break;
+		border_margin = atoi(optarg);
+		/* atoi() is slightly faster than sscanf() but returns 0 if
+		 * there is no int; Use atoi if the default value is 0 anyway.*/
+		/* sscanf(optarg,"%d",&border_margin); */
+		break;
 
 	case 'C':			/* default color */
-	    default_color = atoi(optarg);
-	    break;
+		default_color = atoi(optarg);
+		break;
 
 	case 'F':
-	    select_fontname = false;
-	    break;
+		select_fontname = false;
+		break;
 
 	case 'i':	/* prepend this string to included graphics file */
-	    prepend = optarg;
-	    break;
+		prepend = optarg;
+		break;
 
 	case 'f':			/* set default text font */
-	    for (i = 1; i <= MAX_FONT; ++i)
-		if (!strcmp(optarg,texfontnames[i]) || !strcmp(optarg,texfonts[i]))
-		    break;
-	    if (i <= MAX_FONT) {
-		  texfonts[0] = texfonts[i];
-	    } else {
-		for (i = 1; i <= MAX_PSFONT; ++i )
-		    if (!strcmp(optarg, PSfontnames[i])) break;
-		if (i > MAX_PSFONT)
-		    fprintf(stderr, "warning: non-standard font name %s ignored\n",
-			    optarg);
-		else
-		    texpsfonts[0] = optarg;
-	    }
-	    break;
+		for (i = 1; i <= MAX_FONT; ++i)
+			if (!strcmp(optarg,texfontnames[i]) ||
+					!strcmp(optarg,texfonts[i]))
+				break;
+		if (i <= MAX_FONT) {
+			texfonts[0] = texfonts[i];
+		} else {
+			for (i = 1; i <= MAX_PSFONT; ++i )
+				if (!strcmp(optarg, PSfontnames[i]))
+					break;
+			if (i > MAX_PSFONT)
+				fprintf(stderr, "warning: non-standard font "
+						"name %s ignored\n", optarg);
+			else
+				texpsfonts[0] = optarg;
+		}
+		break;
 
 	case 'o':
-	    select_fontsize = false;
-	    break;
+		select_fontsize = false;
+		break;
 
 	case 'T':
-	    only_texfonts = true;
-	    break;
+		only_texfonts = true;
+		break;
 
 	case 'O':
-	    allspecial = true;
-	    break;
+		allspecial = true;
+		break;
 
 	case 'P':
-	    pagemode = true;
-	    break;
+		pagemode = true;
+		break;
 
 	case 'v':
-	    verbose = 1;		/* verbose mode */
-	    break;
+		verbose = 1;		/* verbose mode */
+		break;
 
 	case 'W':
-	    figscaling = false;
-	    break;
+		figscaling = false;
+		break;
 
 	case 'w':		/* remove suffix from included graphics file */
-	    removesuffix = true;
-	    break;
+		removesuffix = true;
+		break;
 
 	case 'G':
 	case 'L':
-	    break;
+		break;
 
 	default:
-	    put_msg(Err_badarg, opt, "tikz");
-	    exit(1);
+		put_msg(Err_badarg, opt, "tikz");
+		exit(1);
 	}
 }
 
@@ -334,14 +336,14 @@ static void
 put_texdimen(double d, char *dimen)
 {
 	if (d == 0.) {
-	    fputs("0pt", tfp);
+		fputs("0pt", tfp);
 	} else if (d == 1.) {
-	    fputs(dimen, tfp);
+		fputs(dimen, tfp);
 	} else if (d == -1.) {
-	    fputc('-', tfp);
-	    fputs(dimen, tfp);
+		fputc('-', tfp);
+		fputs(dimen, tfp);
 	} else {
-	    fprintf(tfp, "%.*f%s", precision(3, d), d, dimen);
+		fprintf(tfp, "%.*f%s", precision(3, d), d, dimen);
 	}
 }
 
@@ -353,9 +355,9 @@ static int
 arrowtype(int type, int style)
 {
 	if (type < 13)
-	    return type;
+		return type;
 	else
-	    return 2 * type + style - 13;
+		return 2 * type + style - 13;
 }
 
 /* Define arrows.
@@ -406,7 +408,11 @@ arrowtype(int type, int style)
     \pgfpathmoveto{\pgfqpoint{-\pgfarrowlength}{0.5\pgfarrowwidth}}
     \pgfpathlineto{\pgfpointorigin}
     \pgfpathlineto{\pgfqpoint{-\pgfarrowlength}{-0.5\pgfarrowwidth}}
-    \ifpgfarrowopen\pgfusepathqstroke\else\ifdim\pgfarrowlinewidth>0pt\pgfusepathqfillstroke\else\pgfusepathqfill\fi\fi
+    \ifpgfarrowopen\pgfusepathqstroke
+    \else\ifdim\pgfarrowlinewidth>0pt\pgfusepathqfillstroke
+	 \else\pgfusepathqfill
+	 \fi
+    \fi
   }
 }
  */
@@ -438,37 +444,42 @@ define_arrow(int ttype, int indx)
 	fprintf(tfp, "\\pgfdeclarearrow{\n  name = xfiga%d,\n", ttype);
 	fputs("  parameters = {\n    \\the\\pgfarrowlinewidth", tfp);
 	if (HAS_LENGTH & pgfarrow[ttype].props)
-	    fputs(" \\the\\pgfarrowlength", tfp);
+		fputs(" \\the\\pgfarrowlength", tfp);
 	if (HAS_WIDTH & pgfarrow[ttype].props)
-	    fputs(" \\the\\pgfarrowwidth", tfp);
+		fputs(" \\the\\pgfarrowwidth", tfp);
 	if (HAS_FILL & pgfarrow[ttype].props)
-	    fputs("\\ifpgfarrowopen o\\fi", tfp);
+		fputs("\\ifpgfarrowopen o\\fi", tfp);
 	fputs("},\n  defaults = {\n", tfp);
 	fprintf(tfp, "	  line width=+%.*f\\XFigu",
-		PREC1(default_options.thickness), default_options.thickness);
+			PREC1(default_options.thickness),
+			default_options.thickness);
 	if (HAS_LENGTH & pgfarrow[ttype].props)
-	    /* fputs(", length=+0pt 16", tfp); */
-	    fprintf(tfp, ", length=+%.*f\\XFigu",
-		    PREC1(default_options.ht), default_options.ht);
+		/* fputs(", length=+0pt 16", tfp); */
+		fprintf(tfp, ", length=+%.*f\\XFigu",
+				PREC1(default_options.ht), default_options.ht);
 	if (NOT_CIRCLE & pgfarrow[ttype].props)
-	    /* fputs(", width=+0pt 8", tfp); */
-	    fprintf(tfp, ", width=+%.*f\\XFigu",
-		    PREC1(default_options.wid), default_options.wid);
+		/* fputs(", width=+0pt 8", tfp); */
+		fprintf(tfp, ", width=+%.*f\\XFigu",
+				PREC1(default_options.wid),
+				default_options.wid);
 	fputs("},\n  setup code = {\n", tfp);
 
 	if (arrow_shapes[indx].tipmv > 0) {
-	    fputs("    % miter protrusion = thk * sqrt(wd^2 + (tipmv*len)^2) / (2 * wd)\n", tfp);
-	    /* CHANGE the 2 below if any .tipmv has more than 2 digits precision! */
-	    fprintf(tfp, "    \\dimen7 %.*f\\pgfarrowlength",
-		    precision(2, arrow_shapes[indx].tipmv), arrow_shapes[indx].tipmv);
-	    fputs("\\pgfmathveclen{\\the\\dimen7}{\\the\\pgfarrowwidth}\n", tfp);
-	    fputs("    \\dimen7 2\\pgfarrowwidth\\pgfmathdivide{\\pgfmathresult}{\\the\\dimen7}\n",
-		    tfp);
-	    fputs("    \\dimen7 \\pgfmathresult\\pgfarrowlinewidth\n", tfp);
+		fputs("    % miter protrusion = thk * sqrt(wd^2 + (tipmv*len)^2) / (2 * wd)\n",
+				tfp);
+		/* CHANGE the 2 below if any .tipmv has more than 2 digits precision! */
+		fprintf(tfp, "    \\dimen7 %.*f\\pgfarrowlength",
+				precision(2, arrow_shapes[indx].tipmv),
+				arrow_shapes[indx].tipmv);
+		fputs("\\pgfmathveclen{\\the\\dimen7}{\\the\\pgfarrowwidth}\n",
+				tfp);
+		fputs("    \\dimen7 2\\pgfarrowwidth\\pgfmathdivide{\\pgfmathresult}{\\the\\dimen7}\n",
+				tfp);
+		fputs("    \\dimen7 \\pgfmathresult\\pgfarrowlinewidth\n", tfp);
 	} else if (arrow_shapes[indx].tipmv == 0.0) {
-	    fputs("    \\dimen7 0.5\\pgfarrowlinewidth\n", tfp);
+		fputs("    \\dimen7 0.5\\pgfarrowlinewidth\n", tfp);
 	} else {
-	    fputs("    \\dimen7 0pt\n", tfp);
+		fputs("    \\dimen7 0pt\n", tfp);
 	}
 	fputs("    \\pgfarrowssettipend{+\\dimen7}\n", tfp);
 
@@ -477,106 +488,119 @@ define_arrow(int ttype, int indx)
 	fputs("}\n", tfp);
 
 	if (pgfarrow[ttype].lendl == 0.) {
-	    fputs("    \\dimen9 -0.5\\pgfarrowlinewidth\n", tfp);
-	    fputs("    \\pgfarrowssetvisualbackend{+\\dimen9}\n", tfp);
-	    fputs("    \\pgfarrowssetlineend{+", tfp);
-	    put_texdimen(pgfarrow[ttype].lendt, "\\pgfarrowlinewidth");
-	    fputs("}\n", tfp);
+		fputs("    \\dimen9 -0.5\\pgfarrowlinewidth\n", tfp);
+		fputs("    \\pgfarrowssetvisualbackend{+\\dimen9}\n", tfp);
+		fputs("    \\pgfarrowssetlineend{+", tfp);
+		put_texdimen(pgfarrow[ttype].lendt, "\\pgfarrowlinewidth");
+		fputs("}\n", tfp);
 	} else {
-	    fputs("    \\dimen9 ", tfp);
-	    put_texdimen(pgfarrow[ttype].lendl, "\\pgfarrowlength");
-	    fputs("\\advance\\dimen9 by", tfp);
-	    put_texdimen(pgfarrow[ttype].lendt, "\\pgfarrowlinewidth");
-	    fputc('\n', tfp);
-	    fputs("    \\pgfarrowssetlineend{+\\dimen9}\n", tfp);
-	    fputs("    \\dimen9 ", tfp);
-	    put_texdimen(pgfarrow[ttype].lendl, "\\pgfarrowlength");
-	    fputs("\\advance\\dimen9 by-0.5\\pgfarrowlinewidth\n", tfp);
-	    fputs("    \\pgfarrowssetvisualbackend{+\\dimen9}\n", tfp);
+		fputs("    \\dimen9 ", tfp);
+		put_texdimen(pgfarrow[ttype].lendl, "\\pgfarrowlength");
+		fputs("\\advance\\dimen9 by", tfp);
+		put_texdimen(pgfarrow[ttype].lendt, "\\pgfarrowlinewidth");
+		fputc('\n', tfp);
+		fputs("    \\pgfarrowssetlineend{+\\dimen9}\n", tfp);
+		fputs("    \\dimen9 ", tfp);
+		put_texdimen(pgfarrow[ttype].lendl, "\\pgfarrowlength");
+		fputs("\\advance\\dimen9 by-0.5\\pgfarrowlinewidth\n", tfp);
+		fputs("    \\pgfarrowssetvisualbackend{+\\dimen9}\n", tfp);
 	}
 
 	if (pgfarrow[ttype].tiphull)
-	    fputs("    \\pgfarrowshullpoint{+\\dimen7}{+0pt}\n", tfp);
+		fputs("    \\pgfarrowshullpoint{+\\dimen7}{+0pt}\n", tfp);
 	fputs("    ", tfp);
 	if (pgfarrow[ttype].nhull > 0) {
-	    for (i=0; i < pgfarrow[ttype].nhull; ++i) {
-		fputs("\\pgfarrowsupperhullpoint{+", tfp);
-		put_texdimen(pgfarrow[ttype].hullp[i].x, "\\pgfarrowlength");
-		fputs("}{+", tfp);
-		put_texdimen(pgfarrow[ttype].hullp[i].y, "\\pgfarrowwidth");
-		fputc('}', tfp);
-	    }
+		for (i=0; i < pgfarrow[ttype].nhull; ++i) {
+			fputs("\\pgfarrowsupperhullpoint{+", tfp);
+			put_texdimen(pgfarrow[ttype].hullp[i].x,
+					"\\pgfarrowlength");
+			fputs("}{+", tfp);
+			put_texdimen(pgfarrow[ttype].hullp[i].y,
+					"\\pgfarrowwidth");
+			fputc('}', tfp);
+		}
 	} else { /* nhull == -1; CHANGE if nhull == 0 or nhull < -1 occurs */
-	    fprintf(tfp,
-		    "\\pgfarrowshullpoint{+%.3g\\pgfarrowlength}{+%.1f\\pgfarrowwidth}",
-		    pgfarrow[ttype].hullp[0].x, YDIR(pgfarrow[ttype].hullp[0].y));
+		fprintf(tfp, "\\pgfarrowshullpoint{+%.3g\\pgfarrowlength}{+%.1f\\pgfarrowwidth}",
+				pgfarrow[ttype].hullp[0].x,
+				YDIR(pgfarrow[ttype].hullp[0].y));
 	}
 	fputc('\n', tfp);
 	if (pgfarrow[ttype].endhull)
-	    fputs("    \\pgfarrowshullpoint{+\\dimen9}{+0pt}\n", tfp);
+		fputs("    \\pgfarrowshullpoint{+\\dimen9}{+0pt}\n", tfp);
 
 	if (IS_HOOK & pgfarrow[ttype].props) {
-	    /* abuse \pgfarrowinset to hold the y-shift */
-	    fputs("    \\pgfarrowinset 0.5\\pgfarrowlinewidth", tfp);
-	    fputs("\\advance\\pgfarrowinset by -0.5\\pgflinewidth\n", tfp);
-	    fputs("    \\pgfarrowssavethe\\pgfarrowinset\n", tfp);
+		/* abuse \pgfarrowinset to hold the y-shift */
+		fputs("    \\pgfarrowinset 0.5\\pgfarrowlinewidth", tfp);
+		fputs("\\advance\\pgfarrowinset by -0.5\\pgflinewidth\n", tfp);
+		fputs("    \\pgfarrowssavethe\\pgfarrowinset\n", tfp);
 	}
 
 	fputs("    \\pgfarrowssavethe\\pgfarrowlinewidth\n", tfp);
 	if (HAS_LENGTH & pgfarrow[ttype].props)
-	    fputs("    \\pgfarrowssavethe\\pgfarrowlength\n", tfp);
+		fputs("    \\pgfarrowssavethe\\pgfarrowlength\n", tfp);
 	if (HAS_WIDTH & pgfarrow[ttype].props)
-	    fputs("    \\pgfarrowssavethe\\pgfarrowwidth\n", tfp);
+		fputs("    \\pgfarrowssavethe\\pgfarrowwidth\n", tfp);
 
 	fputs("  },\n  drawing code = {\\pgfsetdash{}{+0pt}\n", tfp);
 	fputs("    \\ifdim\\pgfarrowlinewidth=\\pgflinewidth", tfp);
 	fputs("\\else\\pgfsetlinewidth{+\\pgfarrowlinewidth}\\fi\n", tfp);
-	if (NOT_CIRCLE & pgfarrow[ttype].props) {	/* neither circle nor half-circle */
-	    if (IS_HOOK & pgfarrow[ttype].props)
-					/* use "-" as long as YDIR = -() */
-		fputs("    \\pgftransformyshift{-\\pgfarrowinset}\n", tfp);
+	if (NOT_CIRCLE & pgfarrow[ttype].props) {
+		/* neither circle nor half-circle */
+		if (IS_HOOK & pgfarrow[ttype].props)
+			/* use "-" as long as YDIR = -() */
+			fputs("    \\pgftransformyshift{-\\pgfarrowinset}\n",
+					tfp);
 
-	    fputs("    \\pgfpathmoveto{\\pgfqpoint{", tfp);
-	    put_texdimen(arrow_shapes[indx].points[0].x, "\\pgfarrowlength");
-	    fputs("}{", tfp);
-	    put_texdimen(YDIR(arrow_shapes[indx].points[0].y), "\\pgfarrowwidth");
-	    fputs("}}\n", tfp);
-	    for (i = 1; i < arrow_shapes[indx].numpts - 1; ++i) {
-		fputs("    \\pgfpathlineto{\\pgfqpoint{", tfp);
-		put_texdimen(arrow_shapes[indx].points[i].x,
-			"\\pgfarrowlength");
+		fputs("    \\pgfpathmoveto{\\pgfqpoint{", tfp);
+		put_texdimen(arrow_shapes[indx].points[0].x,
+				"\\pgfarrowlength");
 		fputs("}{", tfp);
-		put_texdimen(YDIR(arrow_shapes[indx].points[i].y),
-			"\\pgfarrowwidth");
+		put_texdimen(YDIR(arrow_shapes[indx].points[0].y),
+				"\\pgfarrowwidth");
 		fputs("}}\n", tfp);
-	    }
-	    if (arrow_shapes[indx].points[i].x == arrow_shapes[indx].points[0].x
-		    && arrow_shapes[indx].points[i].y == arrow_shapes[indx].points[0].y) {
-		fputs("    \\pgfpathclose\n", tfp);
-	    } else {
-		fputs("    \\pgfpathlineto{\\pgfqpoint{", tfp);
-		put_texdimen(arrow_shapes[indx].points[i].x, "\\pgfarrowlength");
-		fputs("}{", tfp);
-		put_texdimen(YDIR(arrow_shapes[indx].points[i].y), "\\pgfarrowwidth");
-		fputs("}}\n", tfp);
-	    }
-	} else if (ttype == 5) {	/* circle */
-	    fputs("    \\dimen3 0.5\\pgfarrowlength\n", tfp);
-	    /* \pgfpathcircle needs the ... {+\dimen3}, but
-	     * \pgfpathprecomputed needs ...{\the\dimen3}{\the\dimen3}
-	     */
-	    fputs("    \\pgfpathcircle{\\pgfqpoint{-\\dimen3}{0pt}}{+\\dimen3}\n", tfp);
-	} else if (ttype == 6) {	/* half-circle */
-	    fputs("    \\dimen3 0.5\\pgfarrowlength\n", tfp);
-	    fputs("    \\pgfpathmoveto{\\pgfqpoint{0pt}{\\dimen3}}\n", tfp);
-	    fputs("    \\pgfpatharctoprecomputed{\\pgfpointorigin}{90}{270}", tfp);
-	    fputs("{\\pgfqpoint{0pt}{-\\dimen3}}{\\the\\dimen3}{\\the\\dimen3}{1}{1}\n", tfp);
-	    /* \pgfpatharctoprecomputed{center point}{start angle}{end angle}{end point}
-	     * {x-radius}{y-radius}{ratio x-radius/y-radius}{ratio y-radius/x-radius} */
+		for (i = 1; i < arrow_shapes[indx].numpts - 1; ++i) {
+			fputs("    \\pgfpathlineto{\\pgfqpoint{", tfp);
+			put_texdimen(arrow_shapes[indx].points[i].x,
+					"\\pgfarrowlength");
+			fputs("}{", tfp);
+			put_texdimen(YDIR(arrow_shapes[indx].points[i].y),
+					"\\pgfarrowwidth");
+			fputs("}}\n", tfp);
+		}
+		if (arrow_shapes[indx].points[i].x == arrow_shapes[indx].points[0].x
+				&& arrow_shapes[indx].points[i].y == arrow_shapes[indx].points[0].y) {
+			fputs("    \\pgfpathclose\n", tfp);
+		} else {
+			fputs("    \\pgfpathlineto{\\pgfqpoint{", tfp);
+			put_texdimen(arrow_shapes[indx].points[i].x,
+					"\\pgfarrowlength");
+			fputs("}{", tfp);
+			put_texdimen(YDIR(arrow_shapes[indx].points[i].y),
+					"\\pgfarrowwidth");
+			fputs("}}\n", tfp);
+		}
+	} else if (ttype == 5) {
+		/* circle */
+		fputs("    \\dimen3 0.5\\pgfarrowlength\n", tfp);
+		/* \pgfpathcircle needs the ... {+\dimen3}, but
+		 * \pgfpathprecomputed needs ...{\the\dimen3}{\the\dimen3}
+		 */
+		fputs("    \\pgfpathcircle{\\pgfqpoint{-\\dimen3}{0pt}}{+\\dimen3}\n",
+				tfp);
+	} else if (ttype == 6) {
+		/* half-circle */
+		fputs("    \\dimen3 0.5\\pgfarrowlength\n", tfp);
+		fputs("    \\pgfpathmoveto{\\pgfqpoint{0pt}{\\dimen3}}\n", tfp);
+		fputs("    \\pgfpatharctoprecomputed{\\pgfpointorigin}{90}{270}",
+				tfp);
+		fputs("{\\pgfqpoint{0pt}{-\\dimen3}}{\\the\\dimen3}{\\the\\dimen3}{1}{1}\n",
+				tfp);
+		/* \pgfpatharctoprecomputed{center point}{start angle}{end angle}{end point}
+		 * {x-radius}{y-radius}{ratio x-radius/y-radius}{ratio y-radius/x-radius} */
 	} else {
-	    fprintf(stderr,
-		    "The tikz-arrowtype %d does not exist. Please report this bug.\n",
-		    ttype);
+		fprintf(stderr,
+				"The tikz-arrowtype %d does not exist. Please report this bug.\n",
+				ttype);
 	}
 
 	/* stroke command if open is possible
@@ -585,25 +609,33 @@ define_arrow(int ttype, int indx)
 	/* stroke command for half-fills
 	 * \pgfusepathqstroke ... and add the fill-path */
 	if (arrow_shapes[indx].numfillpts) {	/* not a simple fill */
-	    fputs("%%\n    \\pgfusepathqstroke\n  \\pgfpathmoveto{\\pgfqpoint{", tfp);
-	    put_texdimen(arrow_shapes[indx].fillpoints[0].x, "\\pgfarrowlength");
-	    fputs("}{", tfp);
-	    put_texdimen(YDIR(arrow_shapes[indx].fillpoints[0].y), "\\pgfarrowwidth");
-	    fputs("}}\n", tfp);
-	    for (i = 1; i < arrow_shapes[indx].numfillpts; ++i) {
-		fputs("    \\pgfpathlineto{\\pgfqpoint{", tfp);
-		put_texdimen(arrow_shapes[indx].fillpoints[i].x, "\\pgfarrowlength");
+		fputs("%%\n    \\pgfusepathqstroke\n"
+				"  \\pgfpathmoveto{\\pgfqpoint{", tfp);
+		put_texdimen(arrow_shapes[indx].fillpoints[0].x,
+				"\\pgfarrowlength");
 		fputs("}{", tfp);
-		put_texdimen(YDIR(arrow_shapes[indx].fillpoints[i].y), "\\pgfarrowwidth");
+		put_texdimen(YDIR(arrow_shapes[indx].fillpoints[0].y),
+				"\\pgfarrowwidth");
 		fputs("}}\n", tfp);
-	    }
-	    fputs("    \\pgfsetfillcolor{pgfstrokecolor}\\pgfusepathqfill\n", tfp);
+		for (i = 1; i < arrow_shapes[indx].numfillpts; ++i) {
+			fputs("    \\pgfpathlineto{\\pgfqpoint{", tfp);
+			put_texdimen(arrow_shapes[indx].fillpoints[i].x,
+					"\\pgfarrowlength");
+			fputs("}{", tfp);
+			put_texdimen(YDIR(arrow_shapes[indx].fillpoints[i].y),
+					"\\pgfarrowwidth");
+			fputs("}}\n", tfp);
+		}
+		fputs("    \\pgfsetfillcolor{pgfstrokecolor}\\pgfusepathqfill\n",
+				tfp);
 	} else if (HAS_FILL & pgfarrow[ttype].props) {
-	    fputs("    \\ifpgfarrowopen\\pgfusepathqstroke\\else\\pgfsetfillcolor{pgfstrokecolor}\n", tfp);
-	    fputs("\t\\ifdim\\pgfarrowlinewidth>0pt\\pgfusepathqfillstroke", tfp);
-	    fputs("\\else\\pgfusepathqfill\\fi\\fi\n", tfp);
+		fputs("    \\ifpgfarrowopen\\pgfusepathqstroke\\else"
+				"\\pgfsetfillcolor{pgfstrokecolor}\n", tfp);
+		fputs("\t\\ifdim\\pgfarrowlinewidth>0pt\\pgfusepathqfillstroke",
+				tfp);
+		fputs("\\else\\pgfusepathqfill\\fi\\fi\n", tfp);
 	} else {
-	    fputs("    \\pgfusepathqstroke\n", tfp);
+		fputs("    \\pgfusepathqstroke\n", tfp);
 	}
 
 	fputs("  }\n}\n", tfp);
@@ -641,7 +673,7 @@ gentikz_start(F_compound *objects)
 	double	splength;   /* unitlength expressed in TeX scaled points */
 
 	texfontsizes[0] = texfontsizes[1]
-	    = TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
+		= TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
 
 	unitlength = mag/ppi;
 	border_margin /= unitlength*72.0;
@@ -658,93 +690,96 @@ gentikz_start(F_compound *objects)
 
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {
-	    fprintf(tfp,"%%\n");
-	    print_comments("% ", objects->comments, "");
-	    fprintf(tfp,"%%\n");
+		fprintf(tfp,"%%\n");
+		print_comments("% ", objects->comments, "");
+		fprintf(tfp,"%%\n");
 	}
 	if (pagemode) {
-	    double	width, height;
-	    char	unit[] = "in";
+		double	width, height;
+		char	unit[] = "in";
 
-	    /* add a tiny extra margin ( + 1), otherwise 2 pages result */
-	    width = (urx - llx + 1) * unitlength;
-	    height = (ury - lly + 1) * unitlength;
-	    if (metric) {
-		width *= 2.54;
-		height *= 2.54;
-		strcpy(unit,"cm");
-	    }
+		/* add a tiny extra margin ( + 1), otherwise 2 pages result */
+		width = (urx - llx + 1) * unitlength;
+		height = (ury - lly + 1) * unitlength;
+		if (metric) {
+			width *= 2.54;
+			height *= 2.54;
+			strcpy(unit,"cm");
+		}
 
-	    fputs("\\documentclass{minimal}\n", tfp);
-	    fprintf(tfp,
-		    "\\usepackage[papersize={%.4g%s,%.4g%s},margin=0pt]{geometry}\n",
-		    width, unit, height, unit);
-	    fputs("\\usepackage{tikz}\n", tfp);
-	    if (arrows_used)
-		fputs("\\usetikzlibrary{arrows.meta,bending}\n", tfp);
-	    if (pats_used)
-		fputs("\\usetikzlibrary{patterns}\n", tfp);
-	    fputs("\\parindent0pt\n\\begin{document}\n", tfp);
+		fputs("\\documentclass{minimal}\n", tfp);
+		fprintf(tfp, "\\usepackage[papersize={%.4g%s,%.4g%s},"
+				"margin=0pt]{geometry}\n",
+				width, unit, height, unit);
+		fputs("\\usepackage{tikz}\n", tfp);
+		if (arrows_used)
+			fputs("\\usetikzlibrary{arrows.meta,bending}\n", tfp);
+		if (pats_used)
+			fputs("\\usetikzlibrary{patterns}\n", tfp);
+		fputs("\\parindent0pt\n\\begin{document}\n", tfp);
 	}
 	if (!pagemode)
 		fputs("{\\pgfkeys{/pgf/fpu/.try=false}%\n", tfp);
 	if (pagemode || !figscaling) {
-/*	if (metric)	fprintf(tfp, "%% 4143.7 sp = (1/472.44) cm\n");
- *	else		fprintf(tfp, "%% 3946.9 sp = (1/1200) in\n");	*/
-	    fprintf(tfp, "\\tikzpicture[x=+%lisp, y=+%lisp]\n",
-		    (long) splength,	/* intentionally do not round	*/
-		    (long) splength);	/* like (splength + 0.5)	*/
-	    fprintf(tfp, "\\newdimen\\XFigu\\XFigu%lisp\n", (long)splength);
+		/*	if (metric)	fprintf(tfp, "%% 4143.7 sp = (1/472.44) cm\n");
+		 *	else		fprintf(tfp, "%% 3946.9 sp = (1/1200) in\n");	*/
+		fprintf(tfp, "\\tikzpicture[x=+%lisp, y=+%lisp]\n",
+				(long) splength,	/* intentionally do not round	*/
+				(long) splength);	/* like (splength + 0.5)	*/
+		fprintf(tfp, "\\newdimen\\XFigu\\XFigu%lisp\n", (long)splength);
 	} else {
-	    fputs("\\ifx\\XFigwidth\\undefined\\dimen1=0pt", tfp);
-	    fputs("\\else\\dimen1\\XFigwidth\\fi\n", tfp);
-	    fprintf(tfp, "\\divide\\dimen1 by %d\n", urx-llx);
-	    fputs("\\ifx\\XFigheight\\undefined\\dimen3=0pt", tfp);
-	    fputs("\\else\\dimen3\\XFigheight\\fi\n", tfp);
-	    fprintf(tfp, "\\divide\\dimen3 by %d\n", ury-lly);
-	    fputs("\\ifdim\\dimen1=0pt\\ifdim\\dimen3=0pt", tfp);
-	    fprintf(tfp, "\\dimen1=%lisp\\dimen3\\dimen1\n", (long)splength);
-	    fputs("  \\else\\dimen1\\dimen3\\fi", tfp);
-	    fputs("\\else\\ifdim\\dimen3=0pt\\dimen3\\dimen1\\fi\\fi\n", tfp);
-	    fputs("\\tikzpicture[x=+\\dimen1, y=+\\dimen3]\n", tfp);
+		fputs("\\ifx\\XFigwidth\\undefined\\dimen1=0pt", tfp);
+		fputs("\\else\\dimen1\\XFigwidth\\fi\n", tfp);
+		fprintf(tfp, "\\divide\\dimen1 by %d\n", urx-llx);
+		fputs("\\ifx\\XFigheight\\undefined\\dimen3=0pt", tfp);
+		fputs("\\else\\dimen3\\XFigheight\\fi\n", tfp);
+		fprintf(tfp, "\\divide\\dimen3 by %d\n", ury-lly);
+		fputs("\\ifdim\\dimen1=0pt\\ifdim\\dimen3=0pt", tfp);
+		fprintf(tfp, "\\dimen1=%lisp\\dimen3\\dimen1\n",
+				(long)splength);
+		fputs("  \\else\\dimen1\\dimen3\\fi", tfp);
+		fputs("\\else\\ifdim\\dimen3=0pt\\dimen3\\dimen1\\fi\\fi\n",
+				tfp);
+		fputs("\\tikzpicture[x=+\\dimen1, y=+\\dimen3]\n", tfp);
 	}
 	if (pagemode) {
-	    fprintf(tfp, "\\newdimen\\XFigu\\XFigu%lisp\n", (long)splength);
+		fprintf(tfp, "\\newdimen\\XFigu\\XFigu%lisp\n", (long)splength);
 	} else {
-	    fputs("{\\ifx\\XFigu\\undefined\\catcode`\\@11\n", tfp);
+		fputs("{\\ifx\\XFigu\\undefined\\catcode`\\@11\n", tfp);
 		/* \newdimen can only be used in \outer mode */
 		/* define \temp like \newdimen in plain.tex, without \outer */
-	    fputs("\\def\\temp{\\alloc@1\\dimen\\dimendef\\insc@unt}", tfp);
-	    fputs("\\temp\\XFigu\\catcode`\\@12\\fi}\n", tfp);
-	    fprintf(tfp, "\\XFigu%lisp\n", (long) splength);
-	    if (figscaling) {
-	        fputs("% Uncomment to scale line thicknesses with the same\n",
-				tfp);
-	        fputs("% factor as width of the drawing.\n", tfp);
-	        fputs("%\\pgfextractx\\XFigu{\\pgfqpointxy{1}{1}}\n", tfp);
-	        fputs("\\ifdim\\XFigu<0pt\\XFigu-\\XFigu\\fi\n", tfp);
-	    }
+		fputs("\\def\\temp{\\alloc@1\\dimen\\dimendef\\insc@unt}", tfp);
+		fputs("\\temp\\XFigu\\catcode`\\@12\\fi}\n", tfp);
+		fprintf(tfp, "\\XFigu%lisp\n", (long) splength);
+		if (figscaling) {
+			fputs("% Uncomment to scale line thicknesses with the same\n",
+					tfp);
+			fputs("% factor as width of the drawing.\n", tfp);
+			fputs("%\\pgfextractx\\XFigu{\\pgfqpointxy{1}{1}}\n",
+					tfp);
+			fputs("\\ifdim\\XFigu<0pt\\XFigu-\\XFigu\\fi\n", tfp);
+		}
 	}
 
 	if (pats_used) {
-	    const char *patterndef[] = {PATTERNS};
+		const char *patterndef[] = {PATTERNS};
 
-	    if (pagemode) {
-		for (i=0; i<NUMPATTERNS; ++i)
-		    if (pattern_used[i])
-			fputs(patterndef[i], tfp);
-	    } else {
-		fputs("\\catcode`\\@11\n", tfp);
-		for (i=0; i<NUMPATTERNS; ++i)
-		    if (pattern_used[i]) {
-			fprintf(tfp,
-				"\\pgfutil@ifundefined{pgf@pattern@name@xfigp%d}{\n",
-				i);
-			fputs(patterndef[i], tfp);
-			fputs("}{}\n", tfp);
-		    }
-		fputs("\\catcode`\\@12\n", tfp);
-	    }
+		if (pagemode) {
+			for (i=0; i<NUMPATTERNS; ++i)
+				if (pattern_used[i])
+					fputs(patterndef[i], tfp);
+		} else {
+			fputs("\\catcode`\\@11\n", tfp);
+			for (i=0; i<NUMPATTERNS; ++i)
+				if (pattern_used[i]) {
+					fprintf(tfp, "\\pgfutil@ifundefined{"
+						"pgf@pattern@name@xfigp%d}{\n",
+						i);
+					fputs(patterndef[i], tfp);
+					fputs("}{}\n", tfp);
+				}
+			fputs("\\catcode`\\@12\n", tfp);
+		}
 	}
 	default_options.thickness = 0.5*THICK_SCALE; /* == THICKNESS(THICK_SCALE) */
 	default_options.wid = 4*THICK_SCALE;
@@ -755,31 +790,32 @@ gentikz_start(F_compound *objects)
 	alt_options.ht = default_options.ht;
 	alt_options.flags = default_options.flags;
 	if (arrows_used) {
-	    for (i=0; i<NUMARROWS; i+=2) {
-		int ttype;
-		if (arrow_used[i]) {
-		    ttype = arrowtype(i/2, 0);
-		    define_arrow(ttype, i);
-		    if (arrow_used[i+1] && ++ttype == arrowtype(i/2, 1))
-			define_arrow(ttype, i+1);
-		} else if (arrow_used[i+1]) {
-		    define_arrow(arrowtype(i/2, 1), i+1);
+		for (i=0; i<NUMARROWS; i+=2) {
+			int ttype;
+			if (arrow_used[i]) {
+				ttype = arrowtype(i/2, 0);
+				define_arrow(ttype, i);
+				if (arrow_used[i+1] &&
+						++ttype == arrowtype(i/2, 1))
+					define_arrow(ttype, i+1);
+			} else if (arrow_used[i+1]) {
+				define_arrow(arrowtype(i/2, 1), i+1);
+			}
 		}
-	    }
 	}
 
 	for (i=9; i<=NUM_STD_COLS; ++i)
-	    if (std_color_used[i-1]) /* i-1: no default color in std_color_used */
-		fprintf(tfp, "\\definecolor{%s}{rgb}{%.2g,%.2g,%.2g}\n",
-			std_color[i].name, std_color[i].r, std_color[i].g,
-			std_color[i].b);
+		if (std_color_used[i-1]) /* i-1: no default color in std_color_used */
+			fprintf(tfp, "\\definecolor{%s}{rgb}{%.2g,%.2g,%.2g}\n",
+					std_color[i].name, std_color[i].r,
+					std_color[i].g, std_color[i].b);
 	for (i=0; i<num_usr_cols; ++i)
-	    fprintf(tfp, "\\definecolor{xfigc%d}{rgb}{%.3f,%.3f,%.3f}\n",
-		    i+NUM_STD_COLS, user_colors[i].r/255.,
-		    user_colors[i].g/255., user_colors[i].b/255.);
+		fprintf(tfp, "\\definecolor{xfigc%d}{rgb}{%.3f,%.3f,%.3f}\n",
+				i+NUM_STD_COLS, user_colors[i].r/255.,
+				user_colors[i].g/255., user_colors[i].b/255.);
 	/* fprintf(tfp, "\\clip (0,0) rectangle (%d,%d);\n", urx-llx, ury-lly); */
 	fprintf(tfp, "\\clip(%d,%d) rectangle (%d,%d);\n",
-		XCOORD(llx), YCOORD(ury), XCOORD(urx), YCOORD(lly));
+			XCOORD(llx), YCOORD(ury), XCOORD(urx), YCOORD(lly));
 
 	fputs("\\tikzset{inner sep=+0pt, outer sep=+0pt}\n", tfp);
 }
@@ -788,27 +824,29 @@ void
 gentikz_grid(float major, float minor)
 {
 	if (minor == 0.0 && major == 0.0)
-	    return;
+		return;
 
 	if (metric) {
-	    /* Cancel out the factor by which the figure is multiplied,
-	       if metric. 3.81/4 = 450 * 2.54 / 1200	*/
-/* TODO: Search for 80/76.2, and 76.2/80, replace */
-	    minor *= 3.81/4.;
-	    major *= 3.81/4.;
+		/* Cancel out the factor by which the figure is multiplied,
+		   if metric. 3.81/4 = 450 * 2.54 / 1200	*/
+		/* TODO: Search for 80/76.2, and 76.2/80, replace */
+		minor *= 3.81/4.;
+		major *= 3.81/4.;
 	}
-/* TODO: repair the precision, precision(3,minor) and (1,T) below */
-#define	GRIDLINE	\
-	"\\draw[black!30, line width=%.*f\\XFigu] (%d,%d) grid[step=%.2f\\XFigu] (%d,%d);\n"
+	/* TODO: repair the precision, precision(3,minor) and (1,T) below */
+#define	GRIDLINE	"\\draw[black!30, line width=%.*f\\XFigu] "	\
+				"(%d,%d) grid[step=%.2f\\XFigu] (%d,%d);\n"
 
 	/* first the minor grid */
 	if (minor != 0.0)
-	    fprintf(tfp, GRIDLINE, PREC1(0.5*THICK_SCALE), 0.5*THICK_SCALE,
-		    XCOORD(llx), YCOORD(ury), minor, XCOORD(urx), YCOORD(lly));
+		fprintf(tfp, GRIDLINE, PREC1(0.5*THICK_SCALE), 0.5*THICK_SCALE,
+				XCOORD(llx), YCOORD(ury), minor, XCOORD(urx),
+				YCOORD(lly));
 
 	if (major != 0.0)
-	    fprintf(tfp, GRIDLINE, PREC1(1.25*THICK_SCALE), 1.25*THICK_SCALE,
-		    XCOORD(llx), YCOORD(ury), major, XCOORD(urx), YCOORD(lly));
+		fprintf(tfp, GRIDLINE, PREC1(1.25*THICK_SCALE),
+				1.25*THICK_SCALE, XCOORD(llx), YCOORD(ury),
+				major, XCOORD(urx), YCOORD(lly));
 }
 
 int
@@ -816,9 +854,9 @@ gentikz_end(void)
 {
 	fputs("\\endtikzpicture", tfp);
 	if (pagemode)
-	    fputs("%\n\\end{document}", tfp);
+		fputs("%\n\\end{document}", tfp);
 	else
-	    fputs("}%\n", tfp);
+		fputs("}%\n", tfp);
 
 	return 0;
 }
@@ -828,12 +866,12 @@ points_all(F_point *p)
 {
 	int len = 6;	/* "\draw " is 6 chars */
 	while (p != NULL) {
-	    if (len > MINLINELENGTH) {
-		fputs("\n  ", tfp);
-		len = 2;
-	    }
-	    len += fprintf(tfp, "--(%d,%d)", XCOORD(p->x), YCOORD(p->y));
-	    p = p->next;
+		if (len > MINLINELENGTH) {
+			fputs("\n  ", tfp);
+			len = 2;
+		}
+		len += fprintf(tfp, "--(%d,%d)", XCOORD(p->x), YCOORD(p->y));
+		p = p->next;
 	}
 	fputs(";\n", tfp);
 }
@@ -843,12 +881,12 @@ points_penultimate(F_point *p)
 {
 	int len = 6;	/* "\draw " is 6 chars */
 	while (p->next != NULL) {
-	    if (len > MINLINELENGTH) {
-		fputs("\n  ", tfp);
-		len = 2;
-	    }
-	    len += fprintf(tfp, "--(%d,%d)", XCOORD(p->x), YCOORD(p->y));
-	    p = p->next;
+		if (len > MINLINELENGTH) {
+			fputs("\n  ", tfp);
+			len = 2;
+		}
+		len += fprintf(tfp, "--(%d,%d)", XCOORD(p->x), YCOORD(p->y));
+		p = p->next;
 	}
 }
 
@@ -873,54 +911,57 @@ put_picture(F_point *p, F_point *r, F_pic *pic)
 	dy = r->y - p->y;
 	/* get the rotation, and write the height and width to dx and dy */
 	if (dx < 0 && dy < 0) {
-	    dx = -dx;
-	    dy = -dy;
-	    rot = 180;
+		dx = -dx;
+		dy = -dy;
+		rot = 180;
 	} else if (dx < 0 && dy >= 0) {
-	    rot = dy;
-	    dy = -dx;
-	    dx = rot;
-	    rot = 270;
+		rot = dy;
+		dy = -dx;
+		dx = rot;
+		rot = 270;
 	} else if (dy < 0 && dx >= 0) {
-	    rot = dx;
-	    dx = -dy;
-	    dy = rot;
-	    rot = 90;
+		rot = dx;
+		dx = -dy;
+		dy = rot;
+		rot = 90;
 	} /* else dx >= 0 && dy >= 0: rot = 0 */
 
 	if (pic->flipped) {
-	    rot += 90;
-	    n = dx;
-	    dx = dy;
-	    dy = n;
+		rot += 90;
+		n = dx;
+		dx = dy;
+		dy = n;
 	}
 
 #define PREPEND prepend ? prepend : ""
 
 	if (removesuffix) {
-	    c = strrchr(pic->file,'.');
-	    n =  c == NULL ? (int)strlen(pic->file) : c - pic->file;
+		c = strrchr(pic->file,'.');
+		n =  c == NULL ? (int)strlen(pic->file) : c - pic->file;
 	} else {
-	    n = strlen(pic->file);
+		n = strlen(pic->file);
 	}
 
-/* A failed attempt to use \pgftext:
-   \pgftext[top,left,at=\pgfqpoint{x}{y},rotate=%d]
-     {\pgflowlevelob{pgftransformxscale=-1}{\pgfimage[height=,width=]{%s}}};
-   Probably, the image is first flipped by xscale=-1 and only afterwards scaled
-   to width and height. \pgftext does not allow a cannvas transformation, such
-   as xscale=-1. */
+	/* A failed attempt to use \pgftext:
+	   \pgftext[top,left,at=\pgfqpoint{x}{y},rotate=%d] {
+		\pgflowlevelob{pgftransformxscale=-1}{
+			\pgfimage[height=,width=]{%s}}};
+	   Probably, the image is first flipped by xscale=-1 and only afterwards
+	   scaled to width and height. \pgftext does not allow a cannvas
+	   transformation, such as xscale=-1. */
 
-/* \node[below right,rotate=90,xscale=-1] at (3,0) {\pgfimage[width=,heigth=]{g}};
-   Order of rotate=90,xscale=-1 matters! */
+	/* \node[below right,rotate=90,xscale=-1] at (3,0)
+						{\pgfimage[width=,heigth=]{g}};
+	   Order of rotate=90,xscale=-1 matters! */
 	fputs("\\node[below right", tfp);
 	if (rot != 0 && rot != 360)
-	    fprintf(tfp, ",rotate=%d", rot);
+		fprintf(tfp, ",rotate=%d", rot);
 	if (pic->flipped)
-	    fputs(",xscale=-1", tfp);
-	fprintf(tfp,	/* width and height must be given as dimen */
-		"] at (%d,%d) {\\pgfimage[width=+%d\\XFigu,height=+%d\\XFigu]{%s%.*s}};\n",
-		XCOORD(p->x), YCOORD(p->y), dx, dy, PREPEND, n, pic->file);
+		fputs(",xscale=-1", tfp);
+		/* width and height must be given as dimen */
+	fprintf(tfp, "] at (%d,%d) {\\pgfimage[width=+%d\\XFigu,height=+%d"
+			"\\XFigu]{%s%.*s}};\n", XCOORD(p->x), YCOORD(p->y),
+			dx, dy, PREPEND, n, pic->file);
 }
 
 static void
@@ -931,13 +972,13 @@ set_width(int w)
 	double	v;
 
 	if (w == cur_thickness)
-	    return;
+		return;
 	cur_thickness = w;
 	v = THICKNESS(w);
 	if (v  == (int) v)
-	    l = 0;
+		l = 0;
 	else
-	    l = 1;
+		l = 1;
 	fprintf(tfp, "\\pgfsetlinewidth{+%.*f\\XFigu}\n", l, v);
 }
 
@@ -949,50 +990,53 @@ set_stipple(int s, double v)
 	int	l;
 
 	if (s == cur_style && v == cur_styleval)
-	    return;
+		return;
 
 	cur_style = s;
 	cur_styleval = v;
 
 	if (s == SOLID_LINE || v <= 0.) {
-	    fputs("\\pgfsetdash{}{+0pt}\n", tfp);
-	    if (v <= 0)
-		cur_styleval = 0.;
-	    return;
+		fputs("\\pgfsetdash{}{+0pt}\n", tfp);
+		if (v <= 0)
+			cur_styleval = 0.;
+		return;
 	}
 
 	v *= ppi / 80.;
 	switch (s) {
 	case DASH_LINE:
-	    l = round(v);
-	    fprintf(tfp, "\\pgfsetdash{{+%d\\XFigu}{+%d\\XFigu}}{++0pt}\n", l, l);
-	    break;
+		l = round(v);
+		fprintf(tfp, "\\pgfsetdash{{+%d\\XFigu}{+%d\\XFigu}}{++0pt}\n",
+				l, l);
+		break;
 	case DOTTED_LINE:
-	    l = round(ppi/80.);
-	    fprintf(tfp, "\\pgfsetdash{{+%d\\XFigu}{+%d\\XFigu}}{+%d\\XFigu}\n",
-		    l, round(v), l);
-	    break;
+		l = round(ppi/80.);
+		fprintf(tfp, "\\pgfsetdash{{+%d\\XFigu}{+%d\\XFigu}}"
+				"{+%d\\XFigu}\n", l, round(v), l);
+		break;
 	case DASH_DOT_LINE:
-	    l = round(v*0.5);
-	    fprintf(tfp,
-		    "\\pgfsetdash{{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}}{+0pt}\n",
-		    round(v), l, round(ppi/80.), l);
-	    break;
+		l = round(v*0.5);
+		fprintf(tfp, "\\pgfsetdash{{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}"
+				"{+%d\\XFigu}}{+0pt}\n",
+				round(v), l, round(ppi/80.), l);
+		break;
 	case DASH_2_DOTS_LINE:
-	    l = round(ppi/80.);
-	    fprintf(tfp,
-		    "\\pgfsetdash{{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}}{+0pt}\n",
-		    round(v), round(v*0.45), l, round(v*0.333), l, round(v*0.45));
-	    break;
+		l = round(ppi/80.);
+		fprintf(tfp, "\\pgfsetdash{{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}"
+				"{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}}{+0pt}\n",
+				round(v), round(v*0.45), l, round(v*0.333), l,
+				round(v*0.45));
+		break;
 	case DASH_3_DOTS_LINE:
-	    l = round(ppi/80.);
-	    fprintf(tfp,
-		    "\\pgfsetdash{{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}}{+0pt}\n",
-		    round(v), round(v*0.4), l, round(v*0.3),
-		    l, round(v*0.3), l, round(v*0.4));
-	    break;
+		l = round(ppi/80.);
+		fprintf(tfp, "\\pgfsetdash{{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}"
+				"{+%d\\XFigu}{+%d\\XFigu}{+%d\\XFigu}"
+				"{+%d\\XFigu}{+%d\\XFigu}}{+0pt}\n",
+				round(v), round(v*0.4), l, round(v*0.3),
+				l, round(v*0.3), l, round(v*0.4));
+		break;
 	default:
-	    fprintf(stderr,"Undefined line style %d.\n", s);
+		fprintf(stderr,"Undefined line style %d.\n", s);
 	}
 }
 
@@ -1007,7 +1051,7 @@ set_capstyle(int c)
 	};
 
 	if (c == cur_capstyle)
-	    return;
+		return;
 
 	cur_capstyle = c;
 	fputs(capcmd[c], tfp);
@@ -1021,11 +1065,11 @@ set_joinstyle(int j)
 		"\\pgfsetmiterjoin\n",
 		"\\pgfsetroundjoin\n",
 		"\\pgfsetbeveljoin\n"
-		/* pgfsetmiterlimit{miter limit factor} */
+			/* pgfsetmiterlimit{miter limit factor} */
 	};
 
 	if (j == cur_joinstyle)
-	    return;
+		return;
 
 	cur_joinstyle = j;
 	fputs(joincmd[j], tfp);
@@ -1035,9 +1079,10 @@ static int
 put_colorname(int c)
 {
 	if (c < NUM_STD_COLS)
-	    return fputs(std_color[c+1].name, tfp);/* std_color[0] is DEFAULT */
+		/* std_color[0] is DEFAULT */
+		return fputs(std_color[c+1].name, tfp);
 	else
-	    return fprintf(tfp, "xfigc%d", c);
+		return fprintf(tfp, "xfigc%d", c);
 }
 
 /* Colors are set when they are declared and may stay active without being
@@ -1062,9 +1107,10 @@ static void
 set_linefillcolor(int c)
 {
 	if (c == default_color)
-	    c = DEFAULT;
-	if (c == cur_pencolor && c == cur_fillcolor && cur_fillstyle == NUMSHADES - 1)
-	    return;
+		c = DEFAULT;
+	if (c == cur_pencolor && c == cur_fillcolor &&
+			cur_fillstyle == NUMSHADES - 1)
+		return;
 
 	cur_pencolor = cur_fillcolor = c;
 	cur_fillstyle = NUMSHADES - 1;
@@ -1077,21 +1123,25 @@ static void
 set_fillcolor(int c, int s)
 {
 	if (c == default_color)
-	    c = DEFAULT;
+		c = DEFAULT;
 	if (c != cur_fillcolor || s != cur_fillstyle) {
-	    cur_fillcolor = c;
-	    cur_fillstyle = s;
-	    fputs("\\pgfsetfillcolor{", tfp);
-	    put_colorname(c);
-	    /* A shade between 0 and NUMSHADES - 1 mixes the color with black,
-	     * 0 = black, NUMSHADES - 1 = color at full saturation. Shades >
-	     * NUMSHADE - 1 mix the color with white, i.e., tint the color. */
-	    if (s == NUMSHADES - 1)
-		fputs("}\n", tfp);
-	    else if (s < NUMSHADES)
-		fprintf(tfp, "!%d!black}\n", 100*s/(NUMSHADES-1));
-	    else
-		fprintf(tfp, "!%d}\n", 100*(NUMTINTS-s+NUMSHADES-1)/NUMTINTS);
+		cur_fillcolor = c;
+		cur_fillstyle = s;
+		fputs("\\pgfsetfillcolor{", tfp);
+		put_colorname(c);
+		/*
+		 * A shade between 0 and NUMSHADES - 1 mixes the color with
+		 * black, 0 = black, NUMSHADES - 1 = color at full saturation.
+		 * Shades > NUMSHADE - 1 mix the color with white,
+		 * i.e., tint the color.
+		 */
+		if (s == NUMSHADES - 1)
+			fputs("}\n", tfp);
+		else if (s < NUMSHADES)
+			fprintf(tfp, "!%d!black}\n", 100*s/(NUMSHADES-1));
+		else
+			fprintf(tfp, "!%d}\n",
+					100*(NUMTINTS-s+NUMSHADES-1)/NUMTINTS);
 	}
 }
 
@@ -1106,27 +1156,29 @@ static void
 normalize(int *fill_color, int *fill_style)
 {
 	if (*fill_style >= NUMSHADES + NUMTINTS || *fill_style == NUMSHADES - 1)
-	    return;
+		return;
 
 	if (*fill_style == NUMSHADES + NUMTINTS - 1
-		|| (*fill_color == WHITE_COLOR && *fill_style >= NUMSHADES - 1)) {
-	    *fill_color = WHITE_COLOR;
-	    *fill_style = NUMSHADES - 1;
-	    return;
-	} else if (*fill_color == WHITE_COLOR) { /* *fill_style < NUMSHADES - 1 */
-	    *fill_color = BLACK_COLOR;
-	    *fill_style += NUMSHADES - 1;
-	} else if ((*fill_color == BLACK_COLOR || *fill_color == DEFAULT)
-			&& *fill_style < NUMSHADES - 1) {
-	    if (*fill_style == 0) {
+			|| (*fill_color == WHITE_COLOR &&
+				*fill_style >= NUMSHADES - 1)) {
 		*fill_color = WHITE_COLOR;
 		*fill_style = NUMSHADES - 1;
-	    } else {
-		*fill_style = NUMSHADES + NUMTINTS - 1 - *fill_style;
-	    }
+		return;
+	/* *fill_style < NUMSHADES - 1 */
+	} else if (*fill_color == WHITE_COLOR) {
+		*fill_color = BLACK_COLOR;
+		*fill_style += NUMSHADES - 1;
+	} else if ((*fill_color == BLACK_COLOR || *fill_color == DEFAULT)
+			&& *fill_style < NUMSHADES - 1) {
+		if (*fill_style == 0) {
+			*fill_color = WHITE_COLOR;
+			*fill_style = NUMSHADES - 1;
+		} else {
+			*fill_style = NUMSHADES + NUMTINTS - 1 - *fill_style;
+		}
 	} else if (*fill_style == 0) {
-	    *fill_color = BLACK_COLOR;
-	    *fill_style = NUMSHADES - 1;
+		*fill_color = BLACK_COLOR;
+		*fill_style = NUMSHADES - 1;
 	}
 }
 
@@ -1134,18 +1186,18 @@ static void
 set_pattern(int pen_color, int fill_style)
 {
 	if (pen_color == cur_patcolor && fill_style == cur_fillstyle)
-	    return;
+		return;
 
 	cur_patcolor = pen_color;
 	cur_fillstyle = fill_style;
 	fprintf(tfp, "\\pgfsetfillpattern{xfigp%d}{",
-		fill_style - NUMSHADES - NUMTINTS);
+			fill_style - NUMSHADES - NUMTINTS);
 	put_colorname(pen_color);
 	fputs("}\n", tfp);
 }
 
 #define	PUT_DRAWCMD(obj,has_endcaps,cap_style) \
-	put_drawcmd(obj->style, obj->thickness, obj->pen_color, obj->fill_color, \
+	put_drawcmd(obj->style,obj->thickness, obj->pen_color, obj->fill_color,\
 		    obj->fill_style, obj->style_val, has_endcaps, cap_style)
 
 static void
@@ -1156,54 +1208,60 @@ put_drawcmd(int style, int thickness, int pen_color, int fill_color,
 #define	PATTERN	fill_style >= NUMSHADES + NUMTINTS
 
 	if (thickness > 0 ) {
-	    if (has_endcaps || (style != SOLID_LINE && style_val > 0.))
-		set_capstyle(cap_style);
+		if (has_endcaps || (style != SOLID_LINE && style_val > 0.))
+			set_capstyle(cap_style);
 
-	    set_width(thickness);
-	    set_stipple(style, style_val);
+		set_width(thickness);
+		set_stipple(style, style_val);
 
-	    if (FILLED) {
-		normalize(&fill_color, &fill_style);
-		if (fill_color == pen_color && fill_style == NUMSHADES-1) {
-		    set_linefillcolor(pen_color);
-		} else {
-		    set_linecolor(pen_color);
-		    set_fillcolor(fill_color, fill_style);
+		if (FILLED) {
+			normalize(&fill_color, &fill_style);
+			if (fill_color == pen_color &&
+					fill_style == NUMSHADES-1) {
+				set_linefillcolor(pen_color);
+			} else {
+				set_linecolor(pen_color);
+				set_fillcolor(fill_color, fill_style);
+			}
+			fputs("\\filldraw ", tfp);
+		} else if (PATTERN) {
+			set_linecolor(pen_color);
+			set_pattern(pen_color, fill_style);
+			fputs("\\draw[pattern,preaction={fill=", tfp);
+			put_colorname(fill_color);	/* TODO */
+			fputs("}] ", tfp);
+			/* if patterns without background color are possible:
+			 *#define	TRANSPARENT -2
+			 * .. \draw[pattern
+			 * if (fill_color == TRANSPARENT)
+			 *	fputs("] ", tfp);
+			 * else {
+			 *	fputs(", preaction={fill=", tfp);
+			 *	put_colorname(fill_color);
+			 *	fputs("}] ", tfp);
+			 * }
+			 */
+		} else {	/* UNFILLED */
+			set_linecolor(pen_color);
+			fputs("\\draw ", tfp);
 		}
-		fputs("\\filldraw ", tfp);
-	    } else if (PATTERN) {
-		set_linecolor(pen_color);
-		set_pattern(pen_color, fill_style);
-		fputs("\\draw[pattern,preaction={fill=", tfp);
-		put_colorname(fill_color);	/* TODO */
-		fputs("}] ", tfp);
-		/* if patterns without background color are possible:
-#define	TRANSPARENT -2
-		 * .. \draw[pattern
-		 * if (fill_color == TRANSPARENT) fputs("] ", tfp); else {
-		 *	fputs(", preaction={fill=", tfp; put_colorname(fill_color);
-		 *	fputs("}] ", tfp); }	*/
-	    } else {	/* UNFILLED */
-		set_linecolor(pen_color);
-		fputs("\\draw ", tfp);
-	    }
 
 	} else {	/* thickness <= 0 */
 
-	    if (FILLED) {
-		normalize(&fill_color, &fill_style);
-		set_fillcolor(fill_color, fill_style);
-		fputs("\\fill ", tfp);
-	    } else if (PATTERN) {
-		set_pattern(pen_color, fill_style);
-		fputs("\\pattern[preaction={fill=", tfp);
-		put_colorname(fill_color);	/* TODO */
-		fputs("}] ", tfp);
-		/* See above if for unfilled (TRANSPARENT) pattern fills. */
-	    } else {	/* fill_style == UNFILLED */
-		fputs("A non-existing object was processed. Please report this bug.\n",
-			stderr);
-	    }
+		if (FILLED) {
+			normalize(&fill_color, &fill_style);
+			set_fillcolor(fill_color, fill_style);
+			fputs("\\fill ", tfp);
+		} else if (PATTERN) {
+			set_pattern(pen_color, fill_style);
+			fputs("\\pattern[preaction={fill=", tfp);
+			put_colorname(fill_color);	/* TODO */
+			fputs("}] ", tfp);
+			/* See above if unfilled (TRANSPARENT) pattern fills. */
+		} else {	/* fill_style == UNFILLED */
+			fputs("A non-existing object was processed. "
+					"Please report this bug.\n", stderr);
+		}
 	}
 }
 
@@ -1216,35 +1274,35 @@ get_settings(F_arrow *a, int a_flags, int a_props, struct options o,
 #define	UNSET	-1
 
 	if (a->thickness != o.thickness)
-	    s->thickness = a->thickness;
+		s->thickness = a->thickness;
 	else
-	    s->thickness = UNSET;
+		s->thickness = UNSET;
 	if (a_props & HAS_WIDTH && a->wid != o.wid)
-	    s->wid = a->wid;
+		s->wid = a->wid;
 	else
-	    s->wid = UNSET;
+		s->wid = UNSET;
 	if (a_props & HAS_LENGTH && a->ht != o.ht)
-	    s->ht = a->ht;
+		s->ht = a->ht;
 	else
-	    s->ht = UNSET;
+		s->ht = UNSET;
 	if (a_props & HAS_FILL &&
-		(a_flags & HAS_FILL) != (o.flags & HAS_FILL)) {
-	    s->setflags = HAS_FILL;
-	    s->flags = a_flags & HAS_FILL;
+			(a_flags & HAS_FILL) != (o.flags & HAS_FILL)) {
+		s->setflags = HAS_FILL;
+		s->flags = a_flags & HAS_FILL;
 	} else {
-	    s->setflags = 0;
-	    s->flags = 0;
+		s->setflags = 0;
+		s->flags = 0;
 	}
 	if (a_props & HAS_SWAP &&
-		(a_flags & HAS_SWAP) != (o.flags & HAS_SWAP)) {
-	    s->setflags += HAS_SWAP;
-	    s->flags += a_flags & HAS_SWAP;
+			(a_flags & HAS_SWAP) != (o.flags & HAS_SWAP)) {
+		s->setflags += HAS_SWAP;
+		s->flags += a_flags & HAS_SWAP;
 	}
 	if (s->thickness == UNSET && s->wid == UNSET && s->ht == UNSET
-		&& s->setflags == 0)
-	    s->has_options = false;
+			&& s->setflags == 0)
+		s->has_options = false;
 	else
-	    s->has_options = true;
+		s->has_options = true;
 }
 
 static struct options
@@ -1253,34 +1311,35 @@ combine(struct settings *s, struct options *o)
 	struct options	c;
 
 	if (s->has_options == false) {
-	    c = *o;
-	    return c;
+		c = *o;
+		return c;
 	}
 
 	if (s->thickness == UNSET)
-	    c.thickness = o->thickness;
+		c.thickness = o->thickness;
 	else
-	    c.thickness = s->thickness;
+		c.thickness = s->thickness;
 	if (s->wid == UNSET)
-	    c.wid = o->wid;
+		c.wid = o->wid;
 	else
-	    c.wid = s->wid;
+		c.wid = s->wid;
 	if (s->ht == UNSET)
-	    c.ht = o->ht;
+		c.ht = o->ht;
 	else
-	    c.ht = s->ht;
+		c.ht = s->ht;
 	if (s->setflags)
-	    c.flags = s->flags | (o->flags & ~s->setflags);
+		c.flags = s->flags | (o->flags & ~s->setflags);
 	else
-	    c.flags = o->flags;
+		c.flags = o->flags;
 	return c;
 }
 
 /* To care for \dimen in arrow options:
- * Default options set with \pgfsetarrows{[line width=30\\XFigu, ...]} do work, but
+ * Default options set with \pgfsetarrows{[line width=30\\XFigu, ...]} do work,
+ * but
  * \pgfsetarrows{XFig0[line width=30\XFigu]-XFig11} does not work, must be
  * \pgfsetarrows{XFig0[line width=30*\the\XFigu]-XFig11}. Notably, as expected,
- * \pgfsetlinewidth{7.5\XFigu}, ..{+7.5\XFigu}, {7.5*\XFigu} and {7.5*\the\XFigu}
+ * \pgfsetlinewidth{7.5\XFigu}, ..{+7.5\XFigu},{7.5*\XFigu} and {7.5*\the\XFigu}
  * all work, but \pgfsetlinewidth{+7.5*\XFigu} does not.
  * All combinations with + in \pgfsetarrows do not work.
  * Options to specific arrows are only written by get_changes() below.
@@ -1300,9 +1359,9 @@ create_arrow(F_arrow *a, struct options *o)
 	t.type = arrowtype(a->type, a->style);
 	t.props = pgfarrow[t.type].props;
 	if (a->style && t.props & (HAS_FILL + HAS_SWAP))
-	    t.flags = STYLE_MEANS_SWAP(t.type) ? HAS_SWAP : HAS_FILL;
+		t.flags = STYLE_MEANS_SWAP(t.type) ? HAS_SWAP : HAS_FILL;
 	else
-	    t.flags = 0;
+		t.flags = 0;
 	get_settings(a, t.flags, t.props, *o, &(t.s));
 
 	return t;
@@ -1315,54 +1374,55 @@ changes(struct settings *s)
 	int	n;
 
 	if (s->thickness != UNSET)
-	    n = 1;
+		n = 1;
 	else
-	    n = 0;
+		n = 0;
 	if (s->wid != UNSET)
-	    ++n;
+		++n;
 	if (s->ht != UNSET)
-	    ++n;
+		++n;
 	if (s->setflags & HAS_FILL)
-	    ++n;
+		++n;
 	if (s->setflags & HAS_SWAP)
-	    ++n;
+		++n;
 	return n;
 }
 
 /* Return the set with minimum changes to the default options.
  * Return NULL if default_options can remain unchanged. */
 static struct settings *
-choose_default(int b_type, struct settings *b_s, int f_type, struct settings *f_s)
+choose_default(int b_type, struct settings *b_s, int f_type,
+		struct settings *f_s)
 {
 	int nb, nf;
 
 	if (b_s->has_options == false)
-	   if (f_s->has_options == false)
-	       return NULL;
-	   else
-	       return b_s;
+		if (f_s->has_options == false)
+			return NULL;
+		else
+			return b_s;
 	else if (f_s->has_options == false)
-	    return f_s;
+		return f_s;
 
 	nb = changes(b_s);
 	nf = changes(f_s);
 	/* a shortcut TODO: is this really useful?*/
 	if (nb == nf && b_s->setflags == f_s->setflags && b_type == f_type)
-	    return b_s;
+		return b_s;
 	if (nb < nf)
-	    return b_s;
+		return b_s;
 	if (nf < nb)
-	    return f_s;
+		return f_s;
 	if (b_s->setflags < f_s->setflags)
-	    return b_s;
+		return b_s;
 	if (f_s->setflags < b_s->setflags)
-	    return f_s;
+		return f_s;
 	if (b_s->flags < f_s->flags)
-	    return b_s;
+		return b_s;
 	if (f_s->flags < b_s->flags)
-	    return f_s;
+		return f_s;
 	if (f_type < b_type)
-	    return f_s;
+		return f_s;
 	return b_s;
 }
 
@@ -1377,41 +1437,41 @@ put_options(struct settings *s, bool the)
 	char	*xfigu;
 
 	if (the)
-	    xfigu = "*\\the\\XFigu";
+		xfigu = "*\\the\\XFigu";
 	else
-	    xfigu = "\\XFigu";
+		xfigu = "\\XFigu";
 
 	fputc('[', tfp);
 
 	if (s->thickness != UNSET) {
-	    double thk = THICKNESS(s->thickness);
-	    fprintf(tfp,"line width=%.*f", PREC1(thk), thk);
-	    fputs(xfigu, tfp);
-	    sep = true;
+		double thk = THICKNESS(s->thickness);
+		fprintf(tfp,"line width=%.*f", PREC1(thk), thk);
+		fputs(xfigu, tfp);
+		sep = true;
 	} else {
-	    sep = false;
+		sep = false;
 	}
 	if (s->wid != UNSET) {
 #define SEPARATOR   if (sep) fputs(", ", tfp); else sep = true
-	    SEPARATOR;
-	    fprintf(tfp, "width=%.0f", s->wid);
-	    fputs(xfigu, tfp);
+		SEPARATOR;
+		fprintf(tfp, "width=%.0f", s->wid);
+		fputs(xfigu, tfp);
 	}
 	if (s->ht != UNSET) {
-	    SEPARATOR;
-	    fprintf(tfp, "length=%.0f", s->ht);
-	    fputs(xfigu, tfp);
+		SEPARATOR;
+		fprintf(tfp, "length=%.0f", s->ht);
+		fputs(xfigu, tfp);
 	}
 	if (s->setflags) {
-	    if (s->setflags & HAS_FILL) {
-		SEPARATOR;
-		fputs(arrowflag[s->flags & HAS_FILL], tfp);
-	    }
-	    if (s->setflags & HAS_SWAP) {
-		if (sep)
-		    fputs(", ", tfp);
-		fputs(arrowflag[HAS_SWAP], tfp);	/* swap is a toggle switch */
-	    }
+		if (s->setflags & HAS_FILL) {
+			SEPARATOR;
+			fputs(arrowflag[s->flags & HAS_FILL], tfp);
+		}
+		if (s->setflags & HAS_SWAP) {
+			if (sep)
+				fputs(", ", tfp);
+			fputs(arrowflag[HAS_SWAP], tfp);  /* swap is a toggle */
+		}
 	}
 	fputc(']', tfp);
 }
@@ -1421,13 +1481,13 @@ static void
 assign_settings(struct settings *s, struct options *o)
 {
 	if (s->thickness != UNSET)
-	    o->thickness = s->thickness;
+		o->thickness = s->thickness;
 	if (s->wid != UNSET)
-	    o->wid = s->wid;
+		o->wid = s->wid;
 	if (s->ht != UNSET)
-	    o->ht = s->ht;
+		o->ht = s->ht;
 	if (s->setflags)
-	    o->flags = s->flags | (o->flags & ~s->setflags);
+		o->flags = s->flags | (o->flags & ~s->setflags);
 }
 
 #define	NOARROW	    -1
@@ -1437,16 +1497,16 @@ assign_arrow(struct tikzarrow *a, struct tikzarrow *o)
 {
 	o->type = a->type;
 	if (a->type == NOARROW)
-	    return;
+		return;
 	o->props = a->props;
 	o->flags = a->flags;
 	if (!(o->s.has_options = a->s.has_options))
-	    return;
+		return;
 	o->s.thickness = a->s.thickness;
 	o->s.wid = a->s.wid;
 	o->s.ht = a->s.ht;
 	if ((o->s.setflags = a->s.setflags) != 0)
-	    o->s.flags = a->s.flags;
+		o->s.flags = a->s.flags;
 }
 
 /* \pgfsetarrows{[width=...,length=...]} sets the default options for both
@@ -1464,107 +1524,110 @@ set_arrows(F_arrow *back, F_arrow *forw)
 	bool		    set_back, set_forw;
 
 	if (back && forw) {
-	    b = create_arrow(back, &default_options);
-	    /* a shortcut for back == forw */
-	    if (back->type == forw->type && back->style == forw->style
-		    && back->thickness == forw->thickness
-		    && back->wid == forw->wid && back->ht == forw->ht) {
-		d = &(b.s);
-		f.type = b.type;
-		f.props = b.props;
-		f.flags = b.flags;
-		f.s.has_options = false;
-	    } else {
-		f = create_arrow(forw, &default_options);
-		d = choose_default(b.type, &(b.s), f.type, &(f.s));
+		b = create_arrow(back, &default_options);
+		/* a shortcut for back == forw */
+		if (back->type == forw->type && back->style == forw->style &&
+				back->thickness == forw->thickness &&
+				back->wid == forw->wid &&
+				back->ht == forw->ht) {
+			d = &(b.s);
+			f.type = b.type;
+			f.props = b.props;
+			f.flags = b.flags;
+			f.s.has_options = false;
+		} else {
+			f = create_arrow(forw, &default_options);
+			d = choose_default(b.type, &(b.s), f.type, &(f.s));
 
-		if (d != NULL) {
-		    if (d == &(b.s))
-			get_settings(forw, f.flags, f.props,
-				     combine(&(b.s), &default_options), &(f.s));
-		    else
-			get_settings(back, b.flags, b.props,
-				     combine(&(f.s), &default_options), &(b.s));
+			if (d != NULL) {
+				if (d == &(b.s))
+					get_settings(forw, f.flags, f.props,
+					      combine(&(b.s), &default_options),
+					      &(f.s));
+				else
+					get_settings(back, b.flags, b.props,
+					      combine(&(f.s), &default_options),
+					      &(b.s));
+			}
 		}
-	    }
 	} else if (back) {
-	    b = create_arrow(back, &default_options);
-	    d = &(b.s);
-	    f.type = NOARROW;
+		b = create_arrow(back, &default_options);
+		d = &(b.s);
+		f.type = NOARROW;
 	} else if (forw) {
-	    f = create_arrow(forw, &default_options);
-	    d = &(f.s);
-	    b.type = NOARROW;
+		f = create_arrow(forw, &default_options);
+		d = &(f.s);
+		b.type = NOARROW;
 	} else {
-	    b.type = NOARROW;
-	    f.type = NOARROW;
+		b.type = NOARROW;
+		f.type = NOARROW;
 	}
 
 	/* Output the command to set the default options,
 	 * \pgfsetarrows{[...]} */
 	if (d && d->has_options) {
-	    fputs("\\pgfsetarrows{", tfp);
-	    put_options(d, false);
-	    fputs("}\n", tfp);
-	    assign_settings(d, &default_options);
-	    d->has_options=false;
+		fputs("\\pgfsetarrows{", tfp);
+		put_options(d, false);
+		fputs("}\n", tfp);
+		assign_settings(d, &default_options);
+		d->has_options=false;
 	}
 
-#define	OPTIONS_EQUAL(a,b)	a.has_options == b.has_options && \
-		(a.has_options == false || (a.thickness == b.thickness \
-			&& a.wid == b.wid && a.ht == b.ht \
-			&& a.setflags == b.setflags && a.flags == b.flags))
+#define	OPTIONS_EQUAL(a,b)	a.has_options == b.has_options &&	\
+	(a.has_options == false ||					\
+		(a.thickness == b.thickness && a.wid == b.wid &&	\
+		a.ht == b.ht && a.setflags == b.setflags && a.flags == b.flags))
 
 	/* Which arrows must be set */
 	if (!(b.type == NOARROW && cur_b.type == NOARROW)
-		&& (b.type != cur_b.type
-		    || b.s.has_options != cur_b.s.has_options
-		    || (b.s.has_options && cur_b.s.has_options
-			&& !(OPTIONS_EQUAL(b.s, cur_b.s))))) {
-	    set_back = true;
-	    assign_arrow(&b, &cur_b);
+			&& (b.type != cur_b.type
+				|| b.s.has_options != cur_b.s.has_options
+				|| (b.s.has_options && cur_b.s.has_options
+					&& !(OPTIONS_EQUAL(b.s, cur_b.s))))) {
+		set_back = true;
+		assign_arrow(&b, &cur_b);
 	} else {
-	    set_back = false;
+		set_back = false;
 	}
 	if (!(f.type == NOARROW && cur_f.type == NOARROW)
-		&& (f.type != cur_f.type
-		    || f.s.has_options != cur_f.s.has_options
-		    || (f.s.has_options && cur_f.s.has_options
-			&& !(OPTIONS_EQUAL(f.s, cur_f.s))))) {
-	    set_forw = true;
-	    assign_arrow(&f, &cur_f);
+			&& (f.type != cur_f.type
+				|| f.s.has_options != cur_f.s.has_options
+				|| (f.s.has_options && cur_f.s.has_options
+					&& !(OPTIONS_EQUAL(f.s, cur_f.s))))) {
+		set_forw = true;
+		assign_arrow(&f, &cur_f);
 	} else {
-	    set_forw = false;
+		set_forw = false;
 	}
 
 	/* Output the command to set the arrows */
 	if (set_back || set_forw) {
-	    fputs("\\pgfsetarrows", tfp);
-	    if (!set_forw)
-		fputs("start{", tfp);
-	    else if (!set_back)
-		fputs("end{", tfp);
-	    else
-		fputc('{', tfp);
+		fputs("\\pgfsetarrows", tfp);
+		if (!set_forw)
+			fputs("start{", tfp);
+		else if (!set_back)
+			fputs("end{", tfp);
+		else
+			fputc('{', tfp);
 	}
 
 	if (set_back && b.type != NOARROW) {
 		fprintf(tfp, "xfiga%d", b.type);
 		if (b.s.has_options)
-		    put_options(&(b.s), true);
+			put_options(&(b.s), true);
 	}
 
 	if (set_back && set_forw)
-	    fputc('-', tfp);
+		fputc('-', tfp);
 
 	if (set_forw && f.type != NOARROW) {
 		fprintf(tfp, "xfiga%d", f.type);
 		if (f.s.has_options)
-		    put_options(&(f.s), true);
+			put_options(&(f.s), true);
 	}
 
 	if (set_back || set_forw)
-	    fputs("}\n", tfp);
+		fputs("}\n", tfp);
 }
 
 void
@@ -1573,7 +1636,7 @@ gentikz_line(F_line *l)
 	F_point		*p, *q;
 
 	if (verbose)
-	    fprintf(tfp, "%%\n%% Fig POLYLINE object\n%%\n");
+		fprintf(tfp, "%%\n%% Fig POLYLINE object\n%%\n");
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ", l->comments, "");
@@ -1581,73 +1644,74 @@ gentikz_line(F_line *l)
 	p = l->points;
 	q = p->next;
 
-	/* One or two points; Be strict, only draw a line if it is a POLYLINE. */
+	/* One or two points; Be strict, only draw a line if it is a POLYLINE.*/
 	if (p->next == NULL || q->next == NULL) {
-	    if (l->thickness <= 0 || l->type != T_POLYLINE)
-		return;
-	    set_width(l->thickness);
-	    set_linecolor(l->pen_color);
-	    if (p->next == NULL) {	/* a single point */
-		if (l->cap_style == ROUNDCAP) {
-		    set_capstyle(l->cap_style);
-		    /* a zero-length line is only displayed with round caps */
-		    fprintf(tfp, "\\draw (%d,%d)--(%d,%d);\n",
+		if (l->thickness <= 0 || l->type != T_POLYLINE)
+			return;
+		set_width(l->thickness);
+		set_linecolor(l->pen_color);
+		if (p->next == NULL) {	/* a single point */
+			if (l->cap_style == ROUNDCAP) {
+				set_capstyle(l->cap_style);
+				/* a zero-length line is only displayed with round caps */
+				fprintf(tfp, "\\draw (%d,%d)--(%d,%d);\n",
+						XCOORD(p->x), YCOORD(p->y),
+						XCOORD(p->x), YCOORD(p->y));
+			} else {
+				double	h;
+				set_capstyle(BUTTCAP);
+				set_arrows((F_arrow *) NULL, (F_arrow *) NULL);
+				h = THICKNESS(l->thickness)/2.;
+				fprintf(tfp, "\\draw (%d,%d)--(%d,%d);\n",
+						XCOORD(round(p->x - h)), YCOORD(p->y),
+						XCOORD(round(p->x + h)), YCOORD(p->y));
+			}
+		} else { /* q->next == NULL, two points */
+			set_capstyle(l->cap_style);
+			set_stipple(l->style, l->style_val);
+			set_arrows(l->back_arrow, l->for_arrow);
+			fprintf(tfp, "\\draw (%d,%d)--(%d,%d);\n",
 					XCOORD(p->x), YCOORD(p->y),
-					XCOORD(p->x), YCOORD(p->y));
-		} else {
-		    double	h;
-		    set_capstyle(BUTTCAP);
-		    set_arrows((F_arrow *) NULL, (F_arrow *) NULL);
-		    h = THICKNESS(l->thickness)/2.;
-		    fprintf(tfp, "\\draw (%d,%d)--(%d,%d);\n",
-			    XCOORD(round(p->x - h)), YCOORD(p->y),
-			    XCOORD(round(p->x + h)), YCOORD(p->y));
+					XCOORD(q->x), YCOORD(q->y));
 		}
-	    } else { /* q->next == NULL, two points */
-		set_capstyle(l->cap_style);
-		set_stipple(l->style, l->style_val);
-		set_arrows(l->back_arrow, l->for_arrow);
-		fprintf(tfp, "\\draw (%d,%d)--(%d,%d);\n",
-			XCOORD(p->x), YCOORD(p->y), XCOORD(q->x), YCOORD(q->y));
-	    }
-	    return;
+		return;
 	}
 	/* three or more points, from here on below */
 
 	/*--------------- genpict2e.c -------------------*/
 	if (l->type == T_PIC_BOX) {
-	    put_picture(p, q->next, l->pic);
-	    return;
+		put_picture(p, q->next, l->pic);
+		return;
 	}
 
 	/* T_POLYLINE, T_BOX, T_POLYGON or T_ARC_BOX from here on below */
 	if (l->thickness <= 0 && l->fill_style == UNFILLED &&
 			!l->for_arrow && !l->back_arrow)
-	    return;
+		return;
 
 	if (l->type == T_BOX || l->type == T_POLYGON || l->type == T_POLYLINE)
-	    set_joinstyle(l->join_style);
+		set_joinstyle(l->join_style);
 
 	if (l->type == T_BOX || l->type == T_POLYGON || l->type == T_ARC_BOX) {
-	    PUT_DRAWCMD(l, false, l->cap_style);
+		PUT_DRAWCMD(l, false, l->cap_style);
 
-	    PUT_POINT(p);
-	    if (l->type == T_POLYGON) {
-		points_penultimate(q);
-		fputs("--cycle;\n", tfp);
-	    } else { /* l->type == T_BOX || l->type == T_ARC_BOX */
-		if (l->type == T_ARC_BOX)
-		    fprintf(tfp, " [rounded corners=+%d\\XFigu]", l->radius);
-		fprintf(tfp, " rectangle (%d,%d);\n",
-			XCOORD(q->next->x), YCOORD(q->next->y));
-	    }
+		PUT_POINT(p);
+		if (l->type == T_POLYGON) {
+			points_penultimate(q);
+			fputs("--cycle;\n", tfp);
+		} else { /* l->type == T_BOX || l->type == T_ARC_BOX */
+			if (l->type == T_ARC_BOX)
+				fprintf(tfp, " [rounded corners=+%d\\XFigu]",
+						l->radius);
+			fprintf(tfp, " rectangle (%d,%d);\n",
+					XCOORD(q->next->x), YCOORD(q->next->y));
+		}
 	} else { /* l->type == T_POLYLINE */
-	    set_arrows(l->back_arrow, l->for_arrow);
-	    PUT_DRAWCMD(l, true, l->cap_style);
-	    PUT_POINT(p);
-	    points_all(q);
+		set_arrows(l->back_arrow, l->for_arrow);
+		PUT_DRAWCMD(l, true, l->cap_style);
+		PUT_POINT(p);
+		points_all(q);
 	}
-	/* fprintf(stderr, "Unknown line style %d. Please report this bug.\n", */
 }
 
 void
@@ -1661,7 +1725,7 @@ void
 gentikz_ellipse(F_ellipse *e)
 {
 	if (verbose)
-	    fputs("%%\n%% Fig ELLIPSE object\n%%\n", tfp);
+		fputs("%%\n%% Fig ELLIPSE object\n%%\n", tfp);
 
 	print_comments("% ", e->comments, "");
 
@@ -1670,15 +1734,17 @@ gentikz_ellipse(F_ellipse *e)
 	PUT_DRAWCMD(e, false, ROUNDCAP);
 
 	if (e->radiuses.x == e->radiuses.y) {
-	    fprintf(tfp, " (%d,%d) circle [radius=+%d];\n",
-		    XCOORD(e->center.x), YCOORD(e->center.y), e->radiuses.x);
+		fprintf(tfp, " (%d,%d) circle [radius=+%d];\n",
+				XCOORD(e->center.x), YCOORD(e->center.y),
+				e->radiuses.x);
 	} else {
-	    fprintf(tfp, " (%d,%d) ellipse [x radius=+%d,y radius=+%d",
-		    XCOORD(e->center.x), YCOORD(e->center.y), e->radiuses.x, e->radiuses.y);
-	    if (e->angle != 0)
-		fprintf(tfp, ",rotate=+%.0f];\n", e->angle * DEG_RAD);
-	    else
-		fputs("];\n", tfp);
+		fprintf(tfp, " (%d,%d) ellipse [x radius=+%d,y radius=+%d",
+				XCOORD(e->center.x), YCOORD(e->center.y),
+				e->radiuses.x, e->radiuses.y);
+		if (e->angle != 0)
+			fprintf(tfp, ",rotate=+%.0f];\n", e->angle * DEG_RAD);
+		else
+			fputs("];\n", tfp);
 	}
 }
 
@@ -1697,7 +1763,7 @@ gentikz_text(F_text *t)
 		need_conversion = check_conversion("UTF-8", input_encoding);
 
 	if (verbose)
-	    fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
+		fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ", t->comments, "");
@@ -1706,22 +1772,22 @@ gentikz_text(F_text *t)
 
 	fputs("\\pgftext[base", tfp);
 	switch (t->type) {
-	case (T_LEFT_JUSTIFIED):
-	    fputs(",left", tfp);
-	    break;
-	case (T_RIGHT_JUSTIFIED):
-	    fputs(",right", tfp);
+		case (T_LEFT_JUSTIFIED):
+			fputs(",left", tfp);
+			break;
+		case (T_RIGHT_JUSTIFIED):
+			fputs(",right", tfp);
 	}
 	fprintf(tfp, ",at=\\pgfqpointxy{%d}{%d}",
-		XCOORD(t->base_x), YCOORD(t->base_y));
+			XCOORD(t->base_x), YCOORD(t->base_y));
 	if(t->angle) {
-	    double  a = t->angle*180/M_PI;
-	    int	    aprec;
-	    if (round(a*10) == round(a)*10)
-		aprec = 0;
-	    else
-		aprec = 1;
-	    fprintf(tfp, ",rotate=+%.*f", aprec, a);
+		double  a = t->angle*180/M_PI;
+		int	    aprec;
+		if (round(a*10) == round(a)*10)
+			aprec = 0;
+		else
+			aprec = 1;
+		fprintf(tfp, ",rotate=+%.*f", aprec, a);
 	}
 	fputs("] {", tfp);
 
@@ -1757,7 +1823,8 @@ gentikz_arc(F_arc *a)
 	angle1 = atan2(YDIR(d1y), XDIR(d1x)) * 180. / M_PI;
 	angle2 = atan2(YDIR(d2y), XDIR(d2x)) * 180. / M_PI;
 	rad = 0.5*(sqrt(d1x*d1x + d1y*d1y) + sqrt(d2x*d2x + d2y*d2y));
-	/* how precise must the angle be given?  1/rad is the view angle of one pixel */
+	/* how precise must the angle be given?
+	   1/rad is the view angle of one pixel */
 	da = 180.0 / M_PI / rad;
 	preca = 0;
 	for (d = 1.0; da < 1.0/d; d *= 10.) ++preca;
@@ -1782,8 +1849,8 @@ gentikz_arc(F_arc *a)
 	if (a->thickness > 0 && a->type == T_PIE_WEDGE_ARC)
 	    set_joinstyle(MITERJOIN);
 	set_arrows(a->back_arrow, a->for_arrow);
-	PUT_DRAWCMD(a, a->type != T_OPEN_ARC && !(a->for_arrow && a->back_arrow),
-		a->cap_style);
+	PUT_DRAWCMD(a, a->type != T_OPEN_ARC &&
+			!(a->for_arrow && a->back_arrow), a->cap_style);
 	fprintf(tfp,
 		"(%d,%d) arc[start angle=+%.*f, end angle=+%.*f, radius=+%.*f]",
 		XCOORD(a->point[0].x), YCOORD(a->point[0].y), preca, angle1,

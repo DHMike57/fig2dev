@@ -764,8 +764,9 @@ gengbx_option(char opt, char *optarg)
 		else if (strcmp(optarg,"in") == 0 )
 			gbx_dimensions = units_inches;
 		else
-			fprintf(stderr,
-				"Dimensions should be given in 'mm' for millimeters or 'in' for inches respectively\n");
+			fprintf(stderr, "Dimensions should be given in 'mm' for"
+				       " millimeters or 'in' for inches, "
+				       "respectively\n");
 		break;
 
 	case 'p':
@@ -775,8 +776,11 @@ gengbx_option(char opt, char *optarg)
 		else if (strcmp(optarg,"neg") == 0 || strcmp(optarg,"-") == 0)
 			gbx_image_polarity = 1;
 		else
-			fprintf(stderr,
-				"Polarity option should be [+,pos] for positive images (marks add material making it opaque) or [-,neg] for negative images (marks remove material, making it transparent)\n");
+			fprintf(stderr, "Polarity option should be [+,pos] for "
+					"positive images (marks add material "
+					"making it opaque) or [-,neg] for "
+					"negative images (marks remove "
+					"material, making it transparent)\n");
 		break;
 
 	case 'g':
@@ -785,24 +789,28 @@ gengbx_option(char opt, char *optarg)
 		if ( sscanf(optarg, "%fx%f+%f+%f", &gbx_scale_factor_a,
 				&gbx_scale_factor_b, &gbx_offset_a,
 				&gbx_offset_b) == 0)
-			fprintf(stderr,
-				"Error in scaling format, expect <double>x<double>+<double>+<double> for X and Y scale and x, y offset respectively.\n");
+			fprintf(stderr, "Error in scaling format, expect "
+					"<double>x<double>+<double>+<double> "
+					"for X and Y scale and x, y offset, "
+					"respectively.\n");
 		break;
 
 	case 'f':
 		/* Numerical format, ofrm -f <integer>.<integer> */
 		if ( sscanf(optarg,"%u.%u", &gbx_before, &gbx_after) == 0 )
-			fprintf(stderr,
-				"Error in numeric format, expect form  <unsigned int>.<unsigned int> for degree of precision.\n");
+			fprintf(stderr, "Error in numeric format, expect form "
+					"<unsigned int>.<unsigned int> for "
+					"degree of precision.\n");
 		if (gbx_before > 4u)
-			fprintf(stderr,
-				"Warning: Having more than 4 digits before the decimal place is unusual\n");
+			fprintf(stderr, "Warning: Having more than 4 digits "
+					"before the decimal place is unusual\n");
 		if (gbx_after > 5u)
-			fprintf(stderr,
-				"Warning: Having more than 5 digits after the decimal place is unusual\n");
+			fprintf(stderr, "Warning: Having more than 5 digits "
+					"after the decimal place is unusual\n");
 		if (gbx_before + gbx_after > 9u)
-			fprintf(stderr,
-				"Warning: Having more than nine significant figures is usually unrealistic\n");
+			fprintf(stderr, "Warning: Having more than nine "
+					"significant figures is usually "
+					"unrealistic\n");
 		break;
 
 	case 'i':
@@ -814,8 +822,8 @@ gengbx_option(char opt, char *optarg)
 		else if ( strcmp(optarg,"on") == 0)
 			gbx_debug_comments = 1;
 		else
-			fprintf(stderr,
-				"Error: Debug comments option should be 'on' or 'off'\n");
+			fprintf(stderr, "Error: Debug comments option should be"
+				       " 'on' or 'off'\n");
 		break;
 
 	case 'v':
@@ -880,7 +888,8 @@ gengbx_start(F_compound *objects)
 		fprintf(tfp, "%%IPPOS*%%\n");
 	fprintf(tfp, "%%LPD*%%\n");
 
-	write_comment("The following is an aperture definition of width pi/10.  It should never be used.");
+	write_comment("The following is an aperture definition of width pi/10."
+		       " It should never be used.");
 	ad_aperture_define_square(0.314159);
 }
 
@@ -1210,7 +1219,9 @@ gengbx_line (F_line *l)
 		 */
 		if (l->thickness > 0.0 ) {
 			warn_once(warn_filled_poly_with_line,
-				"You have specified a filled polygon with a finite edge thickness.  Check this is what you want");
+				"You have specified a filled polygon with a "
+				"finite edge thickness. "
+				"Check if this is what you want");
 
 
 			l->fill_style = fill_style_none;
@@ -1236,7 +1247,8 @@ gengbx_line (F_line *l)
 		   misrepresentation errors. */
 		if (x1 != x2 || y1 != y2 )
 			warn_once(warn_open_filled_polygon,
-				"A filled polygon is not closed.  This can appear different in the Gerber file.");
+				"A filled polygon is not closed. This can "
+				"appear different in the Gerber file.");
 		write_trace("## END:POLYGON:FILLED");
 	}
 	if (l->for_arrow || l->back_arrow )

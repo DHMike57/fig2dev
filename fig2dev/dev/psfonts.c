@@ -196,12 +196,14 @@ static char *figfontnames[] = {
 void unpsfont(F_text *t)
 {
 	if (!psfont_text(t))
-	    return;
+		return;
 	if (PSmapwarn[t->font+1])
-	  fprintf(stderr, "PS fonts not supported; substituting %s for %s\n",
-		figfontnames[PSfontmap[t->font+1]+1], PSfontnames[t->font+1]);
+		fprintf(stderr,
+			"PS fonts not supported; substituting %s for %s\n",
+			figfontnames[PSfontmap[t->font+1]+1],
+			PSfontnames[t->font+1]);
 	if (t->font == -1) /* leave default to be default, but no-ps */
-	  t->font = 0;
+		t->font = 0;
 	else
-	  t->font = PSfontmap[t->font+1];
+		t->font = PSfontmap[t->font+1];
 }

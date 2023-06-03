@@ -80,7 +80,8 @@ struct pattern {		/* the dash pattern of non-solid lines */
 
 struct pict2earrow {
 	double	hfac;	/* the line should end at hfac times the arrow height */
-	double	tfac;	/* plus tfac times arrow line thickness from the last point */
+	double	tfac;	/* plus tfac times arrow line thickness from
+			   the last point */
 } pict2earrow[] = {
 	/* type 0 */
 	{ 0., 0.5},
@@ -165,117 +166,118 @@ static void	put_patternoval(F_point *p, F_point *q, F_line *l);
 void
 genpict2e_option(char opt, char *optarg)
 {
-    int i;
+	int i;
 
-    switch (opt) {
-    case 'b':			/* border margin around figure */
-	border_margin = atoi(optarg);
-	/* atoi() is slightly faster than sscanf(), but returns 0 if there
-	 * is no int; Use atoi if the default value is 0 anyway. */
-	/* sscanf(optarg,"%d",&border_margin); */
-	break;
-
-    case 'C':			/* default color */
-	default_color = atoi(optarg);
-	break;
-
-    case 'e':
-	epiccompatible = false;
-	break;
-
-    case 'F':
-	select_fontname = false;
-	break;
-
-    case 'i':	/* prepend this string to included graphics file */
-	prepend = optarg;
-	break;
-
-    case 'f':			/* set default text font */
-	for (i = 1; i <= MAX_FONT; ++i )
-	    if (!strcmp(optarg,texfontnames[i]) || !strcmp(optarg,texfonts[i]))
+	switch (opt) {
+	case 'b':			/* border margin around figure */
+		border_margin = atoi(optarg);
+		/* atoi() is slightly faster than sscanf(), but returns 0 if
+		   there is no int; Use atoi if the default value is 0 anyway.*/
+		/* sscanf(optarg,"%d",&border_margin); */
 		break;
-	if (i <= MAX_FONT) {
-	      texfonts[0] = texfonts[i];
-	} else {
-	    for (i = 1; i <= MAX_PSFONT; ++i )
-		if (!strcmp(optarg, PSfontnames[i])) break;
-	    if (i > MAX_PSFONT)
-		fprintf(stderr, "warning: non-standard font name %s ignored\n",
-			optarg);
-	    else
-		texpsfonts[0] = optarg;
+
+	case 'C':			/* default color */
+		default_color = atoi(optarg);
+		break;
+
+	case 'e':
+		epiccompatible = false;
+		break;
+
+	case 'F':
+		select_fontname = false;
+		break;
+
+	case 'i':	/* prepend this string to included graphics file */
+		prepend = optarg;
+		break;
+
+	case 'f':			/* set default text font */
+		for (i = 1; i <= MAX_FONT; ++i )
+			if (!strcmp(optarg,texfontnames[i]) ||
+					!strcmp(optarg,texfonts[i]))
+				break;
+		if (i <= MAX_FONT) {
+			texfonts[0] = texfonts[i];
+		} else {
+			for (i = 1; i <= MAX_PSFONT; ++i )
+				if (!strcmp(optarg, PSfontnames[i])) break;
+			if (i > MAX_PSFONT)
+				fprintf(stderr, "warning: non-standard font "
+						"name %s ignored\n", optarg);
+			else
+				texpsfonts[0] = optarg;
+		}
+		break;
+
+	case 'o':
+		select_fontsize = false;
+		break;
+
+	case 'T':
+		only_texfonts = true;
+		break;
+
+	case 'O':
+		allspecial = true;
+		break;
+
+	case 'P':
+		pagemode = true;
+		epiccompatible = false;
+		break;
+
+	case 'R':
+		ltxarrow = atoi(optarg);
+		if (ltxarrow <= 1)		/* types 0, 2, 3, etc. exist */
+			ltxarrow -= 1;
+		break;
+
+	case 'r':
+		allarrowsltx = true;
+		break;
+
+		/* case 'l':			set thin/thick line threshold *
+		   thick_width = atoi(optarg);
+		   break;
+		 */
+
+	case 'v':
+		verbose = 1;		/* verbose mode */
+		break;
+
+	case 'w':		/* remove suffix from included graphics file */
+		removesuffix = true;
+		break;
+
+	case 'G':
+	case 'L':
+		break;
+
+	default:
+		put_msg(Err_badarg, opt, "pict2e");
+		exit(1);
 	}
-	break;
-
-    case 'o':
-	select_fontsize = false;
-	break;
-
-    case 'T':
-	only_texfonts = true;
-	break;
-
-    case 'O':
-	allspecial = true;
-	break;
-
-    case 'P':
-	pagemode = true;
-	epiccompatible = false;
-	break;
-
-    case 'R':
-	ltxarrow = atoi(optarg);
-	if (ltxarrow <= 1)		/* types 0, 2, 3, etc. exist */
-	    ltxarrow -= 1;
-	break;
-
-    case 'r':
-	allarrowsltx = true;
-	break;
-
-    /* case 'l':			set thin/thick line threshold *
-	thick_width = atoi(optarg);
-	break;
-    */
-
-    case 'v':
-	verbose = 1;		/* verbose mode */
-	break;
-
-    case 'w':		/* remove suffix from included graphics file */
-	removesuffix = true;
-	break;
-
-    case 'G':
-    case 'L':
-	break;
-
-    default:
-	put_msg(Err_badarg, opt, "pict2e");
-	exit(1);
-    }
 }
 
 static void
 set_linejoin(int j)
 {
 	if (j != cur_joinstyle) {
-	    cur_joinstyle = j;
-	    switch (j) {
-	    case MITERJOIN:
-		fputs("\\miterjoin%\n", tfp);
-		break;
-	    case 1:
-		fputs("\\roundjoin%\n", tfp);
-		break;
-	    case 2:
-		fputs("\\beveljoin%\n", tfp);
-		break;
-	    default:
-		fprintf(stderr,"Undefined line join style %d.\n", j);
-	    }
+		cur_joinstyle = j;
+		switch (j) {
+		case MITERJOIN:
+			fputs("\\miterjoin%\n", tfp);
+			break;
+		case 1:
+			fputs("\\roundjoin%\n", tfp);
+			break;
+		case 2:
+			fputs("\\beveljoin%\n", tfp);
+			break;
+		default:
+			fprintf(stderr,"Undefined line join style %d.\n", j);
+		}
 	}
 }
 
@@ -283,20 +285,20 @@ static void
 set_linecap(int j)
 {
 	if (j != cur_capstyle) {
-	    cur_capstyle = j;
-	    switch (j) {
-	    case BUTTCAP:
-		fputs("\\buttcap%\n", tfp);
-		break;
-	    case ROUNDCAP:
-		fputs("\\roundcap%\n", tfp);
-		break;
-	    case SQUARECAP:
-		fputs("\\squarecap%\n", tfp);
-		break;
-	    default:
-		fprintf(stderr, "Undefined line cap style %d.\n", j);
-	    }
+		cur_capstyle = j;
+		switch (j) {
+		case BUTTCAP:
+			fputs("\\buttcap%\n", tfp);
+			break;
+		case ROUNDCAP:
+			fputs("\\roundcap%\n", tfp);
+			break;
+		case SQUARECAP:
+			fputs("\\squarecap%\n", tfp);
+			break;
+		default:
+			fprintf(stderr, "Undefined line cap style %d.\n", j);
+		}
 	}
 }
 
@@ -304,26 +306,26 @@ static void
 set_linewidth(int w)
 {
 	if (w != cur_thickness) {
-	    cur_thickness = w;
-	    /* Set line-thickness compatible with genps.c.
-	     * XFig line thickness 1 corresponds to
-	     *   Imperial(Inches)	0.451 pt
-	     *   Metric			0.474 pt
-	     * LaTex
-	     *   \thinlines		0.4 pt
-	     */
-	    fprintf(tfp, "\\linethickness{%g\\unitlength}",
-		    THICKNESS(cur_thickness));
-	    if (epiccompatible)
-		fprintf(tfp, "\\XFigeepicthickness{%g\\unitlength}",
-			THICKNESS(cur_thickness));
-	    if (cur_thickness == THICK_SCALE)
-		fputs("%\\thinlines\n", tfp);
-	    else if (cur_thickness == 2*THICK_SCALE)
-		fputs("%\\thicklines\n", tfp);
-	    /* the % at the end is necessary, otherwise objects are shifted
-	       by a space */
-	    else fputs("%\n", tfp);
+		cur_thickness = w;
+		/* Set line-thickness compatible with genps.c.
+		 * XFig line thickness 1 corresponds to
+		 *   Imperial(Inches)	0.451 pt
+		 *   Metric			0.474 pt
+		 * LaTex
+		 *   \thinlines		0.4 pt
+		 */
+		fprintf(tfp, "\\linethickness{%g\\unitlength}",
+				THICKNESS(cur_thickness));
+		if (epiccompatible)
+			fprintf(tfp, "\\XFigeepicthickness{%g\\unitlength}",
+					THICKNESS(cur_thickness));
+		if (cur_thickness == THICK_SCALE)
+			fputs("%\\thinlines\n", tfp);
+		else if (cur_thickness == 2*THICK_SCALE)
+			fputs("%\\thicklines\n", tfp);
+		/* the % at the end is necessary, otherwise objects are shifted
+		   by a space */
+		else fputs("%\n", tfp);
 	}
 }
 
@@ -331,12 +333,12 @@ static void
 get_rgbcolor(int *c, RGB *rgb)
 {
 	if (*c < NUM_STD_COLS)
-	    sscanf(Fig_color_names[*c], "#%2hx%2hx%2hx",
-		   &(rgb->red), &(rgb->green), &(rgb->blue));
+		sscanf(Fig_color_names[*c], "#%2hx%2hx%2hx",
+				&(rgb->red), &(rgb->green), &(rgb->blue));
 	else {
-	    rgb->red   = (unsigned short)user_colors[*c - NUM_STD_COLS].r;
-	    rgb->green = (unsigned short)user_colors[*c - NUM_STD_COLS].g;
-	    rgb->blue  = (unsigned short)user_colors[*c - NUM_STD_COLS].b;
+		rgb->red   = (unsigned short)user_colors[*c - NUM_STD_COLS].r;
+		rgb->green = (unsigned short)user_colors[*c - NUM_STD_COLS].g;
+		rgb->blue  = (unsigned short)user_colors[*c - NUM_STD_COLS].b;
 	}
 }
 
@@ -353,10 +355,10 @@ static void
 close_scope(void)
 {
 	if (verbose)
-	    fputs("}% close color scope, return to color of surrounding text\n",
-		tfp);
+		fputs("}% close color scope, return to color of "
+				"surrounding text\n", tfp);
 	else
-	    fputs("}%\n", tfp); /* put a %, otherwise pict2e puts a space */
+		fputs("}%\n", tfp); /* put a %, otherwise pict2e puts a space */
 	cur_thickness = saved_thickness;
 }
 
@@ -364,9 +366,9 @@ static void
 open_scope(void)
 {
 	if (verbose)
-	    fputs("% open color scope\n{", tfp);
+		fputs("% open color scope\n{", tfp);
 	else
-	    fputs("{", tfp);
+		fputs("{", tfp);
 	saved_thickness = cur_thickness;
 }
 
@@ -376,62 +378,59 @@ set_color(int col)
 	int	c;
 	RGB	rgb;
 
-	if (cur_shade == NUMSHADES - 1
-	     && (col == cur_color
-		 || ((col == DEFAULT || col == default_color)
-			&& (cur_color == DEFAULT || cur_color == default_color)
-		    )
-		)
-	   )
-	    return;
+	if (cur_shade == NUMSHADES - 1 && (col == cur_color ||
+				((col == DEFAULT || col == default_color) &&
+					(cur_color == DEFAULT ||
+					 cur_color == default_color))))
+		return;
 
 	/* (col != cur_color || cur_shade != NUMSHADES - 1) */
 	if (col == DEFAULT || col == default_color) {
-	    close_scope();
-	    cur_color = DEFAULT;
-	    cur_shade = NUMSHADES - 1;
-	    return;
+		close_scope();
+		cur_color = DEFAULT;
+		cur_shade = NUMSHADES - 1;
+		return;
 	} else if (cur_color == DEFAULT || cur_color == default_color) {
-	    open_scope();
+		open_scope();
 	}
 
 	cur_color = col;
 	cur_shade = NUMSHADES - 1;
 
 	if (col == DEFAULT)
-	    c = default_color;
+		c = default_color;
 	else
-	    c = col;
+		c = col;
 
 	switch (c) {
 	case BLACK_COLOR:
-	    fputs("\\color{black}\n", tfp);
-	    break;
+		fputs("\\color{black}\n", tfp);
+		break;
 	case 1:
-	    fputs("\\color{blue}\n", tfp);
-	    break;
+		fputs("\\color{blue}\n", tfp);
+		break;
 	case 2:
-	    fputs("\\color{green}\n", tfp);
-	    break;
+		fputs("\\color{green}\n", tfp);
+		break;
 	case 3:
-	    fputs("\\color{cyan}\n", tfp);
-	    break;
+		fputs("\\color{cyan}\n", tfp);
+		break;
 	case 4:
-	    fputs("\\color{red}\n", tfp);
-	    break;
+		fputs("\\color{red}\n", tfp);
+		break;
 	case 5:
-	    fputs("\\color{magenta}\n", tfp);
-	    break;
+		fputs("\\color{magenta}\n", tfp);
+		break;
 	case 6:
-	    fputs("\\color{yellow}\n", tfp);
-	    break;
+		fputs("\\color{yellow}\n", tfp);
+		break;
 	case WHITE_COLOR:
-	    fputs("\\color{white}\n", tfp);
-	    break;
+		fputs("\\color{white}\n", tfp);
+		break;
 	default:
-	    get_rgbcolor(&c,&rgb);
-	    fprintf(tfp, "\\color[rgb]{%.3g,%.3g,%.3g}\n",
-		    rgb.red/255., rgb.green/255., rgb.blue/255.);
+		get_rgbcolor(&c,&rgb);
+		fprintf(tfp, "\\color[rgb]{%.3g,%.3g,%.3g}\n",
+				rgb.red/255., rgb.green/255., rgb.blue/255.);
 	}
 }
 
@@ -448,49 +447,49 @@ set_fillcolor(int col, int shade, int *pen_color)
 	 */
 
 	if (shade < 0)
-	    fprintf(stderr,
-		    "A color error occurred. Please report this bug.\n");
+		fprintf(stderr, "A color error occurred. "
+				"Please report this bug.\n");
 
 	if (shade >= NUMSHADES + NUMTINTS) {
-	    if (col == *pen_color) {	/* solid fill */
-		shade = NUMSHADES - 1;
-	    } else {
-		fputs("Patterns not supported. Filling with 25% pen color instead.\n",
-			stderr);
-		col = *pen_color;
-		shade = NUMSHADES - 1 + 3 * NUMTINTS / 4;
-	    }
+		if (col == *pen_color) {	/* solid fill */
+			shade = NUMSHADES - 1;
+		} else {
+			fputs("Patterns not supported. Filling with 25% pen "
+					"color instead.\n", stderr);
+			col = *pen_color;
+			shade = NUMSHADES - 1 + 3 * NUMTINTS / 4;
+		}
 	}
 
 	/* pure colors */
 	if (shade == NUMSHADES - 1) {
-	    set_color(col);
-	    cur_shade = shade;
-	    return;
+		set_color(col);
+		cur_shade = shade;
+		return;
 	}
 
 	/* an unknown color can not be shaded or tinted */
 	if (col == DEFAULT) {
-	    if (default_color == DEFAULT)
-		col = BLACK_COLOR;
-	    else
-		col = default_color;
+		if (default_color == DEFAULT)
+			col = BLACK_COLOR;
+		else
+			col = default_color;
 	}
 
 	/* black */
-	if ((shade == 0 && col != BLACK_COLOR)
-		|| (col == WHITE_COLOR && shade == NUMSHADES + NUMTINTS -1)) {
-	    set_color(BLACK_COLOR);
-	    cur_shade = NUMSHADES - 1;
-	    return;
+	if ((shade == 0 && col != BLACK_COLOR) || (col == WHITE_COLOR &&
+				shade == NUMSHADES + NUMTINTS - 1)) {
+		set_color(BLACK_COLOR);
+		cur_shade = NUMSHADES - 1;
+		return;
 	}
 
 	/* white */
 	if ((shade == NUMSHADES + NUMTINTS - 1 && col != WHITE_COLOR)
-		 || (col == BLACK_COLOR && shade == 0)) {
-	    set_color(WHITE_COLOR);
-	    cur_shade = NUMSHADES - 1;
-	    return;
+			|| (col == BLACK_COLOR && shade == 0)) {
+		set_color(WHITE_COLOR);
+		cur_shade = NUMSHADES - 1;
+		return;
 	}
 
 	/* map shades to tints for black and tints to shades for white
@@ -500,44 +499,45 @@ set_fillcolor(int col, int shade, int *pen_color)
 	 *   black .... white
 	 */
 	if (col == BLACK_COLOR) {
-	    col = WHITE_COLOR;
-	    if (shade > NUMSHADES - 1)
-		shade -= NUMSHADES - 1;
-	    else /* shade < NUMSHADES - 1 */
-		shade = NUMSHADES - 1 - shade;
+		col = WHITE_COLOR;
+		if (shade > NUMSHADES - 1)
+			shade -= NUMSHADES - 1;
+		else /* shade < NUMSHADES - 1 */
+			shade = NUMSHADES - 1 - shade;
 	}
 
 	if (cur_color == col && cur_shade == shade)
-	    return;
+		return;
 
 	if ((cur_color == DEFAULT || cur_color == default_color)
-		&& cur_shade == NUMSHADES - 1)
-	    open_scope();
+			&& cur_shade == NUMSHADES - 1)
+		open_scope();
 
 	/* grays */
 	if (col == WHITE_COLOR) {
-	    cur_color = col;
-	    cur_shade = shade;
-	    fprintf(tfp,"\\color[gray]{%.3g}\n", (double)shade/(NUMSHADES-1));
-	    return;
+		cur_color = col;
+		cur_shade = shade;
+		fprintf(tfp, "\\color[gray]{%.3g}\n",
+				(double)shade/(NUMSHADES-1));
+		return;
 	}
 
 	/* shaded and tinted colors */
 	cur_color = col;
 	cur_shade = shade;
 	get_rgbcolor(&col,&rgb);
-							/* 4080 = 255 << 4 */
+	/* 4080 = 255 << 4 */
 #define	SHADE(c,t)	(double)(c<<4)*t / (NUMSHADES-1) / 4080.
 #define	TINT(c,t)	((c<<4) + ((double)((255-c)<<4) * (t-NUMSHADES+1) \
-							/ NUMTINTS)) / 4080.
+			/ NUMTINTS)) / 4080.
 	if (shade < NUMSHADES) {
-	    red = SHADE(rgb.red, shade);
-	    green = SHADE(rgb.green, shade);
-	    blue = SHADE(rgb.blue, shade);
+		red = SHADE(rgb.red, shade);
+		green = SHADE(rgb.green, shade);
+		blue = SHADE(rgb.blue, shade);
 	} else {
-	    red = TINT(rgb.red, shade);
-	    green = TINT(rgb.green, shade);
-	    blue = TINT(rgb.blue, shade);
+		red = TINT(rgb.red, shade);
+		green = TINT(rgb.green, shade);
+		blue = TINT(rgb.blue, shade);
 	}
 
 	fprintf(tfp,"\\color[rgb]{%.3g,%.3g,%.3g}\n", red, green, blue);
@@ -558,7 +558,7 @@ void
 genpict2e_start(F_compound *objects)
 {
 	texfontsizes[0] = texfontsizes[1]
-	    = TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
+		= TEXFONTSIZE(font_size != 0.0? font_size : DEFAULT_FONT_SIZE);
 
 	unitlength = mag/ppi;
 	/* border_margin /=(int)(unitlength*72.0) lets a number of tests fail */
@@ -572,64 +572,63 @@ genpict2e_start(F_compound *objects)
 
 	/* print any whole-figure comments prefixed with "%" */
 	if (objects->comments) {
-	    fputs("%\n", tfp);
-	    print_comments("% ", objects->comments, "");
-	    fputs("%\n", tfp);
+		fputs("%\n", tfp);
+		print_comments("% ", objects->comments, "");
+		fputs("%\n", tfp);
 	}
 	if (pagemode) {
-	    double	width, height;
-	    char	unit[] = "in";
+		double	width, height;
+		char	unit[] = "in";
 
-	    width = (urx - llx) * unitlength;
-	    height = (ury - lly) * unitlength;
-	    if (metric) {
-		width *= 2.54;
-		height *= 2.54;
-		strcpy(unit,"cm");
-	    }
+		width = (urx - llx) * unitlength;
+		height = (ury - lly) * unitlength;
+		if (metric) {
+			width *= 2.54;
+			height *= 2.54;
+			strcpy(unit,"cm");
+		}
 
-	    fputs("\\documentclass{minimal}\n", tfp);
-	    fprintf(tfp,
-		"\\usepackage[papersize={%.4g%s,%.4g%s},margin=0pt]{geometry}\n",
-		width, unit, height, unit);
-	    fputs("\\usepackage{pict2e,graphics,color}\n", tfp);
-	    /* Unconditionally include color.sty, because shaded black or
-	     * tinted white needs it.
-		if (num_usr_cols > 0 || colors_used())
-		fputs(",color", tfp);
-	     */
-	    fputs("\\parindent0pt\n\\begin{document}\n", tfp);
+		fputs("\\documentclass{minimal}\n", tfp);
+		fprintf(tfp, "\\usepackage[papersize={%.4g%s,%.4g%s},"
+				"margin=0pt]{geometry}\n",
+				width, unit, height, unit);
+		fputs("\\usepackage{pict2e,graphics,color}\n", tfp);
+		/* Unconditionally include color.sty, because shaded black or
+		 * tinted white needs it.
+		 if (num_usr_cols > 0 || colors_used())
+		 fputs(",color", tfp);
+		 */
+		fputs("\\parindent0pt\n\\begin{document}\n", tfp);
 	}
 
 	/* round() is a macro that maps to int, see fig2dev.h */
 	fprintf(tfp, "\\unitlength%lisp", (long) (4736286.72*unitlength + 0.5));
 	if (metric)
-	    fputs("% 4143.7 sp = (1/472.44) cm\n", tfp);
+		fputs("% 4143.7 sp = (1/472.44) cm\n", tfp);
 	else
-	    fputs("% 3946.9 sp = (1/1200) in\n", tfp);
+		fputs("% 3946.9 sp = (1/1200) in\n", tfp);
 
 #ifdef SCALE_PICT2E
 	if (!pagemode) {
-	    fputs("\\ifx\\XFigheight\\undefined\\else\\ifdim\\XFigheight>0pt\n",
-		tfp);
-	    fprintf(tfp,
-		"\\unitlength\\XFigheight\\divide\\unitlength by %d\\fi\\fi\n",
-		ury - lly);
-	    fputs("\\ifx\\XFigwidth\\undefined\\else\\ifdim\\XFigwidth>0pt\n",
-		tfp);
-	    fprintf(tfp,
-		"\\unitlength\\XFigwidth\\divide\\unitlength by %d\\fi\\fi\n",
-		 urx-llx);
+		fputs("\\ifx\\XFigheight\\undefined"
+			"\\else\\ifdim\\XFigheight>0pt\n", tfp);
+		fprintf(tfp, "\\unitlength\\XFigheight"
+			"\\divide\\unitlength by %d\\fi\\fi\n", ury - lly);
+		fputs("\\ifx\\XFigwidth\\undefined"
+			"\\else\\ifdim\\XFigwidth>0pt\n", tfp);
+		fprintf(tfp, "\\unitlength\\XFigwidth"
+			"\\divide\\unitlength by %d\\fi\\fi\n", urx - llx);
 	}
 #endif
 
 	fprintf(tfp, "\\begin{picture}(%d,%d)%%(0,0)\n",
-					 urx-llx, ury-lly);/*, llx, lly); */
+			urx-llx, ury-lly);/*, llx, lly); */
 	if (epiccompatible)
-	    /* \allinethickness is only defined in eepic.sty, not epic.sty. */
-	    fputs("\\ifx\\allinethickness\\undefined\n"
-		  "  \\def\\XFigeepicthickness#1{\\relax}\n\\else\n"
-		  "  \\let\\XFigeepicthickness\\allinethickness\n\\fi\n", tfp);
+		/* \allinethickness is defined in eepic.sty, not in epic.sty. */
+		fputs("\\ifx\\allinethickness\\undefined\n"
+			"  \\def\\XFigeepicthickness#1{\\relax}\n\\else\n"
+			"  \\let\\XFigeepicthickness\\allinethickness\n\\fi\n",
+			tfp);
 }
 
 int
@@ -642,7 +641,7 @@ genpict2e_end(void)
 	set_linejoin(MITERJOIN);
 	fputs("\\end{picture}%\n", tfp);
 	if (pagemode)
-	    fputs("\\end{document}", tfp);
+		fputs("\\end{document}", tfp);
 
 	return 0;
 }
@@ -662,51 +661,52 @@ set_linestyle(
 
 	*v /= 80.0 / ppi;
 	if (*v <= 0.) {
-	    fputs("Error: Set_linestyle with zero frequency called. "
-		  "Please report this bug\n", tfp);
-	    return;
+		fputs("Error: Set_linestyle with zero frequency called. "
+				"Please report this bug\n", tfp);
+		return;
 	}
 
 	if (*s == DASH_LINE) {
-	    pattern->d[0] = round(*v);
-	    pattern->d[1] = pattern->d[0];
-	    pattern->nd = 2;
+		pattern->d[0] = round(*v);
+		pattern->d[1] = pattern->d[0];
+		pattern->nd = 2;
 	} else if (*s == DOTTED_LINE) {
-	    pattern->d[0] = round(ppi/80.);
-	    pattern->d[1] = round(*v);
-	    *h1 += (double) pattern->d[1];
-	    pattern->nd = 2;
+		pattern->d[0] = round(ppi/80.);
+		pattern->d[1] = round(*v);
+		*h1 += (double) pattern->d[1];
+		pattern->nd = 2;
 	} else if (*s == DASH_DOT_LINE) {
-	    pattern->d[0] = round(*v);
-	    pattern->d[1] = round(*v*0.5);
-	    pattern->d[2] = round(ppi/80.);
-	    pattern->d[3] = pattern->d[1];
-	    pattern->nd = 4;
+		pattern->d[0] = round(*v);
+		pattern->d[1] = round(*v*0.5);
+		pattern->d[2] = round(ppi/80.);
+		pattern->d[3] = pattern->d[1];
+		pattern->nd = 4;
 	} else if (*s == DASH_2_DOTS_LINE) {
-	    pattern->d[0] = round(*v);
-	    pattern->d[1] = round(*v*0.45);
-	    pattern->d[2] = round(ppi/80.0);
-	    pattern->d[3] = round(*v*0.333);
-	    pattern->d[4] = pattern->d[2];
-	    pattern->d[5] = pattern->d[1];
-	    pattern->nd = 6;
+		pattern->d[0] = round(*v);
+		pattern->d[1] = round(*v*0.45);
+		pattern->d[2] = round(ppi/80.0);
+		pattern->d[3] = round(*v*0.333);
+		pattern->d[4] = pattern->d[2];
+		pattern->d[5] = pattern->d[1];
+		pattern->nd = 6;
 	} else if (*s == DASH_3_DOTS_LINE) {
-	    pattern->d[0] = round(*v);
-	    pattern->d[1] = round(*v*0.4);
-	    pattern->d[2] = round(ppi/80.0);
-	    pattern->d[3] = round(*v*0.3);
-	    pattern->d[4] = pattern->d[2];
-	    pattern->d[5] = pattern->d[3];
-	    pattern->d[6] = pattern->d[2];
-	    pattern->d[7] = pattern->d[1];
-	    pattern->nd = 8;
+		pattern->d[0] = round(*v);
+		pattern->d[1] = round(*v*0.4);
+		pattern->d[2] = round(ppi/80.0);
+		pattern->d[3] = round(*v*0.3);
+		pattern->d[4] = pattern->d[2];
+		pattern->d[5] = pattern->d[3];
+		pattern->d[6] = pattern->d[2];
+		pattern->d[7] = pattern->d[1];
+		pattern->nd = 8;
 	}
 	pattern->length = 0;
 	for (i = 0; i < pattern->nd ; ++i) pattern->length += pattern->d[i];
 }
 
 /*
- * Write all points in a line, except the last. Return a pointer to the last point.
+ * Write all points in a line, except the last.
+ * Return a pointer to the last point.
  * Does not write the terminating newline.
  */
 static F_point *
@@ -719,12 +719,12 @@ put_points(char *type,		/* "\\polygon" or "\\polygon*" */
 	chars = fprintf(tfp, "%s", type);
 
 	while (p->next != NULL) {
-	    if (chars >= LINEBREAK) {
-		fprintf(tfp,"\n");
-		chars = 0;
-	    }
-	    chars += fprintf(tfp,"(%d,%d)", XCOORD(p->x), YCOORD(p->y));
-	    p = p->next;
+		if (chars >= LINEBREAK) {
+			fprintf(tfp,"\n");
+			chars = 0;
+		}
+		chars += fprintf(tfp,"(%d,%d)", XCOORD(p->x), YCOORD(p->y));
+		p = p->next;
 	}
 	return p;
 }
@@ -739,19 +739,19 @@ put_polyline(F_point *p)
 	F_point	*q;
 
 	if (p->next == NULL) {
-	    fputs("Not enough points in the line, strange...\n", stderr);
-	    return p;
+		fputs("Not enough points in the line, strange...\n", stderr);
+		return p;
 	}
 
 	chars = fputs("\\polyline", tfp);
 	while (p->next != NULL) {
-	    if (chars >= LINEBREAK) {
-		fprintf(tfp,"\n");
-		chars = 0;
-	    }
-	    chars += fprintf(tfp,"(%d,%d)", XCOORD(p->x), YCOORD(p->y));
-	    q = p;
-	    p = p->next;
+		if (chars >= LINEBREAK) {
+			fprintf(tfp,"\n");
+			chars = 0;
+		}
+		chars += fprintf(tfp,"(%d,%d)", XCOORD(p->x), YCOORD(p->y));
+		q = p;
+		p = p->next;
 	}
 	fprintf(tfp,"(%d,%d)\n", XCOORD(p->x), YCOORD(p->y));
 	return q;
@@ -780,24 +780,24 @@ get_slope(F_point *p, F_point *q, int *sx, int *sy, int *lx)
 	*sy = q->y - p->y;
 
 	if (*sx == 0) {
-	    if (*sy > 0) {
-		*lx = *sy;
-		*sy = 1;
-	    } else {
-		*lx = - *sy;
-		*sy = -1;
-	    }
-	    return;
+		if (*sy > 0) {
+			*lx = *sy;
+			*sy = 1;
+		} else {
+			*lx = - *sy;
+			*sy = -1;
+		}
+		return;
 	}
 	if (*sy == 0) {
-	    if (*sx > 0) {
-		*lx = *sx;
-		*sx = 1;
-	    } else {
-		*lx = - *sx;
-		*sx = -1;
-	    }
-	    return;
+		if (*sx > 0) {
+			*lx = *sx;
+			*sx = 1;
+		} else {
+			*lx = - *sx;
+			*sx = -1;
+		}
+		return;
 	}
 
 	/* dx && dy */
@@ -829,34 +829,35 @@ get_lineslope(F_point *p, F_point *q, int *sx, int *sy, int *precl, double *lx)
 	ax = abs(*sx);
 	ay = abs(*sy);
 	if (ax < 16384 && ay < 16384)
-	    return;
+		return;
 
 	/* TODO: search points with valid slopes in the immediate vicinity? */
 
 	if (ax > ay) {
-	    fac = 16383. / ax;
-	    *sx = *sx > 0 ? 16383 : -16383;
-	    *sy = round(*sy * fac);
+		fac = 16383. / ax;
+		*sx = *sx > 0 ? 16383 : -16383;
+		*sy = round(*sy * fac);
 	} else {
-	    int digits;
+		int digits;
 
-	    fac = 16383. / ay;
-	    *sy = *sy > 0 ? 16383 : -16383;
-	    *sx = round(*sx * fac);
-	    if (abs(*sx) < 3) {
-		*lx = (double) abs(q->y - p->y);
-		*sy = *sy > 0 ? 1 : -1;
-		*sx = 0;
-	    }
+		fac = 16383. / ay;
+		*sy = *sy > 0 ? 16383 : -16383;
+		*sx = round(*sx * fac);
+		if (abs(*sx) < 3) {
+			*lx = (double) abs(q->y - p->y);
+			*sy = *sy > 0 ? 1 : -1;
+			*sx = 0;
+		}
 
-	    /* for a steep line, small lx, the length in y-direction shall stay
-	     * the same, the length in x-direction may be modified by rounding */
-	    fac  = fabs((double) *sy/ *sx);
-	    *lx = abs(q->y - p->y) / fac;
-	    ax = (int) fac;
+		/* for a steep line, small lx, the length in y-direction shall
+		   stay the same, the length in x-direction may be modified by
+		   rounding */
+		fac  = fabs((double) *sy/ *sx);
+		*lx = abs(q->y - p->y) / fac;
+		ax = (int) fac;
 
-	    for (digits = 1; *precl < 5 && digits < ax; digits *= 10)
-		++(*precl);
+		for (digits = 1; *precl < 5 && digits < ax; digits *= 10)
+			++(*precl);
 	}
 }
 
@@ -877,14 +878,14 @@ get_vectorslope(F_point *p, F_point *q, int *sx, int *sy, int *lx)
 	ax = abs(*sx);
 	ay = abs(*sy);
 	if (ax > 1000 || ay > 1000) {
-	    if (ax > ay) {
-		*sy = round(*sy * 1000.0 / ax);
-		*sx = *sx > 0 ? 1000 : -1000;
-	    } else {
-		*sx = round(*sx * 1000.0 / ay);
-		*sy = *sy > 0 ? 1000 : -1000;
-	    }
-	    return true;
+		if (ax > ay) {
+			*sy = round(*sy * 1000.0 / ax);
+			*sx = *sx > 0 ? 1000 : -1000;
+		} else {
+			*sx = round(*sx * 1000.0 / ay);
+			*sy = *sy > 0 ? 1000 : -1000;
+		}
+		return true;
 	}
 	return false;
 }
@@ -906,28 +907,29 @@ put_patternline(F_point *p, F_point *q, struct pattern *pattern, double h1,
 	F_pos	pstart, slope[PAT_ND_2];
 
 #define DISTANCE(p,q)	sqrt(((double) (q->x - p->x))*(q->x - p->x) \
-			     + ((double)(q->y - p->y))*(q->y - p->y))
+		+ ((double)(q->y - p->y))*(q->y - p->y))
 	/* put a remaining dash */
 	if (h1 < 0) {
-	    len = pattern->d[dstart] + h1; /* the remaining length of the dash */
-	    while ((lenpq = DISTANCE(p,q)) <= len) {
-		if (q->next == NULL)
-		    return;
-		len -= lenpq;
-		p = q;
-		q = q->next;
-		PUTPOINT(p);
-	    }
-	    /* Now the length of the line is longer than the remaining dash length */
-	    cosl = (q->x - p->x)/lenpq;
-	    sinl = (q->y - p->y)/lenpq;
-	    fprintf(tfp,"(%d,%d)\n", XCOORD(p->x + round(cosl*len)),
-		    YCOORD(p->y + round(sinl*len)));
-	    /* the new offset     x---           ---
-	     *                    len d[start+1] |<-- offset to here
-	     */
-	    h1 = len + pattern->d[dstart+1];
-	    dstart = dstart==pattern->nd - 2 ? 0: dstart+2;
+		len = pattern->d[dstart] + h1;/* remaining length of the dash */
+		while ((lenpq = DISTANCE(p,q)) <= len) {
+			if (q->next == NULL)
+				return;
+			len -= lenpq;
+			p = q;
+			q = q->next;
+			PUTPOINT(p);
+		}
+		/* Now the length of the line is longer than the remaining dash
+		   length */
+		cosl = (q->x - p->x)/lenpq;
+		sinl = (q->y - p->y)/lenpq;
+		fprintf(tfp,"(%d,%d)\n", XCOORD(p->x + round(cosl*len)),
+				YCOORD(p->y + round(sinl*len)));
+		/* the new offset     x---           ---
+		 *                    len d[start+1] |<-- offset to here
+		 */
+		h1 = len + pattern->d[dstart+1];
+		dstart = dstart==pattern->nd - 2 ? 0: dstart+2;
 	}
 	/* there may be several line segments within h1
 	 *  x--x-x---x--------------------------x
@@ -935,45 +937,48 @@ put_patternline(F_point *p, F_point *q, struct pattern *pattern, double h1,
 	 * wind forward through the points which lie within the offset
 	 */
 	while ((lenpq = DISTANCE(p,q)) <= h1) {
-	    if (q->next == NULL) return;
-	    h1 -= lenpq;
-	    p = q;
-	    q = q->next;
+		if (q->next == NULL) return;
+		h1 -= lenpq;
+		p = q;
+		q = q->next;
 	}
 #undef	DISTANCE
 
 	/* calculate the number of dash patterns
-	 * ndp - the number of full dash patterns, that fit into this line segment */
+	 * ndp - number of full dash patterns that fit into this line segment */
 	/* if (ndp > 1) --- well, do something nice for ndp == 1 */
 	numpatterns = floor((lenpq-h1)/pattern->length);
 	cosl = (q->x - p->x)/lenpq;
 	sinl = (q->y - p->y)/lenpq;
 	if (numpatterns > 0) {
-	    F_point	o = {0,0,NULL}, a;
-	    /* calculate the necessary precision */
-	    dx = pattern->length*cosl;
-	    dy = pattern->length*sinl;
-	    /* round() is #def'd in fig2dev.h, casts its arg to int.
-	     * do manually round here, the arg is always positive */
-	    /* dx*numpatterns - round(dx*numpatterns*digits)/digits < 0.5 */
-	    len = fabs(dx);	/* use len as temporary variable */
-	    precx = 0;
-	    for (digits = 1.; precx < 5
-		 && fabs(len - floor(len*digits+0.5)/digits) >= 0.5/numpatterns;
-		 digits *= 10.)
-		++precx;
-	    len = fabs(dy);
-	    precy = 0;
-	    for (digits = 1.; precy < 5
-		 && fabs(len - floor(len*digits+0.5)/digits) >= 0.5/numpatterns;
-		 digits *= 10.)
-		++precy;
+		F_point	o = {0,0,NULL}, a;
+		/* calculate the necessary precision */
+		dx = pattern->length*cosl;
+		dy = pattern->length*sinl;
+		/* round() is #def'd in fig2dev.h, casts its arg to int.
+		 * do manually round here, the arg is always positive */
+		/* dx*numpatterns - round(dx*numpatterns*digits)/digits < 0.5 */
+		len = fabs(dx);	/* use len as temporary variable */
+		precx = 0;
+		for (digits = 1.; precx < 5
+				&& fabs(len - floor(len*digits+0.5)/digits)
+				>= 0.5/numpatterns;
+				digits *= 10.)
+			++precx;
+		len = fabs(dy);
+		precy = 0;
+		for (digits = 1.; precy < 5
+				&& fabs(len - floor(len*digits+0.5)/digits)
+				>= 0.5/numpatterns;
+				digits *= 10.)
+			++precy;
 
-	    for (i = 0; i < pattern->nd/2; ++i) {
-		a.x = round(cosl*pattern->d[2*i]);
-		a.y = round(sinl*pattern->d[2*i]);
-		get_lineslope(&o, &a, &slope[i].x, &slope[i].y, &dpl[i], &dlx[i]);
-	    }
+		for (i = 0; i < pattern->nd/2; ++i) {
+			a.x = round(cosl*pattern->d[2*i]);
+			a.y = round(sinl*pattern->d[2*i]);
+			get_lineslope(&o, &a, &slope[i].x, &slope[i].y,
+					&dpl[i], &dlx[i]);
+		}
 	}
 
 	pstart.x = p->x + round(cosl*h1);
@@ -984,12 +989,12 @@ put_patternline(F_point *p, F_point *q, struct pattern *pattern, double h1,
 	 *		     d[0]  d[1] d[2] 3  d[4] 5   d[6]    d[7];  nd = 8;
 	 *		   -------     -----   ----    --------      |
 	 */
-	dadd = 0; /* the number of additional dashes that fit into the line segment */
+	dadd = 0;/* number of additional dashes that fit into the line segment*/
 	i = dstart;
 	while (len >= pattern->d[i]) {
-	    len -= pattern->d[i] + pattern->d[i+1];
-	    i =  i == pattern->nd - 2 ? 0 : i + 2;
-	    ++dadd;
+		len -= pattern->d[i] + pattern->d[i+1];
+		i =  i == pattern->nd - 2 ? 0 : i + 2;
+		++dadd;
 	}
 	/*	d[dstart]  d[..+1]  ...   d[dstart+dadd]   d[i]
 	 *	--------     ---     ---   ----------     ----X---  (len > 0)
@@ -1004,49 +1009,58 @@ put_patternline(F_point *p, F_point *q, struct pattern *pattern, double h1,
 	j = 1;		/* count up the dashes */
 	/* Put the additional dadd dashes */
 	if (numpatterns == 0) {
-	    for (i = dstart; j <= dadd; i = i==pattern->nd-2 ? 0 : i+2, ++j) {
-		fprintf(tfp,"\\Line(%d,%d)(%d,%d)\n",
-			XCOORD(pstart.x+round(din*cosl)),
-			YCOORD(pstart.y+round(din*sinl)),
-			XCOORD(pstart.x+round((din+pattern->d[i])*cosl)),
-			YCOORD(pstart.y+round((din+pattern->d[i])*sinl)));
-		din += pattern->d[i] + pattern->d[i+1];
-	    }
-	    dstart = i;	/* dstart for the next line segment */
+		for (i = dstart; j <= dadd; i = i==pattern->nd-2 ? 0 : i+2, ++j) {
+			fprintf(tfp,"\\Line(%d,%d)(%d,%d)\n",
+					XCOORD(pstart.x + round(din * cosl)),
+					YCOORD(pstart.y + round(din * sinl)),
+					XCOORD(pstart.x + round(
+						(din + pattern->d[i]) * cosl)),
+					YCOORD(pstart.y + round(
+						(din + pattern->d[i]) * sinl)));
+			din += pattern->d[i] + pattern->d[i+1];
+		}
+		dstart = i;	/* dstart for the next line segment */
 	} else { /* numpatterns >= 1, at least 2 times the additional dashes */
-	    for (i = dstart; j <= dadd; i = i==pattern->nd-2 ? 0 : i+2, ++j) {
-		fprintf(tfp,"\\multiput(%d,%d)(%.*f,%.*f){%d}{\\line(%d,%d){%.*f}}\n",
-			XCOORD(pstart.x+round(din*cosl)),
-			YCOORD(pstart.y+round(din*sinl)),
-			precx, XDIR(dx), precy, YDIR(dy),
-			numpatterns + 1, XDIR(slope[i/2].x), YDIR(slope[i/2].y),
-			dpl[i/2], dlx[i/2]);
-		din += pattern->d[i] + pattern->d[i+1];
-	    }
-	    dstart = i;	/* dstart for the next line segment */
-	    /* j = dadd + 1; i is the index od d[(dstart+dadd+1)%nd] */
-	    /* Put the remaining dashes, those from dstart+dadd+1 until
-	     * (dstart+nd/2) % nd, numpatterns times. */
-	    if (numpatterns == 1) {
-		for ( ; j <= pattern->nd/2; i = i==pattern->nd-2 ? 0 : i+2, ++j) {
-		    fprintf(tfp,"\\Line(%d,%d)(%d,%d)\n",
-			    XCOORD(pstart.x+round(din*cosl)),
-			    YCOORD(pstart.y+round(din*sinl)),
-			    XCOORD(pstart.x+round((din+pattern->d[i])*cosl)),
-			    YCOORD(pstart.y+round((din+pattern->d[i])*sinl)));
-		    din += pattern->d[i] + pattern->d[i+1];
+		for (i = dstart; j <= dadd;
+				i = i == pattern->nd - 2 ? 0 : i + 2, ++j) {
+			fprintf(tfp,"\\multiput(%d,%d)(%.*f,%.*f){%d}"
+					"{\\line(%d,%d){%.*f}}\n",
+					XCOORD(pstart.x + round(din * cosl)),
+					YCOORD(pstart.y + round(din * sinl)),
+					precx, XDIR(dx), precy, YDIR(dy),
+					numpatterns + 1, XDIR(slope[i/2].x),
+					YDIR(slope[i/2].y), dpl[i/2], dlx[i/2]);
+			din += pattern->d[i] + pattern->d[i+1];
 		}
-	    } else { /* numpatterns >= 1 */
-		for ( ; j <= pattern->nd/2; i = i==pattern->nd-2 ? 0 : i+2, ++j) {
-		    fprintf(tfp,"\\multiput(%d,%d)(%.*f,%.*f){%d}{\\line(%d,%d){%.*f}}\n",
-			    XCOORD(pstart.x+round(din*cosl)),
-			    YCOORD(pstart.y+round(din*sinl)),
-			    precx, XDIR(dx), precy, YDIR(dy),
-			    numpatterns, XDIR(slope[i/2].x), YDIR(slope[i/2].y),
-			    dpl[i/2], dlx[i/2]);
-		    din += pattern->d[i] + pattern->d[i+1];
+		dstart = i;	/* dstart for the next line segment */
+		/* j = dadd + 1; i is the index od d[(dstart+dadd+1)%nd] */
+		/* Put the remaining dashes, those from dstart+dadd+1 until
+		 * (dstart+nd/2) % nd, numpatterns times. */
+		if (numpatterns == 1) {
+			for ( ; j <= pattern->nd/2;
+					i = i==pattern->nd-2 ? 0 : i+2, ++j) {
+				fprintf(tfp,"\\Line(%d,%d)(%d,%d)\n",
+					XCOORD(pstart.x + round(din * cosl)),
+					YCOORD(pstart.y + round(din * sinl)),
+					XCOORD(pstart.x + round(
+						(din + pattern->d[i]) * cosl)),
+					YCOORD(pstart.y + round(
+						(din + pattern->d[i]) * sinl)));
+				din += pattern->d[i] + pattern->d[i+1];
+			}
+		} else { /* numpatterns >= 1 */
+			for ( ; j <= pattern->nd/2;
+					i = i == pattern->nd-2 ? 0 : i+2, ++j) {
+				fprintf(tfp,"\\multiput(%d,%d)(%.*f,%.*f){%d}"
+						"{\\line(%d,%d){%.*f}}\n",
+					XCOORD(pstart.x + round(din * cosl)),
+					YCOORD(pstart.y + round(din * sinl)),
+					precx, XDIR(dx), precy, YDIR(dy),
+					numpatterns, XDIR(slope[i/2].x),
+					YDIR(slope[i/2].y), dpl[i/2], dlx[i/2]);
+				din += pattern->d[i] + pattern->d[i+1];
+			}
 		}
-	    }
 	} /* end numpatterns >= 1 */
 	/* j is the index of the last put dash */
 
@@ -1061,16 +1075,16 @@ put_patternline(F_point *p, F_point *q, struct pattern *pattern, double h1,
 	 */
 
 	if (q->next == NULL) {
-	    if (len > 0) fprintf(tfp,"\\Line(%d,%d)(%d,%d)\n",
-				 XCOORD(q->x - round(cosl*len)),
-				 YCOORD(q->y - round(sinl*len)),
-				 XCOORD(q->x), YCOORD(q->y));
+		if (len > 0) fprintf(tfp,"\\Line(%d,%d)(%d,%d)\n",
+				XCOORD(q->x - round(cosl*len)),
+				YCOORD(q->y - round(sinl*len)),
+				XCOORD(q->x), YCOORD(q->y));
 	} else {
-	    if (len > 0) fprintf(tfp,"\\polyline(%d,%d)(%d,%d)",
-				 XCOORD(q->x - round(cosl*len)),
-				 YCOORD(q->y - round(sinl*len)),
-				 XCOORD(q->x), YCOORD(q->y));
-	    put_patternline(q,q->next,pattern,-len,dstart);
+		if (len > 0) fprintf(tfp,"\\polyline(%d,%d)(%d,%d)",
+				XCOORD(q->x - round(cosl*len)),
+				YCOORD(q->y - round(sinl*len)),
+				XCOORD(q->x), YCOORD(q->y));
+		put_patternline(q,q->next,pattern,-len,dstart);
 	}
 }
 
@@ -1082,11 +1096,12 @@ put_pointarray(F_pos pts[], int *npoints)
 				 * printed on the first line */
 
 	for (i=0; i < *npoints; ++i) {
-	    if (chars >= LINEBREAK) {
-		fputc('\n', tfp);
-		chars = 0;
-	    }
-	    chars += fprintf(tfp, "(%d,%d)", XCOORD(pts[i].x),YCOORD(pts[i].y));
+		if (chars >= LINEBREAK) {
+			fputc('\n', tfp);
+			chars = 0;
+		}
+		chars += fprintf(tfp, "(%d,%d)",
+				XCOORD(pts[i].x), YCOORD(pts[i].y));
 	}
 	fputc('\n', tfp);
 }
@@ -1101,33 +1116,33 @@ put_arrow(F_point *p, F_point *q, F_arrow *a, int linethick)
 
 #define	ISLTXARROW(a)	(allarrowsltx || ltxarrow == 2*a->type + a->style)
 	if (ISLTXARROW(a)) {
-	    /* the size of latex-vectors is specified by arrow->thickness */
-	    if (a->thickness <= 0.) return;
-	    set_linewidth(round(a->thickness));
-	    get_vectorslope(p, q, &sx, &sy, &lx);
-	    fprintf(tfp,"\\put(%d,%d){\\vector(%d,%d){0}}%%\n",
-		    XCOORD(q->x), YCOORD(q->y), XDIR(sx), YDIR(sy));
-	    return;
+		/* the size of latex-vectors is specified by arrow->thickness */
+		if (a->thickness <= 0.) return;
+		set_linewidth(round(a->thickness));
+		get_vectorslope(p, q, &sx, &sy, &lx);
+		fprintf(tfp,"\\put(%d,%d){\\vector(%d,%d){0}}%%\n",
+				XCOORD(q->x), YCOORD(q->y), XDIR(sx), YDIR(sy));
+		return;
 	}
 
 	/* all other arrows */
 	calc_arrow(p->x, p->y, q->x, q->y, linethick, a, points, &npoints,
-		   fillpoints, &nfillpoints, clippts, &nclippts);
+			fillpoints, &nfillpoints, clippts, &nclippts);
 	/* reset line-style outside of put_arrow */
 	if (npoints < 2)
 		return;
 
 	/* fill filled arrows */
 	if ((a->style || nfillpoints) && a->type < 13) {
-	    fputs("\\polygon*", tfp);
-	    if (nfillpoints == 0) {
-		/* for a simple fill, the first and the last point coincide */
-		/* ... except for a half circle */
-		nfillpoints = a->type == 6 ? npoints : npoints - 1;
-		put_pointarray(points, &nfillpoints);
-	    } else {
-		put_pointarray(fillpoints, &nfillpoints);
-	    }
+		fputs("\\polygon*", tfp);
+		if (nfillpoints == 0) {
+			/* for a simple fill, the first and the last point
+			   coincide ... except for a half circle */
+			nfillpoints = a->type == 6 ? npoints : npoints - 1;
+			put_pointarray(points, &nfillpoints);
+		} else {
+			put_pointarray(fillpoints, &nfillpoints);
+		}
 	}
 
 	if (round(0.5 * a->thickness) == 0) return;
@@ -1135,11 +1150,12 @@ put_arrow(F_point *p, F_point *q, F_arrow *a, int linethick)
 	set_linejoin(MITERJOIN);
 	set_linecap(BUTTCAP);
 
-	if (points[0].x == points[npoints-1].x && points[0].y == points[npoints-1].y) {
-	    npoints -= 1;
-	    fputs("\\polygon", tfp);
+	if (points[0].x == points[npoints-1].x &&
+			points[0].y == points[npoints-1].y) {
+		npoints -= 1;
+		fputs("\\polygon", tfp);
 	} else {
-	    fputs("\\polyline", tfp);
+		fputs("\\polyline", tfp);
 	}
 	put_pointarray(points, &npoints);
 }
@@ -1159,16 +1175,17 @@ put_oval(
 	dx = q->x - p->x;
 	dy = q->y - p->y;
 	if (MIN(abs(dx), abs(dy)) < 2*rad )
-	    rad = MIN(abs(dx), abs(dy))/2;
+		rad = MIN(abs(dx), abs(dy))/2;
 
 	if (!epiccompatible && c[0] == 's') {
-	    double cx, cy;
-	    cx = (p->x + q->x) / 2.;
-	    cy = (p->y + q->y) / 2.;
-	    fprintf(tfp, "\\put(%.*f,%.*f){\\oval[%d](%d,%d)}\n",
-		    cx == floor(cx) ? 0 : 1, XCOORD(cx),
-		    cy == floor(cy) ? 0 : 1, YCOORD(cy), rad, abs(dx), abs(dy));
-	    return;
+		double cx, cy;
+		cx = (p->x + q->x) / 2.;
+		cy = (p->y + q->y) / 2.;
+		fprintf(tfp, "\\put(%.*f,%.*f){\\oval[%d](%d,%d)}\n",
+				cx == floor(cx) ? 0 : 1, XCOORD(cx),
+				cy == floor(cy) ? 0 : 1, YCOORD(cy),
+				rad, abs(dx), abs(dy));
+		return;
 	}
 
 	/* epiccompatible */
@@ -1181,16 +1198,16 @@ put_oval(
 	y2 = YCOORD(q->y) - dy*rad;
 	a = dx < 0 ? 0 : 2;
 	fprintf(tfp,"\\circlearc[1]{%d}{%d}{%d}{%d}{%d}",
-		    x1, y1, rad, a*90, (a+dir)*90);
+			x1, y1, rad, a*90, (a+dir)*90);
 	a += dir;
 	fprintf(tfp,"\\circlearc{%d}{%d}{%d}{%d}{%d}%%\n",
-		    x2, y1, rad, a*90, (a+dir)*90);
+			x2, y1, rad, a*90, (a+dir)*90);
 	a += dir;
 	fprintf(tfp,"\\circlearc{%d}{%d}{%d}{%d}{%d}",
-		    x2, y2, rad, a*90, (a+dir)*90);
+			x2, y2, rad, a*90, (a+dir)*90);
 	a += dir;
 	fprintf(tfp,"\\circlearc{%d}{%d}{%d}{%d}{%d}\\closepath\\%s\n",
-		    x1, y2, rad, a*90, (a+dir)*90, c);
+			x1, y2, rad, a*90, (a+dir)*90, c);
 }
 
 /*
@@ -1218,34 +1235,35 @@ get_offset(F_arrow *a, int thickness, int capstyle)
 	double	h;
 	if (!a) return 0.;
 	/* see line 173 in bound.c for the index into the arrow-array */
-			/*  && proportion-check? */
+	/*  && proportion-check? */
 	if (ISLTXARROW(a)) {
-	    h = ltx_offset(a->thickness);
+		h = ltx_offset(a->thickness);
 	} else {
-	    int		indx;
-	    double	thk;
+		int		indx;
+		double	thk;
 
-	    /* code from line 923 in bound.c */
-	    indx = 2*a->type + a->style;
-	    h = arrow_shapes[indx].tipmv;		/* bound.h */
-	    thk = THICKNESS(a->thickness);
-	    if (h > 0.0)
-		h = thk * sqrt(a->wid*a->wid + h*h*a->ht*a->ht) / 2.0 / a->wid;
-	    else if (h == 0.0)
-		h = thk / 2.0;	/* types which have blunt end */
-	    else /* tipmv == -1, the tip is not moved */
-		h = 0.0;
-	    /* add the additional line_move */
-	    h += a->ht*pict2earrow[indx].hfac + thk*pict2earrow[indx].tfac;
-	    /* rounding */
-	    if (pict2earrow[indx].tfac > 0.0)
-		h -= 0.5;
-	    else if (pict2earrow[indx].tfac < 0.0)
-		h += 0.5;
+		/* code from line 923 in bound.c */
+		indx = 2*a->type + a->style;
+		h = arrow_shapes[indx].tipmv;		/* bound.h */
+		thk = THICKNESS(a->thickness);
+		if (h > 0.0)
+			h = thk * sqrt(a->wid*a->wid + h*h*a->ht*a->ht)
+				/ 2.0 / a->wid;
+		else if (h == 0.0)
+			h = thk / 2.0;	/* types which have blunt end */
+		else /* tipmv == -1, the tip is not moved */
+			h = 0.0;
+		/* add the additional line_move */
+		h += a->ht*pict2earrow[indx].hfac + thk*pict2earrow[indx].tfac;
+		/* rounding */
+		if (pict2earrow[indx].tfac > 0.0)
+			h -= 0.5;
+		else if (pict2earrow[indx].tfac < 0.0)
+			h += 0.5;
 	}
 
 	if (capstyle == SQUARECAP)
-	    h += THICKNESS(thickness)*0.5;
+		h += THICKNESS(thickness)*0.5;
 
 	return h;
 }
@@ -1267,11 +1285,11 @@ get_midpoint(F_point *p, F_point *q, F_point *a, double *h)
 	s = sqrt(sx*sx + sy*sy);
 
 	if (s > *h) {
-	    a->x = p->x + round(sx*(*h)/s);
-	    a->y = p->y + round(sy*(*h)/s);
-	    return false;
+		a->x = p->x + round(sx*(*h)/s);
+		a->y = p->y + round(sy*(*h)/s);
+		return false;
 	} else {
-	    return true;
+		return true;
 	}
 }
 
@@ -1298,16 +1316,16 @@ get_startpoint(
 	double	sx, sy, s;
 
 	while (p->next != NULL && (sx = p->next->x - p->x,
-				   sy = p->next->y - p->y,
-				   s = sqrt(sx*sx + sy*sy),
-	       s <= h1) ) {
-	    h1 -= s;
-	    f[0] = p;
-	    p = p->next;
-	    f[1] = p;
+				sy = p->next->y - p->y,
+				s = sqrt(sx*sx + sy*sy),
+				s <= h1) ) {
+		h1 -= s;
+		f[0] = p;
+		p = p->next;
+		f[1] = p;
 	}
 	if (p->next == NULL)	/* end reached - the line is shorter than h1 */
-	    return true;
+		return true;
 
 	/* now h1 < s */
 	a->x = p->x + round(h1 * sx / s);
@@ -1355,13 +1373,13 @@ insert_endpoint(
 	/* save the line points into the r-array; cycle around, if necessary */
 	r[i] = p;
 	while (p->next != NULL) {
-	    if (++i == MAXREVERSE+1) {
-		i = 1;
-		r[0] = r[MAXREVERSE]; /* needed below */
-		n = MAXREVERSE;
-	    }
-	    p = p->next;
-	    r[i] = p;
+		if (++i == MAXREVERSE+1) {
+			i = 1;
+			r[0] = r[MAXREVERSE]; /* needed below */
+			n = MAXREVERSE;
+		}
+		p = p->next;
+		r[i] = p;
 	}
 
 	if (!n) n = i+1;
@@ -1372,34 +1390,35 @@ insert_endpoint(
 
 	/* now walk back through the r-array */
 	while (n > 1 && (i == 0 ? i = MAXREVERSE: i,
-			 sx = r[i-1]->x - r[i]->x,
-			 sy = r[i-1]->y - r[i]->y,
-			 s = sqrt((double)sx*sx + (double)sy*sy),
-			 s <= h2) ) {
-	    --n;
-	    --i;
-	    h2 -= s;
+				sx = r[i-1]->x - r[i]->x,
+				sy = r[i-1]->y - r[i]->y,
+				s = sqrt((double)sx*sx + (double)sy*sy),
+				s <= h2) ) {
+		--n;
+		--i;
+		h2 -= s;
 	}
 	/* either, the line is shorter than h2, there are more than MAXREVERSE
 	 * points within h2, or h2 < s */
 	if (n > 1 ) { /* h2 < s */
-	    o->x = r[i]->x + round(h2 * sx / s);
-	    o->y = r[i]->y + round(h2 * sy / s);
-	    r[i-1]->next = o;
-	    o->next = NULL;
-	    /* store the original line sequence */
-	    t[0] = r[i-1];
-	    t[1] = r[i];
-	} else if (i == 0 && r[0] != r[MAXREVERSE]) { /* the line is too short.
-	    * After the first cycle, r[0] == r[MAXREVERSE], hence there were
-	    * more points. TODO - check that? */
-	    return true;
-	} else { /* may occur very rarely, more than MAXREVERSE points within h2.
+		o->x = r[i]->x + round(h2 * sx / s);
+		o->y = r[i]->y + round(h2 * sy / s);
+		r[i-1]->next = o;
+		o->next = NULL;
+		/* store the original line sequence */
+		t[0] = r[i-1];
+		t[1] = r[i];
+	} else if (i == 0 && r[0] != r[MAXREVERSE]) {
+		/* the line is too short. After the first cycle,
+		 * r[0] == r[MAXREVERSE], hence there were more points.
+		 * TODO - check that? */
+		return true;
+	} else { /* may occur rarely, more than MAXREVERSE points within h2.
 		  * Return the point farthest away from u */
-	    o = r[i];
-	    o->next = NULL;
-	    t[0] = o;
-	    t[1] = r[i]->next;
+		o = r[i];
+		o->next = NULL;
+		t[0] = o;
+		t[1] = r[i]->next;
 	}
 
 	return false;
@@ -1419,28 +1438,30 @@ put_vector(F_point *p, F_point *q, F_arrow *backarrow, int *thickness,
 	double	h;
 	F_point	a, o;
 
-	if (backarrow && (h = get_offset(backarrow, *thickness, *capstyle)) > 0.5)
-	    too_short = get_midpoint(p, q, &a, &h);
+	if (backarrow &&
+			(h = get_offset(backarrow,*thickness, *capstyle)) > 0.5)
+		too_short = get_midpoint(p, q, &a, &h);
 	else
-	    a = *p;
+		a = *p;
 
 #define	PUTVECTOR(p,sx,sy,l)	fprintf(tfp, \
-					"\\put(%d,%d){\\vector(%d,%d){%d}}\n", \
-					XCOORD(p->x), YCOORD(p->y), \
-					XDIR(sx), YDIR(sy), l)
+		"\\put(%d,%d){\\vector(%d,%d){%d}}\n", \
+		XCOORD(p->x), YCOORD(p->y), \
+		XDIR(sx), YDIR(sy), l)
 #define	PUTLINE(a,o)	fprintf(tfp,"\\Line(%d,%d)(%d,%d)\n", \
-				XCOORD(a.x),YCOORD(a.y),XCOORD(o.x),YCOORD(o.y))
+		XCOORD(a.x),YCOORD(a.y),XCOORD(o.x),YCOORD(o.y))
 	if (!too_short && !get_vectorslope(&a, q, sx, sy, &lx)) {
-	    fprintf(tfp, "\\put(%d,%d){\\vector(%d,%d){%d}}\n",
-		    XCOORD(a.x), YCOORD(a.y), XDIR(*sx), YDIR(*sy), lx);
-	    return false;
+		fprintf(tfp, "\\put(%d,%d){\\vector(%d,%d){%d}}\n",
+				XCOORD(a.x), YCOORD(a.y), XDIR(*sx), YDIR(*sy),
+				lx);
+		return false;
 	} else {
-	    if (!too_short && (h = ltx_offset((double) *thickness))
-			   && !get_midpoint(q, &a, &o, &h))
-		PUTLINE(a, o);
-	    get_vectorslope(p, q, sx, sy, &lx);
-	    PUTVECTOR(q, *sx, *sy, 0);
-	    return true;
+		if (!too_short && (h = ltx_offset((double) *thickness))
+				&& !get_midpoint(q, &a, &o, &h))
+			PUTLINE(a, o);
+		get_vectorslope(p, q, sx, sy, &lx);
+		PUTVECTOR(q, *sx, *sy, 0);
+		return true;
 	}
 }
 
@@ -1456,56 +1477,57 @@ put_poly_or_patternline(F_point *p, F_point *q, F_line *l)
 
 	/* get the start point, if there is a line */
 	if (l->thickness > 0 && l-> back_arrow
-			     && (h = get_offset(l->back_arrow, l->thickness,
-						l->cap_style)) > 0.5) {
-	    /* Returns f, if too_short */
-	    too_short = get_startpoint(p, &a, f, h);
+			&& (h = get_offset(l->back_arrow, l->thickness,
+					l->cap_style)) > 0.5) {
+		/* Returns f, if too_short */
+		too_short = get_startpoint(p, &a, f, h);
 	} else {
-	    a = *p;
-	    too_short = false;
+		a = *p;
+		too_short = false;
 	}
 
 	if (!too_short) {
-	    /* insert the end point for drawing a line; get the final two points
-	     * for drawing the forward arrow */
-	    t[0] = NULL;
-	    if (l->for_arrow) {
-		h = get_offset(l->for_arrow, l->thickness, l->cap_style);
-		if (l->thickness == 0 || h <= 0.5) {
-		    /* simply wind forward through the line */
-		    f[0] = p;
-		    f[1] = q;
-		    while (f[1]->next != NULL) {
-			f[0] = f[1];
-			f[1] = f[1]->next;
-		    }
-		} else {
-		    insert_endpoint(&a, &o, f, t, h);
+		/* insert the end point for drawing a line; get the final two
+		   points for drawing the forward arrow */
+		t[0] = NULL;
+		if (l->for_arrow) {
+			h = get_offset(l->for_arrow, l->thickness,l->cap_style);
+			if (l->thickness == 0 || h <= 0.5) {
+				/* simply wind forward through the line */
+				f[0] = p;
+				f[1] = q;
+				while (f[1]->next != NULL) {
+					f[0] = f[1];
+					f[1] = f[1]->next;
+				}
+			} else {
+				insert_endpoint(&a, &o, f, t, h);
+			}
 		}
-	    }
 
-	    /* Draw the line */
-	    set_linewidth(l->thickness);
-	    set_linecap(l->cap_style);
-	    set_linejoin(l->join_style);
-	    if (l->style == SOLID_LINE || l->style_val <= 0.) {
-		put_polyline(&a);
-	    } else {
-		set_linestyle(&(l->style), &(l->style_val), &pattern, &h);
-		put_patternline(&a,a.next,&pattern,0.,0);
-	    }
-	    if (t[0] != NULL)		/* insert_endpoint was called */
-		t[0]->next = t[1];	/* restore original l->points sequence */
+		/* Draw the line */
+		set_linewidth(l->thickness);
+		set_linecap(l->cap_style);
+		set_linejoin(l->join_style);
+		if (l->style == SOLID_LINE || l->style_val <= 0.) {
+			put_polyline(&a);
+		} else {
+			set_linestyle(&(l->style), &(l->style_val),&pattern,&h);
+			put_patternline(&a,a.next,&pattern,0.,0);
+		}
+		if (t[0] != NULL)		/* insert_endpoint was called */
+			t[0]->next = t[1];	/* restore original l->points
+						   sequence */
 	}
 
 	if (l->for_arrow) {
-	    if (verbose) fputs("% Forward Arrow\n", tfp);
-	    put_arrow(f[0], f[1], l->for_arrow, l->thickness);
+		if (verbose) fputs("% Forward Arrow\n", tfp);
+		put_arrow(f[0], f[1], l->for_arrow, l->thickness);
 	}
 
 	if (l->back_arrow) {
-	    if (verbose) fputs("% Backward Arrow\n", tfp);
-	    put_arrow(q, p, l->back_arrow, l->thickness);
+		if (verbose) fputs("% Backward Arrow\n", tfp);
+		put_arrow(q, p, l->back_arrow, l->thickness);
 	}
 }
 
@@ -1519,49 +1541,51 @@ put_line_or_vector(F_point *p, F_point *q, F_line *l)
 
 	if (l->for_arrow && ISLTXARROW(l->for_arrow)
 			&& l->thickness == round(l->for_arrow->thickness)) {
-	    /* At least an arrow is drawn. The linecap might be set uselessly */
-	    set_linewidth(l->thickness);
-	    set_linecap(l->cap_style);
-	    if (put_vector(p, q, l->back_arrow, &(l->thickness),
-			   &(l->cap_style), &sx, &sy)
-			&& l->back_arrow && ISLTXARROW(l->back_arrow)
-			&& l->back_arrow->thickness > 0.5) {
-		set_linewidth(round(l->back_arrow->thickness));
-		PUTVECTOR(p, -sx, -sy, 0);
-	    } else if (l->back_arrow) {
-		put_arrow(q, p, l->back_arrow, l->thickness);
-	    }
-	} else if (l->back_arrow && ISLTXARROW(l->back_arrow)
-			&& l->thickness == round(l->back_arrow->thickness)) {
-	    set_linewidth(l->thickness);
-	    set_linecap(l->cap_style);
-	    put_vector(q, p, l->for_arrow, &(l->thickness), &(l->cap_style),
-								&sx, &sy);
-	    if (l->for_arrow)
-		put_arrow(p, q, l->for_arrow, l->thickness);
-	} else {
-	    if (l->back_arrow && (h = get_offset(l->back_arrow, l->thickness,
-						 l->cap_style)) > 0.5)
-		too_short = get_midpoint(p, q, &a, &h);
-	    else
-		a = *p;
-
-	    if (!too_short && l->for_arrow
-			   && (h = get_offset(l->for_arrow, l->thickness,
-					      l->cap_style)) > 0.5)
-		too_short = get_midpoint(q, &a, &o, &h);
-	    else
-		o = *q;
-
-	    if (!too_short) {
+		/* At least an arrow is drawn.
+		   The linecap might be set uselessly */
 		set_linewidth(l->thickness);
 		set_linecap(l->cap_style);
-		PUTLINE(a, o);
-	    }
-	    if (l->for_arrow)
-		put_arrow(p, q, l->for_arrow, l->thickness);
-	    if (l->back_arrow)
-		put_arrow(q, p, l->back_arrow, l->thickness);
+		if (put_vector(p, q, l->back_arrow, &(l->thickness),
+					&(l->cap_style), &sx, &sy)
+				&& l->back_arrow && ISLTXARROW(l->back_arrow)
+				&& l->back_arrow->thickness > 0.5) {
+			set_linewidth(round(l->back_arrow->thickness));
+			PUTVECTOR(p, -sx, -sy, 0);
+		} else if (l->back_arrow) {
+			put_arrow(q, p, l->back_arrow, l->thickness);
+		}
+	} else if (l->back_arrow && ISLTXARROW(l->back_arrow)
+			&& l->thickness == round(l->back_arrow->thickness)) {
+		set_linewidth(l->thickness);
+		set_linecap(l->cap_style);
+		put_vector(q, p, l->for_arrow, &(l->thickness), &(l->cap_style),
+				&sx, &sy);
+		if (l->for_arrow)
+			put_arrow(p, q, l->for_arrow, l->thickness);
+	} else {
+		if (l->back_arrow &&
+				(h = get_offset(l->back_arrow, l->thickness,
+						l->cap_style)) > 0.5)
+			too_short = get_midpoint(p, q, &a, &h);
+		else
+			a = *p;
+
+		if (!too_short && l->for_arrow
+				&& (h = get_offset(l->for_arrow, l->thickness,
+						l->cap_style)) > 0.5)
+			too_short = get_midpoint(q, &a, &o, &h);
+		else
+			o = *q;
+
+		if (!too_short) {
+			set_linewidth(l->thickness);
+			set_linecap(l->cap_style);
+			PUTLINE(a, o);
+		}
+		if (l->for_arrow)
+			put_arrow(p, q, l->for_arrow, l->thickness);
+		if (l->back_arrow)
+			put_arrow(q, p, l->back_arrow, l->thickness);
 	}
 }
 
@@ -1584,10 +1608,11 @@ put_picture(F_point *p, F_point *q, F_point *r, F_point *s, F_line *l)
 	F_point	*ll;
 
 	if (removesuffix) {
-	    c = strrchr(l->pic->file,'.');
-	    n = (c == NULL? (int)(strlen(l->pic->file)): (int)(c-l->pic->file));
+		c = strrchr(l->pic->file,'.');
+		n = (c == NULL ? (int)(strlen(l->pic->file)) :
+				(int)(c-l->pic->file));
 	} else {
-	    n = (int)strlen(l->pic->file);
+		n = (int)strlen(l->pic->file);
 	}
 	dx = r->x - p->x;
 	dy = r->y - p->y;
@@ -1595,52 +1620,58 @@ put_picture(F_point *p, F_point *q, F_point *r, F_point *s, F_line *l)
 	rot = 0;
 	ll = s; /* only for !flipped */
 	if (dx < 0 && dy < 0) {
-	    rot = 180;
-	    ll = s;
-	    dx = -dx;
-	    dy = -dy;
+		rot = 180;
+		ll = s;
+		dx = -dx;
+		dy = -dy;
 	}
 	else if (dx < 0 && dy >= 0) {
-	    rot = dy;
-	    dy = -dx;
-	    dx = rot;
-	    rot = 270;
-	    ll = q;
+		rot = dy;
+		dy = -dx;
+		dx = rot;
+		rot = 270;
+		ll = q;
 	}
 	else if (dy < 0 && dx >= 0) {
-	    rot = dx;
-	    dx = -dy;
-	    dy = rot;
-	    rot = 90;
-	    ll = q;
+		rot = dx;
+		dx = -dy;
+		dy = rot;
+		rot = 90;
+		ll = q;
 	}
 
 #define PREPEND prepend ? prepend : "\0"
 	if (!l->pic->flipped) {
-	    if (rot == 0)
-		fprintf(tfp,
-			"\\put(%d,%d){\\resizebox{%d\\unitlength}{%d\\unitlength}"
-			"{\\includegraphics{%s%.*s}}}\n", XCOORD(ll->x),
-			YCOORD(ll->y), dx, dy, PREPEND, n, l->pic->file);
-	    else
-		fprintf(tfp, "\\put(%d,%d){\\rotatebox{%d}{\\smash{\\rlap{"
-			"\\resizebox*{%d\\unitlength}{%d\\unitlength}{"
-			"\\includegraphics{%s%.*s}}}}}}\n", XCOORD(ll->x),
-			YCOORD(ll->y), rot, dx, dy, PREPEND, n, l->pic->file);
-	    return;
+		if (rot == 0)
+			fprintf(tfp, "\\put(%d,%d){\\resizebox"
+					"{%d\\unitlength}{%d\\unitlength}"
+					"{\\includegraphics{%s%.*s}}}\n",
+					XCOORD(ll->x), YCOORD(ll->y),
+					dx, dy, PREPEND, n, l->pic->file);
+		else
+			fprintf(tfp, "\\put(%d,%d){\\rotatebox{%d}"
+					"{\\smash{\\rlap{\\resizebox*"
+					"{%d\\unitlength}{%d\\unitlength}{"
+					"\\includegraphics{%s%.*s}}}}}}\n",
+					XCOORD(ll->x), YCOORD(ll->y),
+					rot, dx, dy, PREPEND, n, l->pic->file);
+		return;
 	}
 	/* flipped */
 	rot += 90;
 	if (rot == 360)
-	    fprintf(tfp,
-		    "\\put(%d,%d){\\resizebox*{-%d\\unitlength}{%d\\unitlength}"
-		    "{\\includegraphics{%s%.*s}}}\n",
-		    XCOORD(r->x), YCOORD(r->y), dy, dx, PREPEND, n, l->pic->file);
+		fprintf(tfp, "\\put(%d,%d){\\resizebox*"
+				"{-%d\\unitlength}{%d\\unitlength}"
+				"{\\includegraphics{%s%.*s}}}\n",
+				XCOORD(r->x), YCOORD(r->y),
+				dy, dx, PREPEND, n, l->pic->file);
 	else
-	    fprintf(tfp,
-		    "\\put(%d,%d){\\rotatebox{%d}{\\smash{\\rlap{\\resizebox*"
-		    "{-%d\\unitlength}{%d\\unitlength}{\\includegraphics{%s%.*s}}}}}}\n",
-		    XCOORD(r->x), YCOORD(r->y), rot, dy, dx, PREPEND, n, l->pic->file);
+		fprintf(tfp, "\\put(%d,%d){\\rotatebox{%d}"
+				"{\\smash{\\rlap{\\resizebox*"
+				"{-%d\\unitlength}{%d\\unitlength}{"
+				"\\includegraphics{%s%.*s}}}}}}\n",
+				XCOORD(r->x), YCOORD(r->y), rot, dy, dx,
+				PREPEND, n, l->pic->file);
 	return;
 }
 
@@ -1654,7 +1685,7 @@ genpict2e_line(F_line *l)
 	double		h1;
 
 	if (verbose)
-	    fputs("%\n% Fig POLYLINE object\n%\n", tfp);
+		fputs("%\n% Fig POLYLINE object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ", l->comments, "");
@@ -1662,62 +1693,64 @@ genpict2e_line(F_line *l)
 	/* count the number of points, up to a maximum of four */
 	p[0] = l->points;
 	while (npts < 4 && p[npts]->next != NULL) {
-	    p[npts+1] = p[npts]->next;
-	    ++npts;
+		p[npts+1] = p[npts]->next;
+		++npts;
 	}
 	++npts;
 
 	if (l->type == T_PIC_BOX) {
-	    if (npts < 4)
-		fputs(
-		    "A picture box with less than four unique points. Omitting.\n",
-		    stderr);
-	    else
-		put_picture(p[0], p[1], p[2], p[3], l);
-	    return;
+		if (npts < 4)
+			fputs( "A picture box with less than four unique "
+					"points. Omitting.\n", stderr);
+		else
+			put_picture(p[0], p[1], p[2], p[3], l);
+		return;
 	}
 
 	/* fill */
 	if (l->fill_style != UNFILLED && npts > 2) {
-	    if (verbose) fputs("% Fill\n", tfp);
-	    set_fillcolor(l->fill_color, l->fill_style, &(l->pen_color));
-	    if (l->type == T_POLYLINE) {
-		p[4] = put_points("\\polygon*", p[0]);
-		if (!(EQUAL(p[0], p[4])))
-		    PUTPOINT(p[4]);
-		fprintf(tfp,"\n");
-	    } else if (l->type == T_POLYGON || l->type == T_BOX) {
-		put_points("\\polygon*", p[0]);
-		fputc('\n', tfp);
-	    /* else { .. would be sufficient, no other possibilities remain */
-	    } else if (l->type == T_ARC_BOX) {
-		put_oval(p[0], p[2], l->radius, "fillpath");
-	    }
+		if (verbose) fputs("% Fill\n", tfp);
+		set_fillcolor(l->fill_color, l->fill_style, &(l->pen_color));
+		if (l->type == T_POLYLINE) {
+			p[4] = put_points("\\polygon*", p[0]);
+			if (!(EQUAL(p[0], p[4])))
+				PUTPOINT(p[4]);
+			fprintf(tfp,"\n");
+		} else if (l->type == T_POLYGON || l->type == T_BOX) {
+			put_points("\\polygon*", p[0]);
+			fputc('\n', tfp);
+			/* else would be sufficient,
+			   no other possibilities remain */
+		} else if (l->type == T_ARC_BOX) {
+			put_oval(p[0], p[2], l->radius, "fillpath");
+		}
 	}
 
 	if (l->thickness == 0 && l->for_arrow == NULL && l->back_arrow == NULL)
-	    return;
+		return;
 
 	/* a single point */
 	if (npts == 1) {
-	    F_pos	o;
-	    if (l->thickness == 0)
+		F_pos	o;
+		if (l->thickness == 0)
+			return;
+		set_color(l->pen_color);
+		set_linewidth(l->thickness);
+		o.x = XCOORD(p[0]->x);
+		o.y = YCOORD(p[0]->y);
+		if (l->cap_style == ROUNDCAP) {
+			set_linecap(ROUNDCAP);
+			fprintf(tfp, "\\Line(%d,%d)(%d,%d)%%\n",
+					o.x, o.y, o.x, o.y);
+		} else {
+			set_linecap(BUTTCAP);
+			h1 = l->thickness <= THICK_SCALE ?
+				l->thickness / 4.0 :
+				(l->thickness - THICK_SCALE) / 2.0;
+			fprintf(tfp, "\\Line(%d,%d)(%d,%d)%%\n",
+					round(o.x-h1), o.y, round(o.x+h1), o.y);
+		}
 		return;
-	    set_color(l->pen_color);
-	    set_linewidth(l->thickness);
-	    o.x = XCOORD(p[0]->x);
-	    o.y = YCOORD(p[0]->y);
-	    if (l->cap_style == ROUNDCAP) {
-		set_linecap(ROUNDCAP);
-		fprintf(tfp, "\\Line(%d,%d)(%d,%d)%%\n", o.x, o.y, o.x, o.y);
-	    } else {
-		set_linecap(BUTTCAP);
-		h1 = l->thickness <= THICK_SCALE ?
-		    l->thickness/4.0 : (l->thickness-THICK_SCALE)/2.0;
-		fprintf(tfp, "\\Line(%d,%d)(%d,%d)%%\n",
-		    round(o.x-h1), o.y, round(o.x+h1), o.y);
-	    }
-	    return;
 	}
 
 	/* two or more points */
@@ -1726,42 +1759,43 @@ genpict2e_line(F_line *l)
 	set_color(l->pen_color);
 
 	if (l->type == T_POLYGON || l->type == T_BOX) {
-	    set_linewidth(l->thickness);
-	    if (l->style == SOLID_LINE || l->style_val <= 0.) {
-		set_linejoin(l->join_style);
-		put_points("\\polygon", p[0]);
-		fputc('\n', tfp);
-	    } else {
-		set_linestyle(&(l->style), &(l->style_val), &pattern, &h1);
-		set_linecap(l->cap_style);
-		set_linejoin(l->join_style);
-		put_patternline(p[0],p[1],&pattern,0.,0);
-	    }
-	    return;
+		set_linewidth(l->thickness);
+		if (l->style == SOLID_LINE || l->style_val <= 0.) {
+			set_linejoin(l->join_style);
+			put_points("\\polygon", p[0]);
+			fputc('\n', tfp);
+		} else {
+			set_linestyle(&(l->style), &(l->style_val),
+					&pattern, &h1);
+			set_linecap(l->cap_style);
+			set_linejoin(l->join_style);
+			put_patternline(p[0],p[1],&pattern,0.,0);
+		}
+		return;
 	}
 
 	if (l->type == T_ARC_BOX) {
-	    if (npts < 3 || EQUAL(p[0],p[2])) return;
-	    if (l->style == SOLID_LINE) {
-		set_linewidth(l->thickness);
-		put_oval(p[0], p[2], l->radius, "strokepath");
-	    } else {
-		put_patternoval(p[0], p[2], l);
-	    }
-	    return;
+		if (npts < 3 || EQUAL(p[0],p[2])) return;
+		if (l->style == SOLID_LINE) {
+			set_linewidth(l->thickness);
+			put_oval(p[0], p[2], l->radius, "strokepath");
+		} else {
+			put_patternoval(p[0], p[2], l);
+		}
+		return;
 	}
 
 	/* Below here, l->type must be a T_POLYLINE */
 	if (l->type != T_POLYLINE) {
-	    fprintf(stderr, "Unknown line style %d. Please, report this bug.\n",
-		    l->type);
-	    return;
+		fprintf(stderr, "Unknown line style %d. "
+				"Please report this bug.\n", l->type);
+		return;
 	}
 
 	if (npts > 2 || l->style != SOLID_LINE)
-	    put_poly_or_patternline(p[0], p[1], l);
+		put_poly_or_patternline(p[0], p[1], l);
 	else	/* two points, solid line */
-	    put_line_or_vector(p[0], p[1], l);
+		put_line_or_vector(p[0], p[1], l);
 }
 
 void
@@ -1792,12 +1826,12 @@ get_xsplinepoints(F_control c[8], struct d_pos p[8], double s)
 	double	x = 1, y = 0.41421356;	/* y = tan(pi/8) ( = sqrt(2) - 1 ) */
 
 	for (i = 0; i < 8; ++i) {
-	    c[i].lx = 0.;
-	    c[i].ly = 0.;
-	    c[i].rx = 0.;
-	    c[i].ry = 0.;
-	    c[i].next = &(c[i+1]);
-	    c[i].s = S_SPLINE_APPROX;
+		c[i].lx = 0.;
+		c[i].ly = 0.;
+		c[i].rx = 0.;
+		c[i].ry = 0.;
+		c[i].next = &(c[i+1]);
+		c[i].s = S_SPLINE_APPROX;
 	}
 	c[i-1].next = NULL;
 
@@ -1849,11 +1883,11 @@ put_patternellipse(F_ellipse *e)
 	sina = sin(angle);
 	/* scale, rotate and move the unit circle*/
 	for (i = 0; i < 8; ++i) {
-	    p[i].x = e->center.x + round(cosa * e->radiuses.x * exi[i].x
-					  - sina * e->radiuses.y * exi[i].y);
-	    p[i].y = e->center.y + round(sina * e->radiuses.x * exi[i].x
-					  + cosa * e->radiuses.y * exi[i].y);
-	    p[i].next = &(p[i+1]);
+		p[i].x = e->center.x + round(cosa * e->radiuses.x * exi[i].x
+				- sina * e->radiuses.y * exi[i].y);
+		p[i].y = e->center.y + round(sina * e->radiuses.x * exi[i].x
+				+ cosa * e->radiuses.y * exi[i].y);
+		p[i].next = &(p[i+1]);
 	}
 	p[i-1].next = NULL;
 
@@ -1899,7 +1933,7 @@ put_patternoval(F_point *p, F_point *q, F_line *l)
 	dy = q->y - p->y;
 	rad = l->radius;
 	if (MIN(abs(dx), abs(dy)) < 2*rad )
-	    rad = MIN(abs(dx), abs(dy))/2;
+		rad = MIN(abs(dx), abs(dy))/2;
 
 	dx = dx > 0 ? 1: -1;
 	dy = dy > 0 ? 1: -1;
@@ -1912,9 +1946,9 @@ put_patternoval(F_point *p, F_point *q, F_line *l)
 	get_xsplinepoints(c, u, 1.0278126);
 	/* scale the control points for the unit circle */
 	for (i = 0; i < 8; ++i) {
-	    o[i].x = round(rad * u[i].x);
-	    o[i].y = round(rad * u[i].y);
-	    o[i].next = &(o[i+1]);
+		o[i].x = round(rad * u[i].x);
+		o[i].y = round(rad * u[i].y);
+		o[i].next = &(o[i+1]);
 	}
 	o[i-1].next = NULL;
 
@@ -1938,49 +1972,50 @@ put_patternoval(F_point *p, F_point *q, F_line *l)
 
 	p = b->points;
 	if (p == NULL)
-	    return;
-/* the octagon is drawn in tex coordinate direction, therefore -dy. */
+		return;
+	/* the octagon is drawn in tex coordinate direction, therefore -dy. */
 #define MOVE(x1,y1)	p->x = x1 + dx * p->x;	\
-			p->y = y1 - dy * p->y;	\
-			p = p->next
-/* Insert points at the axes into the polyline, such that the lines connecting
- * the four quadrants of the circle are exactly horizontal or vertical. */
+	p->y = y1 - dy * p->y;	\
+	p = p->next
+	/* Insert points at the axes into the polyline, such that the lines
+	   connecting the four quadrants of the circle are exactly
+	   horizontal or vertical. */
 #define INSERT(x1,y1,x2,y2)	o[i] = *p;			\
-				r[i] = p;			\
-				p->next = &(o[i]);		\
-				p->x = x1 + dx * p->x;		\
-				p->y = y1 - dy * p->y;		\
-				o[i].x = x2 + dx * o[i].x;	\
-				o[i].y = y2 - dy * o[i].y;	\
-				p = o[i].next;			\
-				++i
+	r[i] = p;			\
+	p->next = &(o[i]);		\
+	p->x = x1 + dx * p->x;		\
+	p->y = y1 - dy * p->y;		\
+	o[i].x = x2 + dx * o[i].x;	\
+	o[i].y = y2 - dy * o[i].y;	\
+	p = o[i].next;			\
+	++i
 	while (p->y > 0) {
-	    MOVE(x2,y1);
+		MOVE(x2,y1);
 	}
 	i = 0;
 	if (p->y == 0) {
-	    INSERT(x2,y1,x2,y2);
+		INSERT(x2,y1,x2,y2);
 	}
 	while (p->x > 0) {
-	    MOVE(x2,y2);
+		MOVE(x2,y2);
 	}
 	if (p->x == 0) {
-	    INSERT(x2,y2,x1,y2);
+		INSERT(x2,y2,x1,y2);
 	}
 	while (p->y < 0) {
-	    MOVE(x1,y2);
+		MOVE(x1,y2);
 	}
 	if (p->y == 0) {
-	    INSERT(x1,y2,x1,y1);
+		INSERT(x1,y2,x1,y1);
 	}
 	while (p->x < 0) {
-	    MOVE(x1,y1);
+		MOVE(x1,y1);
 	}
 	if (p->x == 0) {
-	    INSERT(x1,y1,x2,y1);
+		INSERT(x1,y1,x2,y1);
 	}
 	while (p != NULL) {
-	    MOVE(x2,y1);
+		MOVE(x2,y1);
 	}
 
 	x1 = verbose;
@@ -1989,7 +2024,7 @@ put_patternoval(F_point *p, F_point *q, F_line *l)
 	verbose = x1;
 	/* restore the original point sequence */
 	while (i--)
-	    r[i]->next = o[i].next;
+		r[i]->next = o[i].next;
 	free_linestorage(b);
 }
 
@@ -2061,14 +2096,15 @@ put_ellipse(F_ellipse *e)
 		XCOORD(round(e->center.x - sina * e->radiuses.y * exi[0].y)),
 		YCOORD(round(e->center.y + cosa * e->radiuses.y * exi[0].y)));
 	for (i = 1; i < 13; i = j) {
-	    fputs("\\curveto", tfp);
-	    for (j = i; j < i + 3; ++j)
-		   fprintf(tfp,"(%d,%d)",
-			XCOORD(round(e->center.x + cosa * e->radiuses.x * exi[j].x
-					   - sina * e->radiuses.y * exi[j].y)),
-			YCOORD(round(e->center.y + sina * e->radiuses.x * exi[j].x
-					   + cosa * e->radiuses.y * exi[j].y)));
-	    if (j == 7) fputc('\n', tfp);
+		fputs("\\curveto", tfp);
+		for (j = i; j < i + 3; ++j)
+			fprintf(tfp,"(%d,%d)", XCOORD(round(
+				e->center.x + cosa * e->radiuses.x * exi[j].x
+					- sina * e->radiuses.y * exi[j].y)),
+				YCOORD(round(
+				e->center.y + sina * e->radiuses.x * exi[j].x
+					+ cosa * e->radiuses.y * exi[j].y)));
+		if (j == 7) fputc('\n', tfp);
 	}
 	fputs("\\closepath", tfp);
 }
@@ -2085,28 +2121,31 @@ genpict2e_ellipse(F_ellipse *e)
 	 */
 
 	if (verbose)
-	    fputs("%\n% Fig ELLIPSE object\n%\n", tfp);
+		fputs("%\n% Fig ELLIPSE object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ", e->comments, "");
 
 	if (e->fill_style != UNFILLED) {
-	    set_fillcolor(e->fill_color, e->fill_style, &(e->pen_color));
+		set_fillcolor(e->fill_color, e->fill_style, &(e->pen_color));
 
-	    /* fill the ellipse */
-	    if (e->radiuses.x == e->radiuses.y) { /* filled circle */
-		if (epiccompatible)
-		    fprintf(tfp,
-			"\\circlearc[1]{%d}{%d}{%d}{0}{360}\\closepath\\fillpath\n",
-			XCOORD(e->center.x), YCOORD(e->center.y), e->radiuses.x);
-		else
-		    fprintf(tfp, "\\put(%d,%d){\\circle*{%d}}\n",
-			    XCOORD(e->center.x), YCOORD(e->center.y),
-			    2*e->radiuses.x);
-	    } else {
-		put_ellipse(e);
-		fputs("\\fillpath\n", tfp);
-	    }
+		/* fill the ellipse */
+		if (e->radiuses.x == e->radiuses.y) { /* filled circle */
+			if (epiccompatible)
+				fprintf(tfp, "\\circlearc[1]{%d}{%d}{%d}{0}"
+						"{360}\\closepath\\fillpath\n",
+						XCOORD(e->center.x),
+						YCOORD(e->center.y),
+						e->radiuses.x);
+			else
+				fprintf(tfp, "\\put(%d,%d){\\circle*{%d}}\n",
+						XCOORD(e->center.x),
+						YCOORD(e->center.y),
+						2*e->radiuses.x);
+		} else {
+			put_ellipse(e);
+			fputs("\\fillpath\n", tfp);
+		}
 	}
 
 	if (e->thickness == 0) return;
@@ -2115,21 +2154,24 @@ genpict2e_ellipse(F_ellipse *e)
 	set_linewidth(e->thickness);
 
 	if (e->style == SOLID_LINE) {
-	    if (e->radiuses.x == e->radiuses.y) { /* circle outline */
-		if (epiccompatible)
-		    fprintf(tfp,
-			"\\circlearc[1]{%d}{%d}{%d}{0}{360}\\closepath\\strokepath\n",
-			XCOORD(e->center.x), YCOORD(e->center.y), e->radiuses.x);
-		else
-		    fprintf(tfp, "\\put(%d,%d){\\circle{%d}}\n",
-			    XCOORD(e->center.x), YCOORD(e->center.y),
-			    2*e->radiuses.x);
-	    } else {
-		put_ellipse(e);
-		fputs("\\strokepath\n", tfp);
-	    }
+		if (e->radiuses.x == e->radiuses.y) { /* circle outline */
+			if (epiccompatible)
+				fprintf(tfp,"\\circlearc[1]{%d}{%d}{%d}{0}{360}"
+						"\\closepath\\strokepath\n",
+						XCOORD(e->center.x),
+						YCOORD(e->center.y),
+						e->radiuses.x);
+			else
+				fprintf(tfp, "\\put(%d,%d){\\circle{%d}}\n",
+						XCOORD(e->center.x),
+						YCOORD(e->center.y),
+						2*e->radiuses.x);
+		} else {
+			put_ellipse(e);
+			fputs("\\strokepath\n", tfp);
+		}
 	} else {
-	    put_patternellipse(e);
+		put_patternellipse(e);
 	}
 }
 
@@ -2145,7 +2187,7 @@ genpict2e_text(F_text *t)
 		need_conversion = check_conversion("UTF-8", input_encoding);
 
 	if (verbose)
-	    fputs("%\n% Fig TEXT object\n%\n", tfp);
+		fputs("%\n% Fig TEXT object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ", t->comments, "");
@@ -2154,20 +2196,20 @@ genpict2e_text(F_text *t)
 	y = YCOORD(t->base_y);
 
 	switch (t->type) {
-	    case T_LEFT_JUSTIFIED:
-	    case DEFAULT:
+	case T_LEFT_JUSTIFIED:
+	case DEFAULT:
 		tpos = "[lb]";
 		break;
 
-	    case T_CENTER_JUSTIFIED:
+	case T_CENTER_JUSTIFIED:
 		tpos = "[b]";
 		break;
 
-	    case T_RIGHT_JUSTIFIED:
+	case T_RIGHT_JUSTIFIED:
 		tpos = "[rb]";
 		break;
 
-	    default:
+	default:
 		fputs("Text incorrectly positioned\n", stderr);
 		tpos = "[lb]";	/* make left in this case */
 	}
@@ -2176,8 +2218,8 @@ genpict2e_text(F_text *t)
 
 	fprintf(tfp, "\\put(%d,%d){", x, y);
 
-        if(t->angle)
-          fprintf(tfp, "\\rotatebox{%.1f}{", t->angle*180/M_PI);
+	if(t->angle)
+		fprintf(tfp, "\\rotatebox{%.1f}{", t->angle*180/M_PI);
 
 	/* smash is used to position text at baseline */
 	fprintf(tfp, "\\makebox(0,0)%s{\\smash{", tpos);
@@ -2186,8 +2228,8 @@ genpict2e_text(F_text *t)
 
 	put_string(t->cstring, t->font, special_text(t), need_conversion);
 
-        if(t->angle)
-             fputc('}', tfp);
+	if(t->angle)
+		fputc('}', tfp);
 	fputs("}}}\n", tfp);
 }
 
@@ -2215,9 +2257,9 @@ put_patternarc(
 	get_xsplinepoints(z,u,1.025821);
 	/* scale the control points */
 	for (i = 0; i < 8; ++i) {
-	    o[i].x = round(rad * u[i].x);
-	    o[i].y = round(rad * u[i].y);
-	    o[i].next = &(o[i+1]);
+		o[i].x = round(rad * u[i].x);
+		o[i].y = round(rad * u[i].y);
+		o[i].next = &(o[i+1]);
 	}
 	o[i-1].next = NULL;
 
@@ -2241,7 +2283,7 @@ put_patternarc(
 
 	p = l->points;
 	if (p == NULL)
-	    return;
+		return;
 
 	/*
 	 * Walk along the spline, until the arc angle is covered.
@@ -2301,7 +2343,7 @@ put_patternarc(
 	/* the polyline-circle wobbles around the real radius, so get the
 	 * current radius */
 	rot = sqrt((double) o[3].next->x * o[3].next->x
-		    + (double) o[3].next->y * o[3].next->y);
+			+ (double) o[3].next->y * o[3].next->y);
 	o[1].x = round(rot*cosr);
 	o[1].y = round(rot*sinr);
 	o[1].next = NULL;
@@ -2314,11 +2356,11 @@ put_patternarc(
 	 * TODO: get that right, the YDIR here and below, less convoluted
 	 */
 	if (a->direction) {
-	    i = -1;
-	    rot = YDIR(angle1 - M_PI + a1);
+		i = -1;
+		rot = YDIR(angle1 - M_PI + a1);
 	} else {
-	    i = 1;
-	    rot = YDIR(angle1 - a1);
+		i = 1;
+		rot = YDIR(angle1 - a1);
 	}
 	cosr = cos(rot);
 	sinr = sin(rot);
@@ -2333,18 +2375,18 @@ put_patternarc(
 	}
 
 	if (a->type == T_PIE_WEDGE_ARC) {
-	    l->type = T_POLYGON;
-	    /* xfig closes polygons */
-	    o[0].x = c->x;
-	    o[0].y = c->y;
-	    o[0].next = l->points;
-	    o[1].next = &(o[2]);
-	    o[2].x = c->x;
-	    o[2].y = c->y;
-	    o[2].next = NULL;
-	    l->points = &(o[0]);
+		l->type = T_POLYGON;
+		/* xfig closes polygons */
+		o[0].x = c->x;
+		o[0].y = c->y;
+		o[0].next = l->points;
+		o[1].next = &(o[2]);
+		o[2].x = c->x;
+		o[2].y = c->y;
+		o[2].next = NULL;
+		l->points = &(o[0]);
 	} else {
-	    l->type = T_POLYLINE;
+		l->type = T_POLYLINE;
 	}
 
 	i = verbose;
@@ -2353,7 +2395,7 @@ put_patternarc(
 	/* restore the original point sequence */
 	o[3].next->next = o[4].next;
 	if (a->type == T_PIE_WEDGE_ARC)
-	    l->points = o[0].next;
+		l->points = o[0].next;
 	free_linestorage(l);
 }
 
@@ -2367,14 +2409,14 @@ genpict2e_arc(F_arc *a)
 	double	rad, angle1, angle2, offa1 = 0., offa2 = 0.;
 
 	if (verbose)
-	    fputs("%\n% Fig ARC object\n%\n", tfp);
+		fputs("%\n% Fig ARC object\n%\n", tfp);
 
 	/* print any comments prefixed with "%" */
 	print_comments("% ", a->comments, "");
 
 	/* nothing to do; return; */
 	if (a->fill_style == UNFILLED && a->thickness == 0
-	    && !a->for_arrow && !a->back_arrow) return;
+			&& !a->for_arrow && !a->back_arrow) return;
 
 	c.x = round(a->center.x);
 	c.y = round(a->center.y);
@@ -2389,9 +2431,10 @@ genpict2e_arc(F_arc *a)
 	/* The radius is the mean of the two radii - they can not differ by more
 	 * than one pixel. Round the radius to the nearest tenth */
 	rad = 0.5*(sqrt((double)d1x*d1x + (double)d1y*d1y)
-		   + sqrt((double)d2x*d2x + (double)d2y*d2y));
+			+ sqrt((double)d2x*d2x + (double)d2y*d2y));
 	rad = round(rad*10.0) / 10.0;
-	/* how precise must the angle be given?  1/rad is the view angle of one pixel */
+	/* how precise must the angle be given? 
+	   1/rad is the view angle of one pixel */
 	da = 180.0 / M_PI / rad;
 	preca = 0;
 	for (d = 1.0; da < 1.0/d; d *= 10.) ++preca;
@@ -2399,76 +2442,80 @@ genpict2e_arc(F_arc *a)
 	/* prepare the angles for pict2e */
 	/* direction == 0 clockwise, 1 counterclockwise */
 	if (a->direction) { /* counter-clockwise */
-	    if (angle1 > angle2)
-		angle2 += 360.;
-	    da = angle2 - angle1;
+		if (angle1 > angle2)
+			angle2 += 360.;
+		da = angle2 - angle1;
 	} else { /* !a->direction, clockwise */
-	    if (angle1 < angle2)
-		angle1 += 360.;
-	    da = angle1 - angle2;
+		if (angle1 < angle2)
+			angle1 += 360.;
+		da = angle1 - angle2;
 	}
 	while (da > 360.) da -= 360.;
 
 	/* Fill the arc */
 	if (a->fill_style != UNFILLED && da > 0.) {
-	    set_fillcolor(a->fill_color, a->fill_style, &(a->pen_color));
-	    fprintf(tfp, "\\circlearc[1]{%d}{%d}{%g}{%.*f}{%.*f}", XCOORD(c.x),
-		    YCOORD(c.y), rad, preca, angle1, preca, angle2);
-	    switch (a->type) {
+		set_fillcolor(a->fill_color, a->fill_style, &(a->pen_color));
+		fprintf(tfp, "\\circlearc[1]{%d}{%d}{%g}{%.*f}{%.*f}",
+				XCOORD(c.x), YCOORD(c.y), rad,
+				preca, angle1, preca, angle2);
+		switch (a->type) {
 		case T_PIE_WEDGE_ARC:
-		    fprintf(tfp,"\\lineto(%d,%d)\\closepath\\fillpath\n",
-			    XCOORD(c.x), YCOORD(c.y) );
-		    break;
+			fprintf(tfp,"\\lineto(%d,%d)\\closepath\\fillpath\n",
+					XCOORD(c.x), YCOORD(c.y) );
+			break;
 		default:
-		    fputs("Unknown arc type - please report this bug.", stderr);
-		    /* the comment below silences gcc's warning
-		       -Wimplicit-fallthrough */
-		    /* intentionally fall through */
+			fputs("Unknown arc type - please report this bug.",
+					stderr);
+			/* the comment below silences gcc's warning
+			   -Wimplicit-fallthrough */
+			/* intentionally fall through */
 		case T_OPEN_ARC:
-		    fputs("\\closepath\\fillpath\n", tfp);
-	    }
+			fputs("\\closepath\\fillpath\n", tfp);
+		}
 	}
 
 	if (a->style != SOLID_LINE && a->thickness != 0) {
-	    put_patternarc(&c, rad, da*M_PI/180., angle1*M_PI/180, a);
-	    return;
+		put_patternarc(&c, rad, da*M_PI/180., angle1*M_PI/180, a);
+		return;
 	}
 
 	set_color(a->pen_color);
 
 	/* Draw possible arrows and compute the new start and end angles */
 	if (a->back_arrow) {
-	    p.x = a->point[0].x;
-	    p.y = a->point[0].y;
-	    compute_arcarrow_angle((double)c.x, (double)c.y, (double)p.x,
-		    (double)p.y, !a->direction, a->back_arrow, &(q.x), &(q.y));
-	    put_arrow(&q, &p, a->back_arrow, a->thickness);
-	    d = get_offset(a->back_arrow, round(a->thickness), a->cap_style);
-	    if (d) {
-		offa1 = atan(d/rad) * 180. / M_PI;
-		angle1 = angle1 + (a->direction ? offa1 : (-offa1) );
-		if (offa1 >= da)
-		    return;
-	    }
+		p.x = a->point[0].x;
+		p.y = a->point[0].y;
+		compute_arcarrow_angle((double)c.x, (double)c.y, (double)p.x,
+				(double)p.y, !a->direction, a->back_arrow,
+				&(q.x), &(q.y));
+		put_arrow(&q, &p, a->back_arrow, a->thickness);
+		d = get_offset(a->back_arrow, round(a->thickness),a->cap_style);
+		if (d) {
+			offa1 = atan(d/rad) * 180. / M_PI;
+			angle1 = angle1 + (a->direction ? offa1 : (-offa1) );
+			if (offa1 >= da)
+				return;
+		}
 	}
 
 	if (a->for_arrow) {
-	    p.x = a->point[2].x;
-	    p.y = a->point[2].y;
-	    compute_arcarrow_angle((double)c.x, (double)c.y, (double)p.x,
-		    (double)p.y, a->direction, a->for_arrow, &(q.x), &(q.y));
-	    put_arrow(&q, &p, a->for_arrow, a->thickness);
-	    d = get_offset(a->for_arrow, round(a->thickness), a->cap_style);
-	    if (d) {
-		offa2 = atan(d/rad) * 180. / M_PI;
-		angle2 = angle2 - (a->direction ? offa2 : (-offa2) );
-		if (offa2 >= da)
-		    return;
-	    }
+		p.x = a->point[2].x;
+		p.y = a->point[2].y;
+		compute_arcarrow_angle((double)c.x, (double)c.y, (double)p.x,
+				(double)p.y, a->direction, a->for_arrow,
+				&(q.x), &(q.y));
+		put_arrow(&q, &p, a->for_arrow, a->thickness);
+		d = get_offset(a->for_arrow, round(a->thickness), a->cap_style);
+		if (d) {
+			offa2 = atan(d/rad) * 180. / M_PI;
+			angle2 = angle2 - (a->direction ? offa2 : (-offa2) );
+			if (offa2 >= da)
+				return;
+		}
 	}
 
 	if ((a->for_arrow || a->back_arrow) && offa1 + offa2 >= da)
-	    return;
+		return;
 
 	if (a->thickness == 0) return;
 
@@ -2477,16 +2524,17 @@ genpict2e_arc(F_arc *a)
 	/* Arcs do not have a join_style, but pie-wedge arcs should have one. */
 	/* set_linejoin(a->join_style) */
 	fprintf(tfp, "\\circlearc[1]{%d}{%d}{%g}{%.*f}{%.*f}",
-		XCOORD(c.x), YCOORD(c.y), rad, preca, angle1, preca, angle2);
+			XCOORD(c.x), YCOORD(c.y), rad, preca, angle1,
+			preca, angle2);
 	switch (a->type) {
-	    case T_PIE_WEDGE_ARC:
+	case T_PIE_WEDGE_ARC:
 		fprintf(tfp, "\\lineto(%d,%d)\\closepath\\strokepath\n",
-			XCOORD(c.x), YCOORD(c.y) );
+				XCOORD(c.x), YCOORD(c.y) );
 		break;
-	    case T_OPEN_ARC:
+	case T_OPEN_ARC:
 		fputs("\\strokepath\n", tfp);
 		break;
-	    default:
+	default:
 		fputs("\\strokepath\n", tfp);
 		fputs("Unknown arc type - please report this bug.", stderr);
 	}

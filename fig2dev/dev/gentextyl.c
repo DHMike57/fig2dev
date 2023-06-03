@@ -60,45 +60,44 @@ static int	linethick = 2;	/* Range is 1-12 `pixels' */
 static void
 gentextyl_option(char opt, char *optarg)
 {
-  int i;
+	int i;
 
 	switch (opt) {
-		case 'a':
-		    /* capfonts = 1; */
-		    break;
+	case 'a':
+		/* capfonts = 1; */
+		break;
 
-		case 'f':			/* set default text font */
-		    for ( i = 1; i <= MAX_FONT; i++ )
+	case 'f':			/* set default text font */
+		for ( i = 1; i <= MAX_FONT; i++ )
 			if ( !strcmp(optarg, texfontnames[i]) ) break;
 
-		    if ( i > MAX_FONT)
-			{
-			  fprintf(stderr,
-				 "warning: non-standard font name %s ignored\n",
-				 optarg);
-			}
-		 else
-			{
-			  texfontnames[0] = texfontnames[i];
+		if ( i > MAX_FONT)
+		{
+			fprintf(stderr, "warning: non-standard font name %s "
+					"ignored\n", optarg);
+		}
+		else
+		{
+			texfontnames[0] = texfontnames[i];
 #ifdef NFSS
-			  texfontfamily[0] = texfontfamily[i];
-			  texfontseries[0] = texfontseries[i];
-			  texfontshape[0] = texfontshape[i];
+			texfontfamily[0] = texfontfamily[i];
+			texfontseries[0] = texfontseries[i];
+			texfontshape[0] = texfontshape[i];
 #endif
-			}
-		    break;
+		}
+		break;
 
-		case 'l':			/* set line thickness */
-		    linethick = atoi(optarg);
-		    if (linethick < 1 || linethick > 12) {
-		      put_msg("Line thickness must be between 1 and 12.");
-		      exit(1);
-		    }
-		    break;
+	case 'l':			/* set line thickness */
+		linethick = atoi(optarg);
+		if (linethick < 1 || linethick > 12) {
+			put_msg("Line thickness must be between 1 and 12.");
+			exit(1);
+		}
+		break;
 
-		case 'G':
-		case 'L':
-		    break;
+	case 'G':
+	case 'L':
+		break;
 
 	default:
 		put_msg(Err_badarg, opt, "textyl");
@@ -106,9 +105,9 @@ gentextyl_option(char opt, char *optarg)
 	}
 }
 
-#define			TOP	(10.5)	/* top of page is 10.5 inch */
-#define SCALE (65536.0*72.27)
-#define measure 'S'
+#define TOP	(10.5)	/* top of page is 10.5 inch */
+#define SCALE	(65536.0*72.27)
+#define measure	'S'
 
 static int
 convy(double a)
@@ -165,7 +164,7 @@ gentextyl_line(F_line *l)
 
 	fputs("%\n% Fig POLYLINE object\n%\n", tfp);
 
-/*	set_linewidth(l->thickness);	*/
+	/*	set_linewidth(l->thickness);	*/
 	set_style(l->style);
 
 	p = l->points;
@@ -173,32 +172,34 @@ gentextyl_line(F_line *l)
 
 
 	if (q == NULL) { /* A single point line */
-	    fprintf(tfp, "\\special{tyl line %c %d L %d %u %u; %u %u}\n",
-	       measure,linethick,line_style,
-			convx((double)p->x), convy((double)p->y),
-			convx((double)p->x), convy((double)p->y));
-	    return;
-	    }
+		fprintf(tfp, "\\special{tyl line %c %d L %d %u %u; %u %u}\n",
+				measure,linethick,line_style,
+				convx((double)p->x), convy((double)p->y),
+				convx((double)p->x), convy((double)p->y));
+		return;
+	}
 	if (l->back_arrow)
-	    draw_arrow_head((double)q->x, (double)q->y, (double)p->x,
-		(double)p->y, l->back_arrow->ht, l->back_arrow->wid);
+		draw_arrow_head((double)q->x, (double)q->y,
+				(double)p->x, (double)p->y,
+				l->back_arrow->ht, l->back_arrow->wid);
 	set_style(l->style);
 
 	while (q->next != NULL) {
 
-	    putline(p->x, p->y, q->x, q->y);
-	    p = q;
-	    q = q->next;
-	    }
+		putline(p->x, p->y, q->x, q->y);
+		p = q;
+		q = q->next;
+	}
 
 	putline(p->x, p->y, q->x, q->y);
 	if (l->for_arrow)
-	    draw_arrow_head((double)p->x, (double)p->y, (double)q->x,
-		(double)q->y, l->for_arrow->ht, l->for_arrow->wid);
+		draw_arrow_head((double)p->x, (double)p->y,
+				(double)q->x, (double)q->y,
+				l->for_arrow->ht, l->for_arrow->wid);
 
 	if (l->fill_style && (int)l->fill_style != DEFAULT)
 		fputs("Line area fill not implemented\n", stderr);
-	}
+}
 
 /*
  * set_style - issue style commands as appropriate
@@ -241,7 +242,7 @@ gentextyl_spline(F_spline *s)
 	/* print any comments prefixed with "%" */
 	print_comments("% ",s->comments, "");
 
-/*	set_linewidth(s->thickness);	*/
+	/*	set_linewidth(s->thickness);	*/
 	set_style(s->style);
 
 	if (int_spline(s))
@@ -264,35 +265,36 @@ gentextyl_ellipse(F_ellipse *e)
 
 	fputs("%\n% Fig ELLIPSE\n%\n", tfp);
 
-/*	set_linewidth(e->thickness);	*/
+	/*	set_linewidth(e->thickness);	*/
 	set_style(e->style);
 
 	if (e->radiuses.x == e->radiuses.y) {
 		fprintf(tfp, "\\special{tyl arc %c %d L 0 %u @ %u,%u 0 360}\n",
-			measure, linethick, convx((double)e->radiuses.x),
-			convx((double)e->center.x), convy((double)e->center.y));
-	}
-	else {
-	  if (e->radiuses.x > e->radiuses.y) {
-	    sy = 100;
-	    sx = ((float)e->radiuses.x/(float)e->radiuses.y) * 100.0;
-	    radius = e->radiuses.y;
-	  }
-	  else {
-	    sx = 100;
-	    sy = ((float)e->radiuses.y/(float)e->radiuses.x) * 100.0;
-	    radius = e->radiuses.x;
-	  }
-		fprintf(tfp,
-		"\\special{tyl arc %c T %u %u 0 0 0 %d L 0 %u @ %u,%u 0 360}\n",
-			measure, sx, sy, linethick, convx((double)radius),
-			convx((double)e->center.x), convy((double)e->center.y));
+				measure, linethick,convx((double)e->radiuses.x),
+				convx((double)e->center.x),
+				convy((double)e->center.y));
+	} else {
+		if (e->radiuses.x > e->radiuses.y) {
+			sy = 100;
+			sx = ((float)e->radiuses.x/(float)e->radiuses.y) *100.0;
+			radius = e->radiuses.y;
+		} else {
+			sx = 100;
+			sy = ((float)e->radiuses.y/(float)e->radiuses.x) *100.0;
+			radius = e->radiuses.x;
+		}
+		fprintf(tfp, "\\special{tyl arc %c T %u %u 0 0 0 %d L 0 %u @ %u"
+				",%u 0 360}\n",
+				measure, sx, sy, linethick,
+				convx((double)radius),
+				convx((double)e->center.x),
+				convy((double)e->center.y));
 		if (e->fill_style && (int)e->fill_style != DEFAULT)
 			fputs("Ellipse area fill not implemented\n", stderr);
-		}
 	}
+}
 
-#define		HT_OFFSET	(0.2 / 72.0)
+#define HT_OFFSET	(0.2 / 72.0)
 
 void
 gentextyl_text(F_text *t)
@@ -330,7 +332,7 @@ gentextyl_arc(F_arc *a)
 	/* print any comments prefixed with "%" */
 	print_comments("% ",a->comments, "");
 
-/*	set_linewidth(a->thickness);	*/
+	/*	set_linewidth(a->thickness);	*/
 	set_style(a->style);
 
 	cx = a->center.x; cy = a->center.y;
@@ -368,22 +370,23 @@ gentextyl_arc(F_arc *a)
 	rtop(dx1, dy1, &r1, &th1);
 	rtop(dx2, dy2, &r2, &th2);
 
-/*	set_linewidth(a->thickness);	*/
+	/*	set_linewidth(a->thickness);	*/
 
 	if (a->direction) { /* Counterclockwise */
 		fprintf(tfp, "\\special{tyl arc %c %d L 0 %u @ %u,%u %d %d}\n",
-			measure, linethick, convx(r1), convx(cx), convy(cy),
-			(int)(180/M_PI * th1), (int)(180/M_PI * th2));
-	      }
-	else {
+				measure, linethick,
+				convx(r1), convx(cx), convy(cy),
+				(int)(180/M_PI * th1), (int)(180/M_PI * th2));
+	} else {
 		fprintf(tfp, "\\special{tyl arc %c %d L 0 %u @ %u,%u %d %d}\n",
-			measure, linethick, convx(r1), convx(cx), convy(cy),
-			(int)(180/M_PI * th2), (int)(180/M_PI * th1));
-	      }
+				measure, linethick,
+				convx(r1), convx(cx), convy(cy),
+				(int)(180/M_PI * th2), (int)(180/M_PI * th1));
+	}
 
 	if (a->fill_style && (int)a->fill_style != DEFAULT)
 		fputs("Arc area fill not implemented\n", stderr);
-	}
+}
 
 /*
  * rtop - rectangular to polar conversion
@@ -410,8 +413,7 @@ draw_arrow_head(double x1, double y1, double x2, double y2,
 	l = sqrt(dx*dx+dy*dy);
 	if (l == 0) {
 		return;
-	}
-	else {
+	} else {
 		sina = dy / l;  cosa = dx / l;
 	}
 	xb = x2*cosa - y2*sina;
@@ -426,12 +428,12 @@ draw_arrow_head(double x1, double y1, double x2, double y2,
 
 	fputs("%\n% arrow head\n%\n", tfp);
 
-	fprintf(tfp, "\\special{tyl line %c %d %u %u; %u %u}\n",
-		measure, linethick, convx(xc), convy(yc), convx(x2), convy(y2));
-	fprintf(tfp, "\\special{tyl line %c %d %u %u; %u %u}\n",
-		measure, linethick, convx(x2), convy(y2), convx(xd), convy(yd));
+	fprintf(tfp, "\\special{tyl line %c %d %u %u; %u %u}\n", measure,
+			linethick, convx(xc), convy(yc), convx(x2), convy(y2));
+	fprintf(tfp, "\\special{tyl line %c %d %u %u; %u %u}\n", measure,
+			linethick, convx(x2), convy(y2), convx(xd), convy(yd));
 
-	}
+}
 
 #define THRESHOLD (10.0)
 double last_x, last_y;
@@ -452,9 +454,7 @@ quadratic_spline(double a1, double b1, double a2, double b2,
 				measure, linethick,convx(last_x),convy(last_y),
 				convx(xmid), convy(ymid));
 		last_x = xmid; last_y = ymid;
-	}
-
-	else {
+	} else {
 		quadratic_spline(x1, y1, ((x1+a2)/2), ((y1+b2)/2),
 				((3*a2+a3)/4), ((3*b2+b3)/4), xmid, ymid);
 	}
@@ -464,9 +464,7 @@ quadratic_spline(double a1, double b1, double a2, double b2,
 				measure, linethick, convx(last_x),
 				convy(last_y), convx(x4), convy(y4));
 		last_x = x4; last_y = y4;
-	}
-
-	else {
+	} else {
 		quadratic_spline(xmid, ymid, ((a2+3*a3)/4), ((b2+3*b3)/4),
 				((a3+x4)/2), ((b3+y4)/2), x4, y4);
 	}
@@ -503,14 +501,14 @@ gentextyl_ctl_spline(F_spline *s)
 	}
 
 	for (p = p->next; p != NULL; p = p->next) {
-	    x1 = x2;  y1 = y2;
-	    x2 = p->x;	y2 = p->y;
-	    cx3 = (3 * x1 + x2) / 4;  cy3 = (3 * y1 + y2) / 4;
-	    cx4 = (x1 + x2) / 2;      cy4 = (y1 + y2) / 2;
-	    quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
-	    cx1 = cx4;	cy1 = cy4;
-	    cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
-	    }
+		x1 = x2;  y1 = y2;
+		x2 = p->x;	y2 = p->y;
+		cx3 = (3 * x1 + x2) / 4;  cy3 = (3 * y1 + y2) / 4;
+		cx4 = (x1 + x2) / 2;      cy4 = (y1 + y2) / 2;
+		quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
+		cx1 = cx4;	cy1 = cy4;
+		cx2 = (x1 + 3 * x2) / 4;  cy2 = (y1 + 3 * y2) / 4;
+	}
 	x1 = x2;  y1 = y2;
 	p = s->points->next;
 	x2 = p->x;  y2 = p->y;
@@ -574,9 +572,7 @@ bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2,
 				measure, linethick, convx(last_x),
 				convy(last_y), convx(x3), convy(y3));
 		last_x = x3; last_y = y3;
-	}
-
-	else {
+	} else {
 		tx = (a1 + a2) / 2;		ty = (b1 + b2) / 2;
 		sx1 = (x0 + a1) / 2;	sy1 = (y0 + b1) / 2;
 		sx2 = (sx1 + tx) / 2;	sy2 = (sy1 + ty) / 2;

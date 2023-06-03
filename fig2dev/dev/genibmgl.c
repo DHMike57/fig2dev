@@ -87,7 +87,8 @@ static	int	ibmgec		 = true;
 static	int	ibmgec		 = false;
 #endif
 
-static	bool	pcljcl		 = false;  /* flag to precede IBMGL (HP/GL) output with PCL job control */
+		/* flag to precede IBMGL (HP/GL) output with PCL job control */
+static	bool	pcljcl		 = false;
 static	bool	reflected	 = false;
 static	bool	correct_font_size = false;
 static	int	fonts		 = FONTS;
@@ -151,44 +152,43 @@ static	double	high[]
 /* Map of Postscript font number to HPGL/2 Fonts
  */
 static struct {
-    int font, italic, bold;
-} psfont2hpgl[] =
-{
-    /* "Times-Roman",			0 */  { 5, 0, 0 },
-    /* "Times-Italic",			1 */  { 5, 1, 0 },
-    /* "Times-Bold",			2 */  { 5, 0, 3 },
-    /* "Times-BoldItalic",		3 */  { 5, 1, 3 },
-    /* "AvantGarde-Book",		4 */  { 31, 0, 0 },
-    /* "AvantGarde-BookOblique",	5 */  { 31, 1, 0 },
-    /* "AvantGarde-Demi",		6 */  { 31, 0, 3 },
-    /* "AvantGarde-DemiOblique",	7 */  { 31, 1, 3 },
-    /* "Bookman-Light",			8 */  { 47, 0, 0 },
-    /* "Bookman-LightItalic",		9 */  { 47, 1, 0 },
-    /* "Bookman-Demi",			10 */ { 47, 0, 3 },
-    /* "Bookman-DemiItalic",		11 */ { 47, 1, 3 },
-    /* "Courier",			12 */ { 3, 0, 0 },
-    /* "Courier-Oblique",		13 */ { 3, 1, 0 },
-    /* "Courier-Bold",			14 */ { 3, 0, 3 },
-    /* "Courier-BoldOblique",		15 */ { 3, 1, 3 },
-    /* "Helvetica",			16 */ { 4, 0, 0 },
-    /* "Helvetica-Oblique",		17 */ { 4, 1, 0 },
-    /* "Helvetica-Bold",		18 */ { 4, 0, 3 },
-    /* "Helvetica-BoldOblique",		19 */ { 4, 1, 3 },
-    /* "Helvetica-Narrow",		20 */ { 4, 0, 0 },
-    /* "Helvetica-Narrow-Oblique",	21 */ { 4, 1, 0 },
-    /* "Helvetica-Narrow-Bold",		22 */ { 4, 0, 3 },
-    /* "Helvetica-Narrow-BoldOblique",	23 */ { 4, 1, 3 },
-    /* "NewCenturySchlbk-Roman",	24 */ { 23, 0, 0},
-    /* "NewCenturySchlbk-Italic",	25 */ { 23, 1, 0},
-    /* "NewCenturySchlbk-Bold",		26 */ { 23, 0, 3},
-    /* "NewCenturySchlbk-BoldItalic",	27 */ { 23, 1, 3},
-    /* "Palatino-Roman",		28 */ { 15, 0, 0 },
-    /* "Palatino-Italic",		29 */ { 15, 1, 0 },
-    /* "Palatino-Bold",			30 */ { 15, 0, 3 },
-    /* "Palatino-BoldItalic",		31 */ { 15, 1, 3 },
-    /* "Symbol",			32 */ { 52, 0, 0 }, /* Univers */
-    /* "ZapfChancery-MediumItalic",	33 */ { 43, 0, 0 },
-    /* "ZapfDingbats",			34 */ { 45, 0, 0 },
+	int font, italic, bold;
+} psfont2hpgl[] = {
+	/* "Times-Roman",		0 */  { 5, 0, 0 },
+	/* "Times-Italic",		1 */  { 5, 1, 0 },
+	/* "Times-Bold",		2 */  { 5, 0, 3 },
+	/* "Times-BoldItalic",		3 */  { 5, 1, 3 },
+	/* "AvantGarde-Book",		4 */  { 31, 0, 0 },
+	/* "AvantGarde-BookOblique",	5 */  { 31, 1, 0 },
+	/* "AvantGarde-Demi",		6 */  { 31, 0, 3 },
+	/* "AvantGarde-DemiOblique",	7 */  { 31, 1, 3 },
+	/* "Bookman-Light",		8 */  { 47, 0, 0 },
+	/* "Bookman-LightItalic",	9 */  { 47, 1, 0 },
+	/* "Bookman-Demi",		10 */ { 47, 0, 3 },
+	/* "Bookman-DemiItalic",	11 */ { 47, 1, 3 },
+	/* "Courier",			12 */ { 3, 0, 0 },
+	/* "Courier-Oblique",		13 */ { 3, 1, 0 },
+	/* "Courier-Bold",		14 */ { 3, 0, 3 },
+	/* "Courier-BoldOblique",	15 */ { 3, 1, 3 },
+	/* "Helvetica",			16 */ { 4, 0, 0 },
+	/* "Helvetica-Oblique",		17 */ { 4, 1, 0 },
+	/* "Helvetica-Bold",		18 */ { 4, 0, 3 },
+	/* "Helvetica-BoldOblique",	19 */ { 4, 1, 3 },
+	/* "Helvetica-Narrow",		20 */ { 4, 0, 0 },
+	/* "Helvetica-Narrow-Oblique",	21 */ { 4, 1, 0 },
+	/* "Helvetica-Narrow-Bold",	22 */ { 4, 0, 3 },
+	/* "Helvetica-Narrow-BoldOblique", 23 */ { 4, 1, 3 },
+	/* "NewCenturySchlbk-Roman",	24 */ { 23, 0, 0},
+	/* "NewCenturySchlbk-Italic",	25 */ { 23, 1, 0},
+	/* "NewCenturySchlbk-Bold",	26 */ { 23, 0, 3},
+	/* "NewCenturySchlbk-BoldItalic", 27 */ { 23, 1, 3},
+	/* "Palatino-Roman",		28 */ { 15, 0, 0 },
+	/* "Palatino-Italic",		29 */ { 15, 1, 0 },
+	/* "Palatino-Bold",		30 */ { 15, 0, 3 },
+	/* "Palatino-BoldItalic",	31 */ { 15, 1, 3 },
+	/* "Symbol",			32 */ { 52, 0, 0 }, /* Univers */
+	/* "ZapfChancery-MediumItalic",	33 */ { 43, 0, 0 },
+	/* "ZapfDingbats",		34 */ { 45, 0, 0 },
 };
 
 static void
@@ -321,28 +321,29 @@ genibmgl_start(F_compound *objects)
 	const struct paperdef	*pd;
 
 	if (fabs(mag) < 1.0/2048.0){
-	    fprintf(stderr, "|mag| < 1/2048\n");
-	    exit(1);
-	    }
+		fprintf(stderr, "|mag| < 1/2048\n");
+		exit(1);
+	}
 
 	if (paperspec) {
-	    /* convert ledger (deprecated) to tabloid */
-	    if (strcasecmp(papersize, "ledger") == 0)
-		strcpy(papersize, "tabloid");
+		/* convert ledger (deprecated) to tabloid */
+		if (strcasecmp(papersize, "ledger") == 0)
+			strcpy(papersize, "tabloid");
 
-	    for (pd = paperdef; pd->name != NULL; pd++)
-		if (strcasecmp (papersize, pd->name) == 0) {
-		    pagewidth = pd->width;	/* in points, 1/72" */
-		    pageheight = pd->height;
-		    strcpy(papersize,pd->name);	/* use the "nice" form */
-		    break;
-		    }
+		for (pd = paperdef; pd->name != NULL; pd++)
+			if (strcasecmp (papersize, pd->name) == 0) {
+				pagewidth = pd->width;	/* in points, 1/72" */
+				pageheight = pd->height;
+				strcpy(papersize,pd->name); /* use the "nice" form */
+				break;
+			}
 
-	    if (pagewidth < 0 || pageheight < 0) {
-		fprintf (stderr, "Unknown paper size `%s'\n", papersize);
-		exit (1);
+		if (pagewidth < 0 || pageheight < 0) {
+			fprintf (stderr, "Unknown paper size `%s'\n",
+					papersize);
+			exit (1);
 		}
-	    }
+	}
 
 	points_per_inch = 72;
 	pagewidth  /= points_per_inch;	/* convert to inches */
@@ -350,107 +351,111 @@ genibmgl_start(F_compound *objects)
 	wcmpp = hcmpp = 2.54/points_per_inch;
 
 	if (xl < xu)
-	    if (0.0 < xu)
-		if (xl < pageheight) {
-		    xl	 = (0.0 < xl) ? xl: 0.0;
-		    xu	 = (xu < pageheight) ? xu: pageheight;
-		    }
+		if (0.0 < xu)
+			if (xl < pageheight) {
+				xl	 = (0.0 < xl) ? xl: 0.0;
+				xu	 = (xu < pageheight) ? xu: pageheight;
+			}
+			else {
+				fprintf(stderr, "xll >= %.2f\n", pageheight);
+				exit(1);
+			}
 		else {
-		    fprintf(stderr, "xll >= %.2f\n", pageheight);
-		    exit(1);
-		    }
-	    else {
-		fprintf(stderr, "xur <= 0.0\n");
-		exit(1);
+			fprintf(stderr, "xur <= 0.0\n");
+			exit(1);
 		}
 	else {
-	    fprintf(stderr, "xur <= xll\n");
-	    exit(1);
-	    }
+		fprintf(stderr, "xur <= xll\n");
+		exit(1);
+	}
 
 	if (yl < yu)
-	    if (0.0 < yu)
-		if (yl < pagewidth) {
-		    yl	 = (0.0 < yl) ? yl: 0.0;
-		    yu	 = (yu < pagewidth) ? yu: pagewidth;
-		    }
+		if (0.0 < yu)
+			if (yl < pagewidth) {
+				yl	 = (0.0 < yl) ? yl: 0.0;
+				yu	 = (yu < pagewidth) ? yu: pagewidth;
+			}
+			else {
+				fprintf(stderr, "yll >= %.2f\n", pagewidth);
+				exit(1);
+			}
 		else {
-		    fprintf(stderr, "yll >= %.2f\n", pagewidth);
-		    exit(1);
-		    }
-	    else {
-		fprintf(stderr, "yur <= 0.0\n");
-		exit(1);
+			fprintf(stderr, "yur <= 0.0\n");
+			exit(1);
 		}
 	else {
-	    fprintf(stderr, "yur <= yll\n");
-	    exit(1);
-	    }
+		fprintf(stderr, "yur <= yll\n");
+		exit(1);
+	}
 
 	cpi	 = mag*100.0/sqrt((xu-xl)*(xu-xl) + (yu-yl)*(yu-yl));
 	cpp	 = cpi/ppi;
 
 	/* IBMGL start */
 	if (pcljcl) {
-	    fprintf(tfp,"\033E");
-	    if (landscape) fprintf(tfp, "\033&l1O");
-	    fprintf(tfp, "\033%%0B");	/* reset and set to HP/GL mode */
+		fprintf(tfp,"\033E");
+		if (landscape) fprintf(tfp, "\033&l1O");
+		fprintf(tfp, "\033%%0B");	/* reset and set to HP/GL mode*/
 	}
 
 	fprintf(tfp, "BP;IN;\n");		/* initialize plotter	*/
 
 	if (!landscape) {			/* portrait mode	*/
-	    fprintf(tfp, "RO90;\n");		/* rotate 90 degrees	*/
-	    Xll	 = yl*UNITS_PER_INCH;
-	    Xur	 = yu*UNITS_PER_INCH;
-	    Yll	 = (pageheight - xu)*UNITS_PER_INCH;
-	    Yur	 = (pageheight - xl)*UNITS_PER_INCH;
-	    height	 = yu - yl;
-	    width	 = xu - xl;
-	    P1x		 = Xll;
-	    P2x		 = Xur;
-	    if (reflected)			/* upside-down text	*/
-		hcmpp	 = -hcmpp;
-	    if (reflected) {			/* reflected */
-		P1y	 = Yll;
-		P2y	 = Yur;
-	    } else {
+		fprintf(tfp, "RO90;\n");		/* rotate 90 degrees */
+		Xll	 = yl*UNITS_PER_INCH;
+		Xur	 = yu*UNITS_PER_INCH;
+		Yll	 = (pageheight - xu)*UNITS_PER_INCH;
+		Yur	 = (pageheight - xl)*UNITS_PER_INCH;
+		height	 = yu - yl;
+		width	 = xu - xl;
+		P1x		 = Xll;
+		P2x		 = Xur;
+		if (reflected)			/* upside-down text	*/
+			hcmpp	 = -hcmpp;
+		if (reflected) {			/* reflected */
+			P1y	 = Yll;
+			P2y	 = Yur;
+		} else {
+			P1y	 = Yur;
+			P2y	 = Yll;
+		}
+
+		/* If asked to center, use the plot bounds, and page size
+		   to get offsets.
+		 */
+		if (center) {
+			yoff = (pageheight - (urx - llx) * mag / ppi) / 2 -
+				llx * mag / ppi;
+			xoff = (pagewidth - (ury - lly) * mag / ppi) / 2 -
+				lly * mag / ppi;
+		}
+	} else {				      /* landscape mode	*/
+		Xll	 = xl*UNITS_PER_INCH;
+		Yll	 = yl*UNITS_PER_INCH;
+		Yur	 = yu*UNITS_PER_INCH;
+		Xur	 = xu*UNITS_PER_INCH;
+		height	 = xu - xl;
+		width	 = yu - yl;
+		if (reflected) {			/* flipped or not */
+			wcmpp	 = -wcmpp;		/* backward text */
+			P1x	 = Xur;
+			P2x	 = Xll;
+		} else {				/* normal */
+			P1x	 = Xll;
+			P2x	 = Xur;
+		}
 		P1y	 = Yur;
 		P2y	 = Yll;
-	    }
 
-	    /* If asked to center, use the plot bounds, and page size
-	       to get offsets.
-	    */
-	    if (center) {
-		yoff = (pageheight - (urx - llx)*mag/ppi)/2 - llx*mag/ppi;
-		xoff = (pagewidth - (ury - lly)*mag/ppi)/2 - lly*mag/ppi;
-	    }
-	} else {				      /* landscape mode	*/
-	    Xll	 = xl*UNITS_PER_INCH;
-	    Yll	 = yl*UNITS_PER_INCH;
-	    Yur	 = yu*UNITS_PER_INCH;
-	    Xur	 = xu*UNITS_PER_INCH;
-	    height	 = xu - xl;
-	    width	 = yu - yl;
-	    if (reflected) {			/* flipped   or not	*/
-		wcmpp	 = -wcmpp;		/* backward text	*/
-		P1x	 = Xur;
-		P2x	 = Xll;
-	    } else {				/* normal		*/
-		P1x	 = Xll;
-		P2x	 = Xur;
-	    }
-	    P1y	 = Yur;
-	    P2y	 = Yll;
-
-	    /* If asked to center, use the plot bounds, border, and page size
-	       to get offsets.
-	    */
-	    if (center) {
-		xoff = (pageheight - (urx - llx)*mag/ppi)/2 - llx*mag/ppi;
-		yoff = (pagewidth - (ury - lly)*mag/ppi)/2 - lly*mag/ppi;
-	    }
+		/* If asked to center, use the plot bounds, border, and page
+		   size to get offsets.
+		 */
+		if (center) {
+			xoff = (pageheight - (urx - llx) * mag / ppi) / 2 -
+				llx * mag / ppi;
+			yoff = (pagewidth - (ury - lly) * mag / ppi) / 2 -
+				lly * mag / ppi;
+		}
 	}
 
 	if (xoff < 0) xoff = 0;
@@ -462,30 +467,31 @@ genibmgl_start(F_compound *objects)
 	Ymax	 = yz - yoff + width/mag;
 
 	fprintf(tfp, "IP%d,%d,%d,%d;\n",    /* reference points for scaling */
-		P1x, P1y, P2x, P2y);
+			P1x, P1y, P2x, P2y);
 	fprintf(tfp, "IW%d,%d,%d,%d;\n",    /* soft clip limits */
-		Xll, Yll, Xur, Yur);
+			Xll, Yll, Xur, Yur);
 
 	/* 'SC' maps the coordinates used in the plotting commands to the
 	   absolute plotter coordinates (units of .025mm).  This
 	   can both translate and scale.  The values given are mapped
 	   onto the absolute plotter coords given in the 'IP' command
-	*/
+	 */
 	fprintf(tfp, "SC%.4f,%.4f,%.4f,%.4f;\n",
-		Xmin,Xmax,Ymin,Ymax);
+			Xmin,Xmax,Ymin,Ymax);
 	if (0.0 < pen_speed && pen_speed < SPEED_LIMIT)
-	    fprintf(tfp, "VS%.2f;\n", pen_speed);
+		fprintf(tfp, "VS%.2f;\n", pen_speed);
 }
 
 static void
-arc_tangent(double x1, double y1, double x2, double y2, int direction, double *x, double *y)
+arc_tangent(double x1, double y1, double x2, double y2, int direction,
+		double *x, double *y)
 {
 	if (direction) { /* counter clockwise  */
-	    *x = x2 - (y2 - y1);
-	    *y = y2 + (x2 - x1);
+		*x = x2 - (y2 - y1);
+		*y = y2 + (x2 - x1);
 	} else {
-	    *x = x2 + (y2 - y1);
-	    *y = y2 - (x2 - x1);
+		*x = x2 + (y2 - y1);
+		*y = y2 - (x2 - x1);
 	}
 }
 
@@ -521,7 +527,7 @@ draw_arrow_head(double x1, double y1, double x2, double y2, double arrowht,
 	set_style(SOLID_LINE, 0.0);
 
 	fprintf(tfp, "PA%.4f,%.4f;PD%.4f,%.4f,%.4f,%.4f;PU\n",
-		xc, yc, x2, y2, xd, yd);
+			xc, yc, x2, y2, xd, yd);
 
 	/* restore line style */
 	set_style(style, length);
@@ -534,50 +540,54 @@ static void
 set_style(int style, double length)
 {
 	if (style == line_style)
-	    switch (line_style) {
+		switch (line_style) {
 		case SOLID_LINE:
-		    break;
+			break;
 
 		case DASH_LINE:
-		    if (dash_length != length && length > 0.0) {
-			dash_length  = length;
-			fprintf(tfp, "LT2,%.4f;\n", dash_length*2.0*cpp);
+			if (dash_length != length && length > 0.0) {
+				dash_length  = length;
+				fprintf(tfp, "LT2,%.4f;\n",
+						dash_length * 2.0 * cpp);
 			}
-		    break;
+			break;
 
 		case DOTTED_LINE:
-		    if (dash_length != length && length > 0.0) {
-			dash_length  = length;
-			fprintf(tfp, "LT1,%.4f;\n", dash_length*2.0*cpp);
+			if (dash_length != length && length > 0.0) {
+				dash_length  = length;
+				fprintf(tfp, "LT1,%.4f;\n",
+						dash_length * 2.0 * cpp);
 			}
-		    break;
+			break;
 		}
 	else {
-	    line_style = style;
-	    switch (line_style) {
+		line_style = style;
+		switch (line_style) {
 		case SOLID_LINE:
-		    fprintf(tfp, "LT;\n");
-		    break;
+			fprintf(tfp, "LT;\n");
+			break;
 
 		case DASH_LINE:
-		    if (dash_length != length && length > 0.0)
-			dash_length  = length;
-		    if (dash_length > 0.0)
-			fprintf(tfp, "LT2,%.4f;\n", dash_length*2.0*cpp);
-		    else
-			fprintf(tfp, "LT2,-1.0;\n");
-		    break;
+			if (dash_length != length && length > 0.0)
+				dash_length  = length;
+			if (dash_length > 0.0)
+				fprintf(tfp, "LT2,%.4f;\n",
+						dash_length * 2.0 * cpp);
+			else
+				fprintf(tfp, "LT2,-1.0;\n");
+			break;
 
 		case DOTTED_LINE:
-		    if (dash_length != length && length > 0.0)
-			dash_length  = length;
-		    if (dash_length > 0.0)
-			fprintf(tfp, "LT1,%.4f;\n", dash_length*2.0*cpp);
-		    else
-			fprintf(tfp, "LT1,-1.0;\n");
-		    break;
+			if (dash_length != length && length > 0.0)
+				dash_length  = length;
+			if (dash_length > 0.0)
+				fprintf(tfp, "LT1,%.4f;\n",
+						dash_length * 2.0 * cpp);
+			else
+				fprintf(tfp, "LT1,-1.0;\n");
+			break;
 		}
-	    }
+	}
 }
 
 /*
@@ -587,16 +597,16 @@ set_style(int style, double length)
 static void
 set_width(int w)
 {
-    static int current_width=-1;
+	static int current_width=-1;
 
-    if (w == current_width) return;
+	if (w == current_width) return;
 
-    /* Default line width is 0.3 mm; back off to original xfig pen
-       thickness number, and re-size.
-    */
-    fprintf(tfp, "PW%.1f;\n", w*80/ppi * 0.3);
+	/* Default line width is 0.3 mm; back off to original xfig pen
+	   thickness number, and re-size.
+	 */
+	fprintf(tfp, "PW%.1f;\n", w*80/ppi * 0.3);
 
-    current_width = w;
+	current_width = w;
 }
 
 /*
@@ -605,176 +615,181 @@ set_width(int w)
 static void
 set_color(int color)
 {
-    static	int	number		 = 0;	/* 1 <= number <= 8		*/
-    static	double	thickness	 = 0.3;	/* pen thickness in millimeters	*/
+	static int	number = 0;	  /* 1 <= number <= 8 */
+	static double	thickness = 0.3;  /* pen thickness in millimeters */
 	if (line_color != color) {
-	    line_color	= color;
-	    color	= (colors + color)%colors;
-	    if (number != pen_number[color]) {
-		number	= pen_number[color];
-		fprintf(tfp, "SP%d;\n", pen_number[color]);
+		line_color	= color;
+		color	= (colors + color)%colors;
+		if (number != pen_number[color]) {
+			number	= pen_number[color];
+			fprintf(tfp, "SP%d;\n", pen_number[color]);
 		}
-	    if (thickness != pen_thickness[color]) {
-		thickness  = pen_thickness[color];
-		fprintf(tfp, "PW%.4f;\n", pen_thickness[color]);
+		if (thickness != pen_thickness[color]) {
+			thickness  = pen_thickness[color];
+			fprintf(tfp, "PW%.4f;\n", pen_thickness[color]);
 		}
-	    }
+	}
 }
 
 static void
 fill_polygon(int pattern, int color)
 {
 	if (0 < pattern && pattern < patterns) {
-	    int		style;
-	    double	length;
+		int		style;
+		double	length;
 
-	    set_color(color);
-	    if (fill_pattern != pattern) {
-		fill_pattern  = pattern;
-		fprintf(tfp, "FT%d,%.4f,%.4f;", fill_type[pattern],
-			fill_space[pattern],
-			reflected ? -fill_angle[pattern]: fill_angle[pattern]);
+		set_color(color);
+		if (fill_pattern != pattern) {
+			fill_pattern  = pattern;
+			fprintf(tfp, "FT%d,%.4f,%.4f;", fill_type[pattern],
+					fill_space[pattern],
+					reflected ? -fill_angle[pattern] :
+							fill_angle[pattern]);
 		}
-	    /*	  save line style */
-	    style	 = line_style;
-	    length	 = dash_length;
-	    fprintf(tfp, "LT%d,%.4f;FP;\n",
-		    line_type[pattern], line_space[pattern]*cpi);
-	    /* restore line style */
-	    line_style	 = DEFAULT;
-	    dash_length	 = DEFAULT;
-	    set_style(style, length);
-	    }
+		/*	  save line style */
+		style	 = line_style;
+		length	 = dash_length;
+		fprintf(tfp, "LT%d,%.4f;FP;\n",
+				line_type[pattern], line_space[pattern]*cpi);
+		/* restore line style */
+		line_style	 = DEFAULT;
+		dash_length	 = DEFAULT;
+		set_style(style, length);
+	}
 }
 
 void
 arc(double sx, double sy, double cx, double cy, double theta, double delta)
 {
 	if (ibmgec)
-	    if (delta == M_PI/36.0)		/* 5 degrees		*/
-		fprintf(tfp, "AA%.4f,%.4f,%.4f;",
-			cx, cy, theta*DPR);
-	    else
-		fprintf(tfp, "AA%.4f,%.4f,%.4f,%.4f;",
-			cx, cy, theta*DPR, delta*DPR);
+		if (delta == M_PI/36.0)		/* 5 degrees		*/
+			fprintf(tfp, "AA%.4f,%.4f,%.4f;",
+					cx, cy, theta*DPR);
+		else
+			fprintf(tfp, "AA%.4f,%.4f,%.4f,%.4f;",
+					cx, cy, theta*DPR, delta*DPR);
 	else {
-	    double	alpha;
-	    if (theta < 0.0)
-		delta = -fabs(delta);
-	    else
-		delta = fabs(delta);
-	    for (alpha = delta; fabs(alpha) < fabs(theta); alpha += delta) {
-		fprintf(tfp, "PA%.4f,%.4f;\n",
-			cx + (sx - cx)*cos(alpha) - (sy - cy)*sin(alpha),
-			cy + (sy - cy)*cos(alpha) + (sx - cx)*sin(alpha));
+		double	alpha;
+		if (theta < 0.0)
+			delta = -fabs(delta);
+		else
+			delta = fabs(delta);
+		for (alpha = delta; fabs(alpha) < fabs(theta); alpha += delta) {
+			fprintf(tfp, "PA%.4f,%.4f;\n",
+					cx + (sx - cx)*cos(alpha) -
+						(sy - cy)*sin(alpha),
+					cy + (sy - cy)*cos(alpha) +
+						(sx - cx)*sin(alpha));
 		}
-	    fprintf(tfp, "PA%.4f,%.4f;\n",
-		    cx + (sx - cx)*cos(theta) - (sy - cy)*sin(theta),
-		    cy + (sy - cy)*cos(theta) + (sx - cx)*sin(theta));
-	    }
+		fprintf(tfp, "PA%.4f,%.4f;\n",
+				cx + (sx - cx)*cos(theta) - (sy-cy)*sin(theta),
+				cy + (sy - cy)*cos(theta) + (sx-cx)*sin(theta));
+	}
 }
 
 void
 genibmgl_arc(F_arc *a)
 {
-	if (a->thickness != 0 ||
-		(ibmgec && 0 <= a->fill_style && a->fill_style < patterns)) {
-	    double	x, y;
-	    double	cx, cy, sx, sy, ex, ey;
-	    double	dx1, dy1, dx2, dy2, theta;
+	if (a->thickness != 0 || (ibmgec && 0 <= a->fill_style &&
+						a->fill_style < patterns)) {
+		double	x, y;
+		double	cx, cy, sx, sy, ex, ey;
+		double	dx1, dy1, dx2, dy2, theta;
 
-	    set_style(a->style, a->style_val);
-	    set_width(a->thickness);
-	    set_color(a->pen_color);
+		set_style(a->style, a->style_val);
+		set_width(a->thickness);
+		set_color(a->pen_color);
 
-	    cx		 = a->center.x/ppi;
-	    cy		 = a->center.y/ppi;
-	    sx		 = a->point[0].x/ppi;
-	    sy		 = a->point[0].y/ppi;
-	    ex		 = a->point[2].x/ppi;
-	    ey		 = a->point[2].y/ppi;
+		cx		 = a->center.x/ppi;
+		cy		 = a->center.y/ppi;
+		sx		 = a->point[0].x/ppi;
+		sy		 = a->point[0].y/ppi;
+		ex		 = a->point[2].x/ppi;
+		ey		 = a->point[2].y/ppi;
 
-	    dx1		 = sx - cx;
-	    dy1		 = sy - cy;
-	    dx2		 = ex - cx;
-	    dy2		 = ey - cy;
+		dx1		 = sx - cx;
+		dy1		 = sy - cy;
+		dx2		 = ex - cx;
+		dy2		 = ey - cy;
 
-	    theta	 = atan2(dy2, dx2) - atan2(dy1, dx1);
-	    if (a->direction) {
-		if (theta > 0.0)
-		    theta	-= 2.0*M_PI;
-	    } else {
-		if (theta < 0.0)
-		    theta	+= 2.0*M_PI;
-	    }
-
-	    if (a->type == T_OPEN_ARC && a->thickness != 0 && a->back_arrow) {
-		arc_tangent(cx, cy, sx, sy, !a->direction, &x, &y);
-		draw_arrow_head(x, y, sx, sy,
-		a->back_arrow->ht/ppi, a->back_arrow->wid/ppi);
+		theta	 = atan2(dy2, dx2) - atan2(dy1, dx1);
+		if (a->direction) {
+			if (theta > 0.0)
+				theta	-= 2.0*M_PI;
+		} else {
+			if (theta < 0.0)
+				theta	+= 2.0*M_PI;
 		}
 
-	    fprintf(tfp, "PA%.4f,%.4f;PM;PD;", sx, sy);
-	    arc(sx, sy, cx, cy, theta, DELTA);
-	    fprintf(tfp, "PU;PM2;\n");
-
-	    if (a->thickness != 0)
-		fprintf(tfp, "EP;\n");
-
-	    if (a->type == T_OPEN_ARC && a->thickness != 0 && a->for_arrow) {
-		arc_tangent(cx, cy, ex, ey, a->direction, &x, &y);
-		draw_arrow_head(x, y, ex, ey,
-			a->for_arrow->ht/ppi, a->for_arrow->wid/ppi);
+		if (a->type == T_OPEN_ARC && a->thickness != 0 &&
+				a->back_arrow) {
+			arc_tangent(cx, cy, sx, sy, !a->direction, &x, &y);
+			draw_arrow_head(x, y, sx, sy, a->back_arrow->ht/ppi,
+					a->back_arrow->wid/ppi);
 		}
 
-	    if (0 < a->fill_style && a->fill_style < patterns)
-		fill_polygon(a->fill_style, a->fill_color);
-	    }
+		fprintf(tfp, "PA%.4f,%.4f;PM;PD;", sx, sy);
+		arc(sx, sy, cx, cy, theta, DELTA);
+		fprintf(tfp, "PU;PM2;\n");
+
+		if (a->thickness != 0)
+			fprintf(tfp, "EP;\n");
+
+		if (a->type == T_OPEN_ARC && a->thickness != 0 &&
+				a->for_arrow) {
+			arc_tangent(cx, cy, ex, ey, a->direction, &x, &y);
+			draw_arrow_head(x, y, ex, ey, a->for_arrow->ht/ppi,
+					a->for_arrow->wid/ppi);
+		}
+
+		if (0 < a->fill_style && a->fill_style < patterns)
+			fill_polygon(a->fill_style, a->fill_color);
+	}
 }
 
 void
 genibmgl_ellipse(F_ellipse *e)
 {
 	if (e->thickness != 0 ||
-		(ibmgec && 0 <= e->fill_style && e->fill_style < patterns)) {
-	    int		j;
-	    double	alpha;
-	    double	angle;
-	    double	delta;
-	    double	x0, y0;
-	    double	a,  b;
-	    double	x,  y;
+			(ibmgec && 0 <= e->fill_style && e->fill_style < patterns)) {
+		int		j;
+		double	alpha;
+		double	angle;
+		double	delta;
+		double	x0, y0;
+		double	a,  b;
+		double	x,  y;
 
-	    set_style(e->style, e->style_val);
-	    set_width(e->thickness);
-	    set_color(e->pen_color);
+		set_style(e->style, e->style_val);
+		set_width(e->thickness);
+		set_color(e->pen_color);
 
-	    a		 = e->radiuses.x/ppi;
-	    b		 = e->radiuses.y/ppi;
-	    x0		 = e->center.x/ppi;
-	    y0		 = e->center.y/ppi;
-	    angle	 = -e->angle;
-	    delta	 = -DELTA;
+		a	 = e->radiuses.x/ppi;
+		b	 = e->radiuses.y/ppi;
+		x0	 = e->center.x/ppi;
+		y0	 = e->center.y/ppi;
+		angle	 = -e->angle;
+		delta	 = -DELTA;
 
-	    x		 = x0 + cos(angle)*a;
-	    y		 = y0 + sin(angle)*a;
-	    fprintf(tfp, "PA%.4f,%.4f;PM;PD;\n", x, y);
-	    for (j = 1; j <= 72; j++) {
-		alpha	 = j*delta;
-		x	 = x0 + cos(angle)*a*cos(alpha)
-			 - sin(angle)*b*sin(alpha);
-		y	 = y0 + sin(angle)*a*cos(alpha)
-			 + cos(angle)*b*sin(alpha);
-		fprintf(tfp, "PA%.4f,%.4f;\n", x, y);
-	    }
-	    fprintf(tfp, "PU;PM2;\n");
+		x	 = x0 + cos(angle)*a;
+		y	 = y0 + sin(angle)*a;
+		fprintf(tfp, "PA%.4f,%.4f;PM;PD;\n", x, y);
+		for (j = 1; j <= 72; j++) {
+			alpha	= j*delta;
+			x	= x0 + cos(angle)*a*cos(alpha)
+					- sin(angle)*b*sin(alpha);
+			y	= y0 + sin(angle)*a*cos(alpha)
+					+ cos(angle)*b*sin(alpha);
+			fprintf(tfp, "PA%.4f,%.4f;\n", x, y);
+		}
+		fprintf(tfp, "PU;PM2;\n");
 
-	    if (e->thickness != 0)
-		fprintf(tfp, "EP;\n");
+		if (e->thickness != 0)
+			fprintf(tfp, "EP;\n");
 
-	    if (0 < e->fill_style && e->fill_style < patterns)
-		fill_polygon((int)e->fill_style, e->fill_color);
-	    }
+		if (0 < e->fill_style && e->fill_style < patterns)
+			fill_polygon((int)e->fill_style, e->fill_color);
+	}
 }
 
 void
@@ -789,111 +804,116 @@ swap(int *i, int *j)
 void
 genibmgl_line(F_line *l)
 {
-	if (l->thickness != 0 ||
-		(ibmgec && 0 <= l->fill_style && l->fill_style < patterns)) {
-	    F_point	*p, *q;
+	if (l->thickness != 0 || (ibmgec && 0 <= l->fill_style &&
+				l->fill_style < patterns)) {
+		F_point	*p, *q;
 
-	    set_style(l->style, l->style_val);
-	    set_width(l->thickness);
-	    set_color(l->pen_color);
+		set_style(l->style, l->style_val);
+		set_width(l->thickness);
+		set_color(l->pen_color);
 
-	    p	 = l->points;
-	    q	 = p->next;
+		p	 = l->points;
+		q	 = p->next;
 
-	    switch (l->type) {
+		switch (l->type) {
 		case	T_POLYLINE:
 		case	T_BOX:
 		case	T_POLYGON:
-		    if (q == NULL)		/* A single point line */
-			fprintf(tfp, "PA%.4f,%.4f;PD;PU;\n",
-				p->x/ppi, p->y/ppi);
-		    else {
-			if (l->thickness != 0 && l->back_arrow)
-			    draw_arrow_head(q->x/ppi, q->y/ppi,
-				    p->x/ppi, p->y/ppi,
-				    l->back_arrow->ht/ppi,
-				    l->back_arrow->wid/ppi);
+			if (q == NULL)		/* A single point line */
+				fprintf(tfp, "PA%.4f,%.4f;PD;PU;\n",
+						p->x/ppi, p->y/ppi);
+			else {
+				if (l->thickness != 0 && l->back_arrow)
+					draw_arrow_head(q->x/ppi, q->y/ppi,
+							p->x/ppi, p->y/ppi,
+							l->back_arrow->ht/ppi,
+							l->back_arrow->wid/ppi);
 
-			fprintf(tfp, "PA%.4f,%.4f;PM;PD%.4f,%.4f;\n",
-				p->x/ppi, p->y/ppi,
-				q->x/ppi, q->y/ppi);
-			while (q->next != NULL) {
-			    p	 = q;
-			    q	 = q->next;
-			    fprintf(tfp, "PA%.4f,%.4f;\n",
-				    q->x/ppi, q->y/ppi);
-			    }
-			fprintf(tfp, "PU;PM2;\n");
+				fprintf(tfp, "PA%.4f,%.4f;PM;PD%.4f,%.4f;\n",
+						p->x/ppi, p->y/ppi,
+						q->x/ppi, q->y/ppi);
+				while (q->next != NULL) {
+					p	 = q;
+					q	 = q->next;
+					fprintf(tfp, "PA%.4f,%.4f;\n",
+							q->x/ppi, q->y/ppi);
+				}
+				fprintf(tfp, "PU;PM2;\n");
 
-			if (l->thickness != 0)
-			    fprintf(tfp, "EP;\n");
+				if (l->thickness != 0)
+					fprintf(tfp, "EP;\n");
 
-			if (l->thickness != 0 && l->for_arrow)
-			    draw_arrow_head(p->x/ppi, p->y/ppi,
-				    q->x/ppi, q->y/ppi,
-				    l->for_arrow->ht/ppi,
-				    l->for_arrow->wid/ppi);
+				if (l->thickness != 0 && l->for_arrow)
+					draw_arrow_head(p->x/ppi, p->y/ppi,
+							q->x/ppi, q->y/ppi,
+							l->for_arrow->ht/ppi,
+							l->for_arrow->wid/ppi);
 
-			if (0 < l->fill_style && l->fill_style < patterns)
-			    fill_polygon((int)l->fill_style, l->fill_color);
+				if (0<l->fill_style && l->fill_style < patterns)
+					fill_polygon((int)l->fill_style,
+							l->fill_color);
 			}
-		    break;
+			break;
 
-		case	T_ARC_BOX: {
-		    int		llx, lly, urx, ury;
-		    double	 x0,  y0,  x1,	y1;
-		    double	dx, dy, angle;
+		case	T_ARC_BOX:
+			{
+				int	llx, lly, urx, ury;
+				double	x0,  y0,  x1,	y1;
+				double	dx, dy, angle;
 
-		    llx	 = urx	= p->x;
-		    lly	 = ury	= p->y;
-		    while ((p = p->next) != NULL) {
-			if (llx > p->x)
-			    llx = p->x;
-			if (urx < p->x)
-			    urx = p->x;
-			if (lly > p->y)
-			    lly = p->y;
-			if (ury < p->y)
-			    ury = p->y;
+				llx	 = urx	= p->x;
+				lly	 = ury	= p->y;
+				while ((p = p->next) != NULL) {
+					if (llx > p->x)
+						llx = p->x;
+					if (urx < p->x)
+						urx = p->x;
+					if (lly > p->y)
+						lly = p->y;
+					if (ury < p->y)
+						ury = p->y;
+				}
+
+				x0	 = llx/ppi;
+				x1	 = urx/ppi;
+				dx	 = l->radius/ppi;
+				y0	 = ury/ppi;
+				y1	 = lly/ppi;
+				dy	 = -dx;
+				angle = -M_PI/2.0;
+
+				fprintf(tfp, "PA%.4f,%.4f;PM;PD;\n", x0, y0+dy);
+				arc(x0, y0 + dy, x0 + dx, y0 + dy, angle,DELTA);
+				fprintf(tfp, "PA%.4f,%.4f;\n", x1 - dx, y0);
+				arc(x1 - dx, y0, x1 - dx, y0 + dy, angle,DELTA);
+				fprintf(tfp, "PA%.4f,%.4f;\n", x1, y1 - dy);
+				arc(x1, y1 - dy, x1 - dx, y1 - dy, angle,DELTA);
+				fprintf(tfp, "PA%.4f,%.4f;\n", x0 + dx, y1);
+				arc(x0 + dx, y1, x0 + dx, y1 - dy, angle,DELTA);
+				fprintf(tfp, "PA%.4f,%.4f;PU;PM2;\n", x0,y0+dy);
+
+				if (l->thickness != 0)
+					fprintf(tfp, "EP;\n");
+
+				if (0<l->fill_style && l->fill_style < patterns)
+					fill_polygon((int)l->fill_style,
+							l->fill_color);
 			}
-
-		    x0	 = llx/ppi;
-		    x1	 = urx/ppi;
-		    dx	 = l->radius/ppi;
-		    y0	 = ury/ppi;
-		    y1	 = lly/ppi;
-		    dy	 = -dx;
-		    angle = -M_PI/2.0;
-
-		    fprintf(tfp, "PA%.4f,%.4f;PM;PD;\n",  x0, y0 + dy);
-		    arc(x0, y0 + dy, x0 + dx, y0 + dy, angle, DELTA);
-		    fprintf(tfp, "PA%.4f,%.4f;\n", x1 - dx, y0);
-		    arc(x1 - dx, y0, x1 - dx, y0 + dy, angle, DELTA);
-		    fprintf(tfp, "PA%.4f,%.4f;\n", x1, y1 - dy);
-		    arc(x1, y1 - dy, x1 - dx, y1 - dy, angle, DELTA);
-		    fprintf(tfp, "PA%.4f,%.4f;\n", x0 + dx, y1);
-		    arc(x0 + dx, y1, x0 + dx, y1 - dy, angle, DELTA);
-		    fprintf(tfp, "PA%.4f,%.4f;PU;PM2;\n", x0, y0 + dy);
-
-		    if (l->thickness != 0)
-			fprintf(tfp, "EP;\n");
-
-		    if (0 < l->fill_style && l->fill_style < patterns)
-			fill_polygon((int)l->fill_style, l->fill_color);
-		    }
-		    break;
+			break;
 
 		case	T_PIC_BOX:
-		    fprintf(stderr,"Warning: Pictures not supported in IBMGL language\n");
-		    break;
+			fprintf(stderr, "Warning: Pictures not supported in "
+					"IBMGL language\n");
+			break;
 		}
-	    }
+	}
 }
 
 #define		THRESHOLD	.05	/* inch */
 
 static void
-bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2, double a3, double b3)
+bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2,
+		double a3, double b3)
 {
 	double	x0, y0, x3, y3;
 	double	sx1, sy1, sx2, sy2, tx, ty, tx1, ty1, tx2, ty2, xmid, ymid;
@@ -901,19 +921,19 @@ bezier_spline(double a0, double b0, double a1, double b1, double a2, double b2, 
 	x0 = a0; y0 = b0;
 	x3 = a3; y3 = b3;
 	if (fabs(x0 - x3) < THRESHOLD && fabs(y0 - y3) < THRESHOLD)
-	    fprintf(tfp, "PA%.4f,%.4f;\n", x3, y3);
+		fprintf(tfp, "PA%.4f,%.4f;\n", x3, y3);
 
 	else {
-	    tx	 = (a1	+ a2 )/2.0;	ty   = (b1  + b2 )/2.0;
-	    sx1  = (x0	+ a1 )/2.0;	sy1  = (y0  + b1 )/2.0;
-	    sx2  = (sx1 + tx )/2.0;	sy2  = (sy1 + ty )/2.0;
-	    tx2  = (a2	+ x3 )/2.0;	ty2  = (b2  + y3 )/2.0;
-	    tx1  = (tx2 + tx )/2.0;	ty1  = (ty2 + ty )/2.0;
-	    xmid = (sx2 + tx1)/2.0;	ymid = (sy2 + ty1)/2.0;
+		tx	 = (a1	+ a2 )/2.0;	ty   = (b1  + b2 )/2.0;
+		sx1  = (x0	+ a1 )/2.0;	sy1  = (y0  + b1 )/2.0;
+		sx2  = (sx1 + tx )/2.0;	sy2  = (sy1 + ty )/2.0;
+		tx2  = (a2	+ x3 )/2.0;	ty2  = (b2  + y3 )/2.0;
+		tx1  = (tx2 + tx )/2.0;	ty1  = (ty2 + ty )/2.0;
+		xmid = (sx2 + tx1)/2.0;	ymid = (sy2 + ty1)/2.0;
 
-	    bezier_spline(x0, y0, sx1, sy1, sx2, sy2, xmid, ymid);
-	    bezier_spline(xmid, ymid, tx1, ty1, tx2, ty2, x3, y3);
-	    }
+		bezier_spline(x0, y0, sx1, sy1, sx2, sy2, xmid, ymid);
+		bezier_spline(xmid, ymid, tx1, ty1, tx2, ty2, x3, y3);
+	}
 }
 
 static void
@@ -928,25 +948,25 @@ genibmgl_itp_spline(F_spline *s)
 	x2 = p1->x/ppi; y2 = p1->y/ppi;
 
 	if (s->thickness != 0 && s->back_arrow)
-	    draw_arrow_head(cp1->rx/ppi, cp1->ry/ppi, x2, y2,
-		    s->back_arrow->ht/ppi, s->back_arrow->wid/ppi);
+		draw_arrow_head(cp1->rx/ppi, cp1->ry/ppi, x2, y2,
+				s->back_arrow->ht/ppi, s->back_arrow->wid/ppi);
 
 	fprintf(tfp, "PA%.4f,%.4f;PD;\n", x2, y2);
 	for (p2 = p1->next, cp2 = cp1->next; p2 != NULL;
-		p1 = p2, cp1 = cp2, p2 = p2->next, cp2 = cp2->next) {
-	    x1	 = x2;
-	    y1	 = y2;
-	    x2	 = p2->x/ppi;
-	    y2	 = p2->y/ppi;
-	    bezier_spline(x1, y1, (double)cp1->rx/ppi, cp1->ry/ppi,
-		(double)cp2->lx/ppi, cp2->ly/ppi, x2, y2);
-	    }
+			p1 = p2, cp1 = cp2, p2 = p2->next, cp2 = cp2->next) {
+		x1	 = x2;
+		y1	 = y2;
+		x2	 = p2->x/ppi;
+		y2	 = p2->y/ppi;
+		bezier_spline(x1, y1, (double)cp1->rx/ppi, cp1->ry/ppi,
+				(double)cp2->lx/ppi, cp2->ly/ppi, x2, y2);
+	}
 	fprintf(tfp, "PU;\n");
 
 	if (s->thickness != 0 && s->for_arrow)
-	    draw_arrow_head(cp1->lx/ppi, cp1->ly/ppi, x2, y2,
-		    s->for_arrow->ht/ppi, s->for_arrow->wid/ppi);
-	}
+		draw_arrow_head(cp1->lx/ppi, cp1->ly/ppi, x2, y2,
+				s->for_arrow->ht/ppi, s->for_arrow->wid/ppi);
+}
 
 static void
 quadratic_spline(double a1, double b1, double a2, double b2, double a3, double b3, double a4, double b4)
@@ -959,17 +979,19 @@ quadratic_spline(double a1, double b1, double a2, double b2, double a3, double b
 	xmid	 = (a2 + a3)/2.0;
 	ymid	 = (b2 + b3)/2.0;
 	if (fabs(x1 - xmid) < THRESHOLD && fabs(y1 - ymid) < THRESHOLD)
-	    fprintf(tfp, "PA%.4f,%.4f;\n", xmid, ymid);
+		fprintf(tfp, "PA%.4f,%.4f;\n", xmid, ymid);
 	else {
-	    quadratic_spline(x1, y1, ((x1+a2)/2.0), ((y1+b2)/2.0),
-		((3.0*a2+a3)/4.0), ((3.0*b2+b3)/4.0), xmid, ymid);
+		quadratic_spline(x1, y1, ((x1+a2)/2.0), ((y1+b2)/2.0),
+				((3.0*a2+a3)/4.0), ((3.0*b2+b3)/4.0),
+				xmid, ymid);
 	}
 
 	if (fabs(xmid - x4) < THRESHOLD && fabs(ymid - y4) < THRESHOLD)
-	    fprintf(tfp, "PA%.4f,%.4f;\n", x4, y4);
+		fprintf(tfp, "PA%.4f,%.4f;\n", x4, y4);
 	else {
-	    quadratic_spline(xmid, ymid, ((a2+3.0*a3)/4.0), ((b2+3.0*b3)/4.0),
-			((a3+x4)/2.0), ((b3+y4)/2.0), x4, y4);
+		quadratic_spline(xmid, ymid,
+				((a2+3.0*a3)/4.0), ((b2+3.0*b3)/4.0),
+				((a3+x4)/2.0), ((b3+y4)/2.0), x4, y4);
 	}
 }
 
@@ -992,30 +1014,30 @@ genibmgl_ctl_spline(F_spline *s)
 	cy2	 = (y1 + 3.0*y2)/4.0;
 
 	if (closed_spline(s))
-	    fprintf(tfp, "PA%.4f,%.4f;PD;\n ", cx1, cy1);
+		fprintf(tfp, "PA%.4f,%.4f;PD;\n ", cx1, cy1);
 	else {
-	    if (s->thickness != 0 && s->back_arrow)
-		draw_arrow_head(cx1, cy1, x1, y1,
-			s->back_arrow->ht/ppi, s->back_arrow->wid/ppi);
-	    fprintf(tfp, "PA%.4f,%.4f;PD%.4f,%.4f;\n",
-		    x1, y1, cx1, cy1);
-	    }
+		if (s->thickness != 0 && s->back_arrow)
+			draw_arrow_head(cx1, cy1, x1, y1, s->back_arrow->ht/ppi,
+					s->back_arrow->wid/ppi);
+		fprintf(tfp, "PA%.4f,%.4f;PD%.4f,%.4f;\n",
+				x1, y1, cx1, cy1);
+	}
 
 	for (p = p->next; p != NULL; p = p->next) {
-	    x1	 = x2;
-	    y1	 = y2;
-	    x2	 = p->x/ppi;
-	    y2	 = p->y/ppi;
-	    cx3	 = (3.0*x1 + x2)/4.0;
-	    cy3	 = (3.0*y1 + y2)/4.0;
-	    cx4	 = (x1 + x2)/2.0;
-	    cy4	 = (y1 + y2)/2.0;
-	    quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
-	    cx1	 = cx4;
-	    cy1	 = cy4;
-	    cx2	 = (x1 + 3.0*x2)/4.0;
-	    cy2	 = (y1 + 3.0*y2)/4.0;
-	    }
+		x1	 = x2;
+		y1	 = y2;
+		x2	 = p->x/ppi;
+		y2	 = p->y/ppi;
+		cx3	 = (3.0*x1 + x2)/4.0;
+		cy3	 = (3.0*y1 + y2)/4.0;
+		cx4	 = (x1 + x2)/2.0;
+		cy4	 = (y1 + y2)/2.0;
+		quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
+		cx1	 = cx4;
+		cy1	 = cy4;
+		cx2	 = (x1 + 3.0*x2)/4.0;
+		cy2	 = (y1 + 3.0*y2)/4.0;
+	}
 	x1	 = x2;
 	y1	 = y2;
 	p	 = s->points->next;
@@ -1026,97 +1048,97 @@ genibmgl_ctl_spline(F_spline *s)
 	cx4	 = (x1 + x2)/2.0;
 	cy4	 = (y1 + y2)/2.0;
 	if (closed_spline(s)) {
-	    quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
-	    fprintf(tfp, "PU;\n");
-	    }
-	else {
-	    fprintf(tfp, "PA%.4f,%.4f;PU;\n", x1, y1);
-	    if (s->thickness != 0 && s->for_arrow)
-		draw_arrow_head(cx1, cy1, x1, y1,
-			s->for_arrow->ht/ppi, s->for_arrow->wid/ppi);
-	    }
+		quadratic_spline(cx1, cy1, cx2, cy2, cx3, cy3, cx4, cy4);
+		fprintf(tfp, "PU;\n");
 	}
+	else {
+		fprintf(tfp, "PA%.4f,%.4f;PU;\n", x1, y1);
+		if (s->thickness != 0 && s->for_arrow)
+			draw_arrow_head(cx1, cy1, x1, y1, s->for_arrow->ht/ppi,
+					s->for_arrow->wid/ppi);
+	}
+}
 
 void
 genibmgl_spline(F_spline *s)
 {
 	if (s->thickness != 0) {
-	    set_style(s->style, s->style_val);
-	    set_width(s->thickness);
-	    set_color(s->pen_color);
+		set_style(s->style, s->style_val);
+		set_width(s->thickness);
+		set_color(s->pen_color);
 
-	    if (int_spline(s))
-		genibmgl_itp_spline(s);
-	    else
-		genibmgl_ctl_spline(s);
+		if (int_spline(s))
+			genibmgl_itp_spline(s);
+		else
+			genibmgl_ctl_spline(s);
 	}
 
 	if (0 < s->fill_style && s->fill_style < patterns)
-	    fprintf(stderr, "Spline area fill not implemented\n");
+		fprintf(stderr, "Spline area fill not implemented\n");
 }
 
 #define	FONT(T) ((-1 < (T) && (T) < FONTS) ? (T): fonts)
 void
 genibmgl_text(F_text *t)
 {
-static	int	font	 = DEFAULT;	/* font				*/
-static	int	size	 = DEFAULT;	/* font size	    in points	*/
-static	double	theta	 = 0.0;		/* character slant  in degrees	*/
-static	double	angle	 = 0.0;		/* label direction  in radians	*/
-	double	width;			/* character width  in centimeters */
-	double	height;			/* character height in centimeters */
+	static int	font	= DEFAULT;	/* font			 */
+	static int	size	= DEFAULT;	/* font size	   in points */
+	static double	theta	= 0.0;		/* character slant in degrees */
+	static double	angle	 = 0.0;		/* label direction in radians */
+	double width;			/* character width  in centimeters */
+	double height;			/* character height in centimeters */
 	bool newfont=false, newsize=false;
 
 	if (font != FONT(t->font)) {
-	    font  = FONT(t->font);
-	    /* Simulate italic fonts with a 10 degree slant */
-	    if (theta != slant[font]) {
-		theta  = slant[font];
-		fprintf(tfp, "SL%.4f;", tan(theta*M_PI/180.0));
-	    }
-	    newfont = true;
+		font  = FONT(t->font);
+		/* Simulate italic fonts with a 10 degree slant */
+		if (theta != slant[font]) {
+			theta  = slant[font];
+			fprintf(tfp, "SL%.4f;", tan(theta*M_PI/180.0));
+		}
+		newfont = true;
 	}
 
 	if (size != t->size) {
-	    size  = t->size;	/* in points */
-	    newsize = true;
-	    if (!correct_font_size) {
-		/* HP Stick Font only:	use the 'SI' command to set the
-		   cap height and pitch.
-		*/
-		width	 = size*wcmpp*wide[font];
-		height	 = size*hcmpp*high[font];
-		fprintf(tfp, "SI%.4f,%.4f;", width*mag, height*mag);
-	    }
+		size  = t->size;	/* in points */
+		newsize = true;
+		if (!correct_font_size) {
+			/* HP Stick Font only:	use the 'SI' command to set the
+			   cap height and pitch.
+			 */
+			width	 = size*wcmpp*wide[font];
+			height	 = size*hcmpp*high[font];
+			fprintf(tfp, "SI%.4f,%.4f;", width*mag, height*mag);
+		}
 	}
 
 	if (correct_font_size && (newfont || newsize)) {
-	    /* Use 'SD' command to set the font */
-	    fprintf(tfp, "SD2,1,4,%d,5,%d,6,%d,7,%d;SS;\n",
-		    (int)(size*mag+.5), psfont2hpgl[font].italic,
-		    psfont2hpgl[font].bold, psfont2hpgl[font].font);
+		/* Use 'SD' command to set the font */
+		fprintf(tfp, "SD2,1,4,%d,5,%d,6,%d,7,%d;SS;\n",
+				(int)(size*mag+.5), psfont2hpgl[font].italic,
+				psfont2hpgl[font].bold, psfont2hpgl[font].font);
 	}
 
 	if (angle != t->angle) {
-	    angle  = t->angle;
-	    fprintf(tfp, "DI%.4f,%.4f;",
-		    cos(angle), sin(reflected ? -angle: angle));
+		angle  = t->angle;
+		fprintf(tfp, "DI%.4f,%.4f;",
+				cos(angle), sin(reflected ? -angle: angle));
 	}
 	set_color(t->color);
 
 	fprintf(tfp, "PA%.4f,%.4f;\n", t->base_x/ppi, t->base_y/ppi);
 
 	switch (t->type) {
-	    case DEFAULT:
-	    case T_LEFT_JUSTIFIED:
+	case DEFAULT:
+	case T_LEFT_JUSTIFIED:
 		break;
-	    case T_CENTER_JUSTIFIED:
+	case T_CENTER_JUSTIFIED:
 		fprintf(tfp, "CP%.4f,0.0;", -(double)(strlen(t->cstring)/2.0));
 		break;
-	    case T_RIGHT_JUSTIFIED:
+	case T_RIGHT_JUSTIFIED:
 		fprintf(tfp, "CP%.4f,0.0;", -(double)(strlen(t->cstring)));
 		break;
-	    default:
+	default:
 		fprintf(stderr, "unknown text position type\n");
 		exit(1);
 	}
@@ -1131,7 +1153,7 @@ genibmgl_end(void)
 	fprintf(tfp, "PU;SP;IN;\n");
 
 	if (pcljcl)
-	    fprintf(tfp, "\033%%0A\033E");	/* end job and eject page */
+		fprintf(tfp, "\033%%0A\033E");	/* end job and eject page */
 
 	/* all ok */
 	return 0;
@@ -1148,4 +1170,4 @@ struct driver dev_ibmgl = {
 	genibmgl_text,
 	genibmgl_end,
 	EXCLUDE_TEXT
-	};
+};
