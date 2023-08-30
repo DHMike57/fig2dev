@@ -110,7 +110,7 @@ char		thickdot[] = THICKDOT;
 char		thin_ldot [] = THIN_LDOT;
 char		thick_ldot[] = THICK_LDOT;
 
-static bool	select_fontsize = true;
+static bool	select_fontname = true;
 static	int	verbose = 0;
 double		dash_mag = 1.0;
 int		thick_width = 2;
@@ -237,7 +237,7 @@ genlatex_option(char opt, char *optarg)
 		break;
 
 	case 'F':
-		select_fontsize = false;
+		select_fontname = false;
 		break;
 
 	case 'f':			/* set default text font */
@@ -888,7 +888,7 @@ genlatex_text(F_text *t)
 	/* smash is used to position text at baseline */
 	fprintf(tfp, "\\makebox(0,0)%s{\\smash{", tpos);
 
-	select_font(t, select_fontsize, true, false);
+	select_font(t, true, select_fontname, false);
 
 	set_color(t->color);
 

@@ -166,7 +166,7 @@ static char *FillCommands(int style, int color);
 /* Local to the file only */
 static double	Threshold;
 static bool	linew_spec = false;
-static bool	select_fontsize = true;
+static bool	select_fontname = true;
 static int	CurWidth = 0;
 static int	LineStyle = SOLID_LINE;
 static int	LLX = 0, LLY = 0;
@@ -305,7 +305,7 @@ genepic_option(char opt, char *optarg)
 		break;
 
 	case 'F':
-		select_fontsize = false;
+		select_fontname = false;
 		break;
 
 	case 'R':
@@ -1257,7 +1257,7 @@ genepic_text(F_text *text)
 		fprintf(tfp, "\\makebox(0,0)%s{", tpos);
 	fprintf(tfp, "\\smash{");
 
-	select_font(text, select_fontsize, true, false);
+	select_font(text, true, select_fontname, false);
 	put_string(text->cstring, text->font, special_text(text),
 			need_conversion);
 
