@@ -152,7 +152,8 @@ readfp_fig(FILE *fp, F_compound *obj)
 		status = read_objects(fp, obj);
 	else
 		status = read_1_3_objects(fp, obj);
-	(void)fclose(fp);
+	if (fp != stdin)
+		(void)fclose(fp);
 	return status;
 }
 
