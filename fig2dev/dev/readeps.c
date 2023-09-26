@@ -434,7 +434,7 @@ pdftops(struct xfig_stream *restrict pic_stream, FILE *out)
 	 * Convert a pdf to eps, using the first available of the following:
 	 *   pdftops -q -f 1 -l 1 -eps in.pdf -
 	 *   pdftocairo -q -f 1 -l 1 -eps in.pdf -
-	 *   gs -q -dSAFER -sDEVICE=eps2write -sPageList=1 -o - in.pdf
+	 *   gs -q -dSAFER -sDEVICE=eps2write -dFirstPage=1 -dLastPage=1 -o - in.pdf
 	 * Only pdftops uses the original /MediaBox as the BoundingBox in the
 	 * resulting pfd. The other two crop the BoundingBox to the smallest box
 	 * containing all the ink on the paper.
@@ -446,7 +446,7 @@ pdftops(struct xfig_stream *restrict pic_stream, FILE *out)
 #ifdef GSEXE
 	else if (has_gs())
 		cmd_fmt = GSEXE
-			" -q -dSAFER -sDEVICE=eps2write -sPageList=1 -o - '%s'";
+			" -q -dSAFER -sDEVICE=eps2write -dFirstPage=1 -dLastPage=1 -o - '%s'";
 #endif
 	else {
 		static bool	reported = false;
