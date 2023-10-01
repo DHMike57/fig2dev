@@ -2752,7 +2752,7 @@ note_text_needing_cmap(F_compound *obj)
 	}
 
 	for (o = obj->compounds; o != NULL; o = o->next)
-		needs_cmap = note_text_needing_cmap(o);
+		needs_cmap = note_text_needing_cmap(o) || needs_cmap;
 
 	return needs_cmap;
 }
