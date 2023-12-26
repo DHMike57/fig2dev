@@ -42,7 +42,6 @@
 #include "messages.h"
 #include "psfonts.h"
 #include "texfonts.h"	/* texfontnames[], select_font(), put_string() */
-#include "textconvert.h"
 
 
 static const struct color_table {
@@ -1757,11 +1756,6 @@ gentikz_ellipse(F_ellipse *e)
 void
 gentikz_text(F_text *t)
 {
-	static int	need_conversion = -1;
-
-	if (need_conversion == -1)
-		need_conversion = check_conversion("UTF-8", input_encoding);
-
 	if (verbose)
 		fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
@@ -1793,7 +1787,7 @@ gentikz_text(F_text *t)
 
 	select_font(t, select_fontsize, select_fontname, only_texfonts);
 
-	put_string(t->cstring, t->font, special_text(t), need_conversion);
+	put_string(t->cstring, t->font, special_text(t));
 
 	fputs("}\n", tfp);
 }

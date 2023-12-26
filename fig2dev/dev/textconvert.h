@@ -22,13 +22,13 @@
 #if defined HAVE_CONFIG_H && !defined VERSION
 #include "config.h"
 #endif
-#include <stddef.h>
+#include <stddef.h>		/* size_t */
 
-extern int	only_ascii;
-
-extern int	contains_non_ascii(char *str);
-extern int	check_conversion(const char *restrict output_encoding,
-				const char *restrict input_encoding);
-extern int	convert(char **restrict out, char *restrict in, size_t inlen);
+extern char	*conv_non_ascii(const char *restrict str);
+extern char	*conv_textisutf8(const char *restrict str);
+extern int	conv_textstring(char **restrict out, char *restrict in,
+								size_t inlen);
+extern int	conv_filename(char **restrict out, char *restrict in,
+								size_t inlen);
 extern int	convertutf8tolatin1(char *restrict str);
 #endif

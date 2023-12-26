@@ -2335,7 +2335,6 @@ genps_ellipse(F_ellipse *e)
 void
 genps_text(F_text *t)
 {
-	static int	need_conversion = -1;
 	unsigned char	*cp;
 #define LINE_LENGTH_LIMIT 200
 	bool		composite = false;
@@ -2343,7 +2342,7 @@ genps_text(F_text *t)
 	int		chars = 0;
 	int		gr_chars = 0;
 	unsigned char	ch;
-	int		beyond_ascii = 0;
+	char		*non_ascii = NULL;
 	char		*str = NULL;
 
 	do_split(t->depth);
@@ -2351,9 +2350,6 @@ genps_text(F_text *t)
 	/* ignore hidden text (new for xfig3.2.3/fig2dev3.2.3) */
 	if (hidden_text(t))
 		return;
-
-	if (need_conversion == -1)
-		need_conversion = check_conversion("UTF-8", input_encoding);
 
 	if (multi_page)
 		fprintf(tfp, "/o%d {", no_obj++);
@@ -2372,7 +2368,7 @@ genps_text(F_text *t)
 			fprintf(tfp, TEXT_PS, "CompositeBold", "",PSFONTMAG(t));
 	} else {
 		if (PSneedsutf8[t->font + 1] == 1 &&
-				(beyond_ascii = contains_non_ascii(t->cstring)))
+				(non_ascii = conv_non_ascii(t->cstring)))
 			fprintf(tfp, TEXT_PS, PSFONT(t), "-UTF-8",PSFONTMAG(t));
 		else
 			fprintf(tfp, TEXT_PS, PSFONT(t), "", PSFONTMAG(t));
@@ -2386,16 +2382,17 @@ genps_text(F_text *t)
 
 	fputc('(', tfp);
 
-	if ((!enable_composite_font || !composite) && need_conversion == 1 &&
-				beyond_ascii /* && PSneedsutf8[] == 1 */) {
-			(void)convert(&str, t->cstring, strlen(t->cstring));
+	if ((!enable_composite_font || !composite) && non_ascii
+			/* && PSneedsutf8[] == 1 */) {
+		(void)conv_textstring(&str, t->cstring, strlen(t->cstring));
 	} else {
+		char	*c;
 		/* PSneedsutf8[] == 2 and composite are mutually exclusive */
 		str = t->cstring;
-		if (PSneedsutf8[t->font + 1] == 2 && need_conversion != 1)
+		if (PSneedsutf8[t->font + 1] == 2 && (c = conv_textisutf8(str)))
 			/* if need_conversion == 1, the string is not
 			   utf8-encoded */
-			(void)convertutf8tolatin1(str);
+			(void)convertutf8tolatin1(c);
 	}
 
 	/* this loop escapes characters '(', ')', and '\' */
@@ -2743,8 +2740,7 @@ note_text_needing_cmap(F_compound *obj)
 			((!strcmp(lang, "pstex") || !strcmp(lang, "pdftex")) &&
 				 special_text(t)))
 			continue;
-		if (!PSneedsutf8[t->font + 1] &&
-					contains_non_ascii(t->cstring)) {
+		if (!PSneedsutf8[t->font + 1] && conv_non_ascii(t->cstring)) {
 			if (!needs_cmap)
 				needs_cmap = 1;
 			PSneedsutf8[t->font + 1] = 1;

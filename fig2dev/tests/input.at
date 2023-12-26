@@ -69,6 +69,23 @@ AT_CHECK([fig2dev $srcdir/data/line.fig line.eepic
 ],0)
 AT_CLEANUP
 
+AT_SETUP([Decode koi8-r encoded files])
+AT_KEYWORDS(iconv pict2e)
+AT_SKIP_IF([! echo Кириллик | iconv -f UTF-8 -t KOI8-R >/dev/null])
+STR1="Федерация желтые розы"
+STR2="Масляная бутылка"
+KYR=`iconv -f UTF8 -t KOI8R <<EOF | fig2dev -L pict2e -E KOI8R | $FGREP makebox
+FIG_FILE_TOP
+6 0 -375 525 0
+4 0 0 50 -1 0 11 0.0 6 126 453 0 -225 ${STR1}\001
+4 0 0 50 -1 0 11 0.0 6 126 468 0 -26 Text2: ${STR2}\001
+-6
+EOF
+`
+AT_CHECK([echo "$KYR" | $FGREP -q "$STR1" && echo "$KYR" | $FGREP -q "$STR2"],
+0)
+AT_CLEANUP
+
 AT_BANNER([Parse color specifications (test lookup_X_color() in colors.c)])
 
 AT_SETUP([accept correct hexadecimal rgb-values])

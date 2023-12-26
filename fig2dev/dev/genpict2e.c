@@ -39,8 +39,7 @@
 #include "messages.h"
 #include "pi.h"
 #include "psfonts.h"
-#include "texfonts.h"		/* texfontnames[] */
-#include "textconvert.h"
+#include "texfonts.h"		/* texfontnames[], put_string(), select_font()*/
 #include "trans_spline.h"	/* create_line_with_spline() */
 
 #undef M_PI_2
@@ -2180,11 +2179,7 @@ void
 genpict2e_text(F_text *t)
 {
 	int		x, y;
-	static int	need_conversion = -1;
 	char		*tpos;
-
-	if (need_conversion == -1)
-		need_conversion = check_conversion("UTF-8", input_encoding);
 
 	if (verbose)
 		fputs("%\n% Fig TEXT object\n%\n", tfp);
@@ -2226,7 +2221,7 @@ genpict2e_text(F_text *t)
 
 	select_font(t, select_fontsize, select_fontname, only_texfonts);
 
-	put_string(t->cstring, t->font, special_text(t), need_conversion);
+	put_string(t->cstring, t->font, special_text(t));
 
 	if(t->angle)
 		fputc('}', tfp);

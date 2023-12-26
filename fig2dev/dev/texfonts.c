@@ -266,23 +266,22 @@ put_characters(const char *restrict str)
 }
 
 void
-put_string(char *restrict string, int font, bool tex_text, int need_conversion)
+put_string(char *restrict string, int font, bool tex_text)
 {
+	char	*str;
 
 	if (font == MAX_PSFONT || font == MAX_PSFONT - 2) {
 		/* Zapf Dingbats || Symbol */
-		if (need_conversion != 1 && contains_non_ascii(string))
-			(void)convertutf8tolatin1(string);
+		if ((str = conv_textisutf8(string)))/* str points into string */
+			(void)convertutf8tolatin1(str);
 		/* leave text in any other encoding as-is */
 		if (tex_text)
 			put_characters(string);
 		else
 			put_quoted_characters(string);
 	} else {
-		char	*str = string;
 		/* all other fonts */
-		if (need_conversion == 1 && contains_non_ascii(string))
-			(void)convert(&str, string, strlen(string));
+		(void)conv_textstring(&str, string, strlen(string));
 		if (tex_text)
 			fputs(str, tfp);
 		else

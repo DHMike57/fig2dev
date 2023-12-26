@@ -38,7 +38,6 @@
 #include "free.h"
 #include "messages.h"
 #include "trans_spline.h"
-#include "dev/textconvert.h"	/* only_ascii */
 
 #ifndef HAVE_GETLINE
 #include "lib/getline.h"
@@ -1705,15 +1704,6 @@ read_textobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	memcpy(t->cstring, start, len + 1);
 	if (freestart)
 		free(start);
-
-	if (only_ascii) {
-		start = t->cstring;
-		while (*start != '\0')
-			if (!isascii(*start++)) {
-				only_ascii = 0;
-				break;
-			}
-	}
 
 	if (font_size != 0.0) {
 		/* scale length/height of text by ratio of

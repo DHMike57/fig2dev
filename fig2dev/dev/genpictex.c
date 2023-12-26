@@ -44,7 +44,6 @@
 #include "pi.h"
 #include "psfonts.h"
 #include "texfonts.h"
-#include "textconvert.h"
 
 #define UNIT "cm"	/* dip */
 #define CONVUNIT 2.54	/* dip */
@@ -592,10 +591,6 @@ genpictex_text(F_text *t)
 {
 	double		x, y;
 	char		*tpos;
-	static int	need_conversion = -1;
-
-	if (need_conversion == -1)
-		need_conversion = check_conversion("UTF-8", input_encoding);
 
 	/* print any comments */
 	print_comments("% ",t->comments, "");
@@ -634,7 +629,7 @@ genpictex_text(F_text *t)
 
 	set_color(t->color);
 
-	put_string(t->cstring, t->font, special_text(t), need_conversion);
+	put_string(t->cstring, t->font, special_text(t));
 
 	reset_color(t->color);
 

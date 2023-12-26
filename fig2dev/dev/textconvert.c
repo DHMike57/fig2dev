@@ -22,6 +22,20 @@
  *
  */
 
+
+/*
+ * Offer two conversion functions: One for the conversion of text strings from
+ * the encoding of a lecacy .fig file to utf8, another one for the conversion of
+ * file names referred to in utf8-encoded fig files to the local encoding.
+ * The former conversion is necessary for .fig files that do not contain the
+ * "#encoding: UTF-8" line and which were written in a non-utf8 locale
+ * environment. The latter conversion is necessary if the locale environment is
+ * not utf8, but a modern utf8-encoded fig file has embedded images and refers
+ * to the file names of these embedded images.
+ *
+ * The two conversions are named text-conversion and file-conversion.
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -44,13 +58,49 @@
 #include <strings.h>
 #endif
 
+#include "fig2dev.h"		/* input_encoding */
 #include "messages.h"
 
-int	only_ascii = 1;
 
 #ifdef HAVE_ICONV
-static iconv_t	cd;
+typedef iconv_t
+#else
+typedef int
 #endif
+		xf_conv;
+
+/*** specification of the two different conversions ***/
+
+/* refer to the two different types of conversion */
+enum conv_type {
+	conv_file,
+	conv_text,
+	num_types
+};
+
+/* store the state of the conversion types */
+static struct {
+	int	needed;
+	xf_conv	cd;
+} conv_spec[num_types] = {
+	{-1,	(xf_conv)-1},
+	{-1,	(xf_conv)-1}
+};
+
+/* the desired output encodings for the two conversions;
+   input is always input_encoding */
+static const char	*const out_encoding[num_types] = {
+	NULL,
+	"UTF-8"
+};
+
+/*** end specification of conversions ***/
+
+
+#define CONV_UNINITIALIZED	(-1)
+#define CONV_NOTNEEDED		0
+#define CONV_NEEDED		1
+
 
 static int
 get_local_charset(char *charset, size_t size)
@@ -84,36 +134,35 @@ get_local_charset(char *charset, size_t size)
 }
 
 
-int
-contains_non_ascii(char *str)
+char *
+conv_non_ascii(const char *restrict str)
 {
 	const unsigned char	mask = ~0x7f;
 	unsigned char		*c;
-	int			ret = 0;
-	for (c = (unsigned char *)str; *c != '\0'; ++c) {
-		if (*c & mask) {
-			ret = 1;
-			break;
-		}
-	}
-	return ret;
+
+	for (c = (unsigned char *)str; *c != '\0'; ++c)
+		if (*c & mask)
+			return  (char *)c;
+	return NULL;
 }
 
 /*
  * Check, whether a conversion between in- and output_charset is necessary.
+ * Retrieve the local charset if input_charset or output_charset is NULL.
+ * The strings naming input_charset and output_charset must fit in 31 chars.
  * Return 0 if not necessary or not possible, 1 otherwise.
  */
-int
+static int
 check_conversion(const char *restrict output_charset,
-		const char *restrict input_charset)
+		const char *restrict input_charset, xf_conv *cd)
 {
+#ifndef HAVE_ICONV
+	(void)cd;
+#endif
 	char	inbuf[32];
 	char	outbuf[32];
 	char	*in;
 	char	*out;
-
-	if (only_ascii)
-		return 0;
 
 	if (!input_charset && !output_charset)
 		return 0;
@@ -138,7 +187,7 @@ check_conversion(const char *restrict output_charset,
 		return 0;
 
 #ifdef HAVE_ICONV
-	if ((cd = iconv_open(out, in)) == (iconv_t)-1) {
+	if ((*cd = iconv_open(out, in)) == (iconv_t)-1) {
 		fprintf(stderr, "Unable to convert from %s to %s character "
 				"set.\n", in, out);
 		return 0;
@@ -153,16 +202,16 @@ check_conversion(const char *restrict output_charset,
 
 /*
  * Convert the character sequence given in the string in to the newly allocated
- * string *out. Use the conversion specifier previously determined by a call to
- * check_conversion().
+ * string *out, inlen = strlen(in). Use the conversion specifier previously
+ * determined by a call to check_conversion().
  * Return 0 on success.
  * On error, return the number of remaining unconverted input characters.
  * The caller should free *out after use.
  */
-int
-convert(char **restrict out, char *restrict in, size_t inlen)
+static int
+convert(char **restrict out, char *restrict in, size_t inlen, xf_conv cd)
 {
-	int	stat;
+	int	stat = 0;
 #ifdef HAVE_ICONV
 	size_t	converted;
 	size_t	out_remain;
@@ -237,9 +286,79 @@ convert(char **restrict out, char *restrict in, size_t inlen)
 	 * the caller immediately free's *out anyhow. */
 #else
 	(void)inlen;
+	(void)cd;
 	*out = in;
 #endif /* HAVE_ICONV */
 	return stat;
+}
+
+static int
+conversion(char **restrict out, char *restrict in, size_t inlen,
+		enum conv_type type)
+{
+	char	*c;
+
+	if (!(c = conv_non_ascii(in)))
+		goto no_conversion;
+
+	/* Lazily only initialize conversion if a conversion character is found.
+	 */
+	if (conv_spec[type].needed == CONV_UNINITIALIZED)
+		conv_spec[type].needed = check_conversion(out_encoding[type],
+				input_encoding, &conv_spec[type].cd);
+
+	if (conv_spec[type].needed == CONV_NOTNEEDED)
+		goto no_conversion;
+
+	return convert(out, in, inlen, conv_spec[type].cd);
+
+no_conversion:
+	*out = in;
+	return 0;
+}
+
+/*
+ * Convert the string in to out, inlen = strlen(in). The encoding for out is
+ * UTF-8 for conv_textstring() and NULL (= locale encoding) for conv_filename().
+ * Return 0 on success, the number of unconverted bytes on error.
+ * If conversion is not necessary, *out == in and 0 is returned.
+ * Free out after use.
+ */
+int
+conv_textstring(char **restrict out, char *restrict in, size_t inlen)
+{
+	return conversion(out, in, inlen, conv_text);
+}
+
+int
+conv_filename(char **restrict out, char *restrict in, size_t inlen)
+{
+	return conversion(out, in, inlen, conv_file);
+}
+
+/*
+ * Return the first character in a text string that is utf-8 encoded.
+ * The text string in the fig file is only in utf-8 if no text conversion is
+ * needed, otherwise it is probably 8-bit encoded.
+ * Return NULL if none is found, or the string is not utf8-encoded.
+ */
+char *
+conv_textisutf8(const char *restrict str)
+{
+	char	*c;
+	if (!(c = conv_non_ascii(str)))
+		return c;
+
+	if (conv_spec[conv_text].needed == CONV_UNINITIALIZED)
+		conv_spec[conv_text].needed =
+			check_conversion(out_encoding[conv_text],
+					input_encoding,
+					&conv_spec[conv_text].cd);
+
+	if (conv_spec[conv_text].needed == CONV_NOTNEEDED)
+		return NULL;
+	else
+		return c;
 }
 
 /*
@@ -259,7 +378,7 @@ convertutf8tolatin1(char *restrict str)
 		if (!(*c & 0x80/* 1000 0000 */)) {	/* ascii */
 			if (d == c)
 				++d;
-			else	
+			else
 				*d++ = *c;
 		} else {				/* above ascii */
 			if ((*c & 0xd0/* 1110 0000 */) == 0xc0/* 1100 0000*/ &&

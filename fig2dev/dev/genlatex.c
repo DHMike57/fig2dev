@@ -52,7 +52,6 @@
 #include "messages.h"
 #include "pi.h"
 #include "texfonts.h"
-#include "textconvert.h"	/* check_conversion() */
 
 
 /*
@@ -843,11 +842,8 @@ void
 genlatex_text(F_text *t)
 {
 	int		x, y;
-	static int	need_conversion = -1;
 	const char	*tpos;
 
-	if (need_conversion == -1)
-		need_conversion = check_conversion("UTF-8", input_encoding);
 	if (verbose)
 		fprintf(tfp, "%%\n%% Fig TEXT object\n%%\n");
 
@@ -892,7 +888,7 @@ genlatex_text(F_text *t)
 
 	set_color(t->color);
 
-	put_string(t->cstring, t->font, special_text(t), need_conversion);
+	put_string(t->cstring, t->font, special_text(t));
 
 	reset_color(t->color);
 
