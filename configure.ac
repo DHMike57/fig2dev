@@ -156,7 +156,8 @@ AC_ARG_ENABLE(versioning, [AS_HELP_STRING([--enable-versioning],
 	[enable changing the version number, only useful for \
 	 hacking (default: disable)])],
     [],[enableval=no])dnl
-AM_CONDITIONAL([ENABLE_VERSIONING], [test "x$enableval" = xyes])dnl
+AS_IF([test "x$enableval" = xyes],dnl
+    [update_version='( cd $srcdir && . ./update-version_m4 )'])dnl
 
 AC_ARG_ENABLE(transfig, [AS_HELP_STRING([--enable-transfig],
 	[build the transfig program (default: do not build)])],
@@ -336,7 +337,8 @@ AC_CONFIG_FILES([Makefile
 		fig2dev/tests/atlocal
 		fig2dev/tests/data/patterns.svg
 		fig2dev/tests/data/fillswclip.svg
-		transfig/Makefile])
+		transfig/Makefile],
+	[],[$update_version])
 
 AC_OUTPUT
 
