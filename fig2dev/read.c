@@ -37,6 +37,7 @@
 #include "alloc.h"
 #include "free.h"
 #include "messages.h"
+#include "textconvert.h"
 #include "trans_spline.h"
 
 #ifndef HAVE_GETLINE
@@ -1200,6 +1201,7 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 	}
 	if (l->type == T_PIC_BOX) {
 		char	*file, *c;
+		char	*picfile;
 		int	pos;
 		size_t	len;
 		ssize_t	chars;
@@ -1211,12 +1213,13 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		/* initialize as fully opaque image */
 		l->pic->num_transp = NO_TRANSPARENCY;
 		l->pic->bitmap = NULL;
+		l->pic->file = NULL;
 
 		if ((chars = get_line(fp, line, line_len, line_no)) < 0 ||
 				sscanf(*line, "%d %n", &l->pic->flipped, &pos)
 					!= 1) {
 			put_msg(Err_incomp, "picture", *line_no);
-			free(l);
+			free_linestorage(l);
 			return NULL;
 		}
 		file = *line + pos;
@@ -1227,20 +1230,34 @@ read_lineobject(FILE *fp, char **restrict line, size_t *line_len, int *line_no)
 		 * .fig file path to it
 		 */
 		if (from && (c = strrchr(from, '/')) && file[0] != '/') {
-			if ((l->pic->file = malloc((size_t)(c - from + 2) +len))
+			if ((picfile = malloc((size_t)(c - from + 2) +len))
 					== NULL) {
 				put_msg(Err_mem);
-				free(l);	/* Points not read yet. */
+				free_linestorage(l);
 				return NULL;
 			}
-			strncpy(l->pic->file, from, (size_t)(c - from + 1));
-			memcpy(l->pic->file + (c - from + 1), file, len + 1);
+			strncpy(picfile, from, (size_t)(c - from + 1));
+			memcpy(picfile + (c - from + 1), file, len + 1);
+			len += c - from + 1;
 		} else {
 			/* either absolute picture path or
 			   no path in .fig filename */
-			l->pic->file = malloc(len + 1);
-			memcpy(l->pic->file, file, len + 1);
+			if ((picfile = malloc(len + 1)) == NULL) {
+				put_msg(Err_mem);
+				free_linestorage(l);
+				return NULL;
+			}
+			memcpy(picfile, file, len + 1);
 		}
+		if ((pos = conv_filename(&l->pic->file, picfile, len))) {
+			put_msg("Image file name (%s) cannot be converted to "
+					"the encoding of the current locale,\n"
+					"    %d characters remain unconverted.",
+					picfile, pos);
+			l->pic->file = picfile;
+		}
+		if (l->pic->file != picfile)
+			free(picfile);
 	}
 
 	if (!(l->points = Point_malloc(p))) {
