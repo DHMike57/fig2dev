@@ -32,6 +32,8 @@ config.vc: $(srcdir)/config.vc.in $(top_builddir)/config.status
 
 bin_PROGRAMS = fig2dev
 
+AM_CPPFLAGS = -I"$(top_srcdir)/fig2dev/dev"
+
 fig2dev_SOURCES = alloc.h bool.h bound.h bound.c colors.h colors.c \
     creationdate.h creationdate.c drivers.h fig2dev.h fig2dev.c free.h free.c \
     iso2tex.c localmath.h localmath.c messages.h messages.c object.h read1_3.c \
