@@ -1515,6 +1515,24 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 			ptr = ptr->next;
 		}
 
+		/*
+		 * Remove splines with co-incident points.
+		 * graphviz version 2.43.0 produced such a spline, see the
+		 * spline beginning at line 2988 in file graph-radial.fig,
+		 * ticket #166. Silently ignore such splines, to the comfort of
+		 * users of graphviz.
+		 */
+		x = s->points->x; y = s->points->y;
+		p = s->points->next;
+		while (p && p->x == x && p->y == y)
+			p = p->next;
+		if (p == NULL) {
+			put_msg("Invalid spline with only co-incident points "
+					"at or before line %d.", *line_no);
+			free_splinestorage(s);
+			return NULL;
+		}
+
 		l = create_line_with_spline(s);
 		free_splinestorage(s);
 		/* skip to end of line */
