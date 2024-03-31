@@ -48,7 +48,7 @@
  */
 #ifdef GSEXE
 #define	GSFMT	GSEXE " -q -dSAFER -dAutoRotatePages=/None -sDEVICE=pdfwrite " \
-		"-dCompatibilityLevel=1.4 -dPDFSETTINGS=/prepress -o '%s' -"
+		"-dCompatibilityLevel=1.5 -dPDFSETTINGS=/prepress -o '%s' -"
 #else
 #define GSFMT	""
 #endif
