@@ -41,6 +41,7 @@ extern struct driver dev_pstex_t;
 extern struct driver dev_pstricks;
 extern struct driver dev_textyl;
 extern struct driver dev_tk;
+extern struct driver dev_pstk;
 extern struct driver dev_ptk;
 extern struct driver dev_tpic;
 extern struct driver dev_mf;
@@ -94,6 +95,7 @@ struct {
 	{"pstex_t",	NULL,	&dev_pstex_t},
 	{"pstricks",	NULL,	&dev_pstricks},
 	{"ptk",		NULL,	&dev_ptk},
+	{"pstk",	NULL,	&dev_pstk},
 	{"shape",	NULL,	&dev_shape},
 	{"sld",		NULL,	&dev_bitmaps},
 	{"svg",		NULL,	&dev_svg},

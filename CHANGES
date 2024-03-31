@@ -1,4 +1,11 @@
 Changes to fig2dev
+ML Apr 2024
+
+NEW fEATURES
+    o pstk (scheme) export
+
+BUGS FIXED
+    o tk output polgons now do not default to filled
 ===============================================================================
 Version 3.2
 ===============================================================================

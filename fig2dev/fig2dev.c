@@ -563,7 +563,8 @@ help_msg(void)
 			!strcmp(lang, "pstricks") || !strcmp(lang, "ptk") ||
 			!strcmp(lang, "shape") || !strcmp(lang, "svg") ||
 			!strcmp(lang, "textyl") || !strcmp(lang, "tikz") ||
-			!strcmp(lang, "tk") || !strcmp(lang, "tpic")) {
+			!strcmp(lang, "tk") || !strcmp(lang,"pstk") ||
+			!strcmp(lang, "tpic")) {
 		puts(
 "\n--------------------------------------------------------------------------------\n"
 "Vector formats:");
@@ -837,9 +838,9 @@ help_msg(void)
 			);
 		}
 
-		if (dev == NULL || !strcmp(lang, "tk") || !strcmp(lang,"ptk")) {
+		if (dev == NULL || !strcmp(lang, "tk") || !strcmp(lang,"ptk") || !strcmp(lang,"pstk")) {
 			puts(
-"Tcl/Tk (tk) and Perl/Tk (ptk) Options:\n"
+"Tcl/Tk (tk), scheme (pstk) and Perl/Tk (ptk) Options:\n"
 "  -g color    set background color (Tcl/Tk only)\n"
 "  -l dummyarg landscape mode (dummy argument required after \"-l\")\n"
 "  -p dummyarg portrait mode (dummy argument required after \"-p\")\n"

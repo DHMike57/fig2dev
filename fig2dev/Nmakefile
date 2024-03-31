@@ -88,7 +88,7 @@ FIG2DEV_SRCS = bound.c colors.c creationdate.c fig2dev.c free.c \
 	dev/genlatex.c dev/genmap.c dev/genmf.c dev/genmp.c dev/genpdf.c \
 	dev/genpic.c dev/genpict2e.c dev/genpictex.c dev/genps.c dev/psfonts.c \
 	dev/genpstex.c dev/genpstricks.c dev/genptk.c dev/genshape.c \
-	dev/gensvg.c dev/gentextyl.c dev/gentikz.c dev/gentk.c dev/gentpic.c \
+	dev/gensvg.c dev/gentextyl.c dev/gentikz.c dev/gentk.c dev/genpstk.c dev/gentpic.c \
 	dev/psencode.c dev/readeps.c dev/readgif.c dev/readjpg.c dev/readpcx.c \
 	dev/readpics.c dev/readppm.c dev/readtif.c dev/readxbm.c \
 	dev/setfigfont.c dev/texfonts.c dev/tkpattern.c dev/xtmpfile.c
