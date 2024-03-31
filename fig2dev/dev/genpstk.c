@@ -83,7 +83,7 @@ define_pattern(int n)
 	int	i;
 
 	fprintf(tfp, ";; %s\n", tkpattern[n].name);
-//	fprintf(tfp, "(define %s%d (format #f \"~a~a~a\" %s file-name-separator-string \"%s.xbm\"))\n",
+//	frintf(tfp, "(define %s%d (format #f \"~a~a~a\" %s file-name-separator-string \"%s.xbm\"))\n",
 //			patname, n, xbmPathVar, tkpattern[n].name);
 	fprintf(tfp, "(define %s%d (string-append %s file-name-separator-string \"%s.xbm\"))\n",
 			patname, n, xbmPathVar, tkpattern[n].name);
@@ -1282,6 +1282,61 @@ tkLine(F_line *l, int penColor, int thickness, int style, double style_val)
 /*
  *   t k P o l y g o n ( )
  */
+static unsigned countPoints(void *points)
+{
+    F_point *p;
+    p=(F_point *) points;
+    unsigned cpt;
+    for (cpt=0;p;p=p->next){
+        cpt++;
+    }
+    return cpt;
+}
+/*
+static unsigned sidesquared(F_point *a, F_point *b, F_point *c)
+{
+    //fprintf(tfp,"; pt1 %d %d\n; pt2 %d %d\n; pt3 %d %d\n",a->x,a->y,b->x,b->y,c->x,c->y);
+   return ((c->x - b->x) * (c->x - b->x)) + ((a->y - b->y) * (a->y - b->y));
+}
+*/
+static unsigned sidesquared(F_point *a, F_point *b)
+{
+    //fprintf(tfp,"; pt1 %d %d\n; pt2 %d %d\n; d\n",a->x,a->y,b->x,b->y,c->x,c->y);
+   return ((a->x - b->x) * (a->x - b->x)) + ((a->y - b->y) * (a->y - b->y));
+}
+
+static bool isrect(void *points)
+{
+    F_point *p, *p1, *p2, *p3, *p4, *p5;
+    int sideA, sideB,sideC,sideD,diag;
+
+    if(countPoints(points) == 5 ){
+    //    fprintf(tfp,"; got 5 points\n");
+        p = (F_point *) points;
+        p1=p; p=p->next;
+        p2=p;p=p->next;
+        p3=p;p=p->next;
+        p4=p;p=p->next;
+        p5=p;
+      //  fprintf(tfp,";isrect\n; pt1 %d %d\n; pt2 %d %d\n; pt3 %d %d\n",p1->x,p1->y,p2->x,p2->y,p3->x,p3->y);
+      //  fprintf(tfp,"; pt4 %d %d\n; pt5 %d %d\n",p4->x,p4->y,p5->x,p5->y);
+        if(p5->x==p1->x && p5->y==p1->y){
+        //    fprintf(tfp,"; closed at point 5\n");
+            sideA=sidesquared(p1,p2);
+            sideB=sidesquared(p2,p3);
+            sideC=sidesquared(p3,p4);
+            sideD=sidesquared(p4,p1);
+            diag=sidesquared(p1,p3);
+
+          //  fprintf(tfp,"; sidesquared A %d B %d\n",sideA, sideB);
+            if(     (sideA+sideB==sideC+sideD) && // diagonals equal
+                    (sideA < diag)){              // not a Z shape
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 static void
 tkPolygon(void *points)
@@ -1292,6 +1347,8 @@ tkPolygon(void *points)
 
 	p = (F_point *) points;
 
+    if(isrect(points))
+        fprintf(tfp, ";; == rectangle ==\n");
 	sprintf(stfp, "(%s 'create 'polygon \"%fi\" \"%fi\"", canvas, X(p->x), Y(p->y));
 	niceLine(stfp);
 	q = p->next;
