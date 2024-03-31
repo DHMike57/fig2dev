@@ -1039,6 +1039,7 @@ drawFilledShape(void (*tkShape)(void *), void *p, int thickness, int penColor,
 		}
 	} else {	/* fillStyle == UNFILLED */
 		tkShape(p);
+		fputs(" -fill {}",tfp);
 	}
 
 	/* outline color and thickness */
