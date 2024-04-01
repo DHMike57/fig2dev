@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2023 by Thomas Loimer
+ * Parts Copyright (c) 2015-2024 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -160,8 +160,7 @@ static struct depth_opts {
 static char	Usage[] =
 "Usage:\n %1$s -hV\n"
 " %1$s -L language -h\n"
-" %1$s [-L language] [-D +/-rangelist] [-K] [-E encoding] [-m scale]\n"
-"\t[-s size] [input [output]]\n";
+" %1$s [-L language] [other options] [in.fig [output]]\n";
 
 static int	 parse_gridspec(char *string, float *numer, float *denom,
 				float *spacing, int *nchrs);
@@ -520,6 +519,7 @@ help_msg(void)
 {
 	int i, n;
 
+	fprintf(stdout, Usage, prog);
 	fputs(	"General Options (all drivers):\n"
 "  -L language	choose output language (this must be first, if the language\n"
 "                cannot be inferrred from the suffix of the output file)\n"
