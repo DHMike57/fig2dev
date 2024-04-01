@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2023 by Thomas Loimer
+ * Parts Copyright (c) 2015-2024 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -38,6 +38,7 @@
 #include "genps.h"
 #include "messages.h"
 
+#define PDFMINORVERSION		5
 /*
  * The ghostscript command line.
  * With -dAutoFilterColorImages=false,
@@ -48,7 +49,7 @@
  */
 #ifdef GSEXE
 #define	GSFMT	GSEXE " -q -dSAFER -dAutoRotatePages=/None -sDEVICE=pdfwrite " \
-		"-dCompatibilityLevel=1.4 -dPDFSETTINGS=/prepress -o '%s' -"
+		"-dCompatibilityLevel=1.%d -dPDFSETTINGS=/prepress -o '%s' -"
 #else
 #define GSFMT	""
 #endif
@@ -56,6 +57,7 @@
 /* String buffer for the ghostscript command. 82 chars for the filename */
 static char	com_buf[sizeof GSFMT + 80];
 static char	*com = com_buf;
+static int	pdfminorversion = PDFMINORVERSION;
 
 
 void
@@ -68,9 +70,18 @@ genpdf_option(char opt, char *optarg)
 		init = true;
 	}
 
+	switch (opt) {
 	/* -P...pagemode, or a pagesize (-z) is given, implies -P */
-	if (opt == 'z' || opt == 'P')
+	case 'P':
+	case 'z':
 		epsflag = false;
+		break;
+	case 'Y':
+		pdfminorversion = atoi(optarg);
+		if (pdfminorversion < 1 || pdfminorversion > 7)
+			pdfminorversion = PDFMINORVERSION;
+		break;
+	}
 	gen_ps_eps_option(opt, optarg);
 }
 
@@ -101,12 +112,12 @@ genpdf_start(F_compound *objects)
 	}
 
 	/* write command for conversion to pdf */
-	len = sizeof GSFMT + strlen(ofile) - 2;
+	len = sizeof GSFMT + strlen(ofile) - 3;
 	if (len > sizeof com_buf && (com = malloc(len)) == NULL) {
 		put_msg(Err_mem);
 		exit(EXIT_FAILURE);
 	}
-	if (sprintf(com, GSFMT, ofile) < 0) {
+	if (sprintf(com, GSFMT, pdfminorversion, ofile) < 0) {
 		err_msg("fig2dev: error when creating ghostscript command");
 		exit(EXIT_FAILURE);
 	}
