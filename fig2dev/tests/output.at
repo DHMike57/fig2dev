@@ -131,7 +131,7 @@ AT_BANNER([Test pdf output language.])
 AT_SETUP([create pdf version 1.1])
 AT_KEYWORDS(pdf options)
 AT_CHECK([fig2dev -L pdf -Y 1 $srcdir/data/line.fig | $SED -n '1p' | \
-	$FGREP '%PDF-1.1'], 0, ignore)
+	$FGREP '%PDF-1.1'], 0, ignore, ignore)
 AT_CLEANUP
 
 AT_SETUP([create pdf version 1.7])
