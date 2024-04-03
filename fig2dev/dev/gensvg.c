@@ -3,7 +3,7 @@
  * Parts Copyright (c) 2002 by Anthony Starks
  * Parts Copyright (c) 2002-2006 by Martin Kroeker
  * Parts Copyright (c) 2002-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2021 by Thomas Loimer
+ * Parts Copyright (c) 2015-2024 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -636,7 +636,7 @@ gensvg_line(F_line *l)
     if (l->type == T_PIC_BOX ) {
 	fprintf(tfp,"<!-- Image -->\n");
 	fprintf(tfp,
-	    "<image xlink:href=\"file://%s\" preserveAspectRatio=\"none\"\n",
+	    "<image xlink:href=\"file:%s\" preserveAspectRatio=\"none\"\n",
 	    l->pic->file);
 	p = l->points;
 	px = p->x;
