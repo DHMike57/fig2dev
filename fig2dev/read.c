@@ -3,7 +3,7 @@
  * Copyright (c) 1991 by Micah Beck
  * Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
  * Parts Copyright (c) 1989-2015 by Brian V. Smith
- * Parts Copyright (c) 2015-2023 by Thomas Loimer
+ * Parts Copyright (c) 2015-2024 by Thomas Loimer
  *
  * Any party obtaining a copy of these files is granted, free of charge, a
  * full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -138,7 +138,7 @@ readfp_fig(FILE *fp, F_compound *obj)
 	/* initialize the comment array */
 	if (!com_alloc)
 		for (i = 0; i < MAXCOMMENTS; ++i)
-			comments[i] = (char *)NULL;
+			comments[i] = NULL;
 	com_alloc = true;
 	memset((void *)obj, '\0', COMOBJ_SIZE);
 
@@ -154,6 +154,13 @@ readfp_fig(FILE *fp, F_compound *obj)
 		status = read_1_3_objects(fp, obj);
 	if (fp != stdin)
 		(void)fclose(fp);
+	/* free the comment array */
+	if (com_alloc)
+		for (i = 0; i < MAXCOMMENTS; ++i)
+			if (comments[i]) {
+				free(comments[i]);
+				comments[i] = NULL;
+			}
 	return status;
 }
 
@@ -1506,6 +1513,24 @@ read_splineobject(FILE *fp, char **restrict line, size_t *line_len,
 			}
 			ptr->s = control_s;
 			ptr = ptr->next;
+		}
+
+		/*
+		 * Remove splines with co-incident points.
+		 * graphviz version 2.43.0 produced such a spline, see the
+		 * spline beginning at line 2988 in file graph-radial.fig,
+		 * ticket #166. Silently ignore such splines, to the comfort of
+		 * users of graphviz.
+		 */
+		x = s->points->x; y = s->points->y;
+		p = s->points->next;
+		while (p && p->x == x && p->y == y)
+			p = p->next;
+		if (p == NULL) {
+			put_msg("Invalid spline with only co-incident points "
+					"at or before line %d.", *line_no);
+			free_splinestorage(s);
+			return NULL;
 		}
 
 		l = create_line_with_spline(s);

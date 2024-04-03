@@ -2,6 +2,20 @@ Changes to fig2dev
 ===============================================================================
 Version 3.2
 ===============================================================================
+Patchlevel 9a (Apr 2024)
+
+NEW FEATURES:
+	o Specify pdf minor version with option -Y.
+
+BUGS FIXED:
+	Ticket numbers refer to https://sourceforge.net/p/mcj/tickets/#.
+	o Correctly read from a pipe, ticket #156.
+	o Fix behavior of option -F for e(e)pic and latex outputs, ticket #157.
+	o Compounds containing ascii-only text would disable utf-8 output, #158.
+	o Option --enable-versioning works in out-of-tree builds.
+	o Correct links to embedded image files in svg output.
+
+-------------------------------------
 Patchlevel 9 (Aug 2023)
 
 NEW FEATURES:

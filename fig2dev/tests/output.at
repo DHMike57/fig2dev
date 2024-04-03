@@ -2,7 +2,7 @@ dnl Fig2dev: Translate Fig code to various Devices
 dnl Copyright (c) 1991 by Micah Beck
 dnl Parts Copyright (c) 1985-1988 by Supoj Sutanthavibul
 dnl Parts Copyright (c) 1989-2015 by Brian V. Smith
-dnl Parts Copyright (c) 2015-2023 by Thomas Loimer
+dnl Parts Copyright (c) 2015-2024 by Thomas Loimer
 dnl
 dnl Any party obtaining a copy of these files is granted, free of charge, a
 dnl full and unrestricted irrevocable, world-wide, paid up, royalty-free,
@@ -14,7 +14,7 @@ dnl party to do so, with the only requirement being that the above copyright
 dnl and this permission notice remain intact.
 
 dnl output.at
-dnl Author: Thomas Loimer, 2016-2023
+dnl Author: Thomas Loimer, 2016-2024
 
 dnl Check various features related to the output languages of fig2dev.
 
@@ -124,6 +124,20 @@ AT_CHECK([SOURCE_DATE_EPOCH=7here fig2dev -L eps $srcdir/data/line.fig
 ], 0, ignore-nolog,
 [Environment variable SOURCE_DATE_EPOCH: Trailing garbage: here
 ])
+AT_CLEANUP
+
+
+AT_BANNER([Test pdf output language.])
+AT_SETUP([create pdf version 1.1])
+AT_KEYWORDS(pdf options)
+AT_CHECK([fig2dev -L pdf -Y 1 $srcdir/data/line.fig | $SED -n '1p' | \
+	$FGREP '%PDF-1.1'], 0, ignore, ignore)
+AT_CLEANUP
+
+AT_SETUP([create pdf version 1.7])
+AT_KEYWORDS(pdf options)
+AT_CHECK([fig2dev -L pdf -Y 7 $srcdir/data/line.fig | $SED -n '1p' | \
+	$FGREP '%PDF-1.7'], 0, ignore)
 AT_CLEANUP
 
 
